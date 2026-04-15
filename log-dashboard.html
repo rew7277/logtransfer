@@ -133,24 +133,44 @@
 
   /* ─── TOPBAR ─── */
   .topbar {
-    display: flex; align-items: center; gap: 14px; margin-bottom: 28px;
+    display: flex; align-items: center; gap: 14px; margin-bottom: 16px;
+    flex-wrap: wrap;
     animation: fadeDown .4s ease both;
   }
-  @keyframes fadeDown { from { opacity:0; transform:translateY(-12px); } to { opacity:1; transform:none; } }
-
-  .page-title { font-size: 26px; font-weight: 700; letter-spacing: -.5px; flex-shrink: 0; }
-  .page-title span { color: var(--accent); }
-
-  .search-wrap { flex: 1; position: relative; }
+  .search-wrap { flex: 1; position: relative; min-width: 220px; }
   .search-input {
     width: 100%; background: var(--surface); border: 1px solid var(--border);
-    border-radius: 10px; padding: 10px 14px 10px 38px;
+    border-radius: 10px; padding: 10px 36px 10px 38px;
     color: var(--text); font-family: inherit; font-size: 13.5px;
     outline: none; transition: border-color .2s, box-shadow .2s;
   }
   .search-input::placeholder { color: var(--muted); }
   .search-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
+  @keyframes fadeDown { from { opacity:0; transform:translateY(-12px); } to { opacity:1; transform:none; } }
+  .page-title { font-size: 26px; font-weight: 700; letter-spacing: -.5px; flex-shrink: 0; }
+  .page-title span { color: var(--accent); }
   .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: 14px; pointer-events: none; }
+  .search-clear {
+    position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+    background: none; border: none; color: var(--muted); cursor: pointer; font-size: 13px;
+    padding: 2px 6px; border-radius: 4px; transition: color .2s, background .2s;
+    display: none;
+  }
+  .search-clear:hover { color: var(--text); background: var(--surface-hover); }
+  .search-clear.visible { display: block; }
+  .search-match { background: rgba(41,151,255,.25); color: var(--accent); border-radius: 2px; padding: 0 1px; }
+
+  .search-mode-wrap {
+    display: flex; gap: 4px; flex-shrink: 0;
+  }
+  .mode-btn {
+    padding: 8px 12px; border-radius: 8px; font-size: 12px; font-weight: 500;
+    border: 1px solid var(--border); background: var(--surface);
+    color: var(--muted); cursor: pointer; transition: all .2s; white-space: nowrap;
+    font-family: inherit;
+  }
+  .mode-btn:hover { border-color: var(--border-strong); color: var(--text); }
+  .mode-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
 
   .filter-row {
     display: flex; gap: 8px; margin-bottom: 24px;
@@ -467,7 +487,13 @@
       <h1 class="page-title">Log<span>Lens</span></h1>
       <div class="search-wrap">
         <span class="search-icon">🔎</span>
-        <input class="search-input" id="searchInput" placeholder="Search by Event ID, message, payload, source…" />
+        <input class="search-input" id="searchInput" placeholder="Search by Event ID, message, source…" />
+        <button class="search-clear" id="searchClear" onclick="clearSearch()" title="Clear search">✕</button>
+      </div>
+      <div class="search-mode-wrap">
+        <button class="mode-btn active" data-mode="smart" onclick="setSearchMode('smart')" title="Auto-detect: exact match for Event IDs, partial for text">⚡ Smart</button>
+        <button class="mode-btn" data-mode="eventid" onclick="setSearchMode('eventid')" title="Exact Event ID match only">🎯 Event ID</button>
+        <button class="mode-btn" data-mode="fulltext" onclick="setSearchMode('fulltext')" title="Search all fields including raw payload">🔍 Full Text</button>
       </div>
     </div>
 
@@ -567,6 +593,7 @@ let allLogs = [];
 let currentView = 'overview';
 let currentFilter = 'all';
 let searchQuery = '';
+let searchMode = 'smart'; // 'smart' | 'eventid' | 'fulltext'
 let fileCount = 0;
 
 // ─── LEVEL UTILS ───
@@ -879,19 +906,84 @@ function updateBadges() {
 function filteredLogs() {
   let logs = allLogs;
   if (currentFilter !== 'all') logs = logs.filter(l => l.level === currentFilter);
-  if (searchQuery) {
-    const q = searchQuery.toLowerCase();
+  if (!searchQuery) return logs;
+
+  const q = searchQuery.trim();
+  const qLow = q.toLowerCase();
+
+  if (searchMode === 'eventid') {
+    // Strict exact Event ID match only
+    logs = logs.filter(l => l.id.toLowerCase() === qLow);
+  } else if (searchMode === 'fulltext') {
+    // Full text including raw payload — user explicitly asked for this
     logs = logs.filter(l =>
-      l.id.toLowerCase().includes(q) ||
-      l.message.toLowerCase().includes(q) ||
-      l.source.toLowerCase().includes(q) ||
-      l.raw.toLowerCase().includes(q)
+      l.id.toLowerCase().includes(qLow) ||
+      l.message.toLowerCase().includes(qLow) ||
+      l.source.toLowerCase().includes(qLow) ||
+      l.raw.toLowerCase().includes(qLow)
     );
+  } else {
+    // Smart mode: detect if query looks like an Event ID → exact match, else partial text search
+    const looksLikeEventId = /^[A-Z0-9_\-]{4,}$/i.test(q) && q.length >= 4 && q.length <= 32 && !/\s/.test(q);
+    if (looksLikeEventId) {
+      // Exact Event ID first; if nothing found, fall back to partial on message/source
+      const exactMatches = logs.filter(l => l.id.toLowerCase() === qLow);
+      if (exactMatches.length) {
+        logs = exactMatches;
+      } else {
+        // No exact ID hit — partial search (but NOT raw to avoid noise)
+        logs = logs.filter(l =>
+          l.id.toLowerCase().includes(qLow) ||
+          l.message.toLowerCase().includes(qLow) ||
+          l.source.toLowerCase().includes(qLow)
+        );
+      }
+    } else {
+      // Plain text query → partial search across message, source, id (no raw)
+      logs = logs.filter(l =>
+        l.id.toLowerCase().includes(qLow) ||
+        l.message.toLowerCase().includes(qLow) ||
+        l.source.toLowerCase().includes(qLow)
+      );
+    }
   }
   return logs;
 }
 
-// ─── RENDER ───
+// ─── SEARCH HELPERS ───
+function setSearchMode(mode) {
+  searchMode = mode;
+  document.querySelectorAll('.mode-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
+  render();
+}
+
+function clearSearch() {
+  searchQuery = '';
+  document.getElementById('searchInput').value = '';
+  document.getElementById('searchClear').classList.remove('visible');
+  render();
+}
+
+function searchById(id) {
+  searchQuery = id;
+  searchMode = 'eventid';
+  document.getElementById('searchInput').value = id;
+  document.getElementById('searchClear').classList.add('visible');
+  document.querySelectorAll('.mode-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === 'eventid'));
+  render();
+  toast(`🎯 Showing logs for Event ID: ${id}`, 'info');
+}
+
+function highlight(text, query) {
+  if (!query) return escH(text);
+  const escaped = escH(text);
+  const q = escH(query);
+  if (!q) return escaped;
+  const rx = new RegExp(`(${q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+  return escaped.replace(rx, '<span class="search-match">$1</span>');
+}
+
+
 function render() {
   const logs = filteredLogs();
   const titles = { overview:'Overview', all:'All Logs', timeline:'Timeline', error:'Errors', success:'Successes', warn:'Warnings', info:'Info', cloudwatch:'CloudWatch', debug:'Debug' };
@@ -915,21 +1007,27 @@ function render() {
 }
 
 function renderTable(logs) {
-  const rows = logs.slice(0, 1000).map((l, i) => `
-    <tr style="animation-delay:${Math.min(i * 0.02, 0.5)}s" onclick="openDetail(${allLogs.indexOf(l)})">
+  const isSearching = searchQuery.trim().length > 0;
+  const rows = logs.slice(0, 1000).map((l, i) => {
+    const idHighlight = isSearching ? highlight(l.id, searchQuery) : escH(l.id);
+    const msgHighlight = isSearching ? highlight(l.message, searchQuery) : escH(l.message);
+    const isExactIdMatch = isSearching && l.id.toLowerCase() === searchQuery.trim().toLowerCase();
+    return `
+    <tr style="animation-delay:${Math.min(i * 0.02, 0.5)}s${isExactIdMatch ? ';background:rgba(41,151,255,.06);' : ''}" onclick="openDetail(${allLogs.indexOf(l)})">
       <td>${levelDot(l.level)}</td>
       <td>${levelBadge(l.level)}</td>
-      <td class="event-id">${escH(l.id)}</td>
+      <td class="event-id" onclick="event.stopPropagation();searchById('${escH(l.id)}')" title="Click to filter by this Event ID" style="cursor:pointer">${idHighlight}</td>
       <td class="ts">${fmtTs(l.timestamp)}</td>
-      <td class="msg-cell" title="${escH(l.message)}">${escH(l.message)}</td>
+      <td class="msg-cell" title="${escH(l.message)}">${msgHighlight}</td>
       <td><span class="source-tag">${escH(l.source)}</span></td>
-    </tr>`).join('');
+    </tr>`;
+  }).join('');
 
   document.getElementById('logContent').innerHTML = `
     <div class="log-table-wrap">
       <table class="log-table">
         <thead><tr>
-          <th></th><th>Level</th><th>Event ID</th><th>Timestamp</th><th>Message</th><th>Source</th>
+          <th></th><th>Level</th><th>Event ID <span style="font-weight:400;color:var(--muted);font-size:10px">(click to filter)</span></th><th>Timestamp</th><th>Message</th><th>Source</th>
         </tr></thead>
         <tbody>${rows}</tbody>
       </table>
@@ -1012,7 +1110,10 @@ function openDetail(idx) {
     </div>
     <div class="detail-kv">
       <div class="detail-kv-label">Event ID</div>
-      <div class="detail-kv-val mono" style="color:var(--accent)">${escH(l.id)}</div>
+      <div class="detail-kv-val mono" style="color:var(--accent);display:flex;align-items:center;gap:10px">
+        <span>${escH(l.id)}</span>
+        <button onclick="closeDetail();searchById('${escH(l.id)}')" style="font-size:11px;padding:3px 10px;border-radius:6px;background:rgba(41,151,255,.12);border:1px solid rgba(41,151,255,.3);color:var(--accent);cursor:pointer;font-family:inherit;transition:all .2s" title="Filter all logs by this Event ID">🎯 Filter by ID</button>
+      </div>
     </div>
     <div class="detail-kv">
       <div class="detail-kv-label">Source / Service</div>
@@ -1114,7 +1215,12 @@ document.querySelectorAll('.filter-chip').forEach(chip => {
 
 document.getElementById('searchInput').addEventListener('input', e => {
   searchQuery = e.target.value.trim();
+  document.getElementById('searchClear').classList.toggle('visible', searchQuery.length > 0);
   render();
+});
+
+document.getElementById('searchInput').addEventListener('keydown', e => {
+  if (e.key === 'Escape') clearSearch();
 });
 
 // File input
