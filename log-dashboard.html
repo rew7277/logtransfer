@@ -444,6 +444,37 @@
   ::-webkit-scrollbar { width: 5px; height: 5px; }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 10px; }
+
+  /* TIMELINE CHART */
+  .timeline-bars { display: flex; align-items: flex-end; gap: 3px; height: 60px; padding: 4px 0; }
+  .tbar-col { display: flex; flex-direction: column; align-items: center; gap: 1px; flex: 1; cursor: pointer; }
+  .tbar-col:hover .tbar-seg { opacity: 0.75; }
+  .tbar-seg { width: 100%; border-radius: 2px 2px 0 0; min-height: 2px; transition: opacity 0.1s; }
+  .tbar-label { font-size: 9px; color: var(--text3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; text-align: center; }
+  .timeline-legend { display: flex; gap: 12px; margin-top: 8px; flex-wrap: wrap; }
+  .tleg { display: flex; align-items: center; gap: 4px; font-size: 11px; color: var(--text3); }
+  .tleg-dot { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
+
+  /* TOP ERRORS WIDGET */
+  .top-err-list { display: flex; flex-direction: column; gap: 6px; }
+  .top-err-row { display: flex; align-items: center; gap: 8px; padding: 8px 10px; background: var(--error-light); border-radius: var(--radius-sm); border-left: 3px solid var(--error); cursor: pointer; }
+  .top-err-row:hover { opacity: 0.85; }
+  .top-err-count { font-family: var(--mono); font-size: 13px; font-weight: 700; color: var(--error); min-width: 28px; }
+  .top-err-msg { font-size: 11px; color: var(--text); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .top-err-app { font-size: 10px; color: var(--text3); white-space: nowrap; }
+
+  /* SLOW TRANSACTION */
+  .slow-badge { background: var(--warn-light); color: var(--warn); border: 1px solid var(--warn); padding: 2px 7px; border-radius: 20px; font-size: 10px; font-weight: 700; }
+
+  /* JOURNEY STEP INLINE — smooth expand without re-render */
+  .step-expand-inline { display: none; margin-top: 8px; background: var(--surface2); border-radius: var(--radius-sm); padding: 8px 10px; border: 1px solid var(--border); animation: fadeIn 0.12s; }
+  .step-expand-inline.open { display: block; }
+
+  /* JOURNEY HEADER STICKY */
+  .journey-header { position: sticky; top: 0; background: var(--surface); z-index: 5; }
+
+  /* CLEAR TRANSITION */
+  .clearing { opacity: 0; transition: opacity 0.15s; }
 </style>
 </head>
 <body>
@@ -713,11 +744,12 @@ function parseLine(line) {
 }
 
 // ============================================================
-//  INGEST
+//  INGEST  (single sort pass, cached indexes)
 // ============================================================
 function ingestLogs(newLogs) {
+  const startId = allLogs.length;
   newLogs = newLogs.map((l, i) => ({
-    _id: allLogs.length + i,
+    _id: startId + i,
     timestamp: l.timestamp || l.time || l.ts || new Date().toISOString(),
     level: (l.level || l.severity || 'INFO').toUpperCase(),
     message: l.message || l.msg || l.log || '',
@@ -729,8 +761,12 @@ function ingestLogs(newLogs) {
     payload: l.payload || l.exception || l.error || '',
     raw: l,
   }));
+  // Merge and sort once
   allLogs = [...allLogs, ...newLogs];
   allLogs.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+  // Re-index _id to be position-stable after sort
+  allLogs.forEach((l, i) => l._id = i);
+
   applyFilters();
   updateSidebar();
   populateFilters();
@@ -782,7 +818,11 @@ function applyFilters() {
   renderCurrentView();
 }
 
-function onSearch() { applyFilters(); }
+// Debounce utility — prevents search from firing on every keystroke
+function debounce(fn, delay) {
+  let t; return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), delay); };
+}
+const onSearch = debounce(() => applyFilters(), 180);
 function onFilter() { applyFilters(); }
 function setMode(m) {
   currentMode = m;
@@ -880,7 +920,7 @@ function renderCurrentView() {
 }
 
 // ============================================================
-//  OVERVIEW
+//  OVERVIEW  (+ timeline chart, top errors widget, slow transactions)
 // ============================================================
 function renderOverview() {
   const logs = filteredLogs;
@@ -902,6 +942,95 @@ function renderOverview() {
   const evtIds = [...new Set(logs.map(l => l.eventId).filter(Boolean))];
   const flows = [...new Set(logs.map(l => l.flow).filter(Boolean))];
 
+  // ── Timeline: bucket logs into ~12 time buckets ─────────────
+  function buildTimeline() {
+    if (logs.length < 2) return '';
+    const sorted = [...logs].sort((a,b) => new Date(a.timestamp)-new Date(b.timestamp));
+    const t0 = new Date(sorted[0].timestamp).getTime();
+    const t1 = new Date(sorted[sorted.length-1].timestamp).getTime();
+    if (t1 === t0) return '';
+    const BUCKETS = 16;
+    const bucketMs = (t1 - t0) / BUCKETS;
+    const buckets = Array.from({length: BUCKETS}, () => ({info:0,warn:0,error:0,ts:0}));
+    sorted.forEach(l => {
+      const idx = Math.min(Math.floor((new Date(l.timestamp).getTime() - t0) / bucketMs), BUCKETS-1);
+      buckets[idx].ts = new Date(l.timestamp).getTime();
+      if (l.level === 'ERROR') buckets[idx].error++;
+      else if (l.level === 'WARN') buckets[idx].warn++;
+      else buckets[idx].info++;
+    });
+    const maxH = Math.max(...buckets.map(b => b.info+b.warn+b.error), 1);
+    const cols = buckets.map((b, i) => {
+      const total = b.info + b.warn + b.error;
+      const errH = Math.round((b.error/maxH)*52);
+      const warnH = Math.round((b.warn/maxH)*52);
+      const infoH = Math.max(total ? 2 : 0, Math.round((b.info/maxH)*52));
+      const label = b.ts ? new Date(b.ts).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}) : '';
+      return `<div class="tbar-col" title="${label}: ${total} logs, ${b.error} errors">
+        ${errH ? `<div class="tbar-seg" style="height:${errH}px;background:var(--error)"></div>` : ''}
+        ${warnH ? `<div class="tbar-seg" style="height:${warnH}px;background:var(--warn)"></div>` : ''}
+        ${infoH ? `<div class="tbar-seg" style="height:${infoH}px;background:var(--accent);opacity:0.5"></div>` : ''}
+      </div>`;
+    }).join('');
+    return `<div class="card section" style="margin-bottom:20px">
+      <div class="section-header"><div class="section-title">Log Activity Timeline</div><div class="section-sub">${BUCKETS} time segments</div></div>
+      <div class="timeline-bars">${cols}</div>
+      <div class="timeline-legend">
+        <span class="tleg"><span class="tleg-dot" style="background:var(--error)"></span>Errors</span>
+        <span class="tleg"><span class="tleg-dot" style="background:var(--warn)"></span>Warnings</span>
+        <span class="tleg"><span class="tleg-dot" style="background:var(--accent);opacity:.6"></span>Info/Debug</span>
+      </div>
+    </div>`;
+  }
+
+  // ── Top error messages ───────────────────────────────────────
+  function buildTopErrors() {
+    const errLogs = logs.filter(l => l.level === 'ERROR');
+    if (!errLogs.length) return `<div class="empty" style="padding:20px"><div class="empty-icon">✓</div><div>No errors found</div></div>`;
+    const msgMap = {};
+    errLogs.forEach(l => {
+      const key = l.message.substring(0, 80);
+      if (!msgMap[key]) msgMap[key] = { count:0, app: l.applicationName, msg: l.message };
+      msgMap[key].count++;
+    });
+    const sorted = Object.values(msgMap).sort((a,b) => b.count-a.count).slice(0,6);
+    return `<div class="top-err-list">${sorted.map(e => `
+      <div class="top-err-row" onclick="document.getElementById('search-input').value='${esc(e.msg.substring(0,30))}';onSearch();setView('errors')">
+        <span class="top-err-count">${e.count}×</span>
+        <span class="top-err-msg" title="${esc(e.msg)}">${esc(e.msg)}</span>
+        <span class="top-err-app">${esc(e.app)}</span>
+      </div>`).join('')}</div>`;
+  }
+
+  // ── Slow transactions (events with steps > 2s) ───────────────
+  function buildSlowTransactions() {
+    const evtGroups = {};
+    allLogs.forEach(l => {
+      if (!l.eventId) return;
+      if (!evtGroups[l.eventId]) evtGroups[l.eventId] = [];
+      evtGroups[l.eventId].push(l);
+    });
+    const slow = [];
+    Object.entries(evtGroups).forEach(([id, glogs]) => {
+      const sorted = [...glogs].sort((a,b) => new Date(a.timestamp)-new Date(b.timestamp));
+      for (let i = 1; i < sorted.length; i++) {
+        const delta = new Date(sorted[i].timestamp) - new Date(sorted[i-1].timestamp);
+        if (delta > 2000) {
+          slow.push({ id, delta, app: sorted[i].applicationName, flow: sorted[i].flow, step: i+1 });
+          break;
+        }
+      }
+    });
+    slow.sort((a,b) => b.delta - a.delta);
+    if (!slow.length) return `<div class="empty" style="padding:20px"><div class="empty-icon">⚡</div><div>No slow transactions detected</div></div>`;
+    return `<div class="top-err-list">${slow.slice(0,5).map(s => `
+      <div class="top-err-row" style="background:var(--warn-light);border-left-color:var(--warn)" onclick="selectJourney('${esc(s.id)}');setView('journey')">
+        <span class="top-err-count" style="color:var(--warn)">${s.delta > 60000 ? (s.delta/60000).toFixed(1)+'m' : (s.delta/1000).toFixed(1)+'s'}</span>
+        <span class="top-err-msg">${esc(s.id)} — step ${s.step} (${esc(s.flow || s.app)})</span>
+        <span class="slow-badge">Slow</span>
+      </div>`).join('')}</div>`;
+  }
+
   document.getElementById('view-overview').innerHTML = `
     <div class="cards-grid">
       <div class="card"><div class="card-label">Total Logs</div><div class="card-value">${total.toLocaleString()}</div><div class="card-sub">${evtIds.length} unique event IDs</div></div>
@@ -916,6 +1045,8 @@ function renderOverview() {
         </div>
       `)).join('')}
     </div>
+
+    ${buildTimeline()}
 
     <div class="two-col">
       <div class="card section">
@@ -948,6 +1079,17 @@ function renderOverview() {
             `).join('')}
           </div>
         ` : '<div class="empty" style="padding:24px"><div class="empty-icon">✓</div><div>No errors found</div></div>'}
+      </div>
+    </div>
+
+    <div class="two-col">
+      <div class="card section">
+        <div class="section-header"><div class="section-title">🔥 Top Error Messages</div><div class="section-sub">Most frequent failures</div></div>
+        ${buildTopErrors()}
+      </div>
+      <div class="card section">
+        <div class="section-header"><div class="section-title">⚡ Slow Transactions</div><div class="section-sub">Steps &gt; 2 seconds</div></div>
+        ${buildSlowTransactions()}
       </div>
     </div>
 
@@ -1132,28 +1274,36 @@ function toggleFlowApp(app) {
 }
 
 // ============================================================
-//  EVENT JOURNEY
+//  EVENT JOURNEY  (DOM-patching — no full re-render on expand/clear)
 // ============================================================
 let expandedSteps = new Set();
 let journeyErrorsOnly = false;
+let _journeyRenderedId = null; // track what is currently rendered
 
-function renderJourney() {
-  let allEventIds = [...new Set(allLogs.map(l => l.eventId).filter(Boolean))].sort();
-  // Filter to error-containing event IDs if toggle is on
+function _journeyEventIds() {
+  let ids = [...new Set(allLogs.map(l => l.eventId).filter(Boolean))].sort();
   if (journeyErrorsOnly) {
     const errIds = new Set(allLogs.filter(l => l.level === 'ERROR').map(l => l.eventId).filter(Boolean));
-    allEventIds = allEventIds.filter(id => errIds.has(id));
+    ids = ids.filter(id => errIds.has(id));
   }
+  return ids;
+}
 
-  // Do NOT auto-select — only use explicit selectedJourneyId
+function renderJourney() {
+  const allEventIds = _journeyEventIds();
   const sel = selectedJourneyId;
   const curIdx = allEventIds.indexOf(sel);
 
+  // ── If the journey scaffold already exists for the same selection,
+  //    only patch the dynamic parts (header controls + steps).
+  //    This avoids destroying/recreating everything on expand toggle.
+  const container = document.getElementById('view-journey');
+
+  // Always rebuild the full scaffold when the selected ID changes or first render
   const journeyLogs = sel
     ? allLogs.filter(l => l.eventId === sel).sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
     : [];
 
-  // Compute journey stats
   let durationStr = '';
   if (journeyLogs.length >= 2) {
     const ms = new Date(journeyLogs[journeyLogs.length - 1].timestamp) - new Date(journeyLogs[0].timestamp);
@@ -1164,84 +1314,92 @@ function renderJourney() {
   const statusLevel = errCount ? 'ERROR' : warnCount ? 'WARN' : journeyLogs.length ? 'SUCCESS' : 'INFO';
   const statusLabel = errCount ? `${errCount} ERR` : warnCount ? `${warnCount} WARN` : 'OK';
 
-  document.getElementById('view-journey').innerHTML = `
+  // Build step rows HTML (expand state already known at render time)
+  function stepsHTML() {
+    return journeyLogs.map((l, i) => {
+      const prevTs = i > 0 ? new Date(journeyLogs[i-1].timestamp) : null;
+      const deltaMs = prevTs ? new Date(l.timestamp) - prevTs : 0;
+      const deltaStr = i > 0 ? (deltaMs < 1000 ? '+' + deltaMs + 'ms' : '+' + (deltaMs/1000).toFixed(2) + 's') : '';
+      const isSlow = deltaMs > 2000;
+      const isExpanded = expandedSteps.has(l._id);
+      return `
+      <div class="journey-step" data-step-id="${l._id}">
+        <div class="step-line-wrap">
+          <div class="step-dot ${l.level}">${i + 1}</div>
+          <div class="step-connector"></div>
+        </div>
+        <div class="step-body" onclick="toggleStepExpand(${l._id},this)">
+          <div class="step-meta">
+            <span class="step-time">${formatTime(l.timestamp)}</span>
+            ${deltaStr ? `<span class="step-delta ${isSlow ? 'slow' : ''}">${deltaStr}</span>` : ''}
+            ${isSlow ? `<span class="slow-badge">⚠ Slow</span>` : ''}
+            <span class="badge ${l.level}" style="font-size:9px">${l.level}</span>
+            <span class="step-app">${esc(l.applicationName)}</span>
+            ${l.flow ? `<span class="step-flow">/ ${esc(l.flow)}</span>` : ''}
+            <span class="step-expand-toggle" style="margin-left:auto;font-size:10px;color:var(--text3)">${isExpanded ? '▲' : '▼'}</span>
+          </div>
+          <div class="step-msg">${esc(l.message)}</div>
+          <div class="step-expand-inline ${isExpanded ? 'open' : ''}">
+            ${l.flow ? `<div class="step-expand-row"><span class="step-expand-label">Flow</span><span class="step-expand-val">${esc(l.flow)}</span></div>` : ''}
+            ${l.correlationId ? `<div class="step-expand-row"><span class="step-expand-label">Correlation</span><span class="step-expand-val">${esc(l.correlationId)}</span></div>` : ''}
+            ${l.threadId ? `<div class="step-expand-row"><span class="step-expand-label">Thread</span><span class="step-expand-val">${esc(l.threadId)}</span></div>` : ''}
+            ${l.payload ? `<div class="step-expand-row"><span class="step-expand-label">Payload</span><span class="step-expand-val err">${esc(l.payload.substring(0,400))}</span></div>` : ''}
+            <div style="margin-top:6px">
+              <button class="btn" style="font-size:10px;padding:3px 8px" onclick="event.stopPropagation();showDetail(${l._id})">Full Detail →</button>
+            </div>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  // Dropdown HTML (only rebuilt when list changes)
+  const dropdownHTML = `
+    <option value="">— Select Event ID —</option>
+    ${allEventIds.map(id => {
+      const hasErr = allLogs.some(l => l.eventId === id && l.level === 'ERROR');
+      return `<option value="${esc(id)}" ${id === sel ? 'selected' : ''}>${hasErr ? '⚠ ' : ''}${esc(id)}</option>`;
+    }).join('')}`;
+
+  const bodyHTML = sel && journeyLogs.length ? `
+    <div class="journey-wrap">
+      <div class="journey-header">
+        <div class="journey-id-wrap">
+          <span class="journey-id">${esc(sel)}</span>
+          <button class="copy-btn" onclick="copyEventId('${esc(sel)}')" title="Copy Event ID">⎘</button>
+        </div>
+        <span class="badge ${statusLevel}" style="font-size:10px">${journeyLogs.length} steps · ${statusLabel}</span>
+        ${durationStr ? `<span class="journey-duration">⏱ ${durationStr}</span>` : ''}
+        <span style="font-size:11px;color:var(--text3);flex:1">${[...new Set(journeyLogs.map(l => l.applicationName))].join(' → ')}</span>
+        <div class="journey-nav">
+          <button class="journey-nav-btn" onclick="navigateJourney(-1)" ${curIdx <= 0 ? 'disabled' : ''} title="Previous Event ID">‹ Prev</button>
+          <span style="font-size:11px;color:var(--text3);padding:0 4px">${curIdx + 1} / ${allEventIds.length}</span>
+          <button class="journey-nav-btn" onclick="navigateJourney(1)" ${curIdx >= allEventIds.length - 1 ? 'disabled' : ''} title="Next Event ID">Next ›</button>
+        </div>
+      </div>
+      <div class="journey-steps" id="journey-steps-body">${stepsHTML()}</div>
+    </div>`
+  : sel
+    ? `<div class="empty"><div class="empty-icon">◎</div><h4>No logs found for this Event ID</h4><p>Try clearing filters or selecting a different event</p></div>`
+    : `<div class="empty"><div class="empty-icon">◎</div><h4>Select an Event ID</h4><p>Choose from the dropdown to trace its full journey across applications and flows.<br>Click any step to expand inline details.</p></div>`;
+
+  container.innerHTML = `
     <div class="section">
       <div class="section-header">
         <div class="section-title">Trace Event ID Journey</div>
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
           <label style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);cursor:pointer;user-select:none">
-            <input type="checkbox" ${journeyErrorsOnly ? 'checked' : ''} onchange="journeyErrorsOnly=this.checked;selectedJourneyId='';renderJourney()" style="accent-color:var(--error)" />
+            <input type="checkbox" id="journey-err-toggle" ${journeyErrorsOnly ? 'checked' : ''} onchange="journeyErrorsOnly=this.checked;selectedJourneyId='';renderJourney()" style="accent-color:var(--error)" />
             Errors only
           </label>
-          <select onchange="selectJourney(this.value)" style="min-width:200px;max-width:340px">
-            <option value="">— Select Event ID —</option>
-            ${allEventIds.map(id => {
-              const hasErr = allLogs.some(l => l.eventId === id && l.level === 'ERROR');
-              return `<option value="${esc(id)}" ${id === sel ? 'selected' : ''}>${hasErr ? '⚠ ' : ''}${esc(id)}</option>`;
-            }).join('')}
-          </select>
-          ${sel ? `<button class="journey-clear-btn" onclick="clearJourney()" title="Clear selection (Esc)">✕ Clear</button>` : ''}
+          <select id="journey-select" onchange="selectJourney(this.value)" style="min-width:200px;max-width:340px">${dropdownHTML}</select>
+          ${sel ? `<button class="journey-clear-btn" id="journey-clear-btn" onclick="clearJourney()" title="Clear selection (Esc)">✕ Clear</button>` : ''}
         </div>
       </div>
+      <div id="journey-body-wrap">${bodyHTML}</div>
+    </div>`;
 
-      ${sel && journeyLogs.length ? `
-        <div class="journey-wrap">
-          <div class="journey-header">
-            <div class="journey-id-wrap">
-              <span class="journey-id">${esc(sel)}</span>
-              <button class="copy-btn" onclick="copyEventId('${esc(sel)}')" title="Copy Event ID">⎘</button>
-            </div>
-            <span class="badge ${statusLevel}" style="font-size:10px">${journeyLogs.length} steps · ${statusLabel}</span>
-            ${durationStr ? `<span class="journey-duration">⏱ ${durationStr}</span>` : ''}
-            <span style="font-size:11px;color:var(--text3);flex:1">${[...new Set(journeyLogs.map(l => l.applicationName))].join(' → ')}</span>
-            <div class="journey-nav">
-              <button class="journey-nav-btn" onclick="navigateJourney(-1)" ${curIdx <= 0 ? 'disabled' : ''} title="Previous Event ID">‹ Prev</button>
-              <span style="font-size:11px;color:var(--text3);padding:0 4px">${curIdx + 1} / ${allEventIds.length}</span>
-              <button class="journey-nav-btn" onclick="navigateJourney(1)" ${curIdx >= allEventIds.length - 1 ? 'disabled' : ''} title="Next Event ID">Next ›</button>
-            </div>
-          </div>
-          <div class="journey-steps">
-            ${journeyLogs.map((l, i) => {
-              const prevTs = i > 0 ? new Date(journeyLogs[i-1].timestamp) : null;
-              const deltaMs = prevTs ? new Date(l.timestamp) - prevTs : 0;
-              const deltaStr = i > 0 ? (deltaMs < 1000 ? '+' + deltaMs + 'ms' : '+' + (deltaMs/1000).toFixed(2) + 's') : '';
-              const isSlow = deltaMs > 2000;
-              const isExpanded = expandedSteps.has(l._id);
-              return `
-              <div class="journey-step">
-                <div class="step-line-wrap">
-                  <div class="step-dot ${l.level}">${i + 1}</div>
-                  <div class="step-connector"></div>
-                </div>
-                <div class="step-body" onclick="toggleStepExpand(${l._id})">
-                  <div class="step-meta">
-                    <span class="step-time">${formatTime(l.timestamp)}</span>
-                    ${deltaStr ? `<span class="step-delta ${isSlow ? 'slow' : ''}">${deltaStr}</span>` : ''}
-                    <span class="badge ${l.level}" style="font-size:9px">${l.level}</span>
-                    <span class="step-app">${esc(l.applicationName)}</span>
-                    ${l.flow ? `<span class="step-flow">/ ${esc(l.flow)}</span>` : ''}
-                    <span style="margin-left:auto;font-size:10px;color:var(--text3)">${isExpanded ? '▲' : '▼'}</span>
-                  </div>
-                  <div class="step-msg">${esc(l.message)}</div>
-                  ${isExpanded ? `
-                    <div class="step-expand">
-                      ${l.flow ? `<div class="step-expand-row"><span class="step-expand-label">Flow</span><span class="step-expand-val">${esc(l.flow)}</span></div>` : ''}
-                      ${l.correlationId ? `<div class="step-expand-row"><span class="step-expand-label">Correlation</span><span class="step-expand-val">${esc(l.correlationId)}</span></div>` : ''}
-                      ${l.threadId ? `<div class="step-expand-row"><span class="step-expand-label">Thread</span><span class="step-expand-val">${esc(l.threadId)}</span></div>` : ''}
-                      ${l.payload ? `<div class="step-expand-row"><span class="step-expand-label">Payload</span><span class="step-expand-val err">${esc(l.payload.substring(0,400))}</span></div>` : ''}
-                      <div style="margin-top:6px">
-                        <button class="btn" style="font-size:10px;padding:3px 8px" onclick="event.stopPropagation();showDetail(${l._id})">Full Detail →</button>
-                      </div>
-                    </div>
-                  ` : ''}
-                </div>
-              </div>
-            `}).join('')}
-          </div>
-        </div>
-      ` : sel ? `<div class="empty"><div class="empty-icon">◎</div><h4>No logs found for this Event ID</h4><p>Try clearing filters or selecting a different event</p></div>`
-               : `<div class="empty"><div class="empty-icon">◎</div><h4>Select an Event ID</h4><p>Choose from the dropdown to trace its full journey across applications and flows.<br>Click any step to expand inline details.</p></div>`}
-  `;
+  _journeyRenderedId = sel;
 }
 
 function selectJourney(id) {
@@ -1251,17 +1409,15 @@ function selectJourney(id) {
 }
 
 function clearJourney() {
+  // Fast clear: just wipe state and re-render — no DOM lag
   selectedJourneyId = '';
   expandedSteps.clear();
+  _journeyRenderedId = null;
   renderJourney();
 }
 
 function navigateJourney(dir) {
-  let allEventIds = [...new Set(allLogs.map(l => l.eventId).filter(Boolean))].sort();
-  if (journeyErrorsOnly) {
-    const errIds = new Set(allLogs.filter(l => l.level === 'ERROR').map(l => l.eventId).filter(Boolean));
-    allEventIds = allEventIds.filter(id => errIds.has(id));
-  }
+  const allEventIds = _journeyEventIds();
   const curIdx = allEventIds.indexOf(selectedJourneyId);
   const nextIdx = curIdx + dir;
   if (nextIdx >= 0 && nextIdx < allEventIds.length) {
@@ -1271,10 +1427,19 @@ function navigateJourney(dir) {
   }
 }
 
-function toggleStepExpand(id) {
-  if (expandedSteps.has(id)) expandedSteps.delete(id);
-  else expandedSteps.add(id);
-  renderJourney();
+// toggleStepExpand: DOM-only — no full re-render
+function toggleStepExpand(id, bodyEl) {
+  const expandEl = bodyEl ? bodyEl.querySelector('.step-expand-inline') : null;
+  const toggleEl = bodyEl ? bodyEl.querySelector('.step-expand-toggle') : null;
+  if (expandedSteps.has(id)) {
+    expandedSteps.delete(id);
+    if (expandEl) expandEl.classList.remove('open');
+    if (toggleEl) toggleEl.textContent = '▼';
+  } else {
+    expandedSteps.add(id);
+    if (expandEl) expandEl.classList.add('open');
+    if (toggleEl) toggleEl.textContent = '▲';
+  }
 }
 
 function copyEventId(id) {
@@ -1383,23 +1548,33 @@ function showDetail(id) {
 function closeDetail() { document.getElementById('detail-overlay').style.display = 'none'; }
 
 // ============================================================
-//  CLEAR
+//  CLEAR  (fast path — skip re-renders, just wipe DOM directly)
 // ============================================================
 function clearData() {
   if (!confirm('Clear all loaded logs?')) return;
   allLogs = []; filteredLogs = [];
   openGroups.clear(); openFlowApps.clear(); expandedSteps.clear();
   selectedJourneyId = ''; journeyErrorsOnly = false;
+  _journeyRenderedId = null;
+  // Fast DOM reset — no renderCurrentView() call needed
   document.getElementById('view-landing').style.display = '';
   document.getElementById('controls-bar').style.display = 'none';
   document.getElementById('btn-clear').style.display = 'none';
-  ['overview','logs','errors','flow','journey','group'].forEach(id => document.getElementById('view-' + id).style.display = 'none');
+  ['overview','logs','errors','flow','journey','group'].forEach(id => {
+    const el = document.getElementById('view-' + id);
+    el.style.display = 'none';
+    el.innerHTML = ''; // free memory
+  });
   document.getElementById('app-nav-list').innerHTML = '<div style="font-size:11px;color:var(--text3);padding:6px 8px">No apps loaded</div>';
   document.getElementById('sidebar-stats').textContent = 'No logs loaded';
   document.getElementById('badge-total').style.display = 'none';
   document.getElementById('badge-errors').style.display = 'none';
   document.getElementById('header-title').textContent = 'MuleSoft Log Analyzer';
-  setView('overview');
+  document.getElementById('search-input').value = '';
+  document.getElementById('result-count').textContent = '';
+  currentView = 'overview';
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  document.getElementById('nav-overview')?.classList.add('active');
 }
 
 // ============================================================
