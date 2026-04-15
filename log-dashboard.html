@@ -786,7 +786,7 @@ function parseMuleSoft(text) {
   });
 }
 
-
+function parseCSV(text) {
   const rows = text.split('\n').filter(r => r.trim());
   if (rows.length < 2) return [];
   const headers = rows[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
