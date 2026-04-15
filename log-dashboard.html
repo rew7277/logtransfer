@@ -712,7 +712,81 @@ function parseCloudWatch(text) {
   return null;
 }
 
-function parseCSV(text) {
+function parseMuleSoft(text) {
+  // MuleSoft log format:
+  // LEVEL  YYYY-MM-DD HH:MM:SS,mmm [[MuleRuntime]...] [processor: flow/processors/N; event: event-id] org.mule...LoggerMessageProcessor: MESSAGE
+  // MESSAGE can span multiple lines (e.g. a pretty-printed JSON block)
+  const HEADER = /^(INFO|WARN(?:ING)?|ERROR|DEBUG|TRACE|FATAL)\s{1,2}(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d+)/;
+
+  // Quick check: does it look like a MuleSoft log at all?
+  if (!HEADER.test(text.slice(0, 200))) return null;
+
+  // Split into logical entries by stitching continuation lines
+  const rawLines = text.split('\n');
+  const entries = [];
+  let current = null;
+  for (const line of rawLines) {
+    if (HEADER.test(line)) {
+      if (current) entries.push(current);
+      current = line;
+    } else {
+      if (current !== null) current += '\n' + line;
+    }
+  }
+  if (current) entries.push(current);
+
+  const PROC_RX = /\[processor:\s*([^;]+);\s*event:\s*([^\]]+)\]/;
+  const FLOW_RX = /\[([^\]]+)\]\.([\w\-]+)\.(BLOCKING|CPU_INTENSIVE|CPU_LITE|UBER|IO)/;
+  const LOGGER_RX = /LoggerMessageProcessor:\s*([\s\S]*)$/;
+
+  return entries.map(entry => {
+    const firstLine = entry.split('\n')[0];
+    const lvlM  = firstLine.match(/^(INFO|WARN(?:ING)?|ERROR|DEBUG|TRACE|FATAL)/i);
+    const tsM   = firstLine.match(/(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}),(\d+)/);
+    const procM = firstLine.match(PROC_RX);
+    const flowM = firstLine.match(FLOW_RX);
+    const logM  = entry.match(LOGGER_RX);
+
+    const level   = lvlM ? lvlM[1].toUpperCase() : 'INFO';
+    const ts      = tsM  ? new Date(tsM[1].replace(' ', 'T') + '.' + tsM[2]) : new Date();
+    const eventId = procM ? procM[2].trim() : uid();
+    const flow    = procM ? procM[1].trim() : (flowM ? flowM[2] : 'mulesoft');
+    const source  = flow.split('/')[0];  // e.g. "documentcompare-api-flow"
+
+    let message = logM ? logM[1].trim() : firstLine;
+    let payload  = { raw: entry, flow, eventId };
+
+    // If message body is JSON, parse it for rich display
+    const jsonStart = message.indexOf('{');
+    const jsonPart  = jsonStart >= 0 ? message.slice(jsonStart) : null;
+    if (jsonPart) {
+      try {
+        const obj = JSON.parse(jsonPart);
+        payload = { ...obj, flow, eventId, raw: entry };
+        // Build a human-readable message summary from known fields
+        const prefix = jsonStart > 0 ? message.slice(0, jsonStart).trim() + ' ' : '';
+        const flowName = (obj.entry?.FlowName || obj.exit?.FlowName || '');
+        const reqUri   = obj.common?.RequestUri || '';
+        const corrId   = obj.common?.correlationId || eventId;
+        message = `${prefix}${flowName}${reqUri ? ' ' + reqUri : ''} [${corrId.slice(0,16)}]`.trim();
+        if (!message) message = JSON.stringify(obj).slice(0, 120);
+      } catch {}
+    }
+
+    return {
+      id: eventId.replace(/[^A-Za-z0-9]/g, '').slice(0, 16).toUpperCase() || uid(),
+      timestamp: ts,
+      level: detectLevel(level),
+      levelRaw: level,
+      message,
+      source,
+      payload,
+      raw: entry
+    };
+  });
+}
+
+
   const rows = text.split('\n').filter(r => r.trim());
   if (rows.length < 2) return [];
   const headers = rows[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
@@ -741,8 +815,12 @@ async function handleFiles(files) {
   for (const file of files) {
     const text = await file.text();
     let logs = null;
-    // CloudWatch first
+    // MuleSoft first (before CloudWatch — MuleSoft is plain text not JSON)
+    logs = parseMuleSoft(text);
+    if (!logs) {
+    // CloudWatch next
     logs = parseCloudWatch(text);
+    }
     if (!logs) {
       const ext = file.name.split('.').pop().toLowerCase();
       if (ext === 'csv') logs = parseCSV(text);
