@@ -836,6 +836,11 @@ async function handleFiles(files) {
   }
   allLogs = [...allLogs, ...parsed].sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
   updateBadges();
+  // Always switch to All Logs after upload so every level is visible regardless of prior filter
+  currentView = 'all';
+  currentFilter = 'all';
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.view === 'all'));
+  document.querySelectorAll('.filter-chip').forEach(c => c.classList.toggle('active', c.dataset.level === 'all'));
   render();
   showLoading(false);
 }
@@ -1134,53 +1139,11 @@ document.addEventListener('drop', e => {
   handleFiles(Array.from(e.dataTransfer.files));
 });
 
-// ─── DEMO DATA (pre-loaded sample logs) ───
-(function loadDemo() {
-  const now = new Date();
-  const ago = (m) => new Date(now - m * 60000);
+// ─── INITIAL RENDER ───
+updateBadges();
+render();
 
-  const demo = [
-    // Errors
-    { id:'EVT-001', timestamp: ago(2), level:'error', levelRaw:'ERROR', message:'NullPointerException in PaymentProcessor.process() at line 142', source:'payment-service', payload:{ requestId:'REQ-8821', userId:'user_4421', amount:5000, currency:'INR', error:'NullPointerException', stackTrace:'at com.fintech.PaymentProcessor.process(PaymentProcessor.java:142)' }, raw:'' },
-    { id:'EVT-002', timestamp: ago(5), level:'error', levelRaw:'FATAL', message:'Database connection pool exhausted — max 50 connections reached', source:'db-service', payload:{ pool:'main', activeConnections:50, waitingQueue:12, timeout:'30s' }, raw:'' },
-    { id:'EVT-003', timestamp: ago(12), level:'error', levelRaw:'ERROR', message:'HTTP 500 Internal Server Error on POST /api/v2/loans/apply', source:'api-gateway', payload:{ method:'POST', path:'/api/v2/loans/apply', statusCode:500, duration:'1842ms', traceId:'trace-99ab' }, raw:'' },
-    { id:'EVT-004', timestamp: ago(18), level:'error', levelRaw:'ERROR', message:'Kite Connect API authentication failed — invalid access token', source:'kite-connector', payload:{ provider:'Zerodha', endpoint:'/session/token', httpStatus:403, error:'Invalid access token' }, raw:'' },
-    { id:'EVT-005', timestamp: ago(25), level:'error', levelRaw:'ERROR', message:'MuleSoft flow execution failed: LOAN_APPROVAL_FLOW — timeout after 30s', source:'mulesoft', payload:{ flow:'LOAN_APPROVAL_FLOW', correlationId:'corr-1122', duration:'30002ms', error:'Timeout' }, raw:'' },
 
-    // Warnings
-    { id:'EVT-010', timestamp: ago(1), level:'warn', levelRaw:'WARN', message:'Slow query detected: SELECT * FROM transactions took 4.2s (threshold: 2s)', source:'db-monitor', payload:{ query:'SELECT * FROM transactions WHERE user_id = ?', duration:'4200ms', threshold:'2000ms', table:'transactions' }, raw:'' },
-    { id:'EVT-011', timestamp: ago(7), level:'warn', levelRaw:'WARN', message:'Retry attempt 2/3 for external payment gateway — circuit breaker open', source:'payment-gateway', payload:{ attempt:2, maxRetries:3, gateway:'Razorpay', reason:'Connection reset', nextRetry:'5s' }, raw:'' },
-    { id:'EVT-012', timestamp: ago(14), level:'warn', levelRaw:'WARNING', message:'JWT token expires in 5 minutes — auto-refresh triggered', source:'auth-service', payload:{ userId:'user_4421', expiresAt: ago(-5).toISOString(), action:'auto_refresh' }, raw:'' },
-    { id:'EVT-013', timestamp: ago(30), level:'warn', levelRaw:'DEPRECATED', message:'API endpoint /api/v1/account deprecated — please migrate to /api/v2/account', source:'api-gateway', payload:{ deprecated:'/api/v1/account', replacement:'/api/v2/account', removalDate:'2025-06-01' }, raw:'' },
-
-    // Success
-    { id:'EVT-020', timestamp: ago(3), level:'success', levelRaw:'INFO', message:'Loan application approved — LAN#2024-08821 ₹5,00,000 disbursed', source:'loan-engine', payload:{ loanId:'LAN#2024-08821', applicant:'Prasanna K.', amount:'500000', currency:'INR', status:'APPROVED', cibilScore:782, processingTime:'1.2s' }, raw:'' },
-    { id:'EVT-021', timestamp: ago(6), level:'success', levelRaw:'200', message:'POST /api/v2/trades/execute — BUY NIFTY 25000 CE 100 qty completed', source:'algo-trade', payload:{ method:'POST', path:'/api/v2/trades/execute', statusCode:200, symbol:'NIFTY25000CE', qty:100, price:145.5, orderId:'ORD-9981' }, raw:'' },
-    { id:'EVT-022', timestamp: ago(9), level:'success', levelRaw:'COMPLETED', message:'Batch credit score processing completed — 1,240 records in 3.4s', source:'cibil-processor', payload:{ batchId:'BATCH-881', records:1240, processed:1240, failed:0, duration:'3400ms' }, raw:'' },
-    { id:'EVT-023', timestamp: ago(11), level:'success', levelRaw:'SUCCESS', message:'UPI payment confirmed — TXN#884422 ₹12,500 to HDFC A/c', source:'upi-service', payload:{ txnId:'TXN#884422', amount:12500, bank:'HDFC', upiId:'prasanna@okaxis', status:'SUCCESS' }, raw:'' },
-    { id:'EVT-024', timestamp: ago(20), level:'success', levelRaw:'201', message:'New user onboarded — account KYC verified via Aadhaar', source:'onboarding', payload:{ userId:'user_9921', kycMethod:'aadhaar', status:'VERIFIED', accountType:'SAVINGS' }, raw:'' },
-
-    // Info
-    { id:'EVT-030', timestamp: ago(4), level:'info', levelRaw:'INFO', message:'AlgoTrade scanner found 3 ORB breakout signals on NSE', source:'algo-scanner', payload:{ engine:'ORB', signals:['RELIANCE','TCS','HDFC'], timeframe:'15m', strength:'HIGH' }, raw:'' },
-    { id:'EVT-031', timestamp: ago(8), level:'info', levelRaw:'INFO', message:'Market session started — NSE/BSE pre-open phase', source:'market-monitor', payload:{ exchange:'NSE', session:'PRE_OPEN', startTime:'09:00:00 IST' }, raw:'' },
-    { id:'EVT-032', timestamp: ago(15), level:'info', levelRaw:'INFO', message:'Railway.app deployment #88 successful — loglens-dashboard v2.0', source:'ci-cd', payload:{ deployment:'#88', service:'loglens-dashboard', version:'v2.0', environment:'production', buildTime:'42s' }, raw:'' },
-
-    // CloudWatch
-    { id:'EVT-040', timestamp: ago(5), level:'cloudwatch', levelRaw:'CLOUDWATCH', message:'Lambda function timeout after 15s — /prod/loan-processor', source:'/aws/lambda/loan-processor', payload:{ logGroup:'/aws/lambda/loan-processor', logStream:'2024/01/15/[$LATEST]abc123', requestId:'req-9981', duration:'15001ms', maxMemory:'256MB', billedDuration:'15000ms', error:'Task timed out after 15.00 seconds' }, raw:'' },
-    { id:'EVT-041', timestamp: ago(13), level:'cloudwatch', levelRaw:'CLOUDWATCH', message:'CloudWatch metric alarm — CPUUtilization > 80% for 5 minutes', source:'/aws/ec2/prod-cluster', payload:{ logGroup:'/aws/ec2/prod-cluster', alarm:'HighCPU', metric:'CPUUtilization', value:'86%', threshold:'80%', period:'5m', action:'scale_out' }, raw:'' },
-    { id:'EVT-042', timestamp: ago(22), level:'cloudwatch', levelRaw:'INFO', message:'ECS task started — fintech-api container healthy', source:'/ecs/fintech-prod', payload:{ logGroup:'/ecs/fintech-prod', logStream:'fintech-api/main', taskId:'task-4421', cluster:'prod-cluster', status:'RUNNING' }, raw:'' },
-
-    // Debug
-    { id:'EVT-050', timestamp: ago(2), level:'debug', levelRaw:'DEBUG', message:'Cache miss for key user:4421:profile — fetching from DB', source:'cache-layer', payload:{ key:'user:4421:profile', cache:'Redis', hit:false, ttl:'300s' }, raw:'' },
-    { id:'EVT-051', timestamp: ago(16), level:'debug', levelRaw:'TRACE', message:'HTTP request intercepted by MuleSoft router — correlationId attached', source:'mulesoft', payload:{ correlationId:'corr-7733', flow:'API_MAIN_FLOW', httpMethod:'GET', uri:'/api/health' }, raw:'' },
-  ];
-
-  demo.forEach(l => { l.raw = JSON.stringify(l.payload, null, 2); });
-  allLogs = demo;
-  fileCount = 0;
-  updateBadges();
-  render();
-})();
 </script>
 
 </body>
