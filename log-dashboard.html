@@ -284,7 +284,8 @@
 
   .event-id { font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: var(--accent); }
   .ts { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--muted); white-space: nowrap; }
-  .msg-cell { max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .msg-cell { max-width: 420px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; }
+  .msg-cell:hover { color: #2997ff; }
   .source-tag {
     font-size: 11px; padding: 2px 8px; border-radius: 5px;
     background: var(--surface-hover); color: var(--muted); font-family: 'JetBrains Mono', monospace;
@@ -623,7 +624,7 @@ function toLog(obj) {
     timestamp: parseTs(obj.timestamp || obj.time || obj.Time || obj.date || obj['@timestamp'] || obj.createdAt),
     level: detectLevel(combined),
     levelRaw: lvlRaw,
-    message: msgRaw || JSON.stringify(obj).slice(0, 120),
+    message: msgRaw || JSON.stringify(obj),
     source: obj.source || obj.service || obj.logger || obj.component || obj.logGroup || obj.function || 'app',
     payload: obj,
     raw: JSON.stringify(obj, null, 2)
@@ -643,28 +644,46 @@ function parsePlainText(text) {
 function parseLine(line) {
   // Patterns: [2024-01-01 10:00:00] ERROR [source] message
   // 2024-01-01T10:00:00Z INFO message
+  // Railway: 2026-04-15T06:34:18.544Z [inf] message  (nanosecond timestamps)
   // CloudWatch: { "logEvents": [...] }
   const tsRx = /(\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}(?:[.,]\d+)?(?:Z|[+-]\d{2}:\d{2})?)/;
-  const lvlRx = /\b(ERROR|FATAL|EXCEPTION|WARN(?:ING)?|INFO|SUCCESS|DEBUG|TRACE|CRITICAL|ALERT|CLOUDWATCH)\b/i;
-  const srcRx = /\[([^\]]{1,40})\]/;
-  const eventRx = /(?:event[_-]?id|eventId|requestId|traceId)[=:]\s*["']?([A-Za-z0-9_\-]+)["']?/i;
+  // Extended level regex — also catches Railway shortcodes [inf] [err] [wrn] [dbg]
+  const lvlRx = /\b(ERROR|FATAL|EXCEPTION|WARN(?:ING)?|INFO|SUCCESS|DEBUG|TRACE|CRITICAL|ALERT|CLOUDWATCH)\b|\[(err|inf|wrn|dbg|fat)\]/i;
+  const srcRx = /\[([^\]]{2,40})\]/;
+  const eventRx = /(?:event[_-]?id|eventId|requestId|traceId|correlationId)[=:]\s*["']?([A-Za-z0-9_\-]+)["']?/i;
 
   const tsM = line.match(tsRx);
   const lvlM = line.match(lvlRx);
   const srcM = line.match(srcRx);
   const evM = line.match(eventRx);
 
+  // Resolve Railway shortcodes to standard levels
+  const railwayLvlMap = { err:'ERROR', inf:'INFO', wrn:'WARN', dbg:'DEBUG', fat:'FATAL' };
+  const rawLevel = lvlM ? (railwayLvlMap[lvlM[2]?.toLowerCase()] || lvlM[1]) : '';
+
   let msg = line
     .replace(tsRx, '').replace(lvlRx, '').replace(srcRx, '')
     .replace(/^\s*[-:|,\[\]]+\s*/, '').trim();
   if (!msg) msg = line.trim();
 
+  // If remaining message is a JSON object, parse it fully instead of showing raw fragment
+  if (msg.startsWith('{') || msg.startsWith('[')) {
+    try {
+      const jsonObj = JSON.parse(msg);
+      const parsed = toLog(jsonObj);
+      // Prefer outer timestamp/level if detected
+      if (tsM) parsed.timestamp = new Date(tsM[1].replace(' ', 'T'));
+      if (rawLevel) { parsed.level = detectLevel(rawLevel); parsed.levelRaw = rawLevel; }
+      return parsed;
+    } catch {}
+  }
+
   return {
     id: evM ? evM[1] : uid(),
     timestamp: tsM ? new Date(tsM[1].replace(' ','T')) : new Date(),
-    level: detectLevel(lvlM ? lvlM[1] : line),
-    levelRaw: lvlM ? lvlM[1] : '',
-    message: msg.slice(0, 500),
+    level: detectLevel(rawLevel || line),
+    levelRaw: rawLevel,
+    message: msg,   // No truncation — full message preserved
     source: srcM ? srcM[1] : 'app',
     payload: { raw: line },
     raw: line
@@ -819,7 +838,7 @@ function renderTable(logs) {
       <td>${levelBadge(l.level)}</td>
       <td class="event-id">${escH(l.id)}</td>
       <td class="ts">${fmtTs(l.timestamp)}</td>
-      <td class="msg-cell">${escH(l.message)}</td>
+      <td class="msg-cell" title="${escH(l.message)}">${escH(l.message)}</td>
       <td><span class="source-tag">${escH(l.source)}</span></td>
     </tr>`).join('');
 
