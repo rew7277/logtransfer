@@ -298,8 +298,31 @@
 
   /* JOURNEY VIEW */
   .journey-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
-  .journey-header { padding: 14px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 12px; }
+  .journey-header { padding: 14px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
   .journey-id { font-family: var(--mono); font-size: 13px; font-weight: 500; background: var(--surface2); padding: 4px 10px; border-radius: var(--radius-sm); }
+  .journey-id-wrap { display: flex; align-items: center; gap: 6px; }
+  .copy-btn {
+    width: 22px; height: 22px; border: 1px solid var(--border); border-radius: 4px;
+    background: var(--surface2); cursor: pointer; display: flex; align-items: center;
+    justify-content: center; font-size: 11px; color: var(--text3); transition: all 0.15s;
+    flex-shrink: 0;
+  }
+  .copy-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
+  .journey-duration { font-size: 10px; color: var(--text3); font-family: var(--mono); background: var(--surface2); padding: 3px 8px; border-radius: 20px; }
+  .journey-nav { display: flex; gap: 4px; margin-left: auto; align-items: center; }
+  .journey-nav-btn {
+    padding: 5px 10px; border: 1px solid var(--border); border-radius: var(--radius-sm);
+    background: var(--surface2); cursor: pointer; font-size: 11px; font-weight: 500;
+    color: var(--text2); transition: all 0.15s; display: flex; align-items: center; gap: 4px;
+  }
+  .journey-nav-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
+  .journey-nav-btn:disabled { opacity: 0.35; cursor: default; }
+  .journey-clear-btn {
+    padding: 5px 10px; border: 1px solid var(--border); border-radius: var(--radius-sm);
+    background: var(--surface); cursor: pointer; font-size: 11px; font-weight: 500;
+    color: var(--text2); transition: all 0.15s; display: flex; align-items: center; gap: 4px;
+  }
+  .journey-clear-btn:hover { border-color: var(--error); color: var(--error); background: var(--error-light); }
   .journey-steps { padding: 14px 16px; }
   .journey-step {
     display: flex; gap: 14px; position: relative; padding-bottom: 16px;
@@ -317,12 +340,21 @@
   .step-dot.SUCCESS { border-color: var(--success); color: var(--success); background: var(--success-light); }
   .step-connector { width: 2px; flex: 1; background: var(--border); margin: 2px 0; min-height: 10px; }
   .journey-step:last-child .step-connector { display: none; }
-  .step-body { flex: 1; padding-top: 4px; padding-bottom: 4px; }
+  .step-body { flex: 1; padding-top: 4px; padding-bottom: 4px; cursor: pointer; }
+  .step-body:hover .step-msg { color: var(--accent); }
   .step-meta { display: flex; gap: 8px; align-items: center; margin-bottom: 4px; flex-wrap: wrap; }
   .step-time { font-family: var(--mono); font-size: 10px; color: var(--text3); }
+  .step-delta { font-family: var(--mono); font-size: 10px; color: var(--success); background: var(--success-light); padding: 1px 5px; border-radius: 10px; }
+  .step-delta.slow { color: var(--warn); background: var(--warn-light); }
   .step-app { font-size: 11px; font-weight: 600; color: var(--accent); }
   .step-flow { font-size: 11px; color: var(--text3); }
-  .step-msg { font-size: 12px; color: var(--text); line-height: 1.4; }
+  .step-msg { font-size: 12px; color: var(--text); line-height: 1.4; transition: color 0.1s; }
+  .step-expand { margin-top: 8px; background: var(--surface2); border-radius: var(--radius-sm); padding: 8px 10px; border: 1px solid var(--border); animation: fadeIn 0.15s; }
+  .step-expand-row { display: flex; gap: 8px; margin-bottom: 5px; font-size: 11px; }
+  .step-expand-row:last-child { margin-bottom: 0; }
+  .step-expand-label { font-size: 10px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: 0.5px; min-width: 80px; padding-top: 1px; }
+  .step-expand-val { font-family: var(--mono); color: var(--text); font-size: 11px; word-break: break-all; line-height: 1.5; flex: 1; }
+  .step-expand-val.err { color: var(--error); background: var(--error-light); padding: 4px 8px; border-radius: 4px; }
 
   /* GROUP VIEW */
   .group-item { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 8px; overflow: hidden; }
@@ -1102,56 +1134,152 @@ function toggleFlowApp(app) {
 // ============================================================
 //  EVENT JOURNEY
 // ============================================================
-function renderJourney() {
-  const allEventIds = [...new Set(allLogs.map(l => l.eventId).filter(Boolean))].sort();
-  const sel = selectedJourneyId || allEventIds[0] || '';
+let expandedSteps = new Set();
+let journeyErrorsOnly = false;
 
-  const journeyLogs = sel ? allLogs.filter(l => l.eventId === sel).sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp)) : [];
+function renderJourney() {
+  let allEventIds = [...new Set(allLogs.map(l => l.eventId).filter(Boolean))].sort();
+  // Filter to error-containing event IDs if toggle is on
+  if (journeyErrorsOnly) {
+    const errIds = new Set(allLogs.filter(l => l.level === 'ERROR').map(l => l.eventId).filter(Boolean));
+    allEventIds = allEventIds.filter(id => errIds.has(id));
+  }
+
+  // Do NOT auto-select — only use explicit selectedJourneyId
+  const sel = selectedJourneyId;
+  const curIdx = allEventIds.indexOf(sel);
+
+  const journeyLogs = sel
+    ? allLogs.filter(l => l.eventId === sel).sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
+    : [];
+
+  // Compute journey stats
+  let durationStr = '';
+  if (journeyLogs.length >= 2) {
+    const ms = new Date(journeyLogs[journeyLogs.length - 1].timestamp) - new Date(journeyLogs[0].timestamp);
+    durationStr = ms < 1000 ? ms + 'ms' : ms < 60000 ? (ms/1000).toFixed(2) + 's' : (ms/60000).toFixed(1) + 'm';
+  }
+  const errCount = journeyLogs.filter(l => l.level === 'ERROR').length;
+  const warnCount = journeyLogs.filter(l => l.level === 'WARN').length;
+  const statusLevel = errCount ? 'ERROR' : warnCount ? 'WARN' : journeyLogs.length ? 'SUCCESS' : 'INFO';
+  const statusLabel = errCount ? `${errCount} ERR` : warnCount ? `${warnCount} WARN` : 'OK';
 
   document.getElementById('view-journey').innerHTML = `
     <div class="section">
       <div class="section-header">
         <div class="section-title">Trace Event ID Journey</div>
-        <div style="display:flex;gap:8px;align-items:center">
-          <select onchange="selectJourney(this.value)" style="min-width:160px">
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <label style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);cursor:pointer;user-select:none">
+            <input type="checkbox" ${journeyErrorsOnly ? 'checked' : ''} onchange="journeyErrorsOnly=this.checked;selectedJourneyId='';renderJourney()" style="accent-color:var(--error)" />
+            Errors only
+          </label>
+          <select onchange="selectJourney(this.value)" style="min-width:200px;max-width:340px">
             <option value="">— Select Event ID —</option>
-            ${allEventIds.map(id => `<option value="${esc(id)}" ${id === sel ? 'selected' : ''}>${esc(id)}</option>`).join('')}
+            ${allEventIds.map(id => {
+              const hasErr = allLogs.some(l => l.eventId === id && l.level === 'ERROR');
+              return `<option value="${esc(id)}" ${id === sel ? 'selected' : ''}>${hasErr ? '⚠ ' : ''}${esc(id)}</option>`;
+            }).join('')}
           </select>
+          ${sel ? `<button class="journey-clear-btn" onclick="clearJourney()" title="Clear selection (Esc)">✕ Clear</button>` : ''}
         </div>
       </div>
+
       ${sel && journeyLogs.length ? `
         <div class="journey-wrap">
           <div class="journey-header">
-            <span class="journey-id">${esc(sel)}</span>
-            <span class="badge ${journeyLogs.some(l => l.level==='ERROR') ? 'ERROR' : 'INFO'}">${journeyLogs.length} steps</span>
-            <span style="font-size:11px;color:var(--text3)">${[...new Set(journeyLogs.map(l => l.applicationName))].join(' → ')}</span>
+            <div class="journey-id-wrap">
+              <span class="journey-id">${esc(sel)}</span>
+              <button class="copy-btn" onclick="copyEventId('${esc(sel)}')" title="Copy Event ID">⎘</button>
+            </div>
+            <span class="badge ${statusLevel}" style="font-size:10px">${journeyLogs.length} steps · ${statusLabel}</span>
+            ${durationStr ? `<span class="journey-duration">⏱ ${durationStr}</span>` : ''}
+            <span style="font-size:11px;color:var(--text3);flex:1">${[...new Set(journeyLogs.map(l => l.applicationName))].join(' → ')}</span>
+            <div class="journey-nav">
+              <button class="journey-nav-btn" onclick="navigateJourney(-1)" ${curIdx <= 0 ? 'disabled' : ''} title="Previous Event ID">‹ Prev</button>
+              <span style="font-size:11px;color:var(--text3);padding:0 4px">${curIdx + 1} / ${allEventIds.length}</span>
+              <button class="journey-nav-btn" onclick="navigateJourney(1)" ${curIdx >= allEventIds.length - 1 ? 'disabled' : ''} title="Next Event ID">Next ›</button>
+            </div>
           </div>
           <div class="journey-steps">
-            ${journeyLogs.map((l, i) => `
+            ${journeyLogs.map((l, i) => {
+              const prevTs = i > 0 ? new Date(journeyLogs[i-1].timestamp) : null;
+              const deltaMs = prevTs ? new Date(l.timestamp) - prevTs : 0;
+              const deltaStr = i > 0 ? (deltaMs < 1000 ? '+' + deltaMs + 'ms' : '+' + (deltaMs/1000).toFixed(2) + 's') : '';
+              const isSlow = deltaMs > 2000;
+              const isExpanded = expandedSteps.has(l._id);
+              return `
               <div class="journey-step">
                 <div class="step-line-wrap">
                   <div class="step-dot ${l.level}">${i + 1}</div>
                   <div class="step-connector"></div>
                 </div>
-                <div class="step-body">
+                <div class="step-body" onclick="toggleStepExpand(${l._id})">
                   <div class="step-meta">
                     <span class="step-time">${formatTime(l.timestamp)}</span>
+                    ${deltaStr ? `<span class="step-delta ${isSlow ? 'slow' : ''}">${deltaStr}</span>` : ''}
                     <span class="badge ${l.level}" style="font-size:9px">${l.level}</span>
                     <span class="step-app">${esc(l.applicationName)}</span>
                     ${l.flow ? `<span class="step-flow">/ ${esc(l.flow)}</span>` : ''}
+                    <span style="margin-left:auto;font-size:10px;color:var(--text3)">${isExpanded ? '▲' : '▼'}</span>
                   </div>
                   <div class="step-msg">${esc(l.message)}</div>
-                  ${l.payload ? `<div style="font-size:10px;font-family:var(--mono);color:var(--error);margin-top:4px;background:var(--error-light);padding:4px 8px;border-radius:4px">${esc(l.payload.substring(0,200))}</div>` : ''}
+                  ${isExpanded ? `
+                    <div class="step-expand">
+                      ${l.flow ? `<div class="step-expand-row"><span class="step-expand-label">Flow</span><span class="step-expand-val">${esc(l.flow)}</span></div>` : ''}
+                      ${l.correlationId ? `<div class="step-expand-row"><span class="step-expand-label">Correlation</span><span class="step-expand-val">${esc(l.correlationId)}</span></div>` : ''}
+                      ${l.threadId ? `<div class="step-expand-row"><span class="step-expand-label">Thread</span><span class="step-expand-val">${esc(l.threadId)}</span></div>` : ''}
+                      ${l.payload ? `<div class="step-expand-row"><span class="step-expand-label">Payload</span><span class="step-expand-val err">${esc(l.payload.substring(0,400))}</span></div>` : ''}
+                      <div style="margin-top:6px">
+                        <button class="btn" style="font-size:10px;padding:3px 8px" onclick="event.stopPropagation();showDetail(${l._id})">Full Detail →</button>
+                      </div>
+                    </div>
+                  ` : ''}
                 </div>
               </div>
-            `).join('')}
+            `}).join('')}
           </div>
         </div>
-      ` : `<div class="empty"><div class="empty-icon">◎</div><h4>Select an Event ID</h4><p>Choose from the dropdown to trace its full journey across applications and flows</p></div>`}
+      ` : sel ? `<div class="empty"><div class="empty-icon">◎</div><h4>No logs found for this Event ID</h4><p>Try clearing filters or selecting a different event</p></div>`
+               : `<div class="empty"><div class="empty-icon">◎</div><h4>Select an Event ID</h4><p>Choose from the dropdown to trace its full journey across applications and flows.<br>Click any step to expand inline details.</p></div>`}
   `;
 }
 
-function selectJourney(id) { selectedJourneyId = id; renderJourney(); }
+function selectJourney(id) {
+  selectedJourneyId = id;
+  expandedSteps.clear();
+  renderJourney();
+}
+
+function clearJourney() {
+  selectedJourneyId = '';
+  expandedSteps.clear();
+  renderJourney();
+}
+
+function navigateJourney(dir) {
+  let allEventIds = [...new Set(allLogs.map(l => l.eventId).filter(Boolean))].sort();
+  if (journeyErrorsOnly) {
+    const errIds = new Set(allLogs.filter(l => l.level === 'ERROR').map(l => l.eventId).filter(Boolean));
+    allEventIds = allEventIds.filter(id => errIds.has(id));
+  }
+  const curIdx = allEventIds.indexOf(selectedJourneyId);
+  const nextIdx = curIdx + dir;
+  if (nextIdx >= 0 && nextIdx < allEventIds.length) {
+    selectedJourneyId = allEventIds[nextIdx];
+    expandedSteps.clear();
+    renderJourney();
+  }
+}
+
+function toggleStepExpand(id) {
+  if (expandedSteps.has(id)) expandedSteps.delete(id);
+  else expandedSteps.add(id);
+  renderJourney();
+}
+
+function copyEventId(id) {
+  navigator.clipboard.writeText(id).then(() => showToast('✓ Event ID copied'));
+}
 
 // ============================================================
 //  GROUP BY EVENT ID
@@ -1260,8 +1388,8 @@ function closeDetail() { document.getElementById('detail-overlay').style.display
 function clearData() {
   if (!confirm('Clear all loaded logs?')) return;
   allLogs = []; filteredLogs = [];
-  openGroups.clear(); openFlowApps.clear();
-  selectedJourneyId = '';
+  openGroups.clear(); openFlowApps.clear(); expandedSteps.clear();
+  selectedJourneyId = ''; journeyErrorsOnly = false;
   document.getElementById('view-landing').style.display = '';
   document.getElementById('controls-bar').style.display = 'none';
   document.getElementById('btn-clear').style.display = 'none';
@@ -1295,7 +1423,13 @@ function showToast(msg) {
 
 // Keyboard shortcut
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') closeDetail();
+  if (e.key === 'Escape') {
+    if (document.getElementById('detail-overlay').style.display !== 'none') {
+      closeDetail();
+    } else if (currentView === 'journey' && selectedJourneyId) {
+      clearJourney();
+    }
+  }
   if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
     e.preventDefault();
     document.getElementById('search-input')?.focus();
