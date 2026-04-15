@@ -1,0 +1,1090 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>LogLens · Dashboard</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,300&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  :root {
+    --bg: #0a0a0f;
+    --surface: rgba(255,255,255,0.04);
+    --surface-hover: rgba(255,255,255,0.07);
+    --border: rgba(255,255,255,0.08);
+    --border-strong: rgba(255,255,255,0.14);
+    --text: #f0f0f5;
+    --muted: #6e6e80;
+    --accent: #2997ff;
+    --accent-glow: rgba(41,151,255,0.25);
+    --green: #34c759;
+    --green-bg: rgba(52,199,89,0.1);
+    --red: #ff453a;
+    --red-bg: rgba(255,69,58,0.1);
+    --yellow: #ffd60a;
+    --yellow-bg: rgba(255,214,10,0.1);
+    --orange: #ff9f0a;
+    --orange-bg: rgba(255,159,10,0.1);
+    --purple: #bf5af2;
+    --purple-bg: rgba(191,90,242,0.1);
+    --cyan: #32ade6;
+    --sidebar-w: 230px;
+    --radius: 14px;
+    --radius-sm: 8px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ─── BACKGROUND ─── */
+  .bg-orbs {
+    position: fixed; inset: 0; pointer-events: none; z-index: 0;
+    overflow: hidden;
+  }
+  .orb {
+    position: absolute; border-radius: 50%;
+    filter: blur(100px); opacity: 0.12;
+    animation: drift 20s ease-in-out infinite alternate;
+  }
+  .orb-1 { width: 600px; height: 600px; top: -200px; left: -150px; background: var(--accent); }
+  .orb-2 { width: 400px; height: 400px; bottom: 0; right: -100px; background: var(--purple); animation-delay: -8s; }
+  .orb-3 { width: 300px; height: 300px; top: 50%; left: 40%; background: var(--cyan); animation-delay: -14s; }
+  @keyframes drift { from { transform: translate(0,0) scale(1); } to { transform: translate(40px,30px) scale(1.05); } }
+
+  /* ─── LAYOUT ─── */
+  .shell { display: flex; min-height: 100vh; position: relative; z-index: 1; }
+
+  /* ─── SIDEBAR ─── */
+  .sidebar {
+    width: var(--sidebar-w); flex-shrink: 0;
+    background: rgba(10,10,18,0.85);
+    backdrop-filter: blur(40px) saturate(180%);
+    border-right: 1px solid var(--border);
+    display: flex; flex-direction: column;
+    position: fixed; top: 0; left: 0; bottom: 0; z-index: 100;
+    padding: 20px 12px;
+    transition: transform 0.3s cubic-bezier(.4,0,.2,1);
+  }
+  .logo {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 10px 20px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 16px;
+  }
+  .logo-icon {
+    width: 34px; height: 34px; border-radius: 9px;
+    background: linear-gradient(135deg, var(--accent), var(--purple));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; box-shadow: 0 0 20px var(--accent-glow);
+    flex-shrink: 0;
+  }
+  .logo-name { font-size: 16px; font-weight: 700; letter-spacing: -.3px; }
+  .logo-sub { font-size: 10px; color: var(--muted); margin-top: 1px; font-weight: 400; }
+
+  .nav-section { font-size: 10px; font-weight: 600; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; padding: 4px 10px; margin: 12px 0 4px; }
+
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 12px; border-radius: var(--radius-sm);
+    font-size: 13.5px; font-weight: 500; color: var(--muted);
+    cursor: pointer; transition: all .2s ease;
+    position: relative; user-select: none;
+  }
+  .nav-item:hover { background: var(--surface-hover); color: var(--text); }
+  .nav-item.active { background: var(--surface); color: var(--text); }
+  .nav-item.active::before {
+    content: ''; position: absolute; left: 0; top: 20%; bottom: 20%;
+    width: 3px; border-radius: 2px; background: var(--accent);
+  }
+  .nav-icon { width: 18px; text-align: center; font-size: 14px; flex-shrink: 0; }
+  .nav-badge {
+    margin-left: auto; font-size: 10px; font-weight: 600;
+    padding: 1px 7px; border-radius: 20px; min-width: 20px; text-align: center;
+  }
+  .badge-red { background: var(--red-bg); color: var(--red); }
+  .badge-green { background: var(--green-bg); color: var(--green); }
+  .badge-yellow { background: var(--yellow-bg); color: var(--yellow); }
+  .badge-blue { background: rgba(41,151,255,0.15); color: var(--accent); }
+
+  .sidebar-footer { margin-top: auto; padding-top: 12px; border-top: 1px solid var(--border); }
+  .upload-btn {
+    display: flex; align-items: center; gap: 8px;
+    width: 100%; padding: 10px 12px; border-radius: var(--radius-sm);
+    background: linear-gradient(135deg, var(--accent), #1a7aff);
+    border: none; color: #fff; font-family: inherit; font-size: 13px; font-weight: 600;
+    cursor: pointer; transition: all .2s ease; justify-content: center;
+    box-shadow: 0 4px 16px rgba(41,151,255,.3);
+  }
+  .upload-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 24px rgba(41,151,255,.4); }
+  .upload-btn:active { transform: translateY(0); }
+
+  /* ─── MAIN ─── */
+  .main { margin-left: var(--sidebar-w); flex: 1; padding: 28px 32px; min-height: 100vh; }
+
+  /* ─── TOPBAR ─── */
+  .topbar {
+    display: flex; align-items: center; gap: 14px; margin-bottom: 28px;
+    animation: fadeDown .4s ease both;
+  }
+  @keyframes fadeDown { from { opacity:0; transform:translateY(-12px); } to { opacity:1; transform:none; } }
+
+  .page-title { font-size: 26px; font-weight: 700; letter-spacing: -.5px; flex-shrink: 0; }
+  .page-title span { color: var(--accent); }
+
+  .search-wrap { flex: 1; position: relative; }
+  .search-input {
+    width: 100%; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; padding: 10px 14px 10px 38px;
+    color: var(--text); font-family: inherit; font-size: 13.5px;
+    outline: none; transition: border-color .2s, box-shadow .2s;
+  }
+  .search-input::placeholder { color: var(--muted); }
+  .search-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
+  .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: 14px; pointer-events: none; }
+
+  .filter-row {
+    display: flex; gap: 8px; margin-bottom: 24px;
+    animation: fadeDown .4s .1s ease both;
+  }
+  .filter-chip {
+    padding: 6px 14px; border-radius: 20px; font-size: 12.5px; font-weight: 500;
+    border: 1px solid var(--border); background: var(--surface);
+    color: var(--muted); cursor: pointer; transition: all .2s;
+    white-space: nowrap;
+  }
+  .filter-chip:hover { border-color: var(--border-strong); color: var(--text); }
+  .filter-chip.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .filter-chip.chip-red.active { background: var(--red); border-color: var(--red); }
+  .filter-chip.chip-green.active { background: var(--green); border-color: var(--green); }
+  .filter-chip.chip-yellow.active { background: var(--yellow); border-color: var(--yellow); color: #000; }
+  .filter-chip.chip-orange.active { background: var(--orange); border-color: var(--orange); color: #000; }
+  .filter-chip.chip-purple.active { background: var(--purple); border-color: var(--purple); }
+
+  /* ─── STATS ─── */
+  .stats-grid {
+    display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px;
+    margin-bottom: 28px; animation: fadeDown .4s .15s ease both;
+  }
+  @media (max-width: 1200px) { .stats-grid { grid-template-columns: repeat(3, 1fr); } }
+
+  .stat-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 18px 20px;
+    position: relative; overflow: hidden; cursor: pointer;
+    transition: all .25s cubic-bezier(.4,0,.2,1);
+  }
+  .stat-card:hover { transform: translateY(-3px); border-color: var(--border-strong); box-shadow: 0 12px 40px rgba(0,0,0,.3); }
+  .stat-card::before {
+    content: ''; position: absolute; inset: 0; opacity: 0.07;
+    transition: opacity .25s;
+  }
+  .stat-card:hover::before { opacity: .12; }
+  .stat-card.s-total::before { background: linear-gradient(135deg, var(--accent), transparent); }
+  .stat-card.s-error::before { background: linear-gradient(135deg, var(--red), transparent); }
+  .stat-card.s-success::before { background: linear-gradient(135deg, var(--green), transparent); }
+  .stat-card.s-warn::before { background: linear-gradient(135deg, var(--yellow), transparent); }
+  .stat-card.s-cloud::before { background: linear-gradient(135deg, var(--purple), transparent); }
+
+  .stat-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 12px; }
+  .stat-icon {
+    width: 36px; height: 36px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center; font-size: 16px;
+  }
+  .stat-trend { font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 20px; }
+  .trend-up { background: var(--green-bg); color: var(--green); }
+  .trend-down { background: var(--red-bg); color: var(--red); }
+  .trend-neu { background: var(--surface); color: var(--muted); }
+  .stat-num { font-size: 30px; font-weight: 700; letter-spacing: -1px; line-height: 1; }
+  .stat-label { font-size: 12px; color: var(--muted); margin-top: 4px; font-weight: 500; }
+
+  /* ─── UPLOAD ZONE ─── */
+  .upload-zone {
+    border: 2px dashed var(--border-strong); border-radius: var(--radius);
+    padding: 48px 24px; text-align: center; cursor: pointer;
+    transition: all .3s ease; margin-bottom: 28px;
+    animation: fadeDown .4s .2s ease both;
+    background: var(--surface);
+  }
+  .upload-zone:hover, .upload-zone.drag-over {
+    border-color: var(--accent); background: var(--accent-glow);
+    box-shadow: 0 0 40px rgba(41,151,255,.1);
+  }
+  .upload-zone .upload-icon { font-size: 44px; margin-bottom: 12px; display: block; }
+  .upload-zone h3 { font-size: 16px; font-weight: 600; margin-bottom: 6px; }
+  .upload-zone p { font-size: 13px; color: var(--muted); }
+  .upload-zone p span { color: var(--accent); font-weight: 500; }
+
+  /* ─── LOG TABLE ─── */
+  .log-section { animation: fadeDown .4s .25s ease both; }
+  .section-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 14px;
+  }
+  .section-title { font-size: 15px; font-weight: 600; }
+  .section-count { font-size: 12px; color: var(--muted); background: var(--surface); border: 1px solid var(--border); padding: 2px 10px; border-radius: 20px; }
+
+  .log-table-wrap {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); overflow: hidden;
+  }
+  .log-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .log-table thead th {
+    background: rgba(255,255,255,0.03); padding: 12px 16px; text-align: left;
+    font-size: 11px; font-weight: 600; color: var(--muted); letter-spacing: .5px; text-transform: uppercase;
+    border-bottom: 1px solid var(--border); white-space: nowrap;
+  }
+  .log-table tbody tr {
+    border-bottom: 1px solid var(--border);
+    cursor: pointer; transition: background .15s;
+    animation: rowIn .3s ease both;
+  }
+  .log-table tbody tr:last-child { border-bottom: none; }
+  .log-table tbody tr:hover { background: var(--surface-hover); }
+  @keyframes rowIn { from { opacity:0; transform:translateX(-8px); } to { opacity:1; transform:none; } }
+
+  .log-table td { padding: 11px 16px; vertical-align: middle; }
+  .log-table td:first-child { width: 28px; }
+
+  .level-dot {
+    width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; display: inline-block;
+    position: relative;
+  }
+  .level-dot::after {
+    content: ''; position: absolute; inset: -3px; border-radius: 50%;
+    animation: pulse-dot 2s ease-in-out infinite;
+  }
+  .dot-error { background: var(--red); } .dot-error::after { background: rgba(255,69,58,.25); }
+  .dot-success { background: var(--green); } .dot-success::after { background: rgba(52,199,89,.2); }
+  .dot-warn { background: var(--yellow); } .dot-warn::after { background: rgba(255,214,10,.2); }
+  .dot-info { background: var(--accent); } .dot-info::after { background: rgba(41,151,255,.2); }
+  .dot-cloud { background: var(--purple); } .dot-cloud::after { background: rgba(191,90,242,.2); }
+  .dot-debug { background: var(--muted); }
+  @keyframes pulse-dot { 0%,100%{opacity:0;transform:scale(1);} 50%{opacity:1;transform:scale(1.5);} }
+
+  .level-badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 3px 9px; border-radius: 6px; font-size: 11px; font-weight: 600; letter-spacing: .3px;
+  }
+  .badge-error-full { background: var(--red-bg); color: var(--red); }
+  .badge-success-full { background: var(--green-bg); color: var(--green); }
+  .badge-warn-full { background: var(--yellow-bg); color: var(--yellow); }
+  .badge-info-full { background: rgba(41,151,255,0.1); color: var(--accent); }
+  .badge-cloud-full { background: var(--purple-bg); color: var(--purple); }
+  .badge-debug-full { background: rgba(110,110,128,0.15); color: var(--muted); }
+
+  .event-id { font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: var(--accent); }
+  .ts { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--muted); white-space: nowrap; }
+  .msg-cell { max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .source-tag {
+    font-size: 11px; padding: 2px 8px; border-radius: 5px;
+    background: var(--surface-hover); color: var(--muted); font-family: 'JetBrains Mono', monospace;
+    white-space: nowrap;
+  }
+
+  /* ─── DETAIL PANEL ─── */
+  .detail-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,.6); z-index: 200;
+    backdrop-filter: blur(6px);
+    opacity: 0; pointer-events: none; transition: opacity .25s;
+  }
+  .detail-overlay.open { opacity: 1; pointer-events: all; }
+
+  .detail-panel {
+    position: fixed; top: 0; right: 0; bottom: 0; width: 500px; max-width: 92vw;
+    background: rgba(16,16,26,0.97); border-left: 1px solid var(--border);
+    backdrop-filter: blur(40px);
+    z-index: 201; overflow-y: auto; padding: 28px;
+    transform: translateX(100%); transition: transform .3s cubic-bezier(.4,0,.2,1);
+    display: flex; flex-direction: column; gap: 20px;
+  }
+  .detail-panel.open { transform: translateX(0); }
+
+  .detail-close {
+    position: absolute; top: 20px; right: 20px;
+    width: 30px; height: 30px; border-radius: 50%;
+    background: var(--surface); border: 1px solid var(--border);
+    color: var(--muted); cursor: pointer; display: flex; align-items: center; justify-content: center;
+    font-size: 16px; transition: all .2s;
+  }
+  .detail-close:hover { background: var(--red-bg); color: var(--red); border-color: var(--red); }
+
+  .detail-title { font-size: 18px; font-weight: 700; letter-spacing: -.3px; padding-right: 40px; }
+  .detail-meta { display: flex; flex-wrap: wrap; gap: 8px; }
+  .detail-kv {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm);
+    padding: 14px 16px;
+  }
+  .detail-kv-label { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 6px; }
+  .detail-kv-val { font-size: 13.5px; word-break: break-all; }
+  .detail-kv-val.mono { font-family: 'JetBrains Mono', monospace; font-size: 12px; }
+
+  .payload-box {
+    background: rgba(0,0,0,.4); border: 1px solid var(--border); border-radius: var(--radius-sm);
+    padding: 16px; overflow: auto; max-height: 360px;
+  }
+  .payload-box pre { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #b0b8d0; white-space: pre-wrap; word-break: break-all; }
+
+  /* ─── EMPTY STATE ─── */
+  .empty-state {
+    text-align: center; padding: 72px 24px;
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  }
+  .empty-icon { font-size: 56px; margin-bottom: 16px; filter: grayscale(1) opacity(.5); }
+  .empty-state h3 { font-size: 17px; font-weight: 600; margin-bottom: 8px; }
+  .empty-state p { font-size: 13.5px; color: var(--muted); }
+
+  /* ─── TOAST ─── */
+  .toast-wrap { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); z-index: 999; display: flex; flex-direction: column; gap: 8px; align-items: center; }
+  .toast {
+    background: rgba(24,24,36,0.95); border: 1px solid var(--border);
+    backdrop-filter: blur(20px); border-radius: 10px;
+    padding: 12px 20px; font-size: 13.5px; font-weight: 500;
+    display: flex; align-items: center; gap: 10px;
+    animation: toastIn .35s cubic-bezier(.4,0,.2,1) both;
+    box-shadow: 0 8px 32px rgba(0,0,0,.4);
+  }
+  @keyframes toastIn { from { opacity:0; transform:translateY(16px) scale(.95); } to { opacity:1; transform:none; } }
+  .toast.out { animation: toastOut .3s ease forwards; }
+  @keyframes toastOut { to { opacity:0; transform:translateY(12px) scale(.95); } }
+
+  /* ─── TIMELINE VIEW ─── */
+  .timeline { display: flex; flex-direction: column; gap: 0; }
+  .tl-item {
+    display: flex; gap: 14px; padding: 14px 0;
+    border-bottom: 1px solid var(--border); cursor: pointer;
+    animation: rowIn .3s ease both;
+    transition: background .15s;
+  }
+  .tl-item:hover { background: var(--surface-hover); border-radius: var(--radius-sm); padding-left: 8px; padding-right: 8px; }
+  .tl-left { display: flex; flex-direction: column; align-items: center; gap: 0; }
+  .tl-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; margin-top: 4px; }
+  .tl-line { width: 2px; flex: 1; background: var(--border); min-height: 20px; margin: 4px 4px 0; }
+  .tl-content { flex: 1; min-width: 0; }
+  .tl-header { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 4px; }
+  .tl-msg { font-size: 13.5px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .tl-ts { font-size: 11px; color: var(--muted); font-family: 'JetBrains Mono', monospace; margin-top: 2px; }
+
+  /* ─── CLOUDWATCH PANEL ─── */
+  .cw-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 18px 20px; margin-bottom: 10px;
+    transition: all .2s; cursor: pointer;
+  }
+  .cw-card:hover { border-color: var(--purple); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(191,90,242,.1); }
+  .cw-header { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .cw-group { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--purple); }
+  .cw-stream { font-size: 11px; color: var(--muted); }
+  .cw-events { font-size: 13px; }
+
+  /* ─── SCROLLBAR ─── */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+
+  /* ─── LOADING BAR ─── */
+  .loading-bar {
+    position: fixed; top: 0; left: 0; right: 0; height: 2px; z-index: 9999;
+    background: linear-gradient(90deg, var(--accent), var(--purple), var(--cyan));
+    transform: scaleX(0); transform-origin: left; transition: transform .4s ease;
+    display: none;
+  }
+  .loading-bar.active { display: block; animation: loadBar 1.2s ease-in-out infinite; }
+  @keyframes loadBar { 0%{transform:scaleX(0) translateX(0);} 50%{transform:scaleX(0.8) translateX(10%);} 100%{transform:scaleX(1) translateX(0);} }
+
+  .hidden { display: none !important; }
+
+  @media (max-width: 768px) {
+    .sidebar { transform: translateX(-100%); }
+    .sidebar.open { transform: translateX(0); }
+    .main { margin-left: 0; padding: 16px; }
+    .stats-grid { grid-template-columns: repeat(2,1fr); }
+    .detail-panel { width: 100vw; }
+  }
+
+  /* JSON syntax highlighting */
+  .json-key { color: #7dd3fc; }
+  .json-str { color: #86efac; }
+  .json-num { color: #fb923c; }
+  .json-bool { color: #c084fc; }
+  .json-null { color: var(--muted); }
+</style>
+</head>
+<body>
+
+<div class="loading-bar" id="loadingBar"></div>
+<div class="bg-orbs"><div class="orb orb-1"></div><div class="orb orb-2"></div><div class="orb orb-3"></div></div>
+
+<input type="file" id="fileInput" accept=".log,.txt,.json,.csv,.ndjson" multiple class="hidden" />
+
+<div class="shell">
+
+  <!-- SIDEBAR -->
+  <nav class="sidebar" id="sidebar">
+    <div class="logo">
+      <div class="logo-icon">🔍</div>
+      <div><div class="logo-name">LogLens</div><div class="logo-sub">v2.0 · Dashboard</div></div>
+    </div>
+
+    <div class="nav-section">Views</div>
+    <div class="nav-item active" data-view="overview"><span class="nav-icon">⬛</span>Overview</div>
+    <div class="nav-item" data-view="all"><span class="nav-icon">📋</span>All Logs <span class="nav-badge badge-blue" id="nb-all">0</span></div>
+    <div class="nav-item" data-view="timeline"><span class="nav-icon">⏱</span>Timeline</div>
+
+    <div class="nav-section">By Level</div>
+    <div class="nav-item" data-view="error"><span class="nav-icon">🔴</span>Errors <span class="nav-badge badge-red" id="nb-error">0</span></div>
+    <div class="nav-item" data-view="success"><span class="nav-icon">🟢</span>Success <span class="nav-badge badge-green" id="nb-success">0</span></div>
+    <div class="nav-item" data-view="warn"><span class="nav-icon">🟡</span>Warnings <span class="nav-badge badge-yellow" id="nb-warn">0</span></div>
+    <div class="nav-item" data-view="info"><span class="nav-icon">🔵</span>Info <span class="nav-badge badge-blue" id="nb-info">0</span></div>
+
+    <div class="nav-section">Special</div>
+    <div class="nav-item" data-view="cloudwatch"><span class="nav-icon">☁️</span>CloudWatch <span class="nav-badge badge-blue" id="nb-cloud">0</span></div>
+    <div class="nav-item" data-view="debug"><span class="nav-icon">🐛</span>Debug <span class="nav-badge" style="background:rgba(110,110,128,.2);color:var(--muted)" id="nb-debug">0</span></div>
+
+    <div class="sidebar-footer">
+      <button class="upload-btn" onclick="document.getElementById('fileInput').click()">
+        <span>⬆</span> Upload Log File
+      </button>
+    </div>
+  </nav>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- TOPBAR -->
+    <div class="topbar">
+      <h1 class="page-title">Log<span>Lens</span></h1>
+      <div class="search-wrap">
+        <span class="search-icon">🔎</span>
+        <input class="search-input" id="searchInput" placeholder="Search by Event ID, message, payload, source…" />
+      </div>
+    </div>
+
+    <!-- FILTER CHIPS -->
+    <div class="filter-row" id="filterRow">
+      <div class="filter-chip active" data-level="all">All</div>
+      <div class="filter-chip chip-red" data-level="error">🔴 Error</div>
+      <div class="filter-chip chip-green" data-level="success">🟢 Success</div>
+      <div class="filter-chip chip-yellow" data-level="warn">🟡 Warning</div>
+      <div class="filter-chip chip-blue" data-level="info">🔵 Info</div>
+      <div class="filter-chip chip-purple" data-level="cloudwatch">☁️ CloudWatch</div>
+      <div class="filter-chip chip-orange" data-level="debug">🐛 Debug</div>
+    </div>
+
+    <!-- STATS -->
+    <div class="stats-grid">
+      <div class="stat-card s-total" onclick="switchView('all')">
+        <div class="stat-top">
+          <div class="stat-icon" style="background:rgba(41,151,255,.15)">📊</div>
+          <div class="stat-trend trend-neu" id="st-total-trend">0 files</div>
+        </div>
+        <div class="stat-num" id="st-total">0</div>
+        <div class="stat-label">Total Events</div>
+      </div>
+      <div class="stat-card s-error" onclick="switchView('error')">
+        <div class="stat-top">
+          <div class="stat-icon" style="background:var(--red-bg)">🔴</div>
+          <div class="stat-trend trend-down" id="st-err-pct">0%</div>
+        </div>
+        <div class="stat-num" style="color:var(--red)" id="st-error">0</div>
+        <div class="stat-label">Errors</div>
+      </div>
+      <div class="stat-card s-success" onclick="switchView('success')">
+        <div class="stat-top">
+          <div class="stat-icon" style="background:var(--green-bg)">🟢</div>
+          <div class="stat-trend trend-up" id="st-ok-pct">0%</div>
+        </div>
+        <div class="stat-num" style="color:var(--green)" id="st-success">0</div>
+        <div class="stat-label">Successes</div>
+      </div>
+      <div class="stat-card s-warn" onclick="switchView('warn')">
+        <div class="stat-top">
+          <div class="stat-icon" style="background:var(--yellow-bg)">⚠️</div>
+          <div class="stat-trend trend-neu" id="st-warn-pct">0%</div>
+        </div>
+        <div class="stat-num" style="color:var(--yellow)" id="st-warn">0</div>
+        <div class="stat-label">Warnings</div>
+      </div>
+      <div class="stat-card s-cloud" onclick="switchView('cloudwatch')">
+        <div class="stat-top">
+          <div class="stat-icon" style="background:var(--purple-bg)">☁️</div>
+          <div class="stat-trend trend-neu" id="st-cloud-pct">0%</div>
+        </div>
+        <div class="stat-num" style="color:var(--purple)" id="st-cloud">0</div>
+        <div class="stat-label">CloudWatch</div>
+      </div>
+    </div>
+
+    <!-- UPLOAD ZONE -->
+    <div class="upload-zone" id="uploadZone">
+      <span class="upload-icon">📂</span>
+      <h3>Drop your log files here</h3>
+      <p>Supports <span>.log · .txt · .json · .ndjson · .csv</span> — CloudWatch, MuleSoft, App logs</p>
+    </div>
+
+    <!-- LOG CONTENT -->
+    <div class="log-section" id="logSection">
+      <div class="section-header">
+        <span class="section-title" id="sectionTitle">Recent Events</span>
+        <span class="section-count" id="sectionCount">0 entries</span>
+      </div>
+      <div id="logContent">
+        <div class="empty-state">
+          <div class="empty-icon">🗂</div>
+          <h3>No logs loaded yet</h3>
+          <p>Upload a log file above to start analyzing events</p>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- DETAIL PANEL -->
+<div class="detail-overlay" id="detailOverlay" onclick="closeDetail()"></div>
+<div class="detail-panel" id="detailPanel">
+  <div class="detail-close" onclick="closeDetail()">✕</div>
+  <div id="detailContent"></div>
+</div>
+
+<!-- TOAST -->
+<div class="toast-wrap" id="toastWrap"></div>
+
+<script>
+// ─── STATE ───
+let allLogs = [];
+let currentView = 'overview';
+let currentFilter = 'all';
+let searchQuery = '';
+let fileCount = 0;
+
+// ─── LEVEL UTILS ───
+function detectLevel(raw) {
+  if (!raw) return 'info';
+  const r = raw.toLowerCase();
+  if (r.includes('error') || r.includes('fatal') || r.includes('exception') || r.includes('fail') || r.includes('500') || r.includes('4xx') || r.includes('5xx')) return 'error';
+  if (r.includes('success') || r.includes('200') || r.includes('201') || r.includes('completed') || r.includes('ok') || r.includes('done')) return 'success';
+  if (r.includes('warn') || r.includes('warning') || r.includes('deprecated') || r.includes('timeout') || r.includes('retry') || r.includes('slow')) return 'warn';
+  if (r.includes('cloudwatch') || r.includes('aws') || r.includes('lambda') || r.includes('loggroup') || r.includes('logstream') || r.includes('metric')) return 'cloudwatch';
+  if (r.includes('debug') || r.includes('trace') || r.includes('verbose')) return 'debug';
+  return 'info';
+}
+
+function levelBadge(lvl) {
+  const m = { error:'badge-error-full', success:'badge-success-full', warn:'badge-warn-full', info:'badge-info-full', cloudwatch:'badge-cloud-full', debug:'badge-debug-full' };
+  const l = { error:'ERROR', success:'SUCCESS', warn:'WARN', info:'INFO', cloudwatch:'CLOUDWATCH', debug:'DEBUG' };
+  return `<span class="level-badge ${m[lvl]||'badge-info-full'}">${l[lvl]||lvl.toUpperCase()}</span>`;
+}
+function levelDot(lvl) {
+  const m = { error:'dot-error', success:'dot-success', warn:'dot-warn', info:'dot-info', cloudwatch:'dot-cloud', debug:'dot-debug' };
+  return `<span class="level-dot ${m[lvl]||'dot-info'}"></span>`;
+}
+function levelColor(lvl) {
+  const m = { error:'var(--red)', success:'var(--green)', warn:'var(--yellow)', info:'var(--accent)', cloudwatch:'var(--purple)', debug:'var(--muted)' };
+  return m[lvl] || 'var(--accent)';
+}
+
+// ─── PARSERS ───
+function parseJSON(text) {
+  const logs = []; const lines = text.split('\n');
+  for (let ln of lines) {
+    ln = ln.trim();
+    if (!ln) continue;
+    try {
+      let obj;
+      // NDJSON / JSON lines
+      try { obj = JSON.parse(ln); } catch {
+        // Maybe full JSON array
+        try { const arr = JSON.parse(text); if (Array.isArray(arr)) { arr.forEach(o => logs.push(toLog(o))); return logs; } } catch {}
+        continue;
+      }
+      logs.push(toLog(obj));
+    } catch {}
+  }
+  return logs;
+}
+
+function toLog(obj) {
+  const lvlRaw = obj.level || obj.Level || obj.severity || obj.Severity || obj.status || obj.Status || '';
+  const msgRaw = obj.message || obj.Message || obj.msg || obj.Msg || obj.log || obj.Log || obj.body || obj.description || '';
+  const combined = lvlRaw + ' ' + msgRaw + ' ' + JSON.stringify(obj);
+  return {
+    id: obj.id || obj.eventId || obj.event_id || obj.requestId || obj.request_id || obj.traceId || obj.correlationId || uid(),
+    timestamp: parseTs(obj.timestamp || obj.time || obj.Time || obj.date || obj['@timestamp'] || obj.createdAt),
+    level: detectLevel(combined),
+    levelRaw: lvlRaw,
+    message: msgRaw || JSON.stringify(obj).slice(0, 120),
+    source: obj.source || obj.service || obj.logger || obj.component || obj.logGroup || obj.function || 'app',
+    payload: obj,
+    raw: JSON.stringify(obj, null, 2)
+  };
+}
+
+function parsePlainText(text) {
+  const logs = [];
+  const lines = text.split('\n');
+  for (let line of lines) {
+    if (!line.trim()) continue;
+    logs.push(parseLine(line));
+  }
+  return logs;
+}
+
+function parseLine(line) {
+  // Patterns: [2024-01-01 10:00:00] ERROR [source] message
+  // 2024-01-01T10:00:00Z INFO message
+  // CloudWatch: { "logEvents": [...] }
+  const tsRx = /(\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}(?:[.,]\d+)?(?:Z|[+-]\d{2}:\d{2})?)/;
+  const lvlRx = /\b(ERROR|FATAL|EXCEPTION|WARN(?:ING)?|INFO|SUCCESS|DEBUG|TRACE|CRITICAL|ALERT|CLOUDWATCH)\b/i;
+  const srcRx = /\[([^\]]{1,40})\]/;
+  const eventRx = /(?:event[_-]?id|eventId|requestId|traceId)[=:]\s*["']?([A-Za-z0-9_\-]+)["']?/i;
+
+  const tsM = line.match(tsRx);
+  const lvlM = line.match(lvlRx);
+  const srcM = line.match(srcRx);
+  const evM = line.match(eventRx);
+
+  let msg = line
+    .replace(tsRx, '').replace(lvlRx, '').replace(srcRx, '')
+    .replace(/^\s*[-:|,\[\]]+\s*/, '').trim();
+  if (!msg) msg = line.trim();
+
+  return {
+    id: evM ? evM[1] : uid(),
+    timestamp: tsM ? new Date(tsM[1].replace(' ','T')) : new Date(),
+    level: detectLevel(lvlM ? lvlM[1] : line),
+    levelRaw: lvlM ? lvlM[1] : '',
+    message: msg.slice(0, 500),
+    source: srcM ? srcM[1] : 'app',
+    payload: { raw: line },
+    raw: line
+  };
+}
+
+function parseCloudWatch(text) {
+  // Handle AWS CloudWatch JSON export: { "logEvents": [...], "logGroup": "...", "logStream": "..." }
+  try {
+    const obj = JSON.parse(text);
+    if (obj.logEvents && Array.isArray(obj.logEvents)) {
+      return obj.logEvents.map(e => {
+        const inner = parseLine(e.message || '');
+        inner.source = obj.logGroup || inner.source;
+        inner.level = inner.level === 'info' ? 'cloudwatch' : inner.level;
+        inner.timestamp = e.timestamp ? new Date(e.timestamp) : inner.timestamp;
+        inner.payload = { logGroup: obj.logGroup, logStream: obj.logStream, ...e };
+        inner.raw = JSON.stringify(inner.payload, null, 2);
+        return inner;
+      });
+    }
+    if (obj.events && Array.isArray(obj.events)) {
+      return obj.events.map(e => ({ ...parseLine(e.message || ''), source: 'CloudWatch', level: 'cloudwatch', payload: e, raw: JSON.stringify(e, null, 2) }));
+    }
+  } catch {}
+  return null;
+}
+
+function parseCSV(text) {
+  const rows = text.split('\n').filter(r => r.trim());
+  if (rows.length < 2) return [];
+  const headers = rows[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
+  return rows.slice(1).map(row => {
+    const vals = row.match(/(".*?"|[^,]+)/g) || [];
+    const obj = {};
+    headers.forEach((h, i) => obj[h] = (vals[i] || '').replace(/^"|"$/g, '').trim());
+    return toLog(obj);
+  });
+}
+
+function parseTs(v) {
+  if (!v) return new Date();
+  if (typeof v === 'number') return new Date(v > 1e12 ? v : v * 1000);
+  return new Date(v);
+}
+
+function uid() { return Math.random().toString(36).slice(2, 10).toUpperCase(); }
+
+// ─── FILE HANDLER ───
+async function handleFiles(files) {
+  if (!files.length) return;
+  showLoading(true);
+  fileCount += files.length;
+  let parsed = [];
+  for (const file of files) {
+    const text = await file.text();
+    let logs = null;
+    // CloudWatch first
+    logs = parseCloudWatch(text);
+    if (!logs) {
+      const ext = file.name.split('.').pop().toLowerCase();
+      if (ext === 'csv') logs = parseCSV(text);
+      else if (ext === 'json' || ext === 'ndjson') logs = parseJSON(text);
+      else {
+        // Try JSON first, fallback to plain
+        logs = parseJSON(text);
+        if (!logs.length) logs = parsePlainText(text);
+      }
+    }
+    parsed = parsed.concat(logs.filter(l => l.message.trim()));
+    toast(`✅ Loaded ${logs.length} events from ${file.name}`, 'success');
+  }
+  allLogs = [...allLogs, ...parsed].sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
+  updateBadges();
+  render();
+  showLoading(false);
+}
+
+// ─── BADGES & STATS ───
+function counts() {
+  const c = { all: allLogs.length, error: 0, success: 0, warn: 0, info: 0, cloudwatch: 0, debug: 0 };
+  allLogs.forEach(l => { if (c[l.level] !== undefined) c[l.level]++; });
+  return c;
+}
+function updateBadges() {
+  const c = counts();
+  document.getElementById('nb-all').textContent = c.all;
+  document.getElementById('nb-error').textContent = c.error;
+  document.getElementById('nb-success').textContent = c.success;
+  document.getElementById('nb-warn').textContent = c.warn;
+  document.getElementById('nb-info').textContent = c.info;
+  document.getElementById('nb-cloud').textContent = c.cloudwatch;
+  document.getElementById('nb-debug').textContent = c.debug;
+
+  document.getElementById('st-total').textContent = c.all;
+  document.getElementById('st-error').textContent = c.error;
+  document.getElementById('st-success').textContent = c.success;
+  document.getElementById('st-warn').textContent = c.warn;
+  document.getElementById('st-cloud').textContent = c.cloudwatch;
+  document.getElementById('st-total-trend').textContent = `${fileCount} file${fileCount !== 1 ? 's' : ''}`;
+
+  const pct = n => c.all ? Math.round(n / c.all * 100) + '%' : '0%';
+  document.getElementById('st-err-pct').textContent = pct(c.error);
+  document.getElementById('st-ok-pct').textContent = pct(c.success);
+  document.getElementById('st-warn-pct').textContent = pct(c.warn);
+  document.getElementById('st-cloud-pct').textContent = pct(c.cloudwatch);
+}
+
+// ─── FILTER ───
+function filteredLogs() {
+  let logs = allLogs;
+  if (currentFilter !== 'all') logs = logs.filter(l => l.level === currentFilter);
+  if (searchQuery) {
+    const q = searchQuery.toLowerCase();
+    logs = logs.filter(l =>
+      l.id.toLowerCase().includes(q) ||
+      l.message.toLowerCase().includes(q) ||
+      l.source.toLowerCase().includes(q) ||
+      l.raw.toLowerCase().includes(q)
+    );
+  }
+  return logs;
+}
+
+// ─── RENDER ───
+function render() {
+  const logs = filteredLogs();
+  const titles = { overview:'Overview', all:'All Logs', timeline:'Timeline', error:'Errors', success:'Successes', warn:'Warnings', info:'Info', cloudwatch:'CloudWatch', debug:'Debug' };
+  document.getElementById('sectionTitle').textContent = titles[currentView] || 'Logs';
+  document.getElementById('sectionCount').textContent = `${logs.length} entries`;
+
+  if (!allLogs.length) {
+    document.getElementById('logContent').innerHTML = `
+      <div class="empty-state"><div class="empty-icon">🗂</div><h3>No logs loaded yet</h3><p>Upload a log file above to start analyzing events</p></div>`;
+    return;
+  }
+  if (!logs.length) {
+    document.getElementById('logContent').innerHTML = `
+      <div class="empty-state"><div class="empty-icon">🔍</div><h3>No matching logs</h3><p>Try adjusting your search or filter criteria</p></div>`;
+    return;
+  }
+
+  if (currentView === 'timeline') { renderTimeline(logs); return; }
+  if (currentView === 'cloudwatch') { renderCloudWatch(logs); return; }
+  renderTable(logs);
+}
+
+function renderTable(logs) {
+  const rows = logs.slice(0, 1000).map((l, i) => `
+    <tr style="animation-delay:${Math.min(i * 0.02, 0.5)}s" onclick="openDetail(${allLogs.indexOf(l)})">
+      <td>${levelDot(l.level)}</td>
+      <td>${levelBadge(l.level)}</td>
+      <td class="event-id">${escH(l.id)}</td>
+      <td class="ts">${fmtTs(l.timestamp)}</td>
+      <td class="msg-cell">${escH(l.message)}</td>
+      <td><span class="source-tag">${escH(l.source)}</span></td>
+    </tr>`).join('');
+
+  document.getElementById('logContent').innerHTML = `
+    <div class="log-table-wrap">
+      <table class="log-table">
+        <thead><tr>
+          <th></th><th>Level</th><th>Event ID</th><th>Timestamp</th><th>Message</th><th>Source</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+}
+
+function renderTimeline(logs) {
+  const items = logs.slice(0, 500).map((l, i) => `
+    <div class="tl-item" style="animation-delay:${Math.min(i*.02,.5)}s" onclick="openDetail(${allLogs.indexOf(l)})">
+      <div class="tl-left">
+        <div class="tl-dot" style="background:${levelColor(l.level)}"></div>
+        ${i < logs.length - 1 ? '<div class="tl-line"></div>' : ''}
+      </div>
+      <div class="tl-content">
+        <div class="tl-header">${levelBadge(l.level)} <span class="event-id">${escH(l.id)}</span> <span class="source-tag">${escH(l.source)}</span></div>
+        <div class="tl-msg">${escH(l.message)}</div>
+        <div class="tl-ts">${fmtTsFull(l.timestamp)}</div>
+      </div>
+    </div>`).join('');
+  document.getElementById('logContent').innerHTML = `<div class="log-table-wrap" style="padding:16px"><div class="timeline">${items}</div></div>`;
+}
+
+function renderCloudWatch(logs) {
+  const cwLogs = logs.filter(l => l.level === 'cloudwatch' || (l.payload && (l.payload.logGroup || l.payload.logStream)));
+  const regular = logs.filter(l => l.level !== 'cloudwatch');
+  let html = '';
+  if (cwLogs.length) {
+    // Group by logGroup
+    const groups = {};
+    cwLogs.forEach(l => {
+      const g = (l.payload && l.payload.logGroup) || l.source || 'Unknown Group';
+      if (!groups[g]) groups[g] = [];
+      groups[g].push(l);
+    });
+    Object.entries(groups).forEach(([g, glogs]) => {
+      html += `<div class="cw-card" onclick="">
+        <div class="cw-header">
+          <span>☁️</span>
+          <div><div class="cw-group">${escH(g)}</div>
+          <div class="cw-stream">${glogs[0]?.payload?.logStream || ''}</div></div>
+          <div style="margin-left:auto">${levelBadge('cloudwatch')}</div>
+        </div>
+        <div class="cw-events">${glogs.length} event${glogs.length!==1?'s':''}</div>
+      </div>`;
+      glogs.slice(0, 50).forEach((l, i) => {
+        html += `<div style="margin-left:20px;animation-delay:${i*.02}s">
+          <div class="tl-item" onclick="openDetail(${allLogs.indexOf(l)})">
+            <div class="tl-left"><div class="tl-dot" style="background:${levelColor(l.level)}"></div></div>
+            <div class="tl-content">
+              <div class="tl-header">${levelBadge(l.level)} <span class="event-id">${escH(l.id)}</span></div>
+              <div class="tl-msg">${escH(l.message)}</div>
+              <div class="tl-ts">${fmtTsFull(l.timestamp)}</div>
+            </div>
+          </div>
+        </div>`;
+      });
+    });
+  }
+  if (regular.length) {
+    html += `<div style="margin-top:16px"><div class="section-header"><span class="section-title">Other Events</span><span class="section-count">${regular.length}</span></div></div>`;
+    renderTable(regular);
+    return;
+  }
+  if (!html) {
+    html = `<div class="empty-state"><div class="empty-icon">☁️</div><h3>No CloudWatch logs detected</h3><p>Upload a CloudWatch JSON export or logs containing AWS metadata</p></div>`;
+  }
+  document.getElementById('logContent').innerHTML = html;
+}
+
+// ─── DETAIL PANEL ───
+function openDetail(idx) {
+  const l = allLogs[idx];
+  if (!l) return;
+  const dc = document.getElementById('detailContent');
+  dc.innerHTML = `
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">${levelBadge(l.level)}<span class="source-tag">${escH(l.source)}</span></div>
+    <div class="detail-title">${escH(l.message)}</div>
+    <div class="detail-meta">
+      <div style="font-size:12px;color:var(--muted);font-family:'JetBrains Mono',monospace">${fmtTsFull(l.timestamp)}</div>
+    </div>
+    <div class="detail-kv">
+      <div class="detail-kv-label">Event ID</div>
+      <div class="detail-kv-val mono" style="color:var(--accent)">${escH(l.id)}</div>
+    </div>
+    <div class="detail-kv">
+      <div class="detail-kv-label">Source / Service</div>
+      <div class="detail-kv-val">${escH(l.source)}</div>
+    </div>
+    <div class="detail-kv">
+      <div class="detail-kv-label">Level</div>
+      <div class="detail-kv-val">${levelBadge(l.level)} <span style="color:var(--muted);font-size:12px">(raw: ${escH(l.levelRaw || l.level)})</span></div>
+    </div>
+    <div class="detail-kv">
+      <div class="detail-kv-label">Message</div>
+      <div class="detail-kv-val">${escH(l.message)}</div>
+    </div>
+    <div>
+      <div class="detail-kv-label" style="margin-bottom:8px">Payload / Raw</div>
+      <div class="payload-box"><pre>${syntaxHighlight(l.raw)}</pre></div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:4px">
+      <button onclick="copyToClipboard(${idx})" style="flex:1;padding:10px;border-radius:8px;background:var(--surface);border:1px solid var(--border);color:var(--text);font-family:inherit;font-size:13px;cursor:pointer;transition:all .2s">📋 Copy Payload</button>
+      <button onclick="downloadLog(${idx})" style="flex:1;padding:10px;border-radius:8px;background:var(--surface);border:1px solid var(--border);color:var(--text);font-family:inherit;font-size:13px;cursor:pointer;transition:all .2s">⬇ Download</button>
+    </div>`;
+  document.getElementById('detailOverlay').classList.add('open');
+  document.getElementById('detailPanel').classList.add('open');
+}
+function closeDetail() {
+  document.getElementById('detailOverlay').classList.remove('open');
+  document.getElementById('detailPanel').classList.remove('open');
+}
+
+function copyToClipboard(idx) {
+  navigator.clipboard.writeText(allLogs[idx].raw).then(() => toast('Copied to clipboard', 'success'));
+}
+function downloadLog(idx) {
+  const l = allLogs[idx];
+  const blob = new Blob([l.raw], { type: 'application/json' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = `log-${l.id}.json`; a.click();
+}
+
+// ─── JSON SYNTAX HIGHLIGHT ───
+function syntaxHighlight(str) {
+  str = escH(str);
+  return str.replace(/"([^"]+)":/g, '<span class="json-key">"$1"</span>:')
+    .replace(/: "([^"]*)"/g, ': <span class="json-str">"$1"</span>')
+    .replace(/: (\d+\.?\d*)/g, ': <span class="json-num">$1</span>')
+    .replace(/: (true|false)/g, ': <span class="json-bool">$1</span>')
+    .replace(/: null/g, ': <span class="json-null">null</span>');
+}
+
+// ─── UTILS ───
+function escH(s) { return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function fmtTs(d) {
+  if (!d || !(d instanceof Date) || isNaN(d)) return '—';
+  return d.toLocaleTimeString('en-US', { hour12:false }) + ' ' + d.toLocaleDateString('en-US', { month:'short', day:'numeric' });
+}
+function fmtTsFull(d) {
+  if (!d || !(d instanceof Date) || isNaN(d)) return '—';
+  return d.toISOString().replace('T', ' ').replace('Z', ' UTC');
+}
+function showLoading(v) { document.getElementById('loadingBar').classList.toggle('active', v); }
+
+function toast(msg, type = 'info') {
+  const wrap = document.getElementById('toastWrap');
+  const el = document.createElement('div');
+  el.className = 'toast';
+  const c = type === 'success' ? 'var(--green)' : type === 'error' ? 'var(--red)' : 'var(--accent)';
+  el.innerHTML = `<span style="color:${c}">${type==='success'?'✓':type==='error'?'✕':'ℹ'}</span> ${msg}`;
+  wrap.appendChild(el);
+  setTimeout(() => { el.classList.add('out'); setTimeout(() => el.remove(), 300); }, 3000);
+}
+
+// ─── NAV ───
+function switchView(v) {
+  currentView = v;
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.view === v));
+  if (['error','success','warn','info','cloudwatch','debug'].includes(v)) {
+    currentFilter = v;
+    document.querySelectorAll('.filter-chip').forEach(c => c.classList.toggle('active', c.dataset.level === v || (v==='cloudwatch' && c.dataset.level==='cloudwatch')));
+  } else {
+    currentFilter = 'all';
+    document.querySelectorAll('.filter-chip').forEach(c => c.classList.toggle('active', c.dataset.level === 'all'));
+  }
+  render();
+}
+
+// ─── EVENTS ───
+document.querySelectorAll('.nav-item').forEach(item => {
+  item.addEventListener('click', () => switchView(item.dataset.view));
+});
+
+document.querySelectorAll('.filter-chip').forEach(chip => {
+  chip.addEventListener('click', () => {
+    currentFilter = chip.dataset.level;
+    document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+    chip.classList.add('active');
+    render();
+  });
+});
+
+document.getElementById('searchInput').addEventListener('input', e => {
+  searchQuery = e.target.value.trim();
+  render();
+});
+
+// File input
+document.getElementById('fileInput').addEventListener('change', e => {
+  handleFiles(Array.from(e.target.files));
+  e.target.value = '';
+});
+
+// Drag & drop
+const uz = document.getElementById('uploadZone');
+uz.addEventListener('click', () => document.getElementById('fileInput').click());
+uz.addEventListener('dragover', e => { e.preventDefault(); uz.classList.add('drag-over'); });
+uz.addEventListener('dragleave', () => uz.classList.remove('drag-over'));
+uz.addEventListener('drop', e => {
+  e.preventDefault(); uz.classList.remove('drag-over');
+  handleFiles(Array.from(e.dataTransfer.files));
+});
+document.addEventListener('dragover', e => e.preventDefault());
+document.addEventListener('drop', e => {
+  e.preventDefault();
+  if (!e.dataTransfer.files.length) return;
+  handleFiles(Array.from(e.dataTransfer.files));
+});
+
+// ─── DEMO DATA (pre-loaded sample logs) ───
+(function loadDemo() {
+  const now = new Date();
+  const ago = (m) => new Date(now - m * 60000);
+
+  const demo = [
+    // Errors
+    { id:'EVT-001', timestamp: ago(2), level:'error', levelRaw:'ERROR', message:'NullPointerException in PaymentProcessor.process() at line 142', source:'payment-service', payload:{ requestId:'REQ-8821', userId:'user_4421', amount:5000, currency:'INR', error:'NullPointerException', stackTrace:'at com.fintech.PaymentProcessor.process(PaymentProcessor.java:142)' }, raw:'' },
+    { id:'EVT-002', timestamp: ago(5), level:'error', levelRaw:'FATAL', message:'Database connection pool exhausted — max 50 connections reached', source:'db-service', payload:{ pool:'main', activeConnections:50, waitingQueue:12, timeout:'30s' }, raw:'' },
+    { id:'EVT-003', timestamp: ago(12), level:'error', levelRaw:'ERROR', message:'HTTP 500 Internal Server Error on POST /api/v2/loans/apply', source:'api-gateway', payload:{ method:'POST', path:'/api/v2/loans/apply', statusCode:500, duration:'1842ms', traceId:'trace-99ab' }, raw:'' },
+    { id:'EVT-004', timestamp: ago(18), level:'error', levelRaw:'ERROR', message:'Kite Connect API authentication failed — invalid access token', source:'kite-connector', payload:{ provider:'Zerodha', endpoint:'/session/token', httpStatus:403, error:'Invalid access token' }, raw:'' },
+    { id:'EVT-005', timestamp: ago(25), level:'error', levelRaw:'ERROR', message:'MuleSoft flow execution failed: LOAN_APPROVAL_FLOW — timeout after 30s', source:'mulesoft', payload:{ flow:'LOAN_APPROVAL_FLOW', correlationId:'corr-1122', duration:'30002ms', error:'Timeout' }, raw:'' },
+
+    // Warnings
+    { id:'EVT-010', timestamp: ago(1), level:'warn', levelRaw:'WARN', message:'Slow query detected: SELECT * FROM transactions took 4.2s (threshold: 2s)', source:'db-monitor', payload:{ query:'SELECT * FROM transactions WHERE user_id = ?', duration:'4200ms', threshold:'2000ms', table:'transactions' }, raw:'' },
+    { id:'EVT-011', timestamp: ago(7), level:'warn', levelRaw:'WARN', message:'Retry attempt 2/3 for external payment gateway — circuit breaker open', source:'payment-gateway', payload:{ attempt:2, maxRetries:3, gateway:'Razorpay', reason:'Connection reset', nextRetry:'5s' }, raw:'' },
+    { id:'EVT-012', timestamp: ago(14), level:'warn', levelRaw:'WARNING', message:'JWT token expires in 5 minutes — auto-refresh triggered', source:'auth-service', payload:{ userId:'user_4421', expiresAt: ago(-5).toISOString(), action:'auto_refresh' }, raw:'' },
+    { id:'EVT-013', timestamp: ago(30), level:'warn', levelRaw:'DEPRECATED', message:'API endpoint /api/v1/account deprecated — please migrate to /api/v2/account', source:'api-gateway', payload:{ deprecated:'/api/v1/account', replacement:'/api/v2/account', removalDate:'2025-06-01' }, raw:'' },
+
+    // Success
+    { id:'EVT-020', timestamp: ago(3), level:'success', levelRaw:'INFO', message:'Loan application approved — LAN#2024-08821 ₹5,00,000 disbursed', source:'loan-engine', payload:{ loanId:'LAN#2024-08821', applicant:'Prasanna K.', amount:'500000', currency:'INR', status:'APPROVED', cibilScore:782, processingTime:'1.2s' }, raw:'' },
+    { id:'EVT-021', timestamp: ago(6), level:'success', levelRaw:'200', message:'POST /api/v2/trades/execute — BUY NIFTY 25000 CE 100 qty completed', source:'algo-trade', payload:{ method:'POST', path:'/api/v2/trades/execute', statusCode:200, symbol:'NIFTY25000CE', qty:100, price:145.5, orderId:'ORD-9981' }, raw:'' },
+    { id:'EVT-022', timestamp: ago(9), level:'success', levelRaw:'COMPLETED', message:'Batch credit score processing completed — 1,240 records in 3.4s', source:'cibil-processor', payload:{ batchId:'BATCH-881', records:1240, processed:1240, failed:0, duration:'3400ms' }, raw:'' },
+    { id:'EVT-023', timestamp: ago(11), level:'success', levelRaw:'SUCCESS', message:'UPI payment confirmed — TXN#884422 ₹12,500 to HDFC A/c', source:'upi-service', payload:{ txnId:'TXN#884422', amount:12500, bank:'HDFC', upiId:'prasanna@okaxis', status:'SUCCESS' }, raw:'' },
+    { id:'EVT-024', timestamp: ago(20), level:'success', levelRaw:'201', message:'New user onboarded — account KYC verified via Aadhaar', source:'onboarding', payload:{ userId:'user_9921', kycMethod:'aadhaar', status:'VERIFIED', accountType:'SAVINGS' }, raw:'' },
+
+    // Info
+    { id:'EVT-030', timestamp: ago(4), level:'info', levelRaw:'INFO', message:'AlgoTrade scanner found 3 ORB breakout signals on NSE', source:'algo-scanner', payload:{ engine:'ORB', signals:['RELIANCE','TCS','HDFC'], timeframe:'15m', strength:'HIGH' }, raw:'' },
+    { id:'EVT-031', timestamp: ago(8), level:'info', levelRaw:'INFO', message:'Market session started — NSE/BSE pre-open phase', source:'market-monitor', payload:{ exchange:'NSE', session:'PRE_OPEN', startTime:'09:00:00 IST' }, raw:'' },
+    { id:'EVT-032', timestamp: ago(15), level:'info', levelRaw:'INFO', message:'Railway.app deployment #88 successful — loglens-dashboard v2.0', source:'ci-cd', payload:{ deployment:'#88', service:'loglens-dashboard', version:'v2.0', environment:'production', buildTime:'42s' }, raw:'' },
+
+    // CloudWatch
+    { id:'EVT-040', timestamp: ago(5), level:'cloudwatch', levelRaw:'CLOUDWATCH', message:'Lambda function timeout after 15s — /prod/loan-processor', source:'/aws/lambda/loan-processor', payload:{ logGroup:'/aws/lambda/loan-processor', logStream:'2024/01/15/[$LATEST]abc123', requestId:'req-9981', duration:'15001ms', maxMemory:'256MB', billedDuration:'15000ms', error:'Task timed out after 15.00 seconds' }, raw:'' },
+    { id:'EVT-041', timestamp: ago(13), level:'cloudwatch', levelRaw:'CLOUDWATCH', message:'CloudWatch metric alarm — CPUUtilization > 80% for 5 minutes', source:'/aws/ec2/prod-cluster', payload:{ logGroup:'/aws/ec2/prod-cluster', alarm:'HighCPU', metric:'CPUUtilization', value:'86%', threshold:'80%', period:'5m', action:'scale_out' }, raw:'' },
+    { id:'EVT-042', timestamp: ago(22), level:'cloudwatch', levelRaw:'INFO', message:'ECS task started — fintech-api container healthy', source:'/ecs/fintech-prod', payload:{ logGroup:'/ecs/fintech-prod', logStream:'fintech-api/main', taskId:'task-4421', cluster:'prod-cluster', status:'RUNNING' }, raw:'' },
+
+    // Debug
+    { id:'EVT-050', timestamp: ago(2), level:'debug', levelRaw:'DEBUG', message:'Cache miss for key user:4421:profile — fetching from DB', source:'cache-layer', payload:{ key:'user:4421:profile', cache:'Redis', hit:false, ttl:'300s' }, raw:'' },
+    { id:'EVT-051', timestamp: ago(16), level:'debug', levelRaw:'TRACE', message:'HTTP request intercepted by MuleSoft router — correlationId attached', source:'mulesoft', payload:{ correlationId:'corr-7733', flow:'API_MAIN_FLOW', httpMethod:'GET', uri:'/api/health' }, raw:'' },
+  ];
+
+  demo.forEach(l => { l.raw = JSON.stringify(l.payload, null, 2); });
+  allLogs = demo;
+  fileCount = 0;
+  updateBadges();
+  render();
+})();
+</script>
+
+</body>
+</html>
