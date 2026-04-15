@@ -3,487 +3,776 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>LogLens · Dashboard</title>
+<title>LogLens · Professional Log Intelligence</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cabinet+Grotesk:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&family=Instrument+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,300&family=JetBrains+Mono:wght@400;500&display=swap');
+/* ════════════════════════════════════════════════
+   LOGLENS PRO — White Theme / Apple-grade Motion
+   ════════════════════════════════════════════════ */
 
-  :root {
-    --bg: #0a0a0f;
-    --surface: rgba(255,255,255,0.04);
-    --surface-hover: rgba(255,255,255,0.07);
-    --border: rgba(255,255,255,0.08);
-    --border-strong: rgba(255,255,255,0.14);
-    --text: #f0f0f5;
-    --muted: #6e6e80;
-    --accent: #2997ff;
-    --accent-glow: rgba(41,151,255,0.25);
-    --green: #34c759;
-    --green-bg: rgba(52,199,89,0.1);
-    --red: #ff453a;
-    --red-bg: rgba(255,69,58,0.1);
-    --yellow: #ffd60a;
-    --yellow-bg: rgba(255,214,10,0.1);
-    --orange: #ff9f0a;
-    --orange-bg: rgba(255,159,10,0.1);
-    --purple: #bf5af2;
-    --purple-bg: rgba(191,90,242,0.1);
-    --cyan: #32ade6;
-    --sidebar-w: 230px;
-    --radius: 14px;
-    --radius-sm: 8px;
-  }
+:root {
+  /* Core palette */
+  --bg: #f8f7f5;
+  --bg2: #ffffff;
+  --bg3: #f0eeeb;
+  --surface: rgba(255,255,255,0.85);
+  --surface-hover: rgba(255,255,255,0.95);
+  --border: rgba(0,0,0,0.07);
+  --border-strong: rgba(0,0,0,0.12);
+  --text: #0f0f10;
+  --text-2: #3a3a40;
+  --muted: #8a8a96;
+  --muted2: #b0b0bc;
 
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  /* Brand */
+  --accent: #0066ff;
+  --accent-2: #4d94ff;
+  --accent-glow: rgba(0,102,255,0.15);
+  --accent-light: rgba(0,102,255,0.08);
 
-  html { scroll-behavior: smooth; }
+  /* Semantic */
+  --red: #e5290a;
+  --red-light: rgba(229,41,10,0.09);
+  --green: #0a8a4d;
+  --green-light: rgba(10,138,77,0.09);
+  --yellow: #c47a00;
+  --yellow-light: rgba(196,122,0,0.09);
+  --orange: #d45f00;
+  --orange-light: rgba(212,95,0,0.09);
+  --purple: #7b2fff;
+  --purple-light: rgba(123,47,255,0.09);
+  --cyan: #0099cc;
 
-  body {
-    font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
-    background: var(--bg);
-    color: var(--text);
-    min-height: 100vh;
-    overflow-x: hidden;
-    -webkit-font-smoothing: antialiased;
-  }
+  /* Shadows — Layered apple-style */
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 4px 16px rgba(0,0,0,0.08), 0 2px 6px rgba(0,0,0,0.04);
+  --shadow-lg: 0 12px 40px rgba(0,0,0,0.1), 0 4px 12px rgba(0,0,0,0.06);
+  --shadow-xl: 0 24px 60px rgba(0,0,0,0.12), 0 8px 20px rgba(0,0,0,0.08);
 
-  /* ─── BACKGROUND ─── */
-  .bg-orbs {
-    position: fixed; inset: 0; pointer-events: none; z-index: 0;
-    overflow: hidden;
-  }
-  .orb {
-    position: absolute; border-radius: 50%;
-    filter: blur(100px); opacity: 0.12;
-    animation: drift 20s ease-in-out infinite alternate;
-  }
-  .orb-1 { width: 600px; height: 600px; top: -200px; left: -150px; background: var(--accent); }
-  .orb-2 { width: 400px; height: 400px; bottom: 0; right: -100px; background: var(--purple); animation-delay: -8s; }
-  .orb-3 { width: 300px; height: 300px; top: 50%; left: 40%; background: var(--cyan); animation-delay: -14s; }
-  @keyframes drift { from { transform: translate(0,0) scale(1); } to { transform: translate(40px,30px) scale(1.05); } }
+  /* Layout */
+  --sidebar-w: 236px;
+  --radius: 16px;
+  --radius-sm: 10px;
+  --radius-xs: 6px;
+}
 
-  /* ─── LAYOUT ─── */
-  .shell { display: flex; min-height: 100vh; position: relative; z-index: 1; }
+*,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
 
-  /* ─── SIDEBAR ─── */
-  .sidebar {
-    width: var(--sidebar-w); flex-shrink: 0;
-    background: rgba(10,10,18,0.85);
-    backdrop-filter: blur(40px) saturate(180%);
-    border-right: 1px solid var(--border);
-    display: flex; flex-direction: column;
-    position: fixed; top: 0; left: 0; bottom: 0; z-index: 100;
-    padding: 20px 12px;
-    transition: transform 0.3s cubic-bezier(.4,0,.2,1);
-  }
-  .logo {
-    display: flex; align-items: center; gap: 10px;
-    padding: 8px 10px 20px;
-    border-bottom: 1px solid var(--border);
-    margin-bottom: 16px;
-  }
-  .logo-icon {
-    width: 34px; height: 34px; border-radius: 9px;
-    background: linear-gradient(135deg, var(--accent), var(--purple));
-    display: flex; align-items: center; justify-content: center;
-    font-size: 16px; box-shadow: 0 0 20px var(--accent-glow);
-    flex-shrink: 0;
-  }
-  .logo-name { font-size: 16px; font-weight: 700; letter-spacing: -.3px; }
-  .logo-sub { font-size: 10px; color: var(--muted); margin-top: 1px; font-weight: 400; }
+body {
+  font-family: 'Instrument Sans', 'Cabinet Grotesk', -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
 
-  .nav-section { font-size: 10px; font-weight: 600; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; padding: 4px 10px; margin: 12px 0 4px; }
+/* ── MESH BACKGROUND ── */
+.bg-mesh {
+  position: fixed; inset: 0; pointer-events: none; z-index: 0;
+  background:
+    radial-gradient(ellipse 800px 600px at 10% 20%, rgba(0,102,255,0.06) 0%, transparent 70%),
+    radial-gradient(ellipse 600px 500px at 90% 80%, rgba(123,47,255,0.05) 0%, transparent 70%),
+    radial-gradient(ellipse 500px 400px at 50% 50%, rgba(0,153,204,0.04) 0%, transparent 70%);
+  animation: meshDrift 25s ease-in-out infinite alternate;
+}
+@keyframes meshDrift {
+  from { opacity: 1; transform: scale(1) translate(0,0); }
+  to { opacity: 0.8; transform: scale(1.03) translate(12px, -8px); }
+}
 
-  .nav-item {
-    display: flex; align-items: center; gap: 10px;
-    padding: 9px 12px; border-radius: var(--radius-sm);
-    font-size: 13.5px; font-weight: 500; color: var(--muted);
-    cursor: pointer; transition: all .2s ease;
-    position: relative; user-select: none;
-  }
-  .nav-item:hover { background: var(--surface-hover); color: var(--text); }
-  .nav-item.active { background: var(--surface); color: var(--text); }
-  .nav-item.active::before {
-    content: ''; position: absolute; left: 0; top: 20%; bottom: 20%;
-    width: 3px; border-radius: 2px; background: var(--accent);
-  }
-  .nav-icon { width: 18px; text-align: center; font-size: 14px; flex-shrink: 0; }
-  .nav-badge {
-    margin-left: auto; font-size: 10px; font-weight: 600;
-    padding: 1px 7px; border-radius: 20px; min-width: 20px; text-align: center;
-  }
-  .badge-red { background: var(--red-bg); color: var(--red); }
-  .badge-green { background: var(--green-bg); color: var(--green); }
-  .badge-yellow { background: var(--yellow-bg); color: var(--yellow); }
-  .badge-blue { background: rgba(41,151,255,0.15); color: var(--accent); }
+/* Subtle dot grid */
+.bg-grid {
+  position: fixed; inset: 0; pointer-events: none; z-index: 0;
+  background-image: radial-gradient(circle, rgba(0,0,0,0.055) 1px, transparent 1px);
+  background-size: 28px 28px;
+  mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 40%, transparent 100%);
+}
 
-  .sidebar-footer { margin-top: auto; padding-top: 12px; border-top: 1px solid var(--border); }
-  .upload-btn {
-    display: flex; align-items: center; gap: 8px;
-    width: 100%; padding: 10px 12px; border-radius: var(--radius-sm);
-    background: linear-gradient(135deg, var(--accent), #1a7aff);
-    border: none; color: #fff; font-family: inherit; font-size: 13px; font-weight: 600;
-    cursor: pointer; transition: all .2s ease; justify-content: center;
-    box-shadow: 0 4px 16px rgba(41,151,255,.3);
-  }
-  .upload-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 24px rgba(41,151,255,.4); }
-  .upload-btn:active { transform: translateY(0); }
+/* ── LAYOUT ── */
+.shell { display: flex; min-height: 100vh; position: relative; z-index: 1; }
 
-  /* ─── MAIN ─── */
-  .main { margin-left: var(--sidebar-w); flex: 1; padding: 28px 32px; min-height: 100vh; }
+/* ── LOADING BAR ── */
+.loading-bar {
+  position: fixed; top: 0; left: 0; right: 0; height: 3px; z-index: 9999;
+  background: linear-gradient(90deg, var(--accent), var(--purple), var(--cyan), var(--accent));
+  background-size: 200% 100%;
+  transform: scaleX(0); transform-origin: left;
+  display: none; border-radius: 0 3px 3px 0;
+}
+.loading-bar.active {
+  display: block;
+  animation: loadBar 1.4s ease-in-out infinite, shimmer 2s linear infinite;
+}
+@keyframes loadBar {
+  0% { transform: scaleX(0) translateX(0); }
+  50% { transform: scaleX(0.7) translateX(5%); }
+  100% { transform: scaleX(1) translateX(0); }
+}
+@keyframes shimmer { to { background-position: 200% 0; } }
 
-  /* ─── TOPBAR ─── */
-  .topbar {
-    display: flex; align-items: center; gap: 14px; margin-bottom: 16px;
-    flex-wrap: wrap;
-    animation: fadeDown .4s ease both;
-  }
-  .search-wrap { flex: 1; position: relative; min-width: 220px; }
-  .search-input {
-    width: 100%; background: var(--surface); border: 1px solid var(--border);
-    border-radius: 10px; padding: 10px 36px 10px 38px;
-    color: var(--text); font-family: inherit; font-size: 13.5px;
-    outline: none; transition: border-color .2s, box-shadow .2s;
-  }
-  .search-input::placeholder { color: var(--muted); }
-  .search-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
-  @keyframes fadeDown { from { opacity:0; transform:translateY(-12px); } to { opacity:1; transform:none; } }
-  .page-title { font-size: 26px; font-weight: 700; letter-spacing: -.5px; flex-shrink: 0; }
-  .page-title span { color: var(--accent); }
-  .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: 14px; pointer-events: none; }
-  .search-clear {
-    position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
-    background: none; border: none; color: var(--muted); cursor: pointer; font-size: 13px;
-    padding: 2px 6px; border-radius: 4px; transition: color .2s, background .2s;
-    display: none;
-  }
-  .search-clear:hover { color: var(--text); background: var(--surface-hover); }
-  .search-clear.visible { display: block; }
-  .search-match { background: rgba(41,151,255,.25); color: var(--accent); border-radius: 2px; padding: 0 1px; }
+/* ══════════════════════════════════
+   SIDEBAR
+══════════════════════════════════ */
+.sidebar {
+  width: var(--sidebar-w); flex-shrink: 0;
+  background: rgba(255,255,255,0.82);
+  backdrop-filter: blur(40px) saturate(200%);
+  -webkit-backdrop-filter: blur(40px) saturate(200%);
+  border-right: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  position: fixed; top: 0; left: 0; bottom: 0; z-index: 100;
+  padding: 18px 10px;
+  box-shadow: 2px 0 24px rgba(0,0,0,0.05);
+  transition: transform 0.35s cubic-bezier(.4,0,.2,1);
+}
 
-  .search-mode-wrap {
-    display: flex; gap: 4px; flex-shrink: 0;
-  }
-  .mode-btn {
-    padding: 8px 12px; border-radius: 8px; font-size: 12px; font-weight: 500;
-    border: 1px solid var(--border); background: var(--surface);
-    color: var(--muted); cursor: pointer; transition: all .2s; white-space: nowrap;
-    font-family: inherit;
-  }
-  .mode-btn:hover { border-color: var(--border-strong); color: var(--text); }
-  .mode-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+.logo {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 10px 18px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 14px;
+}
+.logo-icon {
+  width: 36px; height: 36px; border-radius: 10px;
+  background: linear-gradient(135deg, var(--accent) 0%, var(--purple) 100%);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; box-shadow: 0 4px 16px rgba(0,102,255,0.3);
+  flex-shrink: 0; position: relative; overflow: hidden;
+  animation: logoPulse 4s ease-in-out infinite;
+}
+@keyframes logoPulse {
+  0%,100% { box-shadow: 0 4px 16px rgba(0,102,255,0.3); }
+  50% { box-shadow: 0 4px 24px rgba(0,102,255,0.5), 0 0 0 4px rgba(0,102,255,0.1); }
+}
+.logo-name {
+  font-family: 'Cabinet Grotesk', sans-serif;
+  font-size: 17px; font-weight: 900; letter-spacing: -.5px;
+  background: linear-gradient(135deg, var(--text) 40%, var(--accent));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.logo-sub { font-size: 10px; color: var(--muted); margin-top: 1px; font-weight: 500; letter-spacing: .2px; }
 
-  .filter-row {
-    display: flex; gap: 8px; margin-bottom: 24px;
-    animation: fadeDown .4s .1s ease both;
-  }
-  .filter-chip {
-    padding: 6px 14px; border-radius: 20px; font-size: 12.5px; font-weight: 500;
-    border: 1px solid var(--border); background: var(--surface);
-    color: var(--muted); cursor: pointer; transition: all .2s;
-    white-space: nowrap;
-  }
-  .filter-chip:hover { border-color: var(--border-strong); color: var(--text); }
-  .filter-chip.active { background: var(--accent); border-color: var(--accent); color: #fff; }
-  .filter-chip.chip-red.active { background: var(--red); border-color: var(--red); }
-  .filter-chip.chip-green.active { background: var(--green); border-color: var(--green); }
-  .filter-chip.chip-yellow.active { background: var(--yellow); border-color: var(--yellow); color: #000; }
-  .filter-chip.chip-orange.active { background: var(--orange); border-color: var(--orange); color: #000; }
-  .filter-chip.chip-purple.active { background: var(--purple); border-color: var(--purple); }
+.nav-section {
+  font-size: 9.5px; font-weight: 700; color: var(--muted2);
+  letter-spacing: 1.2px; text-transform: uppercase;
+  padding: 4px 12px; margin: 12px 0 5px;
+}
 
-  /* ─── STATS ─── */
-  .stats-grid {
-    display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px;
-    margin-bottom: 28px; animation: fadeDown .4s .15s ease both;
-  }
-  @media (max-width: 1200px) { .stats-grid { grid-template-columns: repeat(3, 1fr); } }
+.nav-item {
+  display: flex; align-items: center; gap: 9px;
+  padding: 8px 12px; border-radius: var(--radius-sm);
+  font-size: 13px; font-weight: 500; color: var(--text-2);
+  cursor: pointer;
+  transition: background 0.18s ease, color 0.18s ease, transform 0.15s ease;
+  position: relative; user-select: none;
+}
+.nav-item:hover {
+  background: rgba(0,102,255,0.06);
+  color: var(--accent);
+  transform: translateX(2px);
+}
+.nav-item.active {
+  background: rgba(0,102,255,0.09);
+  color: var(--accent);
+  font-weight: 600;
+}
+.nav-item.active::before {
+  content: ''; position: absolute; left: 0; top: 18%; bottom: 18%;
+  width: 3px; border-radius: 2px;
+  background: linear-gradient(to bottom, var(--accent), var(--purple));
+}
+.nav-icon { width: 17px; text-align: center; font-size: 13px; flex-shrink: 0; opacity: 0.8; }
+.nav-badge {
+  margin-left: auto; font-size: 10px; font-weight: 700;
+  padding: 1px 7px; border-radius: 20px; min-width: 20px; text-align: center;
+  font-family: 'Cabinet Grotesk', sans-serif;
+  transition: transform 0.2s ease;
+}
+.nav-item:hover .nav-badge { transform: scale(1.1); }
+.badge-red { background: var(--red-light); color: var(--red); }
+.badge-green { background: var(--green-light); color: var(--green); }
+.badge-yellow { background: var(--yellow-light); color: var(--yellow); }
+.badge-blue { background: var(--accent-light); color: var(--accent); }
 
-  .stat-card {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: var(--radius); padding: 18px 20px;
-    position: relative; overflow: hidden; cursor: pointer;
-    transition: all .25s cubic-bezier(.4,0,.2,1);
-  }
-  .stat-card:hover { transform: translateY(-3px); border-color: var(--border-strong); box-shadow: 0 12px 40px rgba(0,0,0,.3); }
-  .stat-card::before {
-    content: ''; position: absolute; inset: 0; opacity: 0.07;
-    transition: opacity .25s;
-  }
-  .stat-card:hover::before { opacity: .12; }
-  .stat-card.s-total::before { background: linear-gradient(135deg, var(--accent), transparent); }
-  .stat-card.s-error::before { background: linear-gradient(135deg, var(--red), transparent); }
-  .stat-card.s-success::before { background: linear-gradient(135deg, var(--green), transparent); }
-  .stat-card.s-warn::before { background: linear-gradient(135deg, var(--yellow), transparent); }
-  .stat-card.s-cloud::before { background: linear-gradient(135deg, var(--purple), transparent); }
+.sidebar-footer { margin-top: auto; padding-top: 12px; border-top: 1px solid var(--border); }
+.upload-btn {
+  display: flex; align-items: center; gap: 8px;
+  width: 100%; padding: 10px 14px; border-radius: var(--radius-sm);
+  background: linear-gradient(135deg, var(--accent) 0%, #0050cc 100%);
+  border: none; color: #fff; font-family: 'Cabinet Grotesk', inherit;
+  font-size: 13px; font-weight: 700; letter-spacing: -.1px;
+  cursor: pointer;
+  transition: all 0.22s cubic-bezier(.4,0,.2,1);
+  justify-content: center;
+  box-shadow: 0 4px 16px rgba(0,102,255,0.3), 0 1px 4px rgba(0,102,255,0.2);
+  position: relative; overflow: hidden;
+}
+.upload-btn::after {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.15), transparent);
+  opacity: 0; transition: opacity 0.2s;
+}
+.upload-btn:hover::after { opacity: 1; }
+.upload-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(0,102,255,0.4); }
+.upload-btn:active { transform: translateY(0); box-shadow: 0 2px 8px rgba(0,102,255,0.3); }
 
-  .stat-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 12px; }
-  .stat-icon {
-    width: 36px; height: 36px; border-radius: 10px;
-    display: flex; align-items: center; justify-content: center; font-size: 16px;
-  }
-  .stat-trend { font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 20px; }
-  .trend-up { background: var(--green-bg); color: var(--green); }
-  .trend-down { background: var(--red-bg); color: var(--red); }
-  .trend-neu { background: var(--surface); color: var(--muted); }
-  .stat-num { font-size: 30px; font-weight: 700; letter-spacing: -1px; line-height: 1; }
-  .stat-label { font-size: 12px; color: var(--muted); margin-top: 4px; font-weight: 500; }
+/* ══════════════════════════════════
+   MAIN
+══════════════════════════════════ */
+.main { margin-left: var(--sidebar-w); flex: 1; padding: 28px 32px; min-height: 100vh; }
 
-  /* ─── UPLOAD ZONE ─── */
-  .upload-zone {
-    border: 2px dashed var(--border-strong); border-radius: var(--radius);
-    padding: 48px 24px; text-align: center; cursor: pointer;
-    transition: all .3s ease; margin-bottom: 28px;
-    animation: fadeDown .4s .2s ease both;
-    background: var(--surface);
-  }
-  .upload-zone:hover, .upload-zone.drag-over {
-    border-color: var(--accent); background: var(--accent-glow);
-    box-shadow: 0 0 40px rgba(41,151,255,.1);
-  }
-  .upload-zone .upload-icon { font-size: 44px; margin-bottom: 12px; display: block; }
-  .upload-zone h3 { font-size: 16px; font-weight: 600; margin-bottom: 6px; }
-  .upload-zone p { font-size: 13px; color: var(--muted); }
-  .upload-zone p span { color: var(--accent); font-weight: 500; }
+/* ── TOPBAR ── */
+.topbar {
+  display: flex; align-items: center; gap: 12px;
+  margin-bottom: 20px; flex-wrap: wrap;
+  animation: fadeDown 0.5s cubic-bezier(.4,0,.2,1) both;
+}
+.page-title {
+  font-family: 'Cabinet Grotesk', sans-serif;
+  font-size: 28px; font-weight: 900; letter-spacing: -1px; flex-shrink: 0;
+  background: linear-gradient(135deg, var(--text) 30%, var(--accent) 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+.search-wrap { flex: 1; position: relative; min-width: 220px; }
+.search-input {
+  width: 100%;
+  background: white;
+  border: 1.5px solid var(--border-strong);
+  border-radius: 12px;
+  padding: 10px 38px 10px 40px;
+  color: var(--text); font-family: inherit; font-size: 13.5px;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: var(--shadow-sm);
+}
+.search-input::placeholder { color: var(--muted2); }
+.search-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px rgba(0,102,255,0.1), var(--shadow-sm);
+}
+.search-icon { position: absolute; left: 13px; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: 14px; pointer-events: none; }
+.search-clear {
+  position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+  background: none; border: none; color: var(--muted); cursor: pointer; font-size: 12px;
+  width: 20px; height: 20px; border-radius: 50%; display: none;
+  align-items: center; justify-content: center;
+  transition: background 0.15s, color 0.15s;
+}
+.search-clear:hover { background: var(--bg3); color: var(--text); }
+.search-clear.visible { display: flex; }
+.search-match { background: rgba(0,102,255,0.15); color: var(--accent); border-radius: 3px; padding: 0 2px; }
 
-  /* ─── LOG TABLE ─── */
-  .log-section { animation: fadeDown .4s .25s ease both; }
-  .section-header {
-    display: flex; align-items: center; justify-content: space-between;
-    margin-bottom: 14px;
-  }
-  .section-title { font-size: 15px; font-weight: 600; }
-  .section-count { font-size: 12px; color: var(--muted); background: var(--surface); border: 1px solid var(--border); padding: 2px 10px; border-radius: 20px; }
+.search-mode-wrap { display: flex; gap: 4px; flex-shrink: 0; }
+.mode-btn {
+  padding: 8px 12px; border-radius: 8px; font-size: 12px; font-weight: 600;
+  border: 1.5px solid var(--border-strong);
+  background: white;
+  color: var(--muted); cursor: pointer;
+  transition: all 0.18s ease; white-space: nowrap;
+  font-family: 'Cabinet Grotesk', inherit;
+  box-shadow: var(--shadow-sm);
+}
+.mode-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
+.mode-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; box-shadow: 0 2px 10px rgba(0,102,255,0.3); }
 
-  .log-table-wrap {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: var(--radius); overflow: hidden;
-  }
-  .log-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  .log-table thead th {
-    background: rgba(255,255,255,0.03); padding: 12px 16px; text-align: left;
-    font-size: 11px; font-weight: 600; color: var(--muted); letter-spacing: .5px; text-transform: uppercase;
-    border-bottom: 1px solid var(--border); white-space: nowrap;
-  }
-  .log-table tbody tr {
-    border-bottom: 1px solid var(--border);
-    cursor: pointer; transition: background .15s;
-    animation: rowIn .3s ease both;
-  }
-  .log-table tbody tr:last-child { border-bottom: none; }
-  .log-table tbody tr:hover { background: var(--surface-hover); }
-  @keyframes rowIn { from { opacity:0; transform:translateX(-8px); } to { opacity:1; transform:none; } }
+@keyframes fadeDown {
+  from { opacity: 0; transform: translateY(-14px); }
+  to { opacity: 1; transform: none; }
+}
 
-  .log-table td { padding: 11px 16px; vertical-align: middle; }
-  .log-table td:first-child { width: 28px; }
+/* ── FILTER CHIPS ── */
+.filter-row {
+  display: flex; gap: 6px; margin-bottom: 26px; flex-wrap: wrap;
+  animation: fadeDown 0.5s 0.07s cubic-bezier(.4,0,.2,1) both;
+}
+.filter-chip {
+  padding: 6px 14px; border-radius: 20px; font-size: 12.5px; font-weight: 600;
+  border: 1.5px solid var(--border-strong);
+  background: white; color: var(--text-2);
+  cursor: pointer;
+  transition: all 0.18s cubic-bezier(.4,0,.2,1);
+  white-space: nowrap; box-shadow: var(--shadow-sm);
+  font-family: 'Cabinet Grotesk', inherit;
+}
+.filter-chip:hover { transform: translateY(-1px); box-shadow: var(--shadow-md); border-color: var(--border-strong); }
+.filter-chip.active { color: #fff; transform: translateY(-1px); box-shadow: var(--shadow-md); }
+.filter-chip.active { background: var(--text); border-color: var(--text); }
+.filter-chip.chip-red.active { background: var(--red); border-color: var(--red); box-shadow: 0 4px 12px rgba(229,41,10,0.25); }
+.filter-chip.chip-green.active { background: var(--green); border-color: var(--green); box-shadow: 0 4px 12px rgba(10,138,77,0.25); }
+.filter-chip.chip-yellow.active { background: var(--yellow); border-color: var(--yellow); color: #fff; box-shadow: 0 4px 12px rgba(196,122,0,0.25); }
+.filter-chip.chip-orange.active { background: var(--orange); border-color: var(--orange); box-shadow: 0 4px 12px rgba(212,95,0,0.25); }
+.filter-chip.chip-purple.active { background: var(--purple); border-color: var(--purple); box-shadow: 0 4px 12px rgba(123,47,255,0.25); }
+.filter-chip.chip-blue.active { background: var(--accent); border-color: var(--accent); box-shadow: 0 4px 12px rgba(0,102,255,0.25); }
 
-  .level-dot {
-    width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; display: inline-block;
-    position: relative;
-  }
-  .level-dot::after {
-    content: ''; position: absolute; inset: -3px; border-radius: 50%;
-    animation: pulse-dot 2s ease-in-out infinite;
-  }
-  .dot-error { background: var(--red); } .dot-error::after { background: rgba(255,69,58,.25); }
-  .dot-success { background: var(--green); } .dot-success::after { background: rgba(52,199,89,.2); }
-  .dot-warn { background: var(--yellow); } .dot-warn::after { background: rgba(255,214,10,.2); }
-  .dot-info { background: var(--accent); } .dot-info::after { background: rgba(41,151,255,.2); }
-  .dot-cloud { background: var(--purple); } .dot-cloud::after { background: rgba(191,90,242,.2); }
-  .dot-debug { background: var(--muted); }
-  @keyframes pulse-dot { 0%,100%{opacity:0;transform:scale(1);} 50%{opacity:1;transform:scale(1.5);} }
+/* ══════════════════════════════════
+   STAT CARDS
+══════════════════════════════════ */
+.stats-grid {
+  display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px;
+  margin-bottom: 28px;
+  animation: fadeDown 0.5s 0.12s cubic-bezier(.4,0,.2,1) both;
+}
+@media (max-width: 1200px) { .stats-grid { grid-template-columns: repeat(3, 1fr); } }
 
-  .level-badge {
-    display: inline-flex; align-items: center; gap: 5px;
-    padding: 3px 9px; border-radius: 6px; font-size: 11px; font-weight: 600; letter-spacing: .3px;
-  }
-  .badge-error-full { background: var(--red-bg); color: var(--red); }
-  .badge-success-full { background: var(--green-bg); color: var(--green); }
-  .badge-warn-full { background: var(--yellow-bg); color: var(--yellow); }
-  .badge-info-full { background: rgba(41,151,255,0.1); color: var(--accent); }
-  .badge-cloud-full { background: var(--purple-bg); color: var(--purple); }
-  .badge-debug-full { background: rgba(110,110,128,0.15); color: var(--muted); }
+.stat-card {
+  background: white;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius); padding: 20px 20px 16px;
+  position: relative; overflow: hidden; cursor: pointer;
+  transition: all 0.25s cubic-bezier(.4,0,.2,1);
+  box-shadow: var(--shadow-sm);
+}
+.stat-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+  border-color: transparent;
+}
+.stat-card::before {
+  content: ''; position: absolute; inset: 0; opacity: 0;
+  transition: opacity 0.25s ease;
+}
+.stat-card:hover::before { opacity: 1; }
+.stat-card.s-total::before  { background: linear-gradient(135deg, rgba(0,102,255,0.06), transparent 70%); }
+.stat-card.s-error::before  { background: linear-gradient(135deg, rgba(229,41,10,0.06), transparent 70%); }
+.stat-card.s-success::before { background: linear-gradient(135deg, rgba(10,138,77,0.06), transparent 70%); }
+.stat-card.s-warn::before   { background: linear-gradient(135deg, rgba(196,122,0,0.06), transparent 70%); }
+.stat-card.s-cloud::before  { background: linear-gradient(135deg, rgba(123,47,255,0.06), transparent 70%); }
 
-  .event-id { font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: var(--accent); }
-  .ts { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--muted); white-space: nowrap; }
-  .msg-cell { max-width: 420px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; }
-  .msg-cell:hover { color: #2997ff; }
-  .source-tag {
-    font-size: 11px; padding: 2px 8px; border-radius: 5px;
-    background: var(--surface-hover); color: var(--muted); font-family: 'JetBrains Mono', monospace;
-    white-space: nowrap;
-  }
+/* Colored top stripe */
+.stat-card::after {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  border-radius: 2px 2px 0 0; opacity: 0;
+  transition: opacity 0.25s ease;
+}
+.stat-card:hover::after { opacity: 1; }
+.stat-card.s-total::after { background: linear-gradient(90deg, var(--accent), var(--accent-2)); }
+.stat-card.s-error::after { background: linear-gradient(90deg, var(--red), #ff6b5a); }
+.stat-card.s-success::after { background: linear-gradient(90deg, var(--green), #22c774); }
+.stat-card.s-warn::after { background: linear-gradient(90deg, var(--yellow), #f0a000); }
+.stat-card.s-cloud::after { background: linear-gradient(90deg, var(--purple), #a855f7); }
 
-  /* ─── DETAIL PANEL ─── */
-  .detail-overlay {
-    position: fixed; inset: 0; background: rgba(0,0,0,.6); z-index: 200;
-    backdrop-filter: blur(6px);
-    opacity: 0; pointer-events: none; transition: opacity .25s;
-  }
-  .detail-overlay.open { opacity: 1; pointer-events: all; }
+.stat-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 14px; }
+.stat-icon {
+  width: 38px; height: 38px; border-radius: 11px;
+  display: flex; align-items: center; justify-content: center; font-size: 17px;
+  transition: transform 0.2s ease;
+}
+.stat-card:hover .stat-icon { transform: scale(1.1) rotate(-5deg); }
+.stat-trend { font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 20px; font-family: 'Cabinet Grotesk', sans-serif; }
+.trend-up { background: var(--green-light); color: var(--green); }
+.trend-down { background: var(--red-light); color: var(--red); }
+.trend-neu { background: var(--bg3); color: var(--muted); }
 
-  .detail-panel {
-    position: fixed; top: 0; right: 0; bottom: 0; width: 500px; max-width: 92vw;
-    background: rgba(16,16,26,0.97); border-left: 1px solid var(--border);
-    backdrop-filter: blur(40px);
-    z-index: 201; overflow-y: auto; padding: 28px;
-    transform: translateX(100%); transition: transform .3s cubic-bezier(.4,0,.2,1);
-    display: flex; flex-direction: column; gap: 20px;
-  }
-  .detail-panel.open { transform: translateX(0); }
+.stat-num {
+  font-family: 'Cabinet Grotesk', sans-serif;
+  font-size: 34px; font-weight: 900; letter-spacing: -1.5px; line-height: 1;
+  transition: transform 0.2s ease;
+}
+.stat-card:hover .stat-num { transform: scale(1.04); }
+.stat-label { font-size: 12px; color: var(--muted); margin-top: 5px; font-weight: 500; }
 
-  .detail-close {
-    position: absolute; top: 20px; right: 20px;
-    width: 30px; height: 30px; border-radius: 50%;
-    background: var(--surface); border: 1px solid var(--border);
-    color: var(--muted); cursor: pointer; display: flex; align-items: center; justify-content: center;
-    font-size: 16px; transition: all .2s;
-  }
-  .detail-close:hover { background: var(--red-bg); color: var(--red); border-color: var(--red); }
+/* ══════════════════════════════════
+   UPLOAD ZONE
+══════════════════════════════════ */
+.upload-zone {
+  border: 2px dashed var(--border-strong);
+  border-radius: var(--radius);
+  padding: 52px 24px; text-align: center; cursor: pointer;
+  transition: all 0.3s cubic-bezier(.4,0,.2,1);
+  margin-bottom: 28px;
+  animation: fadeDown 0.5s 0.17s cubic-bezier(.4,0,.2,1) both;
+  background: white;
+  box-shadow: var(--shadow-sm);
+  position: relative; overflow: hidden;
+}
+.upload-zone::before {
+  content: ''; position: absolute; inset: 0;
+  background: radial-gradient(ellipse 80% 60% at 50% 50%, rgba(0,102,255,0.04), transparent);
+  opacity: 0; transition: opacity 0.3s ease;
+}
+.upload-zone:hover, .upload-zone.drag-over {
+  border-color: var(--accent);
+  border-style: solid;
+  box-shadow: var(--shadow-md), 0 0 0 4px rgba(0,102,255,0.08);
+  transform: translateY(-2px);
+}
+.upload-zone:hover::before, .upload-zone.drag-over::before { opacity: 1; }
+.upload-zone .upload-icon {
+  font-size: 48px; margin-bottom: 14px; display: block;
+  transition: transform 0.3s cubic-bezier(.34,1.56,.64,1);
+  filter: drop-shadow(0 4px 12px rgba(0,102,255,0.15));
+}
+.upload-zone:hover .upload-icon { transform: scale(1.15) translateY(-4px); }
+.upload-zone h3 {
+  font-family: 'Cabinet Grotesk', sans-serif;
+  font-size: 17px; font-weight: 800; margin-bottom: 7px; letter-spacing: -.3px;
+}
+.upload-zone p { font-size: 13px; color: var(--muted); }
+.upload-zone p span { color: var(--accent); font-weight: 600; }
 
-  .detail-title { font-size: 18px; font-weight: 700; letter-spacing: -.3px; padding-right: 40px; }
-  .detail-meta { display: flex; flex-wrap: wrap; gap: 8px; }
-  .detail-kv {
-    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm);
-    padding: 14px 16px;
-  }
-  .detail-kv-label { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 6px; }
-  .detail-kv-val { font-size: 13.5px; word-break: break-all; }
-  .detail-kv-val.mono { font-family: 'JetBrains Mono', monospace; font-size: 12px; }
+/* ══════════════════════════════════
+   LOG TABLE
+══════════════════════════════════ */
+.log-section { animation: fadeDown 0.5s 0.22s cubic-bezier(.4,0,.2,1) both; }
+.section-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 12px;
+}
+.section-title {
+  font-family: 'Cabinet Grotesk', sans-serif;
+  font-size: 15px; font-weight: 800; letter-spacing: -.2px;
+}
+.section-count {
+  font-size: 12px; color: var(--muted);
+  background: var(--bg3); border: 1px solid var(--border);
+  padding: 3px 11px; border-radius: 20px; font-weight: 600;
+  font-family: 'Cabinet Grotesk', sans-serif;
+}
 
-  .payload-box {
-    background: rgba(0,0,0,.4); border: 1px solid var(--border); border-radius: var(--radius-sm);
-    padding: 16px; overflow: auto; max-height: 360px;
-  }
-  .payload-box pre { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #b0b8d0; white-space: pre-wrap; word-break: break-all; }
+.log-table-wrap {
+  background: white;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius); overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+.log-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.log-table thead th {
+  background: var(--bg);
+  padding: 11px 16px; text-align: left;
+  font-size: 10.5px; font-weight: 700; color: var(--muted);
+  letter-spacing: .7px; text-transform: uppercase;
+  border-bottom: 1.5px solid var(--border);
+  white-space: nowrap;
+  font-family: 'Cabinet Grotesk', sans-serif;
+}
+.log-table tbody tr {
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  transition: background 0.12s ease, transform 0.1s ease;
+  animation: rowIn 0.3s cubic-bezier(.4,0,.2,1) both;
+}
+.log-table tbody tr:last-child { border-bottom: none; }
+.log-table tbody tr:hover { background: rgba(0,102,255,0.03); }
+.log-table tbody tr:hover td { color: var(--text); }
+@keyframes rowIn {
+  from { opacity: 0; transform: translateX(-10px); }
+  to { opacity: 1; transform: none; }
+}
 
-  /* ─── EMPTY STATE ─── */
-  .empty-state {
-    text-align: center; padding: 72px 24px;
-    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
-  }
-  .empty-icon { font-size: 56px; margin-bottom: 16px; filter: grayscale(1) opacity(.5); }
-  .empty-state h3 { font-size: 17px; font-weight: 600; margin-bottom: 8px; }
-  .empty-state p { font-size: 13.5px; color: var(--muted); }
+.log-table td { padding: 12px 16px; vertical-align: middle; color: var(--text-2); }
+.log-table td:first-child { width: 28px; }
 
-  /* ─── TOAST ─── */
-  .toast-wrap { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); z-index: 999; display: flex; flex-direction: column; gap: 8px; align-items: center; }
-  .toast {
-    background: rgba(24,24,36,0.95); border: 1px solid var(--border);
-    backdrop-filter: blur(20px); border-radius: 10px;
-    padding: 12px 20px; font-size: 13.5px; font-weight: 500;
-    display: flex; align-items: center; gap: 10px;
-    animation: toastIn .35s cubic-bezier(.4,0,.2,1) both;
-    box-shadow: 0 8px 32px rgba(0,0,0,.4);
-  }
-  @keyframes toastIn { from { opacity:0; transform:translateY(16px) scale(.95); } to { opacity:1; transform:none; } }
-  .toast.out { animation: toastOut .3s ease forwards; }
-  @keyframes toastOut { to { opacity:0; transform:translateY(12px) scale(.95); } }
+/* Level dots */
+.level-dot {
+  width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+  display: inline-block; position: relative;
+}
+.level-dot::after {
+  content: ''; position: absolute; inset: -4px; border-radius: 50%;
+  animation: pulseDot 2.5s ease-in-out infinite;
+}
+.dot-error { background: var(--red); }
+.dot-error::after { background: rgba(229,41,10,0.2); }
+.dot-success { background: var(--green); }
+.dot-success::after { background: rgba(10,138,77,0.18); }
+.dot-warn { background: var(--yellow); }
+.dot-warn::after { background: rgba(196,122,0,0.2); }
+.dot-info { background: var(--accent); }
+.dot-info::after { background: rgba(0,102,255,0.18); }
+.dot-cloud { background: var(--purple); }
+.dot-cloud::after { background: rgba(123,47,255,0.18); }
+.dot-debug { background: var(--muted2); }
+@keyframes pulseDot {
+  0%,100% { opacity: 0; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.6); }
+}
 
-  /* ─── TIMELINE VIEW ─── */
-  .timeline { display: flex; flex-direction: column; gap: 0; }
-  .tl-item {
-    display: flex; gap: 14px; padding: 14px 0;
-    border-bottom: 1px solid var(--border); cursor: pointer;
-    animation: rowIn .3s ease both;
-    transition: background .15s;
-  }
-  .tl-item:hover { background: var(--surface-hover); border-radius: var(--radius-sm); padding-left: 8px; padding-right: 8px; }
-  .tl-left { display: flex; flex-direction: column; align-items: center; gap: 0; }
-  .tl-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; margin-top: 4px; }
-  .tl-line { width: 2px; flex: 1; background: var(--border); min-height: 20px; margin: 4px 4px 0; }
-  .tl-content { flex: 1; min-width: 0; }
-  .tl-header { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 4px; }
-  .tl-msg { font-size: 13.5px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .tl-ts { font-size: 11px; color: var(--muted); font-family: 'JetBrains Mono', monospace; margin-top: 2px; }
+/* Level badges */
+.level-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 9px; border-radius: 6px;
+  font-size: 10.5px; font-weight: 700; letter-spacing: .4px;
+  font-family: 'Cabinet Grotesk', sans-serif;
+}
+.badge-error-full { background: var(--red-light); color: var(--red); }
+.badge-success-full { background: var(--green-light); color: var(--green); }
+.badge-warn-full { background: var(--yellow-light); color: var(--yellow); }
+.badge-info-full { background: var(--accent-light); color: var(--accent); }
+.badge-cloud-full { background: var(--purple-light); color: var(--purple); }
+.badge-debug-full { background: var(--bg3); color: var(--muted); }
 
-  /* ─── CLOUDWATCH PANEL ─── */
-  .cw-card {
-    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
-    padding: 18px 20px; margin-bottom: 10px;
-    transition: all .2s; cursor: pointer;
-  }
-  .cw-card:hover { border-color: var(--purple); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(191,90,242,.1); }
-  .cw-header { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
-  .cw-group { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--purple); }
-  .cw-stream { font-size: 11px; color: var(--muted); }
-  .cw-events { font-size: 13px; }
+.event-id {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11.5px; color: var(--accent); font-weight: 500;
+}
+.ts {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px; color: var(--muted2); white-space: nowrap;
+}
+.msg-cell { max-width: 420px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.msg-cell:hover { color: var(--accent); }
+.source-tag {
+  font-size: 11px; padding: 3px 9px; border-radius: 6px;
+  background: var(--bg3); color: var(--muted);
+  font-family: 'JetBrains Mono', monospace;
+  white-space: nowrap; border: 1px solid var(--border);
+  font-weight: 500;
+}
 
-  /* ─── SCROLLBAR ─── */
-  ::-webkit-scrollbar { width: 6px; height: 6px; }
-  ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
-  ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+/* ══════════════════════════════════
+   DETAIL PANEL
+══════════════════════════════════ */
+.detail-overlay {
+  position: fixed; inset: 0;
+  background: rgba(15,15,16,0.35);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 200;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.28s ease;
+}
+.detail-overlay.open { opacity: 1; pointer-events: all; }
 
-  /* ─── LOADING BAR ─── */
-  .loading-bar {
-    position: fixed; top: 0; left: 0; right: 0; height: 2px; z-index: 9999;
-    background: linear-gradient(90deg, var(--accent), var(--purple), var(--cyan));
-    transform: scaleX(0); transform-origin: left; transition: transform .4s ease;
-    display: none;
-  }
-  .loading-bar.active { display: block; animation: loadBar 1.2s ease-in-out infinite; }
-  @keyframes loadBar { 0%{transform:scaleX(0) translateX(0);} 50%{transform:scaleX(0.8) translateX(10%);} 100%{transform:scaleX(1) translateX(0);} }
+.detail-panel {
+  position: fixed; top: 0; right: 0; bottom: 0; width: 520px; max-width: 92vw;
+  background: white;
+  border-left: 1.5px solid var(--border);
+  box-shadow: -16px 0 60px rgba(0,0,0,0.12);
+  z-index: 201; overflow-y: auto; padding: 28px;
+  transform: translateX(100%);
+  transition: transform 0.32s cubic-bezier(.4,0,.2,1);
+  display: flex; flex-direction: column; gap: 18px;
+}
+.detail-panel.open { transform: translateX(0); }
 
-  .hidden { display: none !important; }
+.detail-close {
+  position: absolute; top: 18px; right: 18px;
+  width: 32px; height: 32px; border-radius: 50%;
+  background: var(--bg3); border: 1.5px solid var(--border);
+  color: var(--muted); cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; font-weight: 700;
+  transition: all 0.18s ease;
+}
+.detail-close:hover { background: var(--red-light); color: var(--red); border-color: var(--red); transform: rotate(90deg); }
 
-  @media (max-width: 768px) {
-    .sidebar { transform: translateX(-100%); }
-    .sidebar.open { transform: translateX(0); }
-    .main { margin-left: 0; padding: 16px; }
-    .stats-grid { grid-template-columns: repeat(2,1fr); }
-    .detail-panel { width: 100vw; }
-  }
+.detail-title {
+  font-family: 'Cabinet Grotesk', sans-serif;
+  font-size: 18px; font-weight: 800; letter-spacing: -.3px;
+  padding-right: 44px; color: var(--text); line-height: 1.3;
+}
+.detail-meta { display: flex; flex-wrap: wrap; gap: 8px; }
+.detail-kv {
+  background: var(--bg); border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm); padding: 14px 16px;
+}
+.detail-kv-label {
+  font-size: 10.5px; font-weight: 700; color: var(--muted);
+  text-transform: uppercase; letter-spacing: .7px; margin-bottom: 6px;
+  font-family: 'Cabinet Grotesk', sans-serif;
+}
+.detail-kv-val { font-size: 13.5px; word-break: break-all; color: var(--text-2); }
+.detail-kv-val.mono { font-family: 'JetBrains Mono', monospace; font-size: 12px; }
 
-  /* JSON syntax highlighting */
-  .json-key { color: #7dd3fc; }
-  .json-str { color: #86efac; }
-  .json-num { color: #fb923c; }
-  .json-bool { color: #c084fc; }
-  .json-null { color: var(--muted); }
+.payload-box {
+  background: var(--bg); border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm); padding: 16px; overflow: auto; max-height: 360px;
+}
+.payload-box pre {
+  font-family: 'JetBrains Mono', monospace; font-size: 12px;
+  color: var(--text-2); white-space: pre-wrap; word-break: break-all;
+}
 
-  /* ─── FLOW ANALYTICS ─── */
-  .flow-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; }
-  .flow-card {
-    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
-    padding: 18px; transition: all .2s; cursor: default;
-  }
-  .flow-card:hover { border-color: var(--border-strong); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,.3); }
-  .flow-name { font-size: 13px; font-weight: 600; color: var(--accent); font-family: 'JetBrains Mono', monospace; margin-bottom: 12px; word-break: break-all; }
-  .flow-bar-wrap { height: 6px; background: rgba(255,255,255,.06); border-radius: 3px; overflow: hidden; margin: 10px 0; }
-  .flow-bar { height: 100%; border-radius: 3px; transition: width .6s ease; }
-  .flow-stats { display: flex; gap: 16px; font-size: 12px; color: var(--muted); }
-  .flow-stat-val { font-weight: 600; font-size: 15px; display: block; }
-  .flow-stat-val.green { color: var(--green); }
-  .flow-stat-val.red { color: var(--red); }
-  .flow-stat-val.blue { color: var(--accent); }
+/* JSON syntax */
+.json-key { color: var(--accent); }
+.json-str { color: var(--green); }
+.json-num { color: var(--orange); }
+.json-bool { color: var(--purple); }
+.json-null { color: var(--muted); }
 
-  /* ─── ERROR INSIGHTS ─── */
-  .ei-section { margin-bottom: 24px; }
-  .ei-title { font-size: 13px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 12px; }
-  .ei-row {
-    display: flex; align-items: center; gap: 12px;
-    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm);
-    padding: 12px 16px; margin-bottom: 8px; transition: all .15s; cursor: pointer;
-  }
-  .ei-row:hover { border-color: var(--red); background: rgba(255,69,58,.04); }
-  .ei-code { font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 600; color: var(--red); min-width: 48px; }
-  .ei-msg { font-size: 13px; flex: 1; }
-  .ei-count { font-size: 12px; color: var(--muted); background: rgba(255,69,58,.12); border-radius: 20px; padding: 2px 10px; font-weight: 600; color: var(--red); }
+/* ══════════════════════════════════
+   EMPTY STATE
+══════════════════════════════════ */
+.empty-state {
+  text-align: center; padding: 80px 24px;
+  background: white; border: 1.5px solid var(--border);
+  border-radius: var(--radius); box-shadow: var(--shadow-sm);
+}
+.empty-icon {
+  font-size: 56px; margin-bottom: 16px;
+  display: block; animation: floatIcon 3s ease-in-out infinite;
+}
+@keyframes floatIcon {
+  0%,100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+.empty-state h3 {
+  font-family: 'Cabinet Grotesk', sans-serif;
+  font-size: 18px; font-weight: 800; margin-bottom: 8px; color: var(--text);
+}
+.empty-state p { font-size: 14px; color: var(--muted); }
+
+/* ══════════════════════════════════
+   TOAST
+══════════════════════════════════ */
+.toast-wrap {
+  position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%);
+  z-index: 999; display: flex; flex-direction: column; gap: 8px; align-items: center;
+}
+.toast {
+  background: rgba(15,15,16,0.92);
+  backdrop-filter: blur(20px);
+  border-radius: 12px;
+  padding: 12px 22px; font-size: 13.5px; font-weight: 500;
+  display: flex; align-items: center; gap: 10px;
+  animation: toastIn 0.35s cubic-bezier(.34,1.56,.64,1) both;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.2), 0 2px 8px rgba(0,0,0,0.1);
+  color: white; border: 1px solid rgba(255,255,255,0.1);
+}
+@keyframes toastIn { from { opacity:0; transform:translateY(20px) scale(.92); } to { opacity:1; transform:none; } }
+.toast.out { animation: toastOut 0.3s ease forwards; }
+@keyframes toastOut { to { opacity:0; transform:translateY(8px) scale(.95); } }
+
+/* ══════════════════════════════════
+   TIMELINE
+══════════════════════════════════ */
+.timeline { display: flex; flex-direction: column; gap: 0; }
+.tl-item {
+  display: flex; gap: 14px; padding: 14px 0;
+  border-bottom: 1px solid var(--border); cursor: pointer;
+  animation: rowIn 0.3s ease both;
+  transition: background 0.15s ease, padding 0.15s ease;
+  border-radius: 0;
+}
+.tl-item:hover { background: rgba(0,102,255,0.025); padding-left: 10px; padding-right: 10px; border-radius: var(--radius-sm); }
+.tl-left { display: flex; flex-direction: column; align-items: center; }
+.tl-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; margin-top: 5px; }
+.tl-line { width: 2px; flex: 1; background: var(--border); min-height: 20px; margin: 4px 4px 0; }
+.tl-content { flex: 1; min-width: 0; }
+.tl-header { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 4px; }
+.tl-msg { font-size: 13.5px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-2); }
+.tl-ts { font-size: 11px; color: var(--muted); font-family: 'JetBrains Mono', monospace; margin-top: 2px; }
+
+/* ══════════════════════════════════
+   CLOUDWATCH
+══════════════════════════════════ */
+.cw-card {
+  background: white; border: 1.5px solid var(--border); border-radius: var(--radius);
+  padding: 18px 20px; margin-bottom: 10px;
+  transition: all 0.2s ease; cursor: pointer;
+  box-shadow: var(--shadow-sm);
+}
+.cw-card:hover {
+  border-color: var(--purple); transform: translateY(-2px);
+  box-shadow: var(--shadow-md), 0 0 0 3px rgba(123,47,255,0.08);
+}
+.cw-header { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.cw-group { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--purple); font-weight: 600; }
+.cw-stream { font-size: 11px; color: var(--muted); }
+.cw-events { font-size: 13px; color: var(--text-2); font-weight: 500; }
+
+/* ══════════════════════════════════
+   SCROLLBAR
+══════════════════════════════════ */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.1); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.18); }
+
+/* ══════════════════════════════════
+   FLOW ANALYTICS
+══════════════════════════════════ */
+.flow-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; }
+.flow-card {
+  background: white; border: 1.5px solid var(--border); border-radius: var(--radius);
+  padding: 18px; transition: all 0.2s ease; cursor: default; box-shadow: var(--shadow-sm);
+}
+.flow-card:hover { border-color: var(--border-strong); transform: translateY(-2px); box-shadow: var(--shadow-md); }
+.flow-name {
+  font-family: 'JetBrains Mono', monospace; font-size: 12.5px; font-weight: 600;
+  color: var(--accent); margin-bottom: 12px; word-break: break-all;
+}
+.flow-bar-wrap { height: 7px; background: var(--bg3); border-radius: 4px; overflow: hidden; margin: 10px 0; }
+.flow-bar { height: 100%; border-radius: 4px; transition: width 0.8s cubic-bezier(.4,0,.2,1); }
+.flow-stats { display: flex; gap: 16px; font-size: 12px; color: var(--muted); }
+.flow-stat-val { font-family: 'Cabinet Grotesk', sans-serif; font-weight: 800; font-size: 16px; display: block; }
+.flow-stat-val.green { color: var(--green); }
+.flow-stat-val.red { color: var(--red); }
+.flow-stat-val.blue { color: var(--accent); }
+
+/* ══════════════════════════════════
+   ERROR INSIGHTS
+══════════════════════════════════ */
+.ei-section { margin-bottom: 24px; }
+.ei-title {
+  font-family: 'Cabinet Grotesk', sans-serif;
+  font-size: 11px; font-weight: 700; color: var(--muted);
+  text-transform: uppercase; letter-spacing: .8px; margin-bottom: 12px;
+}
+.ei-row {
+  display: flex; align-items: center; gap: 12px;
+  background: white; border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm); padding: 13px 16px; margin-bottom: 8px;
+  transition: all 0.15s ease; cursor: pointer; box-shadow: var(--shadow-sm);
+}
+.ei-row:hover { border-color: var(--red); background: var(--red-light); transform: translateX(4px); }
+.ei-code {
+  font-family: 'JetBrains Mono', monospace; font-size: 13px;
+  font-weight: 700; color: var(--red); min-width: 48px;
+}
+.ei-msg { font-size: 13px; flex: 1; color: var(--text-2); }
+.ei-count {
+  font-size: 11.5px; background: var(--red-light); border-radius: 20px;
+  padding: 2px 10px; font-weight: 700; color: var(--red);
+  font-family: 'Cabinet Grotesk', sans-serif;
+}
+
+.hidden { display: none !important; }
+
+/* ══════════════════════════════════
+   RESPONSIVE
+══════════════════════════════════ */
+@media (max-width: 768px) {
+  .sidebar { transform: translateX(-100%); }
+  .sidebar.open { transform: translateX(0); }
+  .main { margin-left: 0; padding: 16px; }
+  .stats-grid { grid-template-columns: repeat(2,1fr); }
+  .detail-panel { width: 100vw; }
+  .page-title { font-size: 22px; }
+}
+
+/* ══════════════════════════════════
+   STAT VALUE (for inner views)
+══════════════════════════════════ */
+.stat-value {
+  font-family: 'Cabinet Grotesk', sans-serif;
+  font-weight: 900; letter-spacing: -1px; line-height: 1; margin-top: 6px;
+}
 </style>
 </head>
 <body>
 
 <div class="loading-bar" id="loadingBar"></div>
-<div class="bg-orbs"><div class="orb orb-1"></div><div class="orb orb-2"></div><div class="orb orb-3"></div></div>
+<div class="bg-mesh"></div>
+<div class="bg-grid"></div>
 
 <input type="file" id="fileInput" accept=".log,.txt,.json,.csv,.ndjson" multiple class="hidden" />
 
 <div class="shell">
 
-  <!-- SIDEBAR -->
+  <!-- ════ SIDEBAR ════ -->
   <nav class="sidebar" id="sidebar">
     <div class="logo">
       <div class="logo-icon">🔍</div>
-      <div><div class="logo-name">LogLens</div><div class="logo-sub">v2.0 · Dashboard</div></div>
+      <div>
+        <div class="logo-name">LogLens</div>
+        <div class="logo-sub">v3.0 · Professional</div>
+      </div>
     </div>
 
     <div class="nav-section">Views</div>
@@ -499,32 +788,32 @@
 
     <div class="nav-section">Special</div>
     <div class="nav-item" data-view="cloudwatch"><span class="nav-icon">☁️</span>CloudWatch <span class="nav-badge badge-blue" id="nb-cloud">0</span></div>
-    <div class="nav-item" data-view="debug"><span class="nav-icon">🐛</span>Debug <span class="nav-badge" style="background:rgba(110,110,128,.2);color:var(--muted)" id="nb-debug">0</span></div>
+    <div class="nav-item" data-view="debug"><span class="nav-icon">🐛</span>Debug <span class="nav-badge" style="background:var(--bg3);color:var(--muted)" id="nb-debug">0</span></div>
     <div class="nav-item" data-view="flows"><span class="nav-icon">🔀</span>Flow Analytics</div>
     <div class="nav-item" data-view="errorinsights"><span class="nav-icon">🩺</span>Error Insights</div>
 
     <div class="sidebar-footer">
       <button class="upload-btn" onclick="document.getElementById('fileInput').click()">
-        <span>⬆</span> Upload Log File
+        ⬆ Upload Log File
       </button>
     </div>
   </nav>
 
-  <!-- MAIN -->
+  <!-- ════ MAIN ════ -->
   <main class="main">
 
     <!-- TOPBAR -->
     <div class="topbar">
-      <h1 class="page-title">Log<span>Lens</span></h1>
+      <h1 class="page-title">LogLens</h1>
       <div class="search-wrap">
         <span class="search-icon">🔎</span>
-        <input class="search-input" id="searchInput" placeholder="Search by Event ID, message, source…" />
+        <input class="search-input" id="searchInput" placeholder="Search by Event ID, message, source…" autocomplete="off" />
         <button class="search-clear" id="searchClear" onclick="clearSearch()" title="Clear search">✕</button>
       </div>
       <div class="search-mode-wrap">
-        <button class="mode-btn active" data-mode="smart" onclick="setSearchMode('smart')" title="Auto-detect: exact match for Event IDs, partial for text">⚡ Smart</button>
-        <button class="mode-btn" data-mode="eventid" onclick="setSearchMode('eventid')" title="Exact Event ID match only">🎯 Event ID</button>
-        <button class="mode-btn" data-mode="fulltext" onclick="setSearchMode('fulltext')" title="Search all fields including raw payload">🔍 Full Text</button>
+        <button class="mode-btn active" data-mode="smart" onclick="setSearchMode('smart')" title="Auto-detect">⚡ Smart</button>
+        <button class="mode-btn" data-mode="eventid" onclick="setSearchMode('eventid')" title="Exact Event ID">🎯 Event ID</button>
+        <button class="mode-btn" data-mode="fulltext" onclick="setSearchMode('fulltext')" title="Full payload search">🔍 Full Text</button>
       </div>
     </div>
 
@@ -539,11 +828,11 @@
       <div class="filter-chip chip-orange" data-level="debug">🐛 Debug</div>
     </div>
 
-    <!-- STATS -->
+    <!-- STATS GRID -->
     <div class="stats-grid">
       <div class="stat-card s-total" onclick="switchView('all')">
         <div class="stat-top">
-          <div class="stat-icon" style="background:rgba(41,151,255,.15)">📊</div>
+          <div class="stat-icon" style="background:rgba(0,102,255,0.1)">📊</div>
           <div class="stat-trend trend-neu" id="st-total-trend">0 files</div>
         </div>
         <div class="stat-num" id="st-total">0</div>
@@ -551,7 +840,7 @@
       </div>
       <div class="stat-card s-error" onclick="switchView('error')">
         <div class="stat-top">
-          <div class="stat-icon" style="background:var(--red-bg)">🔴</div>
+          <div class="stat-icon" style="background:var(--red-light)">🔴</div>
           <div class="stat-trend trend-down" id="st-err-pct">0%</div>
         </div>
         <div class="stat-num" style="color:var(--red)" id="st-error">0</div>
@@ -559,7 +848,7 @@
       </div>
       <div class="stat-card s-success" onclick="switchView('success')">
         <div class="stat-top">
-          <div class="stat-icon" style="background:var(--green-bg)">🟢</div>
+          <div class="stat-icon" style="background:var(--green-light)">🟢</div>
           <div class="stat-trend trend-up" id="st-ok-pct">0%</div>
         </div>
         <div class="stat-num" style="color:var(--green)" id="st-success">0</div>
@@ -567,7 +856,7 @@
       </div>
       <div class="stat-card s-warn" onclick="switchView('warn')">
         <div class="stat-top">
-          <div class="stat-icon" style="background:var(--yellow-bg)">⚠️</div>
+          <div class="stat-icon" style="background:var(--yellow-light)">⚠️</div>
           <div class="stat-trend trend-neu" id="st-warn-pct">0%</div>
         </div>
         <div class="stat-num" style="color:var(--yellow)" id="st-warn">0</div>
@@ -575,7 +864,7 @@
       </div>
       <div class="stat-card s-cloud" onclick="switchView('cloudwatch')">
         <div class="stat-top">
-          <div class="stat-icon" style="background:var(--purple-bg)">☁️</div>
+          <div class="stat-icon" style="background:var(--purple-light)">☁️</div>
           <div class="stat-trend trend-neu" id="st-cloud-pct">0%</div>
         </div>
         <div class="stat-num" style="color:var(--purple)" id="st-cloud">0</div>
@@ -619,53 +908,52 @@
 <div class="toast-wrap" id="toastWrap"></div>
 
 <script>
-// ─── STATE ───
+// ════════════════════════════════════════════
+//  STATE
+// ════════════════════════════════════════════
 let allLogs = [];
 let currentView = 'overview';
 let currentFilter = 'all';
 let searchQuery = '';
-let searchMode = 'smart'; // 'smart' | 'eventid' | 'fulltext'
+let searchMode = 'smart';
 let fileCount = 0;
 
-// ─── LEVEL UTILS ───
+// ════════════════════════════════════════════
+//  LEVEL UTILS
+// ════════════════════════════════════════════
 function detectLevel(raw, payloadObj) {
   if (!raw) return 'info';
-
-  // ── MuleSoft payload-aware detection ──
-  // Only classify success/error from exit logs or known outcome signals,
-  // never from bare INFO log lines (which would false-positive on "200" in text)
   if (payloadObj) {
-    // Exit log: has HttpStatus field
     const httpStatus = payloadObj.exit?.HttpStatus ?? payloadObj.HttpStatus ?? null;
     if (httpStatus !== null) {
       const s = parseInt(httpStatus, 10);
       if (s >= 200 && s < 300) return 'success';
       if (s >= 400) return 'error';
     }
-    // Document upload response: statusCode array
     const statusArr = payloadObj['document upload Response']?.statusCode;
     if (Array.isArray(statusArr)) {
       const s = parseInt(statusArr[0], 10);
       if (s >= 200 && s < 300) return 'success';
       if (s >= 400) return 'error';
     }
-    // Error block
     if (payloadObj.error?.statuscode || payloadObj.error?.message) return 'error';
-    // "uploaded successfully" signal
     if (typeof payloadObj.message === 'string' && payloadObj.message.toLowerCase().includes('uploaded successfully')) return 'success';
-    // Common JSON success/error markers
+    if (typeof payloadObj.body === 'string' && payloadObj.body.toLowerCase().includes('uploaded successfully')) return 'success';
+    if (typeof payloadObj.statusCode === 'number' && payloadObj.statusCode >= 200 && payloadObj.statusCode < 300) return 'success';
+    if (typeof payloadObj.statusCode === 'number' && payloadObj.statusCode >= 400) return 'error';
+    if (typeof payloadObj.statusCode === 'string') {
+      const sc = parseInt(payloadObj.statusCode, 10);
+      if (!isNaN(sc) && sc >= 200 && sc < 300) return 'success';
+      if (!isNaN(sc) && sc >= 400) return 'error';
+    }
     if (payloadObj.status === 'success' || payloadObj.status === 'ok') return 'success';
     if (payloadObj.status === 'error' || payloadObj.status === 'fail') return 'error';
   }
-
-  // ── Plain string detection (for non-MuleSoft logs) ──
   const r = raw.toLowerCase();
-  // Hard errors first (check before success to avoid "successful" text in error messages)
   if (r === 'error' || r === 'fatal' || r === 'critical') return 'error';
   if (/\b(fatal|exception|5xx)\b/.test(r)) return 'error';
   if (/\b(error|fail(ed|ure)?)\b/.test(r) && !/\bno (error|fail)\b/.test(r)) return 'error';
   if (/\b(warn(ing)?|deprecated|timeout|retry|slow)\b/.test(r)) return 'warn';
-  // Success only from explicit signal words — NOT bare "200" substring
   if (/\b(success(ful(ly)?)?|completed|upload(ed)? ok|upload(ed)? successfully)\b/.test(r)) return 'success';
   if (/\b(cloudwatch|loggroup|logstream)\b/.test(r)) return 'cloudwatch';
   if (/\b(debug|trace|verbose)\b/.test(r)) return 'debug';
@@ -682,22 +970,26 @@ function levelDot(lvl) {
   return `<span class="level-dot ${m[lvl]||'dot-info'}"></span>`;
 }
 function levelColor(lvl) {
-  const m = { error:'var(--red)', success:'var(--green)', warn:'var(--yellow)', info:'var(--accent)', cloudwatch:'var(--purple)', debug:'var(--muted)' };
+  const m = { error:'var(--red)', success:'var(--green)', warn:'var(--yellow)', info:'var(--accent)', cloudwatch:'var(--purple)', debug:'var(--muted2)' };
   return m[lvl] || 'var(--accent)';
 }
 
-// ─── PARSERS ───
+// ════════════════════════════════════════════
+//  PARSERS (preserved from original — bug-fixed)
+// ════════════════════════════════════════════
 function parseJSON(text) {
-  const logs = []; const lines = text.split('\n');
+  const logs = [];
+  const lines = text.split('\n');
   for (let ln of lines) {
     ln = ln.trim();
     if (!ln) continue;
     try {
       let obj;
-      // NDJSON / JSON lines
       try { obj = JSON.parse(ln); } catch {
-        // Maybe full JSON array
-        try { const arr = JSON.parse(text); if (Array.isArray(arr)) { arr.forEach(o => logs.push(toLog(o))); return logs; } } catch {}
+        try {
+          const arr = JSON.parse(text);
+          if (Array.isArray(arr)) { arr.forEach(o => logs.push(toLog(o))); return logs; }
+        } catch {}
         continue;
       }
       logs.push(toLog(obj));
@@ -733,12 +1025,7 @@ function parsePlainText(text) {
 }
 
 function parseLine(line) {
-  // Patterns: [2024-01-01 10:00:00] ERROR [source] message
-  // 2024-01-01T10:00:00Z INFO message
-  // Railway: 2026-04-15T06:34:18.544Z [inf] message  (nanosecond timestamps)
-  // CloudWatch: { "logEvents": [...] }
   const tsRx = /(\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}(?:[.,]\d+)?(?:Z|[+-]\d{2}:\d{2})?)/;
-  // Extended level regex — also catches Railway shortcodes [inf] [err] [wrn] [dbg]
   const lvlRx = /\b(ERROR|FATAL|EXCEPTION|WARN(?:ING)?|INFO|SUCCESS|DEBUG|TRACE|CRITICAL|ALERT|CLOUDWATCH)\b|\[(err|inf|wrn|dbg|fat)\]/i;
   const srcRx = /\[([^\]]{2,40})\]/;
   const eventRx = /(?:event[_-]?id|eventId|requestId|traceId|correlationId)[=:]\s*["']?([A-Za-z0-9_\-]+)["']?/i;
@@ -748,21 +1035,17 @@ function parseLine(line) {
   const srcM = line.match(srcRx);
   const evM = line.match(eventRx);
 
-  // Resolve Railway shortcodes to standard levels
   const railwayLvlMap = { err:'ERROR', inf:'INFO', wrn:'WARN', dbg:'DEBUG', fat:'FATAL' };
   const rawLevel = lvlM ? (railwayLvlMap[lvlM[2]?.toLowerCase()] || lvlM[1]) : '';
 
-  let msg = line
-    .replace(tsRx, '').replace(lvlRx, '').replace(srcRx, '')
+  let msg = line.replace(tsRx, '').replace(lvlRx, '').replace(srcRx, '')
     .replace(/^\s*[-:|,\[\]]+\s*/, '').trim();
   if (!msg) msg = line.trim();
 
-  // If remaining message is a JSON object, parse it fully instead of showing raw fragment
   if (msg.startsWith('{') || msg.startsWith('[')) {
     try {
       const jsonObj = JSON.parse(msg);
       const parsed = toLog(jsonObj);
-      // Prefer outer timestamp/level if detected
       if (tsM) parsed.timestamp = new Date(tsM[1].replace(' ', 'T'));
       if (rawLevel) { parsed.level = detectLevel(rawLevel); parsed.levelRaw = rawLevel; }
       return parsed;
@@ -774,7 +1057,7 @@ function parseLine(line) {
     timestamp: tsM ? new Date(tsM[1].replace(' ','T')) : new Date(),
     level: detectLevel(rawLevel || line),
     levelRaw: rawLevel,
-    message: msg,   // No truncation — full message preserved
+    message: msg,
     source: srcM ? srcM[1] : 'app',
     payload: { raw: line },
     raw: line
@@ -782,7 +1065,6 @@ function parseLine(line) {
 }
 
 function parseCloudWatch(text) {
-  // Handle AWS CloudWatch JSON export: { "logEvents": [...], "logGroup": "...", "logStream": "..." }
   try {
     const obj = JSON.parse(text);
     if (obj.logEvents && Array.isArray(obj.logEvents)) {
@@ -804,25 +1086,14 @@ function parseCloudWatch(text) {
 }
 
 function parseMuleSoft(text) {
-  // MuleSoft log format:
-  // LEVEL  YYYY-MM-DD HH:MM:SS,mmm [[MuleRuntime]...] [processor: flow/processors/N; event: event-id] org.mule...LoggerMessageProcessor: MESSAGE
-  // MESSAGE can span multiple lines (e.g. a pretty-printed JSON block)
   const HEADER = /^(INFO|WARN(?:ING)?|ERROR|DEBUG|TRACE|FATAL)\s{1,2}(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d+)/;
-
-  // Quick check: does it look like a MuleSoft log at all?
   if (!HEADER.test(text.slice(0, 200))) return null;
-
-  // Split into logical entries by stitching continuation lines
   const rawLines = text.split('\n');
   const entries = [];
   let current = null;
   for (const line of rawLines) {
-    if (HEADER.test(line)) {
-      if (current) entries.push(current);
-      current = line;
-    } else {
-      if (current !== null) current += '\n' + line;
-    }
+    if (HEADER.test(line)) { if (current) entries.push(current); current = line; }
+    else { if (current !== null) current += '\n' + line; }
   }
   if (current) entries.push(current);
 
@@ -832,59 +1103,65 @@ function parseMuleSoft(text) {
 
   return entries.map(entry => {
     const firstLine = entry.split('\n')[0];
-    const lvlM  = firstLine.match(/^(INFO|WARN(?:ING)?|ERROR|DEBUG|TRACE|FATAL)/i);
-    const tsM   = firstLine.match(/(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}),(\d+)/);
+    const lvlM = firstLine.match(/^(INFO|WARN(?:ING)?|ERROR|DEBUG|TRACE|FATAL)/i);
+    const tsM = firstLine.match(/(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}),(\d+)/);
     const procM = firstLine.match(PROC_RX);
     const flowM = firstLine.match(FLOW_RX);
-    const logM  = entry.match(LOGGER_RX);
+    const logM = entry.match(LOGGER_RX);
 
-    const ts      = tsM  ? new Date(tsM[1].replace(' ', 'T') + '.' + tsM[2]) : new Date();
+    const ts = tsM ? new Date(tsM[1].replace(' ', 'T') + '.' + tsM[2]) : new Date();
     const eventId = procM ? procM[2].trim() : uid();
-    const flow    = procM ? procM[1].trim() : (flowM ? flowM[2] : 'mulesoft');
-    const source  = flow.split('/')[0];
+    const flow = procM ? procM[1].trim() : (flowM ? flowM[2] : 'mulesoft');
+    const source = flow.split('/')[0];
 
     let message = logM ? logM[1].trim() : firstLine;
-    let payload  = { raw: entry, flow, eventId };
+    let payload = { raw: entry, flow, eventId };
 
-    // If message body is JSON, parse it for rich display
     const jsonStart = message.indexOf('{');
-    const jsonPart  = jsonStart >= 0 ? message.slice(jsonStart) : null;
+    const jsonPart = jsonStart >= 0 ? message.slice(jsonStart) : null;
     if (jsonPart) {
       try {
         const obj = JSON.parse(jsonPart);
+        if (typeof obj.body === 'string') {
+          try { obj.body = JSON.parse(obj.body); } catch {}
+          if (typeof obj.body === 'string') obj.body = obj.body.replace(/^"|"$/g, '');
+        }
         payload = { ...obj, flow, eventId, raw: entry };
-        // Build a human-readable message summary from known fields
-        const prefix = jsonStart > 0 ? message.slice(0, jsonStart).trim() + ' ' : '';
+        const prefix = jsonStart > 0 ? message.slice(0, jsonStart).replace(/[:]+$/, '').trim() : '';
         const flowName = (obj.entry?.FlowName || obj.exit?.FlowName || '');
-        const reqUri   = obj.common?.RequestUri || '';
-        const corrId   = obj.common?.correlationId || eventId;
-        message = `${prefix}${flowName}${reqUri ? ' ' + reqUri : ''} [${corrId.slice(0,16)}]`.trim();
+        const reqUri = obj.common?.RequestUri || '';
+        const corrId = obj.common?.correlationId || eventId;
+        if (prefix && !flowName && !reqUri) {
+          message = prefix;
+        } else {
+          message = `${prefix ? prefix + ' ' : ''}${flowName}${reqUri ? ' ' + reqUri : ''} [${corrId.slice(0,16)}]`.trim();
+        }
         if (!message) message = JSON.stringify(obj).slice(0, 120);
       } catch {}
     }
 
-    // ── Determine level from MuleSoft raw level + payload ──
-    // Only promote INFO → success/error if this log entry carries outcome data.
-    // Pure INFO lines (like "before googlesecops call...") stay as 'info'.
     const muleRawLevel = lvlM ? lvlM[1].toUpperCase() : 'INFO';
-
     let detectedLevel;
     if (muleRawLevel === 'ERROR') {
       detectedLevel = 'error';
     } else if (muleRawLevel === 'WARN' || muleRawLevel === 'WARNING') {
       detectedLevel = 'warn';
     } else if (jsonPart && typeof payload === 'object') {
-      // Use payload-aware detection only when a JSON body is present
       detectedLevel = detectLevel(muleRawLevel, payload);
     } else {
-      // Plain text INFO log — check message for explicit success signal
       detectedLevel = detectLevel(message);
-      // Guard: never let a bare INFO text line become 'success' unless it literally says "successfully"
-      if (detectedLevel === 'success' && !message.toLowerCase().includes('successf')) detectedLevel = 'info';
+      const msgLow = message.toLowerCase();
+      if (detectedLevel === 'success' &&
+          !msgLow.includes('successf') &&
+          !msgLow.includes('completed') &&
+          !msgLow.includes('upload')) {
+        detectedLevel = 'info';
+      }
     }
 
     return {
       id: eventId.replace(/[^A-Za-z0-9]/g, '').slice(0, 16).toUpperCase() || uid(),
+      eventIdRaw: eventId.trim(),
       timestamp: ts,
       level: detectedLevel,
       levelRaw: muleRawLevel,
@@ -916,7 +1193,9 @@ function parseTs(v) {
 
 function uid() { return Math.random().toString(36).slice(2, 10).toUpperCase(); }
 
-// ─── FILE HANDLER ───
+// ════════════════════════════════════════════
+//  FILE HANDLER
+// ════════════════════════════════════════════
 async function handleFiles(files) {
   if (!files.length) return;
   showLoading(true);
@@ -925,18 +1204,13 @@ async function handleFiles(files) {
   for (const file of files) {
     const text = await file.text();
     let logs = null;
-    // MuleSoft first (before CloudWatch — MuleSoft is plain text not JSON)
     logs = parseMuleSoft(text);
-    if (!logs) {
-    // CloudWatch next
-    logs = parseCloudWatch(text);
-    }
+    if (!logs) logs = parseCloudWatch(text);
     if (!logs) {
       const ext = file.name.split('.').pop().toLowerCase();
       if (ext === 'csv') logs = parseCSV(text);
       else if (ext === 'json' || ext === 'ndjson') logs = parseJSON(text);
       else {
-        // Try JSON first, fallback to plain
         logs = parseJSON(text);
         if (!logs.length) logs = parsePlainText(text);
       }
@@ -944,9 +1218,8 @@ async function handleFiles(files) {
     parsed = parsed.concat(logs.filter(l => l.message.trim()));
     toast(`✅ Loaded ${logs.length} events from ${file.name}`, 'success');
   }
-  allLogs = [...allLogs, ...parsed].sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
+  allLogs = [...allLogs, ...parsed].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
   updateBadges();
-  // Always switch to All Logs after upload so every level is visible regardless of prior filter
   currentView = 'all';
   currentFilter = 'all';
   document.querySelectorAll('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.view === 'all'));
@@ -955,12 +1228,28 @@ async function handleFiles(files) {
   showLoading(false);
 }
 
-// ─── BADGES & STATS ───
+// ════════════════════════════════════════════
+//  BADGES & STATS
+// ════════════════════════════════════════════
 function counts() {
   const c = { all: allLogs.length, error: 0, success: 0, warn: 0, info: 0, cloudwatch: 0, debug: 0 };
   allLogs.forEach(l => { if (c[l.level] !== undefined) c[l.level]++; });
   return c;
 }
+
+function animateNum(el, target) {
+  const start = parseInt(el.textContent) || 0;
+  if (start === target) return;
+  const dur = 600; const t0 = performance.now();
+  function step(now) {
+    const p = Math.min((now - t0) / dur, 1);
+    const ease = 1 - Math.pow(1 - p, 3);
+    el.textContent = Math.round(start + (target - start) * ease);
+    if (p < 1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+
 function updateBadges() {
   const c = counts();
   document.getElementById('nb-all').textContent = c.all;
@@ -971,11 +1260,11 @@ function updateBadges() {
   document.getElementById('nb-cloud').textContent = c.cloudwatch;
   document.getElementById('nb-debug').textContent = c.debug;
 
-  document.getElementById('st-total').textContent = c.all;
-  document.getElementById('st-error').textContent = c.error;
-  document.getElementById('st-success').textContent = c.success;
-  document.getElementById('st-warn').textContent = c.warn;
-  document.getElementById('st-cloud').textContent = c.cloudwatch;
+  animateNum(document.getElementById('st-total'), c.all);
+  animateNum(document.getElementById('st-error'), c.error);
+  animateNum(document.getElementById('st-success'), c.success);
+  animateNum(document.getElementById('st-warn'), c.warn);
+  animateNum(document.getElementById('st-cloud'), c.cloudwatch);
   document.getElementById('st-total-trend').textContent = `${fileCount} file${fileCount !== 1 ? 's' : ''}`;
 
   const pct = n => c.all ? Math.round(n / c.all * 100) + '%' : '0%';
@@ -985,7 +1274,16 @@ function updateBadges() {
   document.getElementById('st-cloud-pct').textContent = pct(c.cloudwatch);
 }
 
-// ─── FILTER ───
+// ════════════════════════════════════════════
+//  FILTER / SEARCH
+// ════════════════════════════════════════════
+function matchesEventId(l, qLow) {
+  if (l.id.toLowerCase().includes(qLow)) return true;
+  if (l.eventIdRaw && l.eventIdRaw.toLowerCase().includes(qLow)) return true;
+  if (l.raw.toLowerCase().includes(qLow)) return true;
+  return false;
+}
+
 function filteredLogs() {
   let logs = allLogs;
   if (currentFilter !== 'all') logs = logs.filter(l => l.level === currentFilter);
@@ -995,45 +1293,46 @@ function filteredLogs() {
   const qLow = q.toLowerCase();
 
   if (searchMode === 'eventid') {
-    // Strict exact Event ID match only
-    logs = logs.filter(l => l.id.toLowerCase() === qLow);
+    logs = logs.filter(l => matchesEventId(l, qLow));
   } else if (searchMode === 'fulltext') {
-    // Full text including raw payload — user explicitly asked for this
     logs = logs.filter(l =>
-      l.id.toLowerCase().includes(qLow) ||
+      matchesEventId(l, qLow) ||
       l.message.toLowerCase().includes(qLow) ||
       l.source.toLowerCase().includes(qLow) ||
       l.raw.toLowerCase().includes(qLow)
     );
   } else {
-    // Smart mode: detect if query looks like an Event ID → exact match, else partial text search
-    const looksLikeEventId = /^[A-Z0-9_\-]{4,}$/i.test(q) && q.length >= 4 && q.length <= 32 && !/\s/.test(q);
-    if (looksLikeEventId) {
-      // Exact Event ID first; if nothing found, fall back to partial on message/source
+    const looksLikeMuleEventId = /^[\d]+-[a-f0-9]+-[a-f0-9]+-[a-f0-9]+-[a-f0-9]+/i.test(q) ||
+                                  /event:\s*[\w\-]+/i.test(q);
+    const looksLikeShortId = /^[A-Z0-9]{4,20}$/i.test(q) && !q.includes(' ');
+
+    if (looksLikeMuleEventId) {
+      logs = logs.filter(l => matchesEventId(l, qLow));
+    } else if (looksLikeShortId) {
       const exactMatches = logs.filter(l => l.id.toLowerCase() === qLow);
       if (exactMatches.length) {
         logs = exactMatches;
       } else {
-        // No exact ID hit — partial search (but NOT raw to avoid noise)
         logs = logs.filter(l =>
-          l.id.toLowerCase().includes(qLow) ||
+          matchesEventId(l, qLow) ||
           l.message.toLowerCase().includes(qLow) ||
-          l.source.toLowerCase().includes(qLow)
+          l.source.toLowerCase().includes(qLow) ||
+          l.raw.toLowerCase().includes(qLow)
         );
       }
     } else {
-      // Plain text query → partial search across message, source, id (no raw)
       logs = logs.filter(l =>
         l.id.toLowerCase().includes(qLow) ||
+        (l.eventIdRaw && l.eventIdRaw.toLowerCase().includes(qLow)) ||
         l.message.toLowerCase().includes(qLow) ||
-        l.source.toLowerCase().includes(qLow)
+        l.source.toLowerCase().includes(qLow) ||
+        l.raw.toLowerCase().includes(qLow)
       );
     }
   }
   return logs;
 }
 
-// ─── SEARCH HELPERS ───
 function setSearchMode(mode) {
   searchMode = mode;
   document.querySelectorAll('.mode-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
@@ -1054,7 +1353,8 @@ function searchById(id) {
   document.getElementById('searchClear').classList.add('visible');
   document.querySelectorAll('.mode-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === 'eventid'));
   render();
-  toast(`🎯 Showing logs for Event ID: ${id}`, 'info');
+  const count = filteredLogs().length;
+  toast(`🎯 ${count} log${count!==1?'s':''} for Event ID: ${id.slice(0,20)}${id.length>20?'…':''}`, 'info');
 }
 
 function highlight(text, query) {
@@ -1066,12 +1366,14 @@ function highlight(text, query) {
   return escaped.replace(rx, '<span class="search-match">$1</span>');
 }
 
-
+// ════════════════════════════════════════════
+//  RENDER
+// ════════════════════════════════════════════
 function render() {
   const logs = filteredLogs();
-  const titles = { overview:'Overview', all:'All Logs', timeline:'Timeline', error:'Errors', success:'Successes', warn:'Warnings', info:'Info', cloudwatch:'CloudWatch', debug:'Debug' };
+  const titles = { overview:'Overview', all:'All Logs', timeline:'Timeline', error:'Errors', success:'Successes', warn:'Warnings', info:'Info', cloudwatch:'CloudWatch', debug:'Debug', flows:'Flow Analytics', errorinsights:'Error Insights' };
   document.getElementById('sectionTitle').textContent = titles[currentView] || 'Logs';
-  document.getElementById('sectionCount').textContent = `${logs.length} entries`;
+  document.getElementById('sectionCount').textContent = `${logs.length.toLocaleString()} entries`;
 
   if (!allLogs.length) {
     document.getElementById('logContent').innerHTML = `
@@ -1096,12 +1398,12 @@ function renderTable(logs) {
   const rows = logs.slice(0, 1000).map((l, i) => {
     const idHighlight = isSearching ? highlight(l.id, searchQuery) : escH(l.id);
     const msgHighlight = isSearching ? highlight(l.message, searchQuery) : escH(l.message);
-    const isExactIdMatch = isSearching && l.id.toLowerCase() === searchQuery.trim().toLowerCase();
+    const isExact = isSearching && l.id.toLowerCase() === searchQuery.trim().toLowerCase();
     return `
-    <tr style="animation-delay:${Math.min(i * 0.02, 0.5)}s${isExactIdMatch ? ';background:rgba(41,151,255,.06);' : ''}" onclick="openDetail(${allLogs.indexOf(l)})">
+    <tr style="animation-delay:${Math.min(i * 0.02, 0.5)}s${isExact ? ';background:rgba(0,102,255,0.04);' : ''}" onclick="openDetail(${allLogs.indexOf(l)})">
       <td>${levelDot(l.level)}</td>
       <td>${levelBadge(l.level)}</td>
-      <td class="event-id" onclick="event.stopPropagation();searchById('${escH(l.id)}')" title="Click to filter by this Event ID" style="cursor:pointer">${idHighlight}</td>
+      <td class="event-id" onclick="event.stopPropagation();searchById('${escH(l.id)}')" title="Click to filter" style="cursor:pointer">${idHighlight}</td>
       <td class="ts">${fmtTs(l.timestamp)}</td>
       <td class="msg-cell" title="${escH(l.message)}">${msgHighlight}</td>
       <td><span class="source-tag">${escH(l.source)}</span></td>
@@ -1112,7 +1414,7 @@ function renderTable(logs) {
     <div class="log-table-wrap">
       <table class="log-table">
         <thead><tr>
-          <th></th><th>Level</th><th>Event ID <span style="font-weight:400;color:var(--muted);font-size:10px">(click to filter)</span></th><th>Timestamp</th><th>Message</th><th>Source</th>
+          <th></th><th>Level</th><th>Event ID <span style="font-weight:500;opacity:.6;font-size:9px;letter-spacing:0">(click to filter)</span></th><th>Timestamp</th><th>Message</th><th>Source</th>
         </tr></thead>
         <tbody>${rows}</tbody>
       </table>
@@ -1140,8 +1442,6 @@ function renderFlowAnalytics() {
     document.getElementById('logContent').innerHTML = `<div class="empty-state"><div class="empty-icon">🔀</div><h3>No logs loaded</h3><p>Upload a log file to see flow analytics</p></div>`;
     return;
   }
-
-  // Build per-flow stats
   const flows = {};
   allLogs.forEach(l => {
     const name = (l.payload && l.payload.flow) ? l.payload.flow : l.source;
@@ -1158,17 +1458,16 @@ function renderFlowAnalytics() {
   const errorRate = overallTotal ? Math.round(overallError / overallTotal * 100) : 0;
 
   const summaryHtml = `
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px;margin-bottom:24px">
-      <div class="stat-card"><div class="stat-label">Total Events</div><div class="stat-value" style="font-size:28px">${overallTotal.toLocaleString()}</div></div>
-      <div class="stat-card"><div class="stat-label">Success Rate</div><div class="stat-value" style="font-size:28px;color:var(--green)">${successRate}%</div></div>
-      <div class="stat-card"><div class="stat-label">Error Rate</div><div class="stat-value" style="font-size:28px;color:var(--red)">${errorRate}%</div></div>
-      <div class="stat-card"><div class="stat-label">Unique Flows</div><div class="stat-value" style="font-size:28px;color:var(--accent)">${sorted.length}</div></div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px;margin-bottom:28px">
+      <div class="stat-card s-total"><div class="stat-top"><div class="stat-icon" style="background:var(--accent-light)">📊</div></div><div class="stat-num">${overallTotal.toLocaleString()}</div><div class="stat-label">Total Events</div></div>
+      <div class="stat-card s-success"><div class="stat-top"><div class="stat-icon" style="background:var(--green-light)">✅</div></div><div class="stat-num" style="color:var(--green)">${successRate}%</div><div class="stat-label">Success Rate</div></div>
+      <div class="stat-card s-error"><div class="stat-top"><div class="stat-icon" style="background:var(--red-light)">❌</div></div><div class="stat-num" style="color:var(--red)">${errorRate}%</div><div class="stat-label">Error Rate</div></div>
+      <div class="stat-card s-cloud"><div class="stat-top"><div class="stat-icon" style="background:var(--purple-light)">🔀</div></div><div class="stat-num" style="color:var(--purple)">${sorted.length}</div><div class="stat-label">Unique Flows</div></div>
     </div>`;
 
   const cards = sorted.map(([name, s]) => {
     const sr = s.total ? Math.round((s.success || 0) / s.total * 100) : 0;
     const barColor = sr >= 90 ? 'var(--green)' : sr >= 60 ? 'var(--yellow)' : 'var(--red)';
-    const errCount = s.error || 0;
     return `
       <div class="flow-card">
         <div class="flow-name">${escH(name)}</div>
@@ -1176,17 +1475,17 @@ function renderFlowAnalytics() {
         <div class="flow-stats">
           <div><span class="flow-stat-val blue">${s.total.toLocaleString()}</span>total</div>
           <div><span class="flow-stat-val green">${(s.success||0).toLocaleString()}</span>success</div>
-          <div><span class="flow-stat-val red">${errCount.toLocaleString()}</span>errors</div>
+          <div><span class="flow-stat-val red">${(s.error||0).toLocaleString()}</span>errors</div>
           <div><span class="flow-stat-val" style="color:var(--yellow)">${(s.warn||0).toLocaleString()}</span>warn</div>
         </div>
-        <div style="margin-top:10px;font-size:11px;color:var(--muted)">Success rate: <span style="color:${barColor};font-weight:600">${sr}%</span></div>
+        <div style="margin-top:10px;font-size:11px;color:var(--muted)">Success rate: <span style="color:${barColor};font-weight:700">${sr}%</span></div>
       </div>`;
   }).join('');
 
   document.getElementById('logContent').innerHTML = `
-    <div class="log-table-wrap" style="padding:20px">
+    <div class="log-table-wrap" style="padding:24px">
       ${summaryHtml}
-      <div style="font-size:13px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:14px">Flow Breakdown</div>
+      <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:16px;font-family:'Cabinet Grotesk',sans-serif">Flow Breakdown</div>
       <div class="flow-grid">${cards}</div>
     </div>`;
 }
@@ -1194,14 +1493,11 @@ function renderFlowAnalytics() {
 function renderErrorInsights() {
   const errors = allLogs.filter(l => l.level === 'error');
   if (!errors.length) {
-    document.getElementById('logContent').innerHTML = `<div class="empty-state"><div class="empty-icon">🎉</div><h3>No errors found</h3><p>Your logs are clean!</p></div>`;
+    document.getElementById('logContent').innerHTML = `<div class="empty-state"><div class="empty-icon">🎉</div><h3>No errors found</h3><p>Your logs are completely clean!</p></div>`;
     return;
   }
-
-  // Group by error type / HTTP status
   const byCode = {};
   errors.forEach(l => {
-    // Try to extract HTTP status or error keyword
     let code = 'Unknown';
     const raw = l.raw || '';
     const statusMatch = raw.match(/"(?:HttpStatus|statusCode|statuscode|status)":\s*"?(\d{3})"?/i);
@@ -1214,34 +1510,30 @@ function renderErrorInsights() {
     else if (raw.toLowerCase().includes('timeout')) code = 'TIMEOUT';
     else if (raw.toLowerCase().includes('session invalid') || raw.toLowerCase().includes('invalid session')) code = 'SESSION_INVALID';
     else if (raw.toLowerCase().includes('exception')) code = 'EXCEPTION';
-
     if (!byCode[code]) byCode[code] = [];
     byCode[code].push(l);
   });
-
   const codeLabels = {
-    '413': 'Payload Too Large — file size exceeds limit',
-    '403': 'Forbidden — token/session invalid or expired',
-    '404': 'Not Found — endpoint or resource missing',
-    '401': 'Unauthorized — authentication failed',
-    '500': 'Internal Server Error',
-    'SESSION_INVALID': 'Session Invalid — JWT/token expired',
-    'TIMEOUT': 'Request Timeout',
-    'EXCEPTION': 'Unhandled Exception',
-    'Unknown': 'Other / Unclassified Error'
+    '413':'Payload Too Large — file exceeds limit',
+    '403':'Forbidden — invalid/expired token',
+    '404':'Not Found — endpoint missing',
+    '401':'Unauthorized — authentication failed',
+    '500':'Internal Server Error',
+    'SESSION_INVALID':'Session Invalid — JWT expired',
+    'TIMEOUT':'Request Timeout',
+    'EXCEPTION':'Unhandled Exception',
+    'Unknown':'Other / Unclassified'
   };
-
   const sorted = Object.entries(byCode).sort((a, b) => b[1].length - a[1].length);
   const rows = sorted.map(([code, errs]) => {
     const label = codeLabels[code] || `HTTP ${code}`;
-    return `<div class="ei-row" onclick="switchView('error');searchQuery='';document.getElementById('searchInput').value='';render();toast('Showing all errors','info')">
+    return `<div class="ei-row" onclick="switchView('error');searchQuery='';document.getElementById('searchInput').value='';render()">
       <span class="ei-code">${escH(code)}</span>
       <span class="ei-msg">${escH(label)}</span>
       <span class="ei-count">${errs.length.toLocaleString()} occurrences</span>
     </div>`;
   }).join('');
 
-  // Top recurring error messages
   const msgCounts = {};
   errors.forEach(l => {
     const k = l.message.slice(0, 80).trim();
@@ -1255,19 +1547,17 @@ function renderErrorInsights() {
     </div>`).join('');
 
   document.getElementById('logContent').innerHTML = `
-    <div class="log-table-wrap" style="padding:20px">
-      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:14px;margin-bottom:24px">
-        <div class="stat-card"><div class="stat-label">Total Errors</div><div class="stat-value" style="font-size:28px;color:var(--red)">${errors.length.toLocaleString()}</div></div>
-        <div class="stat-card"><div class="stat-label">Error Types</div><div class="stat-value" style="font-size:28px;color:var(--orange)">${sorted.length}</div></div>
-        <div class="stat-card"><div class="stat-label">Error Rate</div><div class="stat-value" style="font-size:28px;color:var(--red)">${allLogs.length ? Math.round(errors.length/allLogs.length*100) : 0}%</div></div>
+    <div class="log-table-wrap" style="padding:24px">
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:14px;margin-bottom:28px">
+        <div class="stat-card s-error"><div class="stat-top"><div class="stat-icon" style="background:var(--red-light)">❌</div></div><div class="stat-num" style="color:var(--red)">${errors.length.toLocaleString()}</div><div class="stat-label">Total Errors</div></div>
+        <div class="stat-card s-warn"><div class="stat-top"><div class="stat-icon" style="background:var(--orange-light)">🏷️</div></div><div class="stat-num" style="color:var(--orange)">${sorted.length}</div><div class="stat-label">Error Types</div></div>
+        <div class="stat-card s-error"><div class="stat-top"><div class="stat-icon" style="background:var(--red-light)">📉</div></div><div class="stat-num" style="color:var(--red)">${allLogs.length ? Math.round(errors.length/allLogs.length*100) : 0}%</div><div class="stat-label">Error Rate</div></div>
       </div>
       <div class="ei-section">
-        <div class="ei-title">By Error Code / Type</div>
-        ${rows}
+        <div class="ei-title">By Error Code / Type</div>${rows}
       </div>
       <div class="ei-section">
-        <div class="ei-title">Top Recurring Error Messages</div>
-        ${msgRows}
+        <div class="ei-title">Top Recurring Messages</div>${msgRows}
       </div>
     </div>`;
 }
@@ -1277,7 +1567,6 @@ function renderCloudWatch(logs) {
   const regular = logs.filter(l => l.level !== 'cloudwatch');
   let html = '';
   if (cwLogs.length) {
-    // Group by logGroup
     const groups = {};
     cwLogs.forEach(l => {
       const g = (l.payload && l.payload.logGroup) || l.source || 'Unknown Group';
@@ -1285,7 +1574,7 @@ function renderCloudWatch(logs) {
       groups[g].push(l);
     });
     Object.entries(groups).forEach(([g, glogs]) => {
-      html += `<div class="cw-card" onclick="">
+      html += `<div class="cw-card">
         <div class="cw-header">
           <span>☁️</span>
           <div><div class="cw-group">${escH(g)}</div>
@@ -1314,12 +1603,14 @@ function renderCloudWatch(logs) {
     return;
   }
   if (!html) {
-    html = `<div class="empty-state"><div class="empty-icon">☁️</div><h3>No CloudWatch logs detected</h3><p>Upload a CloudWatch JSON export or logs containing AWS metadata</p></div>`;
+    html = `<div class="empty-state"><div class="empty-icon">☁️</div><h3>No CloudWatch logs detected</h3><p>Upload a CloudWatch JSON export or logs with AWS metadata</p></div>`;
   }
   document.getElementById('logContent').innerHTML = html;
 }
 
-// ─── DETAIL PANEL ───
+// ════════════════════════════════════════════
+//  DETAIL PANEL
+// ════════════════════════════════════════════
 function openDetail(idx) {
   const l = allLogs[idx];
   if (!l) return;
@@ -1332,9 +1623,9 @@ function openDetail(idx) {
     </div>
     <div class="detail-kv">
       <div class="detail-kv-label">Event ID</div>
-      <div class="detail-kv-val mono" style="color:var(--accent);display:flex;align-items:center;gap:10px">
+      <div class="detail-kv-val mono" style="color:var(--accent);display:flex;align-items:center;gap:10px;flex-wrap:wrap">
         <span>${escH(l.id)}</span>
-        <button onclick="closeDetail();searchById('${escH(l.id)}')" style="font-size:11px;padding:3px 10px;border-radius:6px;background:rgba(41,151,255,.12);border:1px solid rgba(41,151,255,.3);color:var(--accent);cursor:pointer;font-family:inherit;transition:all .2s" title="Filter all logs by this Event ID">🎯 Filter by ID</button>
+        <button onclick="closeDetail();searchById('${escH(l.eventIdRaw || l.id)}')" style="font-size:11px;padding:4px 12px;border-radius:8px;background:var(--accent-light);border:1.5px solid rgba(0,102,255,0.25);color:var(--accent);cursor:pointer;font-family:inherit;font-weight:600;transition:all .2s">🎯 Filter by ID</button>
       </div>
     </div>
     <div class="detail-kv">
@@ -1343,7 +1634,7 @@ function openDetail(idx) {
     </div>
     <div class="detail-kv">
       <div class="detail-kv-label">Level</div>
-      <div class="detail-kv-val">${levelBadge(l.level)} <span style="color:var(--muted);font-size:12px">(raw: ${escH(l.levelRaw || l.level)})</span></div>
+      <div class="detail-kv-val">${levelBadge(l.level)} <span style="color:var(--muted);font-size:12px;margin-left:6px">raw: ${escH(l.levelRaw || l.level)}</span></div>
     </div>
     <div class="detail-kv">
       <div class="detail-kv-label">Message</div>
@@ -1354,12 +1645,13 @@ function openDetail(idx) {
       <div class="payload-box"><pre>${syntaxHighlight(l.raw)}</pre></div>
     </div>
     <div style="display:flex;gap:8px;margin-top:4px">
-      <button onclick="copyToClipboard(${idx})" style="flex:1;padding:10px;border-radius:8px;background:var(--surface);border:1px solid var(--border);color:var(--text);font-family:inherit;font-size:13px;cursor:pointer;transition:all .2s">📋 Copy Payload</button>
-      <button onclick="downloadLog(${idx})" style="flex:1;padding:10px;border-radius:8px;background:var(--surface);border:1px solid var(--border);color:var(--text);font-family:inherit;font-size:13px;cursor:pointer;transition:all .2s">⬇ Download</button>
+      <button onclick="copyToClipboard(${idx})" style="flex:1;padding:11px;border-radius:10px;background:var(--bg);border:1.5px solid var(--border);color:var(--text-2);font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s">📋 Copy Payload</button>
+      <button onclick="downloadLog(${idx})" style="flex:1;padding:11px;border-radius:10px;background:var(--bg);border:1.5px solid var(--border);color:var(--text-2);font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s">⬇ Download</button>
     </div>`;
   document.getElementById('detailOverlay').classList.add('open');
   document.getElementById('detailPanel').classList.add('open');
 }
+
 function closeDetail() {
   document.getElementById('detailOverlay').classList.remove('open');
   document.getElementById('detailPanel').classList.remove('open');
@@ -1368,14 +1660,16 @@ function closeDetail() {
 function copyToClipboard(idx) {
   navigator.clipboard.writeText(allLogs[idx].raw).then(() => toast('Copied to clipboard', 'success'));
 }
+
 function downloadLog(idx) {
   const l = allLogs[idx];
   const blob = new Blob([l.raw], { type: 'application/json' });
-  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
-  a.download = `log-${l.id}.json`; a.click();
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `log-${l.id}.json`;
+  a.click();
 }
 
-// ─── JSON SYNTAX HIGHLIGHT ───
 function syntaxHighlight(str) {
   str = escH(str);
   return str.replace(/"([^"]+)":/g, '<span class="json-key">"$1"</span>:')
@@ -1385,7 +1679,9 @@ function syntaxHighlight(str) {
     .replace(/: null/g, ': <span class="json-null">null</span>');
 }
 
-// ─── UTILS ───
+// ════════════════════════════════════════════
+//  UTILS
+// ════════════════════════════════════════════
 function escH(s) { return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function fmtTs(d) {
   if (!d || !(d instanceof Date) || isNaN(d)) return '—';
@@ -1393,7 +1689,7 @@ function fmtTs(d) {
 }
 function fmtTsFull(d) {
   if (!d || !(d instanceof Date) || isNaN(d)) return '—';
-  return d.toISOString().replace('T', ' ').replace('Z', ' UTC');
+  return d.toISOString().replace('T',' ').replace('Z',' UTC');
 }
 function showLoading(v) { document.getElementById('loadingBar').classList.toggle('active', v); }
 
@@ -1401,13 +1697,15 @@ function toast(msg, type = 'info') {
   const wrap = document.getElementById('toastWrap');
   const el = document.createElement('div');
   el.className = 'toast';
-  const c = type === 'success' ? 'var(--green)' : type === 'error' ? 'var(--red)' : 'var(--accent)';
-  el.innerHTML = `<span style="color:${c}">${type==='success'?'✓':type==='error'?'✕':'ℹ'}</span> ${msg}`;
+  const c = type === 'success' ? '#34c759' : type === 'error' ? '#ff453a' : '#60a5fa';
+  el.innerHTML = `<span style="color:${c};font-size:15px">${type==='success'?'✓':type==='error'?'✕':'ℹ'}</span> ${msg}`;
   wrap.appendChild(el);
-  setTimeout(() => { el.classList.add('out'); setTimeout(() => el.remove(), 300); }, 3000);
+  setTimeout(() => { el.classList.add('out'); setTimeout(() => el.remove(), 300); }, 3200);
 }
 
-// ─── NAV ───
+// ════════════════════════════════════════════
+//  NAVIGATION
+// ════════════════════════════════════════════
 function switchView(v) {
   currentView = v;
   document.querySelectorAll('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.view === v));
@@ -1418,13 +1716,14 @@ function switchView(v) {
     currentFilter = 'all';
     document.querySelectorAll('.filter-chip').forEach(c => c.classList.toggle('active', c.dataset.level === 'all'));
   }
-  // Update section title for new views
   const titles = { overview:'Overview', all:'All Logs', timeline:'Timeline', error:'Errors', success:'Successes', warn:'Warnings', info:'Info', cloudwatch:'CloudWatch', debug:'Debug', flows:'Flow Analytics', errorinsights:'Error Insights' };
   document.getElementById('sectionTitle').textContent = titles[v] || v;
   render();
 }
 
-// ─── EVENTS ───
+// ════════════════════════════════════════════
+//  EVENT LISTENERS
+// ════════════════════════════════════════════
 document.querySelectorAll('.nav-item').forEach(item => {
   item.addEventListener('click', () => switchView(item.dataset.view));
 });
@@ -1448,13 +1747,11 @@ document.getElementById('searchInput').addEventListener('keydown', e => {
   if (e.key === 'Escape') clearSearch();
 });
 
-// File input
 document.getElementById('fileInput').addEventListener('change', e => {
   handleFiles(Array.from(e.target.files));
   e.target.value = '';
 });
 
-// Drag & drop
 const uz = document.getElementById('uploadZone');
 uz.addEventListener('click', () => document.getElementById('fileInput').click());
 uz.addEventListener('dragover', e => { e.preventDefault(); uz.classList.add('drag-over'); });
@@ -1470,12 +1767,21 @@ document.addEventListener('drop', e => {
   handleFiles(Array.from(e.dataTransfer.files));
 });
 
-// ─── INITIAL RENDER ───
+// Keyboard shortcuts
+document.addEventListener('keydown', e => {
+  if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+    e.preventDefault();
+    document.getElementById('searchInput').focus();
+    document.getElementById('searchInput').select();
+  }
+  if (e.key === 'Escape') closeDetail();
+});
+
+// ════════════════════════════════════════════
+//  INIT
+// ════════════════════════════════════════════
 updateBadges();
 render();
-
-
 </script>
-
 </body>
 </html>
