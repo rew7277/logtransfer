@@ -1272,6 +1272,7 @@ function renderErrorInsights() {
     </div>`;
 }
 
+function renderCloudWatch(logs) {
   const cwLogs = logs.filter(l => l.level === 'cloudwatch' || (l.payload && (l.payload.logGroup || l.payload.logStream)));
   const regular = logs.filter(l => l.level !== 'cloudwatch');
   let html = '';
