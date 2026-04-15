@@ -622,17 +622,62 @@ function parseFile(text, name) {
     const lines = text.split('\n').filter(l => l.trim());
     for (const line of lines) {
       try { logs.push(JSON.parse(line)); }
-      catch { logs.push(parseLine(line)); }
+      catch { const p = parseLine(line); if (p) logs.push(p); }
     }
   }
   if (logs.length) { ingestLogs(logs); showToast('✓ Loaded ' + logs.length + ' entries from ' + name); }
   else showToast('⚠ Could not parse ' + name);
 }
 function parseLine(line) {
-  // basic regex: timestamp level [app/flow] message
-  const m = line.match(/^(\S+)\s+(ERROR|WARN|INFO|DEBUG)\s+(?:\[([^\]]+)\]\s*)?(.*)$/);
-  if (m) return { timestamp: m[1], level: m[2], applicationName: m[3] || 'Unknown', message: m[4], eventId: '', flow: '' };
-  return { timestamp: new Date().toISOString(), level: 'INFO', message: line, applicationName: 'Unknown', eventId: '', flow: '' };
+  if (!line.trim()) return null;
+
+  // ── MuleSoft log4j2 format ──────────────────────────────────────────────────
+  // LEVEL  YYYY-MM-DD HH:MM:SS,mmm [[MuleRuntime].uber.N: [appName].method:\path...] [processor: flow/processors/N; event: eventId] Logger: message
+  const levelM = line.match(/^(ERROR|WARN|INFO|DEBUG|TRACE)\s+/i);
+  if (levelM) {
+    const level = levelM[1].toUpperCase();
+
+    // Timestamp — handles both space-separated and T-separated, comma or dot millis
+    const tsM = line.match(/(\d{4}-\d{2}-\d{2}[\sT]\d{2}:\d{2}:\d{2}[,\.]\d+)/);
+    const timestamp = tsM ? tsM[1].replace(',', '.') : new Date().toISOString();
+
+    // App name — MuleSoft thread: [[MuleRuntime].uber.N: [appName].METHOD:\path]
+    // Pattern: any [something]: [appName].
+    let applicationName = 'Unknown';
+    const appM = line.match(/\[[^\]]+\][^[]*:\s*\[([a-zA-Z][a-zA-Z0-9\-_.]+)\]\./);
+    if (appM) applicationName = appM[1];
+
+    // Processor + event — [processor: subflow/processors/N; event: 1-abc123...]
+    let eventId = '', flow = '';
+    const procM = line.match(/\[processor:\s*([^;\]]+?)(?:\/processors\/\d+)?;\s*event:\s*([^\]]+)\]/);
+    if (procM) {
+      flow = procM[1].trim();
+      eventId = procM[2].trim();
+    }
+
+    // Thread ID — first [[MuleRuntime]...] block
+    const threadM = line.match(/\[([^\]]*MuleRuntime[^\]]*)\]/);
+    const threadId = threadM ? threadM[1] : '';
+
+    // Message — text after the last ClassName: token (e.g. "LoggerMessageProcessor: msg here")
+    let message = '';
+    const msgM = line.match(/\]\s+[\w$.]+(?:\.[\w$]+)*:\s*(.+)$/);
+    if (msgM) message = msgM[1].trim();
+    else message = line.replace(/^.*\]\s*/, '').trim() || line;
+
+    return { timestamp, level, applicationName, eventId, flow, message, correlationId: '', threadId, payload: '' };
+  }
+
+  // ── Alternate: timestamp first (e.g. ISO or epoch) ─────────────────────────
+  const m2 = line.match(/^(\S+(?:\s+\S+)?)\s+(ERROR|WARN|INFO|DEBUG)\s+(?:\[([^\]]+)\]\s*)?(.*)$/i);
+  if (m2) return {
+    timestamp: m2[1], level: m2[2].toUpperCase(),
+    applicationName: m2[3] || 'Unknown', message: m2[4],
+    eventId: '', flow: '', correlationId: '', threadId: '', payload: ''
+  };
+
+  // ── Final fallback ─────────────────────────────────────────────────────────
+  return { timestamp: new Date().toISOString(), level: 'INFO', message: line, applicationName: 'Unknown', eventId: '', flow: '', correlationId: '', threadId: '', payload: '' };
 }
 
 // ============================================================
@@ -644,7 +689,7 @@ function ingestLogs(newLogs) {
     timestamp: l.timestamp || l.time || l.ts || new Date().toISOString(),
     level: (l.level || l.severity || 'INFO').toUpperCase(),
     message: l.message || l.msg || l.log || '',
-    eventId: l.eventId || l.event_id || l.correlationId || '',
+    eventId: l.eventId || l.event_id || '',
     flow: l.flow || l.flowName || l.flow_name || '',
     applicationName: l.applicationName || l.application || l.app || l.service || 'Unknown',
     correlationId: l.correlationId || l.correlation_id || '',
