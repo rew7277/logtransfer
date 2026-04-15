@@ -439,6 +439,35 @@
   .json-num { color: #fb923c; }
   .json-bool { color: #c084fc; }
   .json-null { color: var(--muted); }
+
+  /* ─── FLOW ANALYTICS ─── */
+  .flow-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; }
+  .flow-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 18px; transition: all .2s; cursor: default;
+  }
+  .flow-card:hover { border-color: var(--border-strong); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,.3); }
+  .flow-name { font-size: 13px; font-weight: 600; color: var(--accent); font-family: 'JetBrains Mono', monospace; margin-bottom: 12px; word-break: break-all; }
+  .flow-bar-wrap { height: 6px; background: rgba(255,255,255,.06); border-radius: 3px; overflow: hidden; margin: 10px 0; }
+  .flow-bar { height: 100%; border-radius: 3px; transition: width .6s ease; }
+  .flow-stats { display: flex; gap: 16px; font-size: 12px; color: var(--muted); }
+  .flow-stat-val { font-weight: 600; font-size: 15px; display: block; }
+  .flow-stat-val.green { color: var(--green); }
+  .flow-stat-val.red { color: var(--red); }
+  .flow-stat-val.blue { color: var(--accent); }
+
+  /* ─── ERROR INSIGHTS ─── */
+  .ei-section { margin-bottom: 24px; }
+  .ei-title { font-size: 13px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 12px; }
+  .ei-row {
+    display: flex; align-items: center; gap: 12px;
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm);
+    padding: 12px 16px; margin-bottom: 8px; transition: all .15s; cursor: pointer;
+  }
+  .ei-row:hover { border-color: var(--red); background: rgba(255,69,58,.04); }
+  .ei-code { font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 600; color: var(--red); min-width: 48px; }
+  .ei-msg { font-size: 13px; flex: 1; }
+  .ei-count { font-size: 12px; color: var(--muted); background: rgba(255,69,58,.12); border-radius: 20px; padding: 2px 10px; font-weight: 600; color: var(--red); }
 </style>
 </head>
 <body>
@@ -471,6 +500,8 @@
     <div class="nav-section">Special</div>
     <div class="nav-item" data-view="cloudwatch"><span class="nav-icon">☁️</span>CloudWatch <span class="nav-badge badge-blue" id="nb-cloud">0</span></div>
     <div class="nav-item" data-view="debug"><span class="nav-icon">🐛</span>Debug <span class="nav-badge" style="background:rgba(110,110,128,.2);color:var(--muted)" id="nb-debug">0</span></div>
+    <div class="nav-item" data-view="flows"><span class="nav-icon">🔀</span>Flow Analytics</div>
+    <div class="nav-item" data-view="errorinsights"><span class="nav-icon">🩺</span>Error Insights</div>
 
     <div class="sidebar-footer">
       <button class="upload-btn" onclick="document.getElementById('fileInput').click()">
@@ -597,14 +628,47 @@ let searchMode = 'smart'; // 'smart' | 'eventid' | 'fulltext'
 let fileCount = 0;
 
 // ─── LEVEL UTILS ───
-function detectLevel(raw) {
+function detectLevel(raw, payloadObj) {
   if (!raw) return 'info';
+
+  // ── MuleSoft payload-aware detection ──
+  // Only classify success/error from exit logs or known outcome signals,
+  // never from bare INFO log lines (which would false-positive on "200" in text)
+  if (payloadObj) {
+    // Exit log: has HttpStatus field
+    const httpStatus = payloadObj.exit?.HttpStatus ?? payloadObj.HttpStatus ?? null;
+    if (httpStatus !== null) {
+      const s = parseInt(httpStatus, 10);
+      if (s >= 200 && s < 300) return 'success';
+      if (s >= 400) return 'error';
+    }
+    // Document upload response: statusCode array
+    const statusArr = payloadObj['document upload Response']?.statusCode;
+    if (Array.isArray(statusArr)) {
+      const s = parseInt(statusArr[0], 10);
+      if (s >= 200 && s < 300) return 'success';
+      if (s >= 400) return 'error';
+    }
+    // Error block
+    if (payloadObj.error?.statuscode || payloadObj.error?.message) return 'error';
+    // "uploaded successfully" signal
+    if (typeof payloadObj.message === 'string' && payloadObj.message.toLowerCase().includes('uploaded successfully')) return 'success';
+    // Common JSON success/error markers
+    if (payloadObj.status === 'success' || payloadObj.status === 'ok') return 'success';
+    if (payloadObj.status === 'error' || payloadObj.status === 'fail') return 'error';
+  }
+
+  // ── Plain string detection (for non-MuleSoft logs) ──
   const r = raw.toLowerCase();
-  if (r.includes('error') || r.includes('fatal') || r.includes('exception') || r.includes('fail') || r.includes('500') || r.includes('4xx') || r.includes('5xx')) return 'error';
-  if (r.includes('success') || r.includes('200') || r.includes('201') || r.includes('completed') || r.includes('ok') || r.includes('done')) return 'success';
-  if (r.includes('warn') || r.includes('warning') || r.includes('deprecated') || r.includes('timeout') || r.includes('retry') || r.includes('slow')) return 'warn';
-  if (r.includes('cloudwatch') || r.includes('aws') || r.includes('lambda') || r.includes('loggroup') || r.includes('logstream') || r.includes('metric')) return 'cloudwatch';
-  if (r.includes('debug') || r.includes('trace') || r.includes('verbose')) return 'debug';
+  // Hard errors first (check before success to avoid "successful" text in error messages)
+  if (r === 'error' || r === 'fatal' || r === 'critical') return 'error';
+  if (/\b(fatal|exception|5xx)\b/.test(r)) return 'error';
+  if (/\b(error|fail(ed|ure)?)\b/.test(r) && !/\bno (error|fail)\b/.test(r)) return 'error';
+  if (/\b(warn(ing)?|deprecated|timeout|retry|slow)\b/.test(r)) return 'warn';
+  // Success only from explicit signal words — NOT bare "200" substring
+  if (/\b(success(ful(ly)?)?|completed|upload(ed)? ok|upload(ed)? successfully)\b/.test(r)) return 'success';
+  if (/\b(cloudwatch|loggroup|logstream)\b/.test(r)) return 'cloudwatch';
+  if (/\b(debug|trace|verbose)\b/.test(r)) return 'debug';
   return 'info';
 }
 
@@ -774,11 +838,10 @@ function parseMuleSoft(text) {
     const flowM = firstLine.match(FLOW_RX);
     const logM  = entry.match(LOGGER_RX);
 
-    const level   = lvlM ? lvlM[1].toUpperCase() : 'INFO';
     const ts      = tsM  ? new Date(tsM[1].replace(' ', 'T') + '.' + tsM[2]) : new Date();
     const eventId = procM ? procM[2].trim() : uid();
     const flow    = procM ? procM[1].trim() : (flowM ? flowM[2] : 'mulesoft');
-    const source  = flow.split('/')[0];  // e.g. "documentcompare-api-flow"
+    const source  = flow.split('/')[0];
 
     let message = logM ? logM[1].trim() : firstLine;
     let payload  = { raw: entry, flow, eventId };
@@ -800,11 +863,31 @@ function parseMuleSoft(text) {
       } catch {}
     }
 
+    // ── Determine level from MuleSoft raw level + payload ──
+    // Only promote INFO → success/error if this log entry carries outcome data.
+    // Pure INFO lines (like "before googlesecops call...") stay as 'info'.
+    const muleRawLevel = lvlM ? lvlM[1].toUpperCase() : 'INFO';
+
+    let detectedLevel;
+    if (muleRawLevel === 'ERROR') {
+      detectedLevel = 'error';
+    } else if (muleRawLevel === 'WARN' || muleRawLevel === 'WARNING') {
+      detectedLevel = 'warn';
+    } else if (jsonPart && typeof payload === 'object') {
+      // Use payload-aware detection only when a JSON body is present
+      detectedLevel = detectLevel(muleRawLevel, payload);
+    } else {
+      // Plain text INFO log — check message for explicit success signal
+      detectedLevel = detectLevel(message);
+      // Guard: never let a bare INFO text line become 'success' unless it literally says "successfully"
+      if (detectedLevel === 'success' && !message.toLowerCase().includes('successf')) detectedLevel = 'info';
+    }
+
     return {
       id: eventId.replace(/[^A-Za-z0-9]/g, '').slice(0, 16).toUpperCase() || uid(),
       timestamp: ts,
-      level: detectLevel(level),
-      levelRaw: level,
+      level: detectedLevel,
+      levelRaw: muleRawLevel,
       message,
       source,
       payload,
@@ -1003,6 +1086,8 @@ function render() {
 
   if (currentView === 'timeline') { renderTimeline(logs); return; }
   if (currentView === 'cloudwatch') { renderCloudWatch(logs); return; }
+  if (currentView === 'flows') { renderFlowAnalytics(); return; }
+  if (currentView === 'errorinsights') { renderErrorInsights(); return; }
   renderTable(logs);
 }
 
@@ -1050,7 +1135,143 @@ function renderTimeline(logs) {
   document.getElementById('logContent').innerHTML = `<div class="log-table-wrap" style="padding:16px"><div class="timeline">${items}</div></div>`;
 }
 
-function renderCloudWatch(logs) {
+function renderFlowAnalytics() {
+  if (!allLogs.length) {
+    document.getElementById('logContent').innerHTML = `<div class="empty-state"><div class="empty-icon">🔀</div><h3>No logs loaded</h3><p>Upload a log file to see flow analytics</p></div>`;
+    return;
+  }
+
+  // Build per-flow stats
+  const flows = {};
+  allLogs.forEach(l => {
+    const name = (l.payload && l.payload.flow) ? l.payload.flow : l.source;
+    if (!flows[name]) flows[name] = { total: 0, success: 0, error: 0, warn: 0, info: 0 };
+    flows[name].total++;
+    flows[name][l.level] = (flows[name][l.level] || 0) + 1;
+  });
+
+  const sorted = Object.entries(flows).sort((a, b) => b[1].total - a[1].total);
+  const overallTotal = allLogs.length;
+  const overallSuccess = allLogs.filter(l => l.level === 'success').length;
+  const overallError = allLogs.filter(l => l.level === 'error').length;
+  const successRate = overallTotal ? Math.round(overallSuccess / overallTotal * 100) : 0;
+  const errorRate = overallTotal ? Math.round(overallError / overallTotal * 100) : 0;
+
+  const summaryHtml = `
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px;margin-bottom:24px">
+      <div class="stat-card"><div class="stat-label">Total Events</div><div class="stat-value" style="font-size:28px">${overallTotal.toLocaleString()}</div></div>
+      <div class="stat-card"><div class="stat-label">Success Rate</div><div class="stat-value" style="font-size:28px;color:var(--green)">${successRate}%</div></div>
+      <div class="stat-card"><div class="stat-label">Error Rate</div><div class="stat-value" style="font-size:28px;color:var(--red)">${errorRate}%</div></div>
+      <div class="stat-card"><div class="stat-label">Unique Flows</div><div class="stat-value" style="font-size:28px;color:var(--accent)">${sorted.length}</div></div>
+    </div>`;
+
+  const cards = sorted.map(([name, s]) => {
+    const sr = s.total ? Math.round((s.success || 0) / s.total * 100) : 0;
+    const barColor = sr >= 90 ? 'var(--green)' : sr >= 60 ? 'var(--yellow)' : 'var(--red)';
+    const errCount = s.error || 0;
+    return `
+      <div class="flow-card">
+        <div class="flow-name">${escH(name)}</div>
+        <div class="flow-bar-wrap"><div class="flow-bar" style="width:${sr}%;background:${barColor}"></div></div>
+        <div class="flow-stats">
+          <div><span class="flow-stat-val blue">${s.total.toLocaleString()}</span>total</div>
+          <div><span class="flow-stat-val green">${(s.success||0).toLocaleString()}</span>success</div>
+          <div><span class="flow-stat-val red">${errCount.toLocaleString()}</span>errors</div>
+          <div><span class="flow-stat-val" style="color:var(--yellow)">${(s.warn||0).toLocaleString()}</span>warn</div>
+        </div>
+        <div style="margin-top:10px;font-size:11px;color:var(--muted)">Success rate: <span style="color:${barColor};font-weight:600">${sr}%</span></div>
+      </div>`;
+  }).join('');
+
+  document.getElementById('logContent').innerHTML = `
+    <div class="log-table-wrap" style="padding:20px">
+      ${summaryHtml}
+      <div style="font-size:13px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:14px">Flow Breakdown</div>
+      <div class="flow-grid">${cards}</div>
+    </div>`;
+}
+
+function renderErrorInsights() {
+  const errors = allLogs.filter(l => l.level === 'error');
+  if (!errors.length) {
+    document.getElementById('logContent').innerHTML = `<div class="empty-state"><div class="empty-icon">🎉</div><h3>No errors found</h3><p>Your logs are clean!</p></div>`;
+    return;
+  }
+
+  // Group by error type / HTTP status
+  const byCode = {};
+  errors.forEach(l => {
+    // Try to extract HTTP status or error keyword
+    let code = 'Unknown';
+    const raw = l.raw || '';
+    const statusMatch = raw.match(/"(?:HttpStatus|statusCode|statuscode|status)":\s*"?(\d{3})"?/i);
+    if (statusMatch) code = statusMatch[1];
+    else if (raw.includes('413')) code = '413';
+    else if (raw.includes('403')) code = '403';
+    else if (raw.includes('404')) code = '404';
+    else if (raw.includes('401')) code = '401';
+    else if (raw.includes('500')) code = '500';
+    else if (raw.toLowerCase().includes('timeout')) code = 'TIMEOUT';
+    else if (raw.toLowerCase().includes('session invalid') || raw.toLowerCase().includes('invalid session')) code = 'SESSION_INVALID';
+    else if (raw.toLowerCase().includes('exception')) code = 'EXCEPTION';
+
+    if (!byCode[code]) byCode[code] = [];
+    byCode[code].push(l);
+  });
+
+  const codeLabels = {
+    '413': 'Payload Too Large — file size exceeds limit',
+    '403': 'Forbidden — token/session invalid or expired',
+    '404': 'Not Found — endpoint or resource missing',
+    '401': 'Unauthorized — authentication failed',
+    '500': 'Internal Server Error',
+    'SESSION_INVALID': 'Session Invalid — JWT/token expired',
+    'TIMEOUT': 'Request Timeout',
+    'EXCEPTION': 'Unhandled Exception',
+    'Unknown': 'Other / Unclassified Error'
+  };
+
+  const sorted = Object.entries(byCode).sort((a, b) => b[1].length - a[1].length);
+  const rows = sorted.map(([code, errs]) => {
+    const label = codeLabels[code] || `HTTP ${code}`;
+    return `<div class="ei-row" onclick="switchView('error');searchQuery='';document.getElementById('searchInput').value='';render();toast('Showing all errors','info')">
+      <span class="ei-code">${escH(code)}</span>
+      <span class="ei-msg">${escH(label)}</span>
+      <span class="ei-count">${errs.length.toLocaleString()} occurrences</span>
+    </div>`;
+  }).join('');
+
+  // Top recurring error messages
+  const msgCounts = {};
+  errors.forEach(l => {
+    const k = l.message.slice(0, 80).trim();
+    msgCounts[k] = (msgCounts[k] || 0) + 1;
+  });
+  const topMsgs = Object.entries(msgCounts).sort((a, b) => b[1] - a[1]).slice(0, 10);
+  const msgRows = topMsgs.map(([msg, cnt]) => `
+    <div class="ei-row" style="cursor:default">
+      <span class="ei-msg" style="font-family:'JetBrains Mono',monospace;font-size:12px">${escH(msg)}</span>
+      <span class="ei-count">${cnt}×</span>
+    </div>`).join('');
+
+  document.getElementById('logContent').innerHTML = `
+    <div class="log-table-wrap" style="padding:20px">
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:14px;margin-bottom:24px">
+        <div class="stat-card"><div class="stat-label">Total Errors</div><div class="stat-value" style="font-size:28px;color:var(--red)">${errors.length.toLocaleString()}</div></div>
+        <div class="stat-card"><div class="stat-label">Error Types</div><div class="stat-value" style="font-size:28px;color:var(--orange)">${sorted.length}</div></div>
+        <div class="stat-card"><div class="stat-label">Error Rate</div><div class="stat-value" style="font-size:28px;color:var(--red)">${allLogs.length ? Math.round(errors.length/allLogs.length*100) : 0}%</div></div>
+      </div>
+      <div class="ei-section">
+        <div class="ei-title">By Error Code / Type</div>
+        ${rows}
+      </div>
+      <div class="ei-section">
+        <div class="ei-title">Top Recurring Error Messages</div>
+        ${msgRows}
+      </div>
+    </div>`;
+}
+
   const cwLogs = logs.filter(l => l.level === 'cloudwatch' || (l.payload && (l.payload.logGroup || l.payload.logStream)));
   const regular = logs.filter(l => l.level !== 'cloudwatch');
   let html = '';
@@ -1196,6 +1417,9 @@ function switchView(v) {
     currentFilter = 'all';
     document.querySelectorAll('.filter-chip').forEach(c => c.classList.toggle('active', c.dataset.level === 'all'));
   }
+  // Update section title for new views
+  const titles = { overview:'Overview', all:'All Logs', timeline:'Timeline', error:'Errors', success:'Successes', warn:'Warnings', info:'Info', cloudwatch:'CloudWatch', debug:'Debug', flows:'Flow Analytics', errorinsights:'Error Insights' };
+  document.getElementById('sectionTitle').textContent = titles[v] || v;
   render();
 }
 
