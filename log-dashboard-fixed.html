@@ -483,7 +483,7 @@
   <nav class="sidebar" id="sidebar">
     <div class="logo">
       <div class="logo-icon">🔍</div>
-      <div><div class="logo-name">LogLens</div><div class="logo-sub">v2.1 · Fixed</div></div>
+      <div><div class="logo-name">LogLens</div><div class="logo-sub">v2.2 · Fixed</div></div>
     </div>
 
     <div class="nav-section">Views</div>
@@ -913,6 +913,7 @@ function parseMuleSoft(text) {
 
     return {
       id: eventId.replace(/[^A-Za-z0-9]/g, '').slice(0, 16).toUpperCase() || uid(),
+      eventIdRaw: eventId.trim(),
       timestamp: ts,
       level: detectedLevel,
       levelRaw: muleRawLevel,
@@ -1014,6 +1015,15 @@ function updateBadges() {
 }
 
 // ─── FILTER ───
+function matchesEventId(l, qLow) {
+  // Match against: short stripped id, full raw eventId, or raw log text containing event: <id>
+  if (l.id.toLowerCase().includes(qLow)) return true;
+  if (l.eventIdRaw && l.eventIdRaw.toLowerCase().includes(qLow)) return true;
+  // Also check raw log — covers cases where query is a fragment like "70992d61"
+  if (l.raw.toLowerCase().includes(qLow)) return true;
+  return false;
+}
+
 function filteredLogs() {
   let logs = allLogs;
   if (currentFilter !== 'all') logs = logs.filter(l => l.level === currentFilter);
@@ -1023,38 +1033,50 @@ function filteredLogs() {
   const qLow = q.toLowerCase();
 
   if (searchMode === 'eventid') {
-    // Strict exact Event ID match only
-    logs = logs.filter(l => l.id.toLowerCase() === qLow);
+    // Event ID mode: search full raw eventId, stripped id, and raw log text
+    // Supports pasting the full "1-70992d61-3897-11f1-9ef6-02db3db872f2" or any fragment
+    logs = logs.filter(l => matchesEventId(l, qLow));
   } else if (searchMode === 'fulltext') {
-    // Full text including raw payload — user explicitly asked for this
+    // Full text: search everything including raw payload JSON
     logs = logs.filter(l =>
-      l.id.toLowerCase().includes(qLow) ||
+      matchesEventId(l, qLow) ||
       l.message.toLowerCase().includes(qLow) ||
       l.source.toLowerCase().includes(qLow) ||
       l.raw.toLowerCase().includes(qLow)
     );
   } else {
-    // Smart mode: detect if query looks like an Event ID → exact match, else partial text search
-    const looksLikeEventId = /^[A-Z0-9_\-]{4,}$/i.test(q) && q.length >= 4 && q.length <= 32 && !/\s/.test(q);
-    if (looksLikeEventId) {
-      // Exact Event ID first; if nothing found, fall back to partial on message/source
+    // Smart mode:
+    // 1. If query looks like a MuleSoft event ID (contains hyphens in UUID pattern), use event ID search
+    // 2. If query is alphanumeric-only short token, try exact ID then partial
+    // 3. Otherwise, search message + source + raw (payload content like documentuuid, correlationId etc.)
+    const looksLikeMuleEventId = /^[\d]+-[a-f0-9]+-[a-f0-9]+-[a-f0-9]+-[a-f0-9]+/i.test(q) ||
+                                  /event:\s*[\w\-]+/i.test(q);
+    const looksLikeShortId = /^[A-Z0-9]{4,20}$/i.test(q) && !q.includes(' ');
+
+    if (looksLikeMuleEventId) {
+      // Full MuleSoft event ID pasted — match against raw event ID and raw log
+      logs = logs.filter(l => matchesEventId(l, qLow));
+    } else if (looksLikeShortId) {
+      // Short token — try exact stripped ID first, fall back to full search including raw
       const exactMatches = logs.filter(l => l.id.toLowerCase() === qLow);
       if (exactMatches.length) {
         logs = exactMatches;
       } else {
-        // No exact ID hit — partial search (but NOT raw to avoid noise)
         logs = logs.filter(l =>
-          l.id.toLowerCase().includes(qLow) ||
+          matchesEventId(l, qLow) ||
           l.message.toLowerCase().includes(qLow) ||
-          l.source.toLowerCase().includes(qLow)
+          l.source.toLowerCase().includes(qLow) ||
+          l.raw.toLowerCase().includes(qLow)
         );
       }
     } else {
-      // Plain text query → partial search across message, source, id (no raw)
+      // General text — search message, source, and raw payload (covers documentuuid, correlationId, unique_id etc.)
       logs = logs.filter(l =>
         l.id.toLowerCase().includes(qLow) ||
+        (l.eventIdRaw && l.eventIdRaw.toLowerCase().includes(qLow)) ||
         l.message.toLowerCase().includes(qLow) ||
-        l.source.toLowerCase().includes(qLow)
+        l.source.toLowerCase().includes(qLow) ||
+        l.raw.toLowerCase().includes(qLow)
       );
     }
   }
@@ -1076,13 +1098,15 @@ function clearSearch() {
 }
 
 function searchById(id) {
+  // Use the raw eventId if available so we search the full "1-70992d61-3897-..." string
   searchQuery = id;
   searchMode = 'eventid';
   document.getElementById('searchInput').value = id;
   document.getElementById('searchClear').classList.add('visible');
   document.querySelectorAll('.mode-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === 'eventid'));
   render();
-  toast(`🎯 Showing logs for Event ID: ${id}`, 'info');
+  const count = filteredLogs().length;
+  toast(`🎯 ${count} log${count!==1?'s':''} for Event ID: ${id.slice(0,20)}${id.length>20?'…':''}`, 'info');
 }
 
 function highlight(text, query) {
@@ -1362,7 +1386,7 @@ function openDetail(idx) {
       <div class="detail-kv-label">Event ID</div>
       <div class="detail-kv-val mono" style="color:var(--accent);display:flex;align-items:center;gap:10px">
         <span>${escH(l.id)}</span>
-        <button onclick="closeDetail();searchById('${escH(l.id)}')" style="font-size:11px;padding:3px 10px;border-radius:6px;background:rgba(41,151,255,.12);border:1px solid rgba(41,151,255,.3);color:var(--accent);cursor:pointer;font-family:inherit;transition:all .2s" title="Filter all logs by this Event ID">🎯 Filter by ID</button>
+        <button onclick="closeDetail();searchById('${escH(l.eventIdRaw || l.id)}')" style="font-size:11px;padding:3px 10px;border-radius:6px;background:rgba(41,151,255,.12);border:1px solid rgba(41,151,255,.3);color:var(--accent);cursor:pointer;font-family:inherit;transition:all .2s" title="Filter all logs by this Event ID">🎯 Filter by ID</button>
       </div>
     </div>
     <div class="detail-kv">
