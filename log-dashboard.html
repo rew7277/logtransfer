@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>MuleSoft Log Analyzer Pro</title>
+<title>ObserveX — MuleSoft Log Analyzer Pro</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
 <style>
@@ -26,6 +26,8 @@
     --success-light: #f0fdf4;
     --info: #0891b2;
     --info-light: #ecfeff;
+    --purple: #7c3aed;
+    --purple-light: #f5f3ff;
     --radius: 10px;
     --radius-sm: 6px;
     --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
@@ -102,11 +104,25 @@
   .nav-badge.warn { background: var(--warn); }
   .nav-badge.info { background: var(--info); }
 
-  .sidebar-footer {
-    padding: 12px 10px;
-    border-top: 1px solid var(--border);
-  }
+  .sidebar-footer { padding: 12px 10px; border-top: 1px solid var(--border); }
   .sidebar-stats { font-size: 11px; color: var(--text3); text-align: center; }
+
+  /* SAVED VIEW ITEMS */
+  .saved-view-item {
+    display: flex; align-items: center; gap: 6px;
+    padding: 6px 10px; border-radius: var(--radius-sm);
+    cursor: pointer; font-size: 12px; color: var(--text2);
+    transition: all 0.1s; margin-bottom: 1px;
+  }
+  .saved-view-item:hover { background: var(--surface2); color: var(--text); }
+  .saved-view-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
+  .saved-view-del {
+    margin-left: auto; width: 16px; height: 16px; border-radius: 3px;
+    display: none; align-items: center; justify-content: center;
+    font-size: 10px; color: var(--text3); background: var(--surface2);
+  }
+  .saved-view-item:hover .saved-view-del { display: flex; }
+  .saved-view-del:hover { color: var(--error) !important; background: var(--error-light) !important; }
 
   /* MAIN */
   .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
@@ -122,6 +138,21 @@
   }
   .header-title { font-size: 15px; font-weight: 600; flex: 1; color: var(--text); }
   .header-controls { display: flex; align-items: center; gap: 8px; }
+
+  /* LIVE DOT */
+  .live-indicator {
+    display: flex; align-items: center; gap: 5px;
+    font-size: 11px; color: var(--success); font-weight: 500;
+  }
+  .live-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--success); flex-shrink: 0;
+    animation: pulse-dot 2s infinite;
+  }
+  @keyframes pulse-dot {
+    0%,100% { box-shadow: 0 0 0 0 rgba(22,163,74,0.5); }
+    50% { box-shadow: 0 0 0 5px rgba(22,163,74,0); }
+  }
 
   /* CONTROLS BAR */
   .controls-bar {
@@ -140,6 +171,13 @@
   }
   .search-wrap input:focus { border-color: var(--accent); background: #fff; box-shadow: 0 0 0 3px rgba(37,99,235,0.08); }
   .search-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--text3); font-size: 14px; pointer-events: none; }
+  .search-mode-hint {
+    position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+    font-size: 9px; color: var(--text3); font-family: var(--mono);
+    background: var(--surface2); padding: 1px 5px; border-radius: 3px;
+    border: 1px solid var(--border); pointer-events: none;
+  }
+  .search-wrap input { padding-right: 56px; }
 
   select, .btn {
     padding: 7px 12px; border-radius: var(--radius-sm); font-size: 12px;
@@ -163,6 +201,8 @@
   .btn.active { background: var(--accent-light); color: var(--accent); border-color: var(--accent); }
   .btn.danger { border-color: var(--error); color: var(--error); }
   .btn.danger:hover { background: var(--error-light); }
+  .btn.success { border-color: var(--success); color: var(--success); }
+  .btn.success:hover { background: var(--success-light); }
 
   .divider { width: 1px; height: 20px; background: var(--border); flex-shrink: 0; }
 
@@ -238,6 +278,13 @@
     color: var(--text2); max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
 
+  /* CORR ID LINK */
+  .corr-link {
+    font-family: var(--mono); font-size: 10px; color: var(--accent);
+    cursor: pointer; text-decoration: underline; text-decoration-style: dotted;
+  }
+  .corr-link:hover { color: #1d4ed8; }
+
   /* PAGINATION */
   .pagination {
     display: flex; align-items: center; justify-content: space-between;
@@ -278,14 +325,11 @@
     background: var(--surface2); border-radius: var(--radius-sm);
     padding: 10px 12px; overflow-x: auto;
   }
-  .flow-step {
-    display: flex; align-items: center; gap: 0; flex-shrink: 0;
-  }
+  .flow-step { display: flex; align-items: center; gap: 0; flex-shrink: 0; }
   .flow-node {
     padding: 6px 12px; border-radius: 6px; font-size: 11px; font-weight: 500;
     font-family: var(--mono); white-space: nowrap; border: 1px solid var(--border);
-    background: var(--surface); cursor: default; transition: all 0.15s;
-    position: relative;
+    background: var(--surface); cursor: default; transition: all 0.15s; position: relative;
   }
   .flow-node:hover { border-color: var(--accent); color: var(--accent); box-shadow: var(--shadow); }
   .flow-node.app { background: var(--text); color: #fff; border-color: var(--text); font-weight: 600; }
@@ -304,8 +348,7 @@
   .copy-btn {
     width: 22px; height: 22px; border: 1px solid var(--border); border-radius: 4px;
     background: var(--surface2); cursor: pointer; display: flex; align-items: center;
-    justify-content: center; font-size: 11px; color: var(--text3); transition: all 0.15s;
-    flex-shrink: 0;
+    justify-content: center; font-size: 11px; color: var(--text3); transition: all 0.15s; flex-shrink: 0;
   }
   .copy-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
   .journey-duration { font-size: 10px; color: var(--text3); font-family: var(--mono); background: var(--surface2); padding: 3px 8px; border-radius: 20px; }
@@ -324,9 +367,7 @@
   }
   .journey-clear-btn:hover { border-color: var(--error); color: var(--error); background: var(--error-light); }
   .journey-steps { padding: 14px 16px; }
-  .journey-step {
-    display: flex; gap: 14px; position: relative; padding-bottom: 16px;
-  }
+  .journey-step { display: flex; gap: 14px; position: relative; padding-bottom: 16px; }
   .journey-step:last-child { padding-bottom: 0; }
   .step-line-wrap { display: flex; flex-direction: column; align-items: center; flex-shrink: 0; }
   .step-dot {
@@ -358,10 +399,7 @@
 
   /* GROUP VIEW */
   .group-item { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 8px; overflow: hidden; }
-  .group-header {
-    padding: 11px 16px; display: flex; align-items: center; gap: 10px;
-    cursor: pointer; transition: background 0.1s;
-  }
+  .group-header { padding: 11px 16px; display: flex; align-items: center; gap: 10px; cursor: pointer; transition: background 0.1s; }
   .group-header:hover { background: var(--surface2); }
   .group-event-id { font-family: var(--mono); font-size: 12px; font-weight: 600; flex: 1; }
   .group-meta { display: flex; gap: 8px; align-items: center; font-size: 11px; color: var(--text3); }
@@ -411,6 +449,8 @@
   .detail-label { font-size: 10px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 3px; }
   .detail-val { font-size: 13px; color: var(--text); }
   .detail-val.mono { font-family: var(--mono); font-size: 11px; background: var(--surface2); padding: 8px 10px; border-radius: var(--radius-sm); white-space: pre-wrap; word-break: break-all; line-height: 1.5; }
+  .detail-val.stacktrace { font-family: var(--mono); font-size: 10px; background: #1a1917; color: #f87171; padding: 10px 12px; border-radius: var(--radius-sm); white-space: pre-wrap; word-break: break-all; line-height: 1.6; max-height: 200px; overflow-y: auto; }
+  .detail-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); }
 
   /* TOAST */
   .toast {
@@ -423,7 +463,8 @@
 
   /* TWO COLUMN */
   .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
-  @media (max-width: 900px) { .two-col { grid-template-columns: 1fr; } }
+  .three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+  @media (max-width: 900px) { .two-col, .three-col { grid-template-columns: 1fr; } }
 
   @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
   @keyframes slideIn { from { transform: translateX(30px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
@@ -455,6 +496,19 @@
   .tleg { display: flex; align-items: center; gap: 4px; font-size: 11px; color: var(--text3); }
   .tleg-dot { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
 
+  /* TALL TIMELINE (for dedicated tab) */
+  .timeline-bars-tall { display: flex; align-items: flex-end; gap: 3px; height: 140px; padding: 4px 0; }
+  .tbar-col-tall { display: flex; flex-direction: column; align-items: center; gap: 1px; flex: 1; cursor: pointer; position: relative; }
+  .tbar-col-tall:hover .tbar-seg { opacity: 0.75; }
+  .tbar-col-tall:hover::after {
+    content: attr(data-tip);
+    position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%);
+    background: var(--text); color: #fff; font-size: 10px; padding: 3px 7px;
+    border-radius: 4px; white-space: nowrap; z-index: 10; margin-bottom: 4px; pointer-events: none;
+  }
+  .timeline-x-labels { display: flex; gap: 3px; margin-top: 4px; }
+  .tbar-xlabel { flex: 1; font-size: 9px; color: var(--text3); text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
   /* TOP ERRORS WIDGET */
   .top-err-list { display: flex; flex-direction: column; gap: 6px; }
   .top-err-row { display: flex; align-items: center; gap: 8px; padding: 8px 10px; background: var(--error-light); border-radius: var(--radius-sm); border-left: 3px solid var(--error); cursor: pointer; }
@@ -462,6 +516,7 @@
   .top-err-count { font-family: var(--mono); font-size: 13px; font-weight: 700; color: var(--error); min-width: 28px; }
   .top-err-msg { font-size: 11px; color: var(--text); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .top-err-app { font-size: 10px; color: var(--text3); white-space: nowrap; }
+  .top-err-pct-bar { height: 3px; border-radius: 2px; background: var(--error); margin-top: 4px; transition: width 0.4s; }
 
   /* SLOW TRANSACTION */
   .slow-badge { background: var(--warn-light); color: var(--warn); border: 1px solid var(--warn); padding: 2px 7px; border-radius: 20px; font-size: 10px; font-weight: 700; }
@@ -475,6 +530,73 @@
 
   /* CLEAR TRANSITION */
   .clearing { opacity: 0; transition: opacity 0.15s; }
+
+  /* SMART INSIGHTS BANNER */
+  .insights-banner {
+    background: #fff; border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 12px 16px; margin-bottom: 20px; display: flex; flex-direction: column; gap: 8px;
+  }
+  .insights-title { font-size: 12px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: 0.6px; display: flex; align-items: center; gap: 6px; margin-bottom: 2px; }
+  .insights-row { display: flex; flex-wrap: wrap; gap: 8px; }
+  .insight-chip {
+    display: flex; align-items: center; gap: 6px;
+    padding: 5px 10px; border-radius: 20px; font-size: 11px; font-weight: 500;
+    animation: fadeIn 0.3s;
+  }
+  .insight-chip.error { background: var(--error-light); color: var(--error); border: 1px solid #fca5a5; }
+  .insight-chip.warn { background: var(--warn-light); color: var(--warn); border: 1px solid #fcd34d; }
+  .insight-chip.info { background: var(--accent-light); color: var(--accent); border: 1px solid #93c5fd; }
+  .insight-chip.success { background: var(--success-light); color: var(--success); border: 1px solid #86efac; }
+
+  /* PERFORMANCE TAB */
+  .perf-metric-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 16px; text-align: center;
+  }
+  .perf-metric-label { font-size: 10px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 4px; }
+  .perf-metric-value { font-size: 28px; font-weight: 700; font-family: var(--mono); letter-spacing: -1px; line-height: 1; }
+  .perf-metric-sub { font-size: 11px; color: var(--text3); margin-top: 4px; }
+
+  .latency-bar-row { display: flex; align-items: center; gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--border); }
+  .latency-bar-row:last-child { border-bottom: none; }
+  .latency-pct-label { font-size: 11px; font-weight: 600; color: var(--text2); min-width: 32px; }
+  .latency-bar-wrap { flex: 1; height: 10px; background: var(--surface2); border-radius: 5px; overflow: hidden; }
+  .latency-bar-fill { height: 100%; border-radius: 5px; transition: width 0.5s; }
+  .latency-value { font-family: var(--mono); font-size: 11px; color: var(--text); min-width: 70px; text-align: right; }
+
+  /* SAVE VIEW MODAL */
+  .modal-overlay {
+    position: fixed; inset: 0; z-index: 150;
+    background: rgba(0,0,0,0.3); backdrop-filter: blur(2px);
+    display: flex; align-items: center; justify-content: center; animation: fadeIn 0.15s;
+  }
+  .modal-box {
+    background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow-lg);
+    padding: 24px; width: 360px; animation: fadeIn 0.15s;
+  }
+  .modal-title { font-size: 15px; font-weight: 600; margin-bottom: 14px; }
+  .modal-input {
+    width: 100%; padding: 8px 12px; border: 1px solid var(--border);
+    border-radius: var(--radius-sm); font-family: var(--font); font-size: 13px;
+    color: var(--text); outline: none; margin-bottom: 12px;
+  }
+  .modal-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(37,99,235,0.08); }
+  .modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
+
+  /* TIME RANGE */
+  .time-range-btn {
+    padding: 5px 9px; border: 1px solid var(--border); border-radius: var(--radius-sm);
+    background: var(--surface2); font-size: 11px; font-weight: 500; cursor: pointer;
+    color: var(--text2); transition: all 0.1s;
+  }
+  .time-range-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .time-range-btn:hover:not(.active) { background: var(--surface); color: var(--text); }
+
+  /* THROUGHPUT CHART */
+  .dual-chart-wrap { position: relative; }
+  .dual-bar-col { display: flex; flex-direction: column-reverse; align-items: center; gap: 1px; flex: 1; cursor: pointer; }
+  .dual-bar-traffic { width: 60%; border-radius: 2px; background: rgba(37,99,235,0.25); }
+  .dual-bar-error { width: 60%; border-radius: 2px; background: rgba(220,38,38,0.7); }
 </style>
 </head>
 <body>
@@ -482,9 +604,9 @@
 <!-- SIDEBAR -->
 <aside class="sidebar">
   <div class="sidebar-logo">
-    <div class="logo-icon">ML</div>
+    <div class="logo-icon">OX</div>
     <div>
-      <div class="logo-text">Log Analyzer</div>
+      <div class="logo-text">ObserveX</div>
       <div class="logo-sub">MuleSoft Pro</div>
     </div>
   </div>
@@ -501,6 +623,12 @@
       <span class="nav-icon">⚠</span> Errors
       <span class="nav-badge" id="badge-errors" style="display:none"></span>
     </div>
+    <div class="nav-item" onclick="setView('timeline')" id="nav-timeline">
+      <span class="nav-icon">📈</span> Timeline
+    </div>
+    <div class="nav-item" onclick="setView('performance')" id="nav-performance">
+      <span class="nav-icon">⚡</span> Performance
+    </div>
     <div class="nav-item" onclick="setView('flow')" id="nav-flow">
       <span class="nav-icon">⇢</span> Flow Analytics
     </div>
@@ -509,6 +637,11 @@
     </div>
     <div class="nav-item" onclick="setView('group')" id="nav-group">
       <span class="nav-icon">⊞</span> Group by Event ID
+    </div>
+
+    <div class="nav-section-label" style="margin-top:12px">Saved Views</div>
+    <div id="saved-views-list">
+      <div style="font-size:11px;color:var(--text3);padding:6px 8px">No saved views</div>
     </div>
 
     <div class="nav-section-label" style="margin-top:12px">Applications</div>
@@ -525,11 +658,20 @@
 <div class="main">
   <!-- HEADER -->
   <header class="header">
-    <div class="header-title" id="header-title">MuleSoft Log Analyzer</div>
+    <div class="header-title" id="header-title">ObserveX — MuleSoft Log Analyzer</div>
     <div class="header-controls">
-      <button class="btn primary" onclick="document.getElementById('file-input').click()">
-        ⬆ Upload Logs
-      </button>
+      <div class="live-indicator" id="live-indicator" style="display:none">
+        <div class="live-dot"></div> Live
+      </div>
+      <div style="display:flex;gap:4px" id="time-range-bar" style="display:none">
+        <button class="time-range-btn" onclick="setTimeRange('15m')" id="tr-15m">15m</button>
+        <button class="time-range-btn" onclick="setTimeRange('1h')" id="tr-1h">1h</button>
+        <button class="time-range-btn" onclick="setTimeRange('6h')" id="tr-6h">6h</button>
+        <button class="time-range-btn" onclick="setTimeRange('24h')" id="tr-24h">24h</button>
+        <button class="time-range-btn active" onclick="setTimeRange('all')" id="tr-all">All</button>
+      </div>
+      <button class="btn" onclick="openSaveViewModal()" id="btn-save-view" style="display:none" title="Save current filter as a view">⊕ Save View</button>
+      <button class="btn primary" onclick="document.getElementById('file-input').click()">⬆ Upload Logs</button>
       <button class="btn danger" onclick="clearData()" id="btn-clear" style="display:none">✕ Clear</button>
       <input type="file" id="file-input" accept=".json,.txt,.log,.csv" style="display:none" multiple onchange="handleFileUpload(event)" />
     </div>
@@ -540,6 +682,13 @@
     <div class="search-wrap">
       <span class="search-icon">🔍</span>
       <input type="text" id="search-input" placeholder="Search message, Event ID, flow…" oninput="onSearch()" />
+      <span class="search-mode-hint" id="search-mode-hint">~</span>
+    </div>
+    <!-- Search mode toggle -->
+    <div class="toggle-group" title="Search mode">
+      <div class="toggle-opt active" onclick="setSearchMode('contains')" id="sm-contains">~</div>
+      <div class="toggle-opt" onclick="setSearchMode('exact')" id="sm-exact">=</div>
+      <div class="toggle-opt" onclick="setSearchMode('regex')" id="sm-regex">.*</div>
     </div>
     <select id="app-filter" onchange="onFilter()">
       <option value="">All Applications</option>
@@ -583,6 +732,8 @@
     <div id="view-overview" style="display:none"></div>
     <div id="view-logs" style="display:none"></div>
     <div id="view-errors" style="display:none"></div>
+    <div id="view-timeline" style="display:none"></div>
+    <div id="view-performance" style="display:none"></div>
     <div id="view-flow" style="display:none"></div>
     <div id="view-journey" style="display:none"></div>
     <div id="view-group" style="display:none"></div>
@@ -600,6 +751,20 @@
   </div>
 </div>
 
+<!-- SAVE VIEW MODAL -->
+<div class="modal-overlay" id="save-view-modal" style="display:none" onclick="if(event.target===this)closeSaveViewModal()">
+  <div class="modal-box">
+    <div class="modal-title">💾 Save Current View</div>
+    <p style="font-size:12px;color:var(--text3);margin-bottom:12px">Saves the current search, filters and level mode as a named view.</p>
+    <input class="modal-input" id="save-view-name" placeholder="e.g. Payment Errors, DB Issues…" maxlength="40" onkeydown="if(event.key==='Enter')confirmSaveView()" />
+    <div style="font-size:11px;color:var(--text3);margin-bottom:12px" id="save-view-preview"></div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeSaveViewModal()">Cancel</button>
+      <button class="btn primary" onclick="confirmSaveView()">Save View</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ============================================================
 //  STATE
@@ -608,11 +773,25 @@ let allLogs = [];
 let filteredLogs = [];
 let currentView = 'overview';
 let currentMode = 'all'; // all | errors
+let searchMode = 'contains'; // contains | exact | regex
+let timeRange = 'all'; // 15m | 1h | 6h | 24h | 7d | all
 let page = 1;
 const PAGE_SIZE = 50;
 let openGroups = new Set();
 let openFlowApps = new Set();
+let expandedSteps = new Set();
 let selectedJourneyId = '';
+let journeyErrorsOnly = false;
+let _journeyRenderedId = null;
+
+let savedViews = JSON.parse(localStorage.getItem('observex_saved_views') || '[]');
+// Preset views always available
+const PRESET_VIEWS = [
+  { name: '🔴 Payment Errors', q: 'payment', app: '', level: 'ERROR', mode: 'errors' },
+  { name: '🗄 DB Issues', q: 'db', app: '', level: 'ERROR', mode: 'errors' },
+  { name: '🔑 Auth Flow', q: 'auth', app: '', level: '', mode: 'all' },
+  { name: '⚠ All Warnings', q: '', app: '', level: 'WARN', mode: 'all' },
+];
 
 const APP_COLORS = ['#2563eb','#16a34a','#d97706','#9333ea','#0891b2','#dc2626','#ca8a04','#7c3aed'];
 
@@ -637,7 +816,7 @@ function loadSampleData() {
   const evIds = ['EVT-001','EVT-002','EVT-003','EVT-004','EVT-005','EVT-006'];
   const logs = [];
   const base = Date.now() - 3600000;
-  for (let i = 0; i < 180; i++) {
+  for (let i = 0; i < 200; i++) {
     const app = apps[Math.floor(Math.random() * apps.length)];
     const appFlows = flows[app];
     const flow = appFlows[Math.floor(Math.random() * appFlows.length)];
@@ -645,6 +824,7 @@ function loadSampleData() {
     const msgs = messages[lvl];
     const msg = msgs[Math.floor(Math.random() * msgs.length)];
     const evId = evIds[Math.floor(Math.random() * evIds.length)];
+    const durationMs = Math.floor(Math.random() * 5000 + 50);
     logs.push({
       timestamp: new Date(base + i * 21000 + Math.random() * 15000).toISOString(),
       level: lvl,
@@ -654,7 +834,8 @@ function loadSampleData() {
       applicationName: app,
       correlationId: 'COR-' + Math.floor(Math.random() * 9000 + 1000),
       threadId: 'MuleThread[' + Math.floor(Math.random() * 20 + 1) + ']',
-      payload: lvl === 'ERROR' ? 'com.mulesoft.' + flow + '.Exception: ' + msg : '',
+      payload: lvl === 'ERROR' ? 'com.mulesoft.' + flow + '.Exception: ' + msg + '\n  at com.mulesoft.ee.DefaultMuleEventContext.sendSync(DefaultMuleEventContext.java:255)\n  at com.mulesoft.module.http.internal.HttpMessageReceiver.processEvent(HttpMessageReceiver.java:155)' : '',
+      durationMs,
     });
   }
   ingestLogs(logs);
@@ -681,7 +862,6 @@ function parseFile(text, name) {
     const parsed = JSON.parse(text);
     logs = Array.isArray(parsed) ? parsed : [parsed];
   } catch {
-    // try line-by-line JSON
     const lines = text.split('\n').filter(l => l.trim());
     for (const line of lines) {
       try { logs.push(JSON.parse(line)); }
@@ -693,58 +873,36 @@ function parseFile(text, name) {
 }
 function parseLine(line) {
   if (!line.trim()) return null;
-
-  // ── MuleSoft log4j2 format ──────────────────────────────────────────────────
-  // LEVEL  YYYY-MM-DD HH:MM:SS,mmm [[MuleRuntime].uber.N: [appName].method:\path...] [processor: flow/processors/N; event: eventId] Logger: message
   const levelM = line.match(/^(ERROR|WARN|INFO|DEBUG|TRACE)\s+/i);
   if (levelM) {
     const level = levelM[1].toUpperCase();
-
-    // Timestamp — handles both space-separated and T-separated, comma or dot millis
     const tsM = line.match(/(\d{4}-\d{2}-\d{2}[\sT]\d{2}:\d{2}:\d{2}[,\.]\d+)/);
     const timestamp = tsM ? tsM[1].replace(',', '.') : new Date().toISOString();
-
-    // App name — MuleSoft thread: [[MuleRuntime].uber.N: [appName].METHOD:\path]
-    // Pattern: any [something]: [appName].
     let applicationName = 'Unknown';
     const appM = line.match(/\[[^\]]+\][^[]*:\s*\[([a-zA-Z][a-zA-Z0-9\-_.]+)\]\./);
     if (appM) applicationName = appM[1];
-
-    // Processor + event — [processor: subflow/processors/N; event: 1-abc123...]
     let eventId = '', flow = '';
     const procM = line.match(/\[processor:\s*([^;\]]+?)(?:\/processors\/\d+)?;\s*event:\s*([^\]]+)\]/);
-    if (procM) {
-      flow = procM[1].trim();
-      eventId = procM[2].trim();
-    }
-
-    // Thread ID — first [[MuleRuntime]...] block
+    if (procM) { flow = procM[1].trim(); eventId = procM[2].trim(); }
     const threadM = line.match(/\[([^\]]*MuleRuntime[^\]]*)\]/);
     const threadId = threadM ? threadM[1] : '';
-
-    // Message — text after the last ClassName: token (e.g. "LoggerMessageProcessor: msg here")
     let message = '';
     const msgM = line.match(/\]\s+[\w$.]+(?:\.[\w$]+)*:\s*(.+)$/);
     if (msgM) message = msgM[1].trim();
     else message = line.replace(/^.*\]\s*/, '').trim() || line;
-
     return { timestamp, level, applicationName, eventId, flow, message, correlationId: '', threadId, payload: '' };
   }
-
-  // ── Alternate: timestamp first (e.g. ISO or epoch) ─────────────────────────
   const m2 = line.match(/^(\S+(?:\s+\S+)?)\s+(ERROR|WARN|INFO|DEBUG)\s+(?:\[([^\]]+)\]\s*)?(.*)$/i);
   if (m2) return {
     timestamp: m2[1], level: m2[2].toUpperCase(),
     applicationName: m2[3] || 'Unknown', message: m2[4],
     eventId: '', flow: '', correlationId: '', threadId: '', payload: ''
   };
-
-  // ── Final fallback ─────────────────────────────────────────────────────────
   return { timestamp: new Date().toISOString(), level: 'INFO', message: line, applicationName: 'Unknown', eventId: '', flow: '', correlationId: '', threadId: '', payload: '' };
 }
 
 // ============================================================
-//  INGEST  (single sort pass, cached indexes)
+//  INGEST
 // ============================================================
 function ingestLogs(newLogs) {
   const startId = allLogs.length;
@@ -759,12 +917,11 @@ function ingestLogs(newLogs) {
     correlationId: l.correlationId || l.correlation_id || '',
     threadId: l.threadId || l.thread || '',
     payload: l.payload || l.exception || l.error || '',
+    durationMs: l.durationMs || l.duration_ms || 0,
     raw: l,
   }));
-  // Merge and sort once
   allLogs = [...allLogs, ...newLogs];
   allLogs.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-  // Re-index _id to be position-stable after sort
   allLogs.forEach((l, i) => l._id = i);
 
   applyFilters();
@@ -773,29 +930,92 @@ function ingestLogs(newLogs) {
   document.getElementById('view-landing').style.display = 'none';
   document.getElementById('controls-bar').style.display = 'flex';
   document.getElementById('btn-clear').style.display = '';
+  document.getElementById('btn-save-view').style.display = '';
+  document.getElementById('time-range-bar').style.display = 'flex';
+  document.getElementById('live-indicator').style.display = 'flex';
   setView(currentView === 'overview' ? 'overview' : currentView);
+  renderSavedViewsList();
+}
+
+// ============================================================
+//  TIME RANGE FILTER
+// ============================================================
+function setTimeRange(r) {
+  timeRange = r;
+  ['15m','1h','6h','24h','all'].forEach(id => {
+    const el = document.getElementById('tr-' + id);
+    if (el) el.classList.toggle('active', id === r);
+  });
+  applyFilters();
+}
+
+function getTimeRangeMs() {
+  const map = { '15m': 15*60*1000, '1h': 60*60*1000, '6h': 6*60*60*1000, '24h': 24*60*60*1000, 'all': Infinity };
+  return map[timeRange] || Infinity;
+}
+
+// ============================================================
+//  SEARCH MODE
+// ============================================================
+function setSearchMode(mode) {
+  searchMode = mode;
+  ['contains','exact','regex'].forEach(m => {
+    document.getElementById('sm-' + m)?.classList.toggle('active', m === mode);
+  });
+  const hints = { contains: '~', exact: '=', regex: '.*' };
+  document.getElementById('search-mode-hint').textContent = hints[mode];
+  applyFilters();
 }
 
 // ============================================================
 //  FILTER & SEARCH
 // ============================================================
 function applyFilters() {
-  const q = (document.getElementById('search-input')?.value || '').toLowerCase().trim();
+  const q = (document.getElementById('search-input')?.value || '').trim();
   const appF = document.getElementById('app-filter')?.value || '';
   const lvlF = document.getElementById('level-filter')?.value || '';
+  const rangeMs = getTimeRangeMs();
+  const now = Date.now();
 
   filteredLogs = allLogs.filter(l => {
+    // Time range
+    if (rangeMs !== Infinity) {
+      const ts = new Date(l.timestamp).getTime();
+      if (now - ts > rangeMs) return false;
+    }
     if (appF && l.applicationName !== appF) return false;
     if (lvlF && l.level !== lvlF) return false;
     if (currentMode === 'errors' && !['ERROR','WARN'].includes(l.level)) return false;
+
     if (q) {
-      // Exact match for Event ID if query looks like an event id
-      const isEvtSearch = /^(evt|evnt|ev|cor|cid|event)/i.test(q) || /^[A-Z]{2,}-\d+$/i.test(q);
-      if (isEvtSearch) {
-        return l.eventId.toLowerCase() === q || l.correlationId.toLowerCase() === q;
+      // EVT-* or CORR-* → always strict exact match regardless of searchMode
+      const isIdSearch = /^(evt|evnt|ev|cor|cid|event)/i.test(q) || /^[A-Z]{2,}-\d+$/i.test(q);
+      if (isIdSearch) {
+        return l.eventId.toLowerCase() === q.toLowerCase() || l.correlationId.toLowerCase() === q.toLowerCase();
       }
+
+      if (searchMode === 'exact') {
+        const qq = q.toLowerCase();
+        return (
+          l.message.toLowerCase() === qq ||
+          l.eventId.toLowerCase() === qq ||
+          l.flow.toLowerCase() === qq ||
+          l.applicationName.toLowerCase() === qq ||
+          l.correlationId.toLowerCase() === qq
+        );
+      }
+
+      if (searchMode === 'regex') {
+        try {
+          const re = new RegExp(q, 'i');
+          return re.test(l.message) || re.test(l.eventId) || re.test(l.flow) || re.test(l.applicationName) || re.test(l.correlationId);
+        } catch { return false; }
+      }
+
+      // default: contains
+      const qq = q.toLowerCase();
       // App + EventID combo: "App1 EVT123"
-      const parts = q.split(/\s+/);
+      const parts = qq.split(/\s+/);
       if (parts.length === 2) {
         const [p1, p2] = parts;
         const appMatch = l.applicationName.toLowerCase().includes(p1);
@@ -803,22 +1023,20 @@ function applyFilters() {
         if (appMatch && evtMatch) return true;
       }
       return (
-        l.message.toLowerCase().includes(q) ||
-        l.eventId.toLowerCase().includes(q) ||
-        l.flow.toLowerCase().includes(q) ||
-        l.applicationName.toLowerCase().includes(q) ||
-        l.correlationId.toLowerCase().includes(q)
+        l.message.toLowerCase().includes(qq) ||
+        l.eventId.toLowerCase().includes(qq) ||
+        l.flow.toLowerCase().includes(qq) ||
+        l.applicationName.toLowerCase().includes(qq) ||
+        l.correlationId.toLowerCase().includes(qq)
       );
     }
     return true;
   });
   page = 1;
-  document.getElementById('result-count').textContent =
-    filteredLogs.length + ' / ' + allLogs.length + ' logs';
+  document.getElementById('result-count').textContent = filteredLogs.length + ' / ' + allLogs.length + ' logs';
   renderCurrentView();
 }
 
-// Debounce utility — prevents search from firing on every keystroke
 function debounce(fn, delay) {
   let t; return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), delay); };
 }
@@ -851,11 +1069,8 @@ function updateSidebar() {
   bt.textContent = total; bt.style.display = total ? '' : 'none';
   const be = document.getElementById('badge-errors');
   be.textContent = errors; be.style.display = errors ? '' : 'none';
+  document.getElementById('sidebar-stats').textContent = total + ' logs · ' + errors + ' errors';
 
-  document.getElementById('sidebar-stats').textContent =
-    total + ' logs · ' + errors + ' errors';
-
-  // App nav list
   const apps = getAppStats();
   const list = document.getElementById('app-nav-list');
   if (!apps.length) { list.innerHTML = '<div style="font-size:11px;color:var(--text3);padding:6px 8px">No apps loaded</div>'; return; }
@@ -870,8 +1085,7 @@ function updateSidebar() {
 
 function filterByApp(app) {
   document.getElementById('app-filter').value = app;
-  setView('logs');
-  applyFilters();
+  setView('logs'); applyFilters();
 }
 
 function getAppStats() {
@@ -885,11 +1099,82 @@ function getAppStats() {
 }
 
 // ============================================================
+//  SAVED VIEWS
+// ============================================================
+function renderSavedViewsList() {
+  const list = document.getElementById('saved-views-list');
+  const allViews = [...PRESET_VIEWS.map((v,i) => ({...v, _preset: true, _idx: i})), ...savedViews.map((v,i) => ({...v, _preset: false, _idx: i}))];
+  if (!allViews.length) {
+    list.innerHTML = '<div style="font-size:11px;color:var(--text3);padding:6px 8px">No saved views</div>';
+    return;
+  }
+  list.innerHTML = allViews.map(v => `
+    <div class="saved-view-item" onclick="applySavedView(${v._preset ? "'preset'" : "'user'"}, ${v._idx})">
+      <span class="saved-view-dot" style="background:${v._preset ? 'var(--text3)' : 'var(--accent)'}"></span>
+      <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px">${esc(v.name)}</span>
+      ${!v._preset ? `<span class="saved-view-del" onclick="event.stopPropagation();deleteSavedView(${v._idx})">✕</span>` : ''}
+    </div>
+  `).join('');
+}
+
+function applySavedView(type, idx) {
+  const v = type === 'preset' ? PRESET_VIEWS[idx] : savedViews[idx];
+  if (!v) return;
+  document.getElementById('search-input').value = v.q || '';
+  document.getElementById('app-filter').value = v.app || '';
+  document.getElementById('level-filter').value = v.level || '';
+  currentMode = v.mode || 'all';
+  document.getElementById('mode-all').classList.toggle('active', currentMode === 'all');
+  document.getElementById('mode-errors').classList.toggle('active', currentMode === 'errors');
+  applyFilters();
+  setView('errors');
+  showToast('✓ Applied view: ' + v.name);
+}
+
+function deleteSavedView(idx) {
+  savedViews.splice(idx, 1);
+  localStorage.setItem('observex_saved_views', JSON.stringify(savedViews));
+  renderSavedViewsList();
+}
+
+function openSaveViewModal() {
+  if (!allLogs.length) return;
+  const q = document.getElementById('search-input').value;
+  const app = document.getElementById('app-filter').value;
+  const level = document.getElementById('level-filter').value;
+  const prev = document.getElementById('save-view-preview');
+  const parts = [];
+  if (q) parts.push('Search: "' + q + '"');
+  if (app) parts.push('App: ' + app);
+  if (level) parts.push('Level: ' + level);
+  if (currentMode === 'errors') parts.push('Errors only');
+  prev.textContent = parts.length ? parts.join(' · ') : 'No active filters (will save current state)';
+  document.getElementById('save-view-name').value = '';
+  document.getElementById('save-view-modal').style.display = 'flex';
+  setTimeout(() => document.getElementById('save-view-name').focus(), 50);
+}
+
+function closeSaveViewModal() { document.getElementById('save-view-modal').style.display = 'none'; }
+
+function confirmSaveView() {
+  const name = document.getElementById('save-view-name').value.trim();
+  if (!name) { showToast('⚠ Please enter a view name'); return; }
+  const q = document.getElementById('search-input').value;
+  const app = document.getElementById('app-filter').value;
+  const level = document.getElementById('level-filter').value;
+  savedViews.push({ name, q, app, level, mode: currentMode });
+  localStorage.setItem('observex_saved_views', JSON.stringify(savedViews));
+  renderSavedViewsList();
+  closeSaveViewModal();
+  showToast('✓ View "' + name + '" saved');
+}
+
+// ============================================================
 //  NAVIGATION
 // ============================================================
 function setView(v) {
   currentView = v;
-  ['overview','logs','errors','flow','journey','group'].forEach(id => {
+  ['overview','logs','errors','timeline','performance','flow','journey','group'].forEach(id => {
     document.getElementById('view-' + id).style.display = 'none';
     document.getElementById('nav-' + id)?.classList.remove('active');
   });
@@ -900,6 +1185,8 @@ function setView(v) {
     overview: 'Overview Dashboard',
     logs: 'All Logs',
     errors: 'Error Logs',
+    timeline: 'Timeline Analysis',
+    performance: 'Performance & Latency',
     flow: 'Flow Analytics',
     journey: 'Event Journey Tracker',
     group: 'Grouped by Event ID',
@@ -914,13 +1201,81 @@ function renderCurrentView() {
   if (v === 'overview') renderOverview();
   else if (v === 'logs') renderLogsTable(filteredLogs, 'view-logs');
   else if (v === 'errors') renderLogsTable(filteredLogs.filter(l => ['ERROR','WARN'].includes(l.level)), 'view-errors');
+  else if (v === 'timeline') renderTimeline();
+  else if (v === 'performance') renderPerformance();
   else if (v === 'flow') renderFlow();
   else if (v === 'journey') renderJourney();
   else if (v === 'group') renderGroup();
 }
 
 // ============================================================
-//  OVERVIEW  (+ timeline chart, top errors widget, slow transactions)
+//  SMART INSIGHTS
+// ============================================================
+function buildSmartInsights(logs) {
+  const chips = [];
+  if (!logs.length) return '';
+
+  const total = logs.length;
+  const errors = logs.filter(l => l.level === 'ERROR').length;
+  const warns = logs.filter(l => l.level === 'WARN').length;
+  const errRate = total ? (errors / total) * 100 : 0;
+
+  // Error spike detection: compare recent half vs older half
+  const half = Math.floor(logs.length / 2);
+  if (half > 0) {
+    const sorted = [...logs].sort((a,b) => new Date(a.timestamp) - new Date(b.timestamp));
+    const older = sorted.slice(0, half);
+    const recent = sorted.slice(half);
+    const olderErrRate = older.filter(l => l.level === 'ERROR').length / half;
+    const recentErrRate = recent.filter(l => l.level === 'ERROR').length / half;
+    if (recentErrRate > olderErrRate * 1.5 && recentErrRate > 0.05) {
+      const pct = Math.round((recentErrRate - olderErrRate) / Math.max(olderErrRate, 0.001) * 100);
+      chips.push({ cls: 'error', text: `⚠ Error rate up ${Math.min(pct, 999)}% in recent logs` });
+    }
+  }
+
+  // High error rate
+  if (errRate > 20) chips.push({ cls: 'error', text: `🔴 ${errRate.toFixed(1)}% error rate — high severity` });
+  else if (errRate > 5) chips.push({ cls: 'warn', text: `🟡 ${errRate.toFixed(1)}% error rate — monitor closely` });
+  else if (errors === 0) chips.push({ cls: 'success', text: `✓ No errors detected` });
+
+  // Most failing app
+  const appErrMap = {};
+  logs.filter(l => l.level === 'ERROR').forEach(l => { appErrMap[l.applicationName] = (appErrMap[l.applicationName] || 0) + 1; });
+  const topErrApp = Object.entries(appErrMap).sort((a,b) => b[1]-a[1])[0];
+  if (topErrApp && topErrApp[1] >= 3) chips.push({ cls: 'error', text: `🎯 Most failures from ${topErrApp[0]} (${topErrApp[1]} errors)` });
+
+  // Slow transactions count
+  const evtGroups = {};
+  logs.forEach(l => { if (l.eventId) { evtGroups[l.eventId] = evtGroups[l.eventId] || []; evtGroups[l.eventId].push(l); } });
+  let slowCount = 0;
+  Object.values(evtGroups).forEach(glogs => {
+    const sorted = [...glogs].sort((a,b) => new Date(a.timestamp)-new Date(b.timestamp));
+    for (let i = 1; i < sorted.length; i++) {
+      if (new Date(sorted[i].timestamp) - new Date(sorted[i-1].timestamp) > 2000) { slowCount++; break; }
+    }
+  });
+  if (slowCount > 0) chips.push({ cls: 'warn', text: `⏱ ${slowCount} slow transaction${slowCount > 1 ? 's' : ''} detected (>2s)` });
+
+  // High warn count
+  if (warns > 10) chips.push({ cls: 'warn', text: `${warns} warnings — check connection pool & retries` });
+
+  // Unique apps
+  const apps = new Set(logs.map(l => l.applicationName)).size;
+  chips.push({ cls: 'info', text: `${apps} app${apps !== 1 ? 's' : ''} · ${new Set(logs.map(l => l.eventId).filter(Boolean)).size} event IDs · ${new Set(logs.map(l => l.flow).filter(Boolean)).size} flows` });
+
+  if (!chips.length) return '';
+  return `
+    <div class="insights-banner">
+      <div class="insights-title">🧠 Smart Insights</div>
+      <div class="insights-row">
+        ${chips.map(c => `<span class="insight-chip ${c.cls}">${c.text}</span>`).join('')}
+      </div>
+    </div>`;
+}
+
+// ============================================================
+//  OVERVIEW
 // ============================================================
 function renderOverview() {
   const logs = filteredLogs;
@@ -938,11 +1293,9 @@ function renderOverview() {
   const appList = Object.entries(appStats).sort((a, b) => b[1].count - a[1].count);
   const maxCount = appList.length ? appList[0][1].count : 1;
   const topErrors = [...appList].sort((a, b) => b[1].errors - a[1].errors).filter(a => a[1].errors > 0).slice(0, 5);
-
   const evtIds = [...new Set(logs.map(l => l.eventId).filter(Boolean))];
   const flows = [...new Set(logs.map(l => l.flow).filter(Boolean))];
 
-  // ── Timeline: bucket logs into ~12 time buckets ─────────────
   function buildTimeline() {
     if (logs.length < 2) return '';
     const sorted = [...logs].sort((a,b) => new Date(a.timestamp)-new Date(b.timestamp));
@@ -960,7 +1313,7 @@ function renderOverview() {
       else buckets[idx].info++;
     });
     const maxH = Math.max(...buckets.map(b => b.info+b.warn+b.error), 1);
-    const cols = buckets.map((b, i) => {
+    const cols = buckets.map((b) => {
       const total = b.info + b.warn + b.error;
       const errH = Math.round((b.error/maxH)*52);
       const warnH = Math.round((b.warn/maxH)*52);
@@ -973,7 +1326,10 @@ function renderOverview() {
       </div>`;
     }).join('');
     return `<div class="card section" style="margin-bottom:20px">
-      <div class="section-header"><div class="section-title">Log Activity Timeline</div><div class="section-sub">${BUCKETS} time segments</div></div>
+      <div class="section-header">
+        <div class="section-title">Log Activity Timeline</div>
+        <button class="btn" onclick="setView('timeline')" style="font-size:11px">Full Timeline →</button>
+      </div>
       <div class="timeline-bars">${cols}</div>
       <div class="timeline-legend">
         <span class="tleg"><span class="tleg-dot" style="background:var(--error)"></span>Errors</span>
@@ -983,7 +1339,6 @@ function renderOverview() {
     </div>`;
   }
 
-  // ── Top error messages ───────────────────────────────────────
   function buildTopErrors() {
     const errLogs = logs.filter(l => l.level === 'ERROR');
     if (!errLogs.length) return `<div class="empty" style="padding:20px"><div class="empty-icon">✓</div><div>No errors found</div></div>`;
@@ -993,16 +1348,19 @@ function renderOverview() {
       if (!msgMap[key]) msgMap[key] = { count:0, app: l.applicationName, msg: l.message };
       msgMap[key].count++;
     });
-    const sorted = Object.values(msgMap).sort((a,b) => b.count-a.count).slice(0,6);
+    const sorted = Object.values(msgMap).sort((a,b) => b.count-a.count).slice(0,7);
+    const maxC = sorted[0]?.count || 1;
     return `<div class="top-err-list">${sorted.map(e => `
       <div class="top-err-row" onclick="document.getElementById('search-input').value='${esc(e.msg.substring(0,30))}';onSearch();setView('errors')">
         <span class="top-err-count">${e.count}×</span>
-        <span class="top-err-msg" title="${esc(e.msg)}">${esc(e.msg)}</span>
+        <div style="flex:1;min-width:0">
+          <div class="top-err-msg" title="${esc(e.msg)}">${esc(e.msg)}</div>
+          <div class="top-err-pct-bar" style="width:${(e.count/maxC*100).toFixed(0)}%"></div>
+        </div>
         <span class="top-err-app">${esc(e.app)}</span>
       </div>`).join('')}</div>`;
   }
 
-  // ── Slow transactions (events with steps > 2s) ───────────────
   function buildSlowTransactions() {
     const evtGroups = {};
     allLogs.forEach(l => {
@@ -1032,6 +1390,8 @@ function renderOverview() {
   }
 
   document.getElementById('view-overview').innerHTML = `
+    ${buildSmartInsights(logs)}
+
     <div class="cards-grid">
       <div class="card"><div class="card-label">Total Logs</div><div class="card-value">${total.toLocaleString()}</div><div class="card-sub">${evtIds.length} unique event IDs</div></div>
       <div class="card error"><div class="card-label">Errors</div><div class="card-value">${errors}</div><div class="card-sub">${total ? ((errors/total)*100).toFixed(1) : 0}% error rate</div></div>
@@ -1088,7 +1448,13 @@ function renderOverview() {
         ${buildTopErrors()}
       </div>
       <div class="card section">
-        <div class="section-header"><div class="section-title">⚡ Slow Transactions</div><div class="section-sub">Steps &gt; 2 seconds</div></div>
+        <div class="section-header">
+          <div class="section-title">⚡ Slow Transactions</div>
+          <div style="display:flex;gap:6px;align-items:center">
+            <div class="section-sub">Steps &gt; 2 seconds</div>
+            <button class="btn" onclick="setView('performance')" style="font-size:11px">Full Report →</button>
+          </div>
+        </div>
         ${buildSlowTransactions()}
       </div>
     </div>
@@ -1098,6 +1464,318 @@ function renderOverview() {
       <div class="table-wrap">
         ${renderTableHTML(logs.filter(l => l.level === 'ERROR').slice(-10).reverse())}
       </div>
+    </div>
+  `;
+}
+
+// ============================================================
+//  TIMELINE TAB
+// ============================================================
+function renderTimeline() {
+  const logs = filteredLogs;
+  if (!logs.length) {
+    document.getElementById('view-timeline').innerHTML = `<div class="empty"><div class="empty-icon">📈</div><h4>No data</h4><p>Load logs to see the timeline.</p></div>`;
+    return;
+  }
+
+  const sorted = [...logs].sort((a,b) => new Date(a.timestamp)-new Date(b.timestamp));
+  const t0 = new Date(sorted[0].timestamp).getTime();
+  const t1 = new Date(sorted[sorted.length-1].timestamp).getTime();
+  const span = t1 - t0 || 1;
+  const BUCKETS = 24;
+  const bucketMs = span / BUCKETS;
+
+  const buckets = Array.from({length: BUCKETS}, () => ({info:0,warn:0,error:0,debug:0,ts:0}));
+  sorted.forEach(l => {
+    const idx = Math.min(Math.floor((new Date(l.timestamp).getTime() - t0) / bucketMs), BUCKETS-1);
+    buckets[idx].ts = new Date(l.timestamp).getTime();
+    if (l.level === 'ERROR') buckets[idx].error++;
+    else if (l.level === 'WARN') buckets[idx].warn++;
+    else if (l.level === 'DEBUG') buckets[idx].debug++;
+    else buckets[idx].info++;
+  });
+
+  const maxTotal = Math.max(...buckets.map(b => b.info+b.warn+b.error+b.debug), 1);
+  const maxErr = Math.max(...buckets.map(b => b.error), 1);
+  const H = 130;
+
+  // Traffic + Errors bar chart
+  const trafficBars = buckets.map((b, i) => {
+    const total = b.info+b.warn+b.error+b.debug;
+    const errH = Math.round((b.error / maxTotal) * H);
+    const warnH = Math.round((b.warn / maxTotal) * H);
+    const infoH = Math.round(((b.info+b.debug) / maxTotal) * H);
+    const label = b.ts ? new Date(b.ts).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}) : '';
+    return `<div class="tbar-col-tall" data-tip="${label}: ${total} logs, ${b.error} err, ${b.warn} warn" style="flex:1">
+      ${errH ? `<div class="tbar-seg" style="height:${errH}px;background:var(--error)"></div>` : ''}
+      ${warnH ? `<div class="tbar-seg" style="height:${warnH}px;background:var(--warn)"></div>` : ''}
+      ${infoH ? `<div class="tbar-seg" style="height:${infoH}px;background:var(--accent);opacity:0.45"></div>` : ''}
+    </div>`;
+  }).join('');
+
+  // Error rate trend
+  const errRateBars = buckets.map((b) => {
+    const total = b.info+b.warn+b.error+b.debug;
+    const rate = total ? b.error / total : 0;
+    const h = Math.round(rate * H);
+    const label = b.ts ? new Date(b.ts).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}) : '';
+    return `<div class="tbar-col-tall" data-tip="${label}: ${(rate*100).toFixed(1)}% error rate" style="flex:1">
+      ${h ? `<div class="tbar-seg" style="height:${h}px;background:var(--error)"></div>` : `<div style="height:2px;width:100%;background:var(--border)"></div>`}
+    </div>`;
+  }).join('');
+
+  // X-axis labels (show every 4th)
+  const xLabels = buckets.map((b, i) => {
+    if (i % 4 !== 0) return '<div style="flex:1"></div>';
+    const label = b.ts ? new Date(b.ts).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}) : '';
+    return `<div class="tbar-xlabel" style="flex:1">${label}</div>`;
+  }).join('');
+
+  // Hourly summary table
+  const hourMap = {};
+  sorted.forEach(l => {
+    const d = new Date(l.timestamp);
+    const key = d.toLocaleDateString('en-GB', {day:'2-digit',month:'short'}) + ' ' + d.getHours().toString().padStart(2,'0') + ':00';
+    if (!hourMap[key]) hourMap[key] = { total:0, errors:0, warns:0, infos:0 };
+    hourMap[key].total++;
+    if (l.level === 'ERROR') hourMap[key].errors++;
+    else if (l.level === 'WARN') hourMap[key].warns++;
+    else hourMap[key].infos++;
+  });
+  const hourRows = Object.entries(hourMap).slice(-12).map(([hour, s]) => `
+    <tr>
+      <td class="cell-mono" style="font-size:11px">${esc(hour)}</td>
+      <td style="font-family:var(--mono);font-size:11px">${s.total}</td>
+      <td style="color:var(--error);font-family:var(--mono);font-size:11px">${s.errors || '—'}</td>
+      <td style="color:var(--warn);font-family:var(--mono);font-size:11px">${s.warns || '—'}</td>
+      <td style="color:var(--info);font-family:var(--mono);font-size:11px">${s.infos || '—'}</td>
+      <td style="font-size:11px">${s.total ? `<span style="color:${s.errors/s.total>0.2?'var(--error)':'var(--success)'}">${(s.errors/s.total*100).toFixed(1)}%</span>` : '—'}</td>
+    </tr>
+  `).join('');
+
+  document.getElementById('view-timeline').innerHTML = `
+    <div class="section">
+      <div class="section-header">
+        <div class="section-title">Traffic + Errors Over Time</div>
+        <div class="section-sub">${BUCKETS} time buckets · ${logs.length} logs</div>
+      </div>
+      <div class="card">
+        <div class="timeline-bars-tall" style="height:${H}px">${trafficBars}</div>
+        <div class="timeline-x-labels">${xLabels}</div>
+        <div class="timeline-legend" style="margin-top:8px">
+          <span class="tleg"><span class="tleg-dot" style="background:var(--error)"></span>Errors</span>
+          <span class="tleg"><span class="tleg-dot" style="background:var(--warn)"></span>Warnings</span>
+          <span class="tleg"><span class="tleg-dot" style="background:var(--accent);opacity:.5"></span>Info/Debug</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-header">
+        <div class="section-title">Error Rate Trend</div>
+        <div class="section-sub">Error % per time bucket — spikes indicate incidents</div>
+      </div>
+      <div class="card">
+        <div class="timeline-bars-tall" style="height:${H}px">${errRateBars}</div>
+        <div class="timeline-x-labels">${xLabels}</div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-header"><div class="section-title">Hourly Breakdown</div><div class="section-sub">Last 12 hours</div></div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr>
+            <th>Hour</th>
+            <th>Total</th>
+            <th>Errors</th>
+            <th>Warnings</th>
+            <th>Info</th>
+            <th>Error Rate</th>
+          </tr></thead>
+          <tbody>${hourRows || '<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--text3)">No hourly data</td></tr>'}</tbody>
+        </table>
+      </div>
+    </div>
+  `;
+}
+
+// ============================================================
+//  PERFORMANCE TAB
+// ============================================================
+function renderPerformance() {
+  const logs = filteredLogs;
+
+  // Compute step deltas for latency percentiles
+  const evtGroups = {};
+  allLogs.forEach(l => {
+    if (!l.eventId) return;
+    if (!evtGroups[l.eventId]) evtGroups[l.eventId] = [];
+    evtGroups[l.eventId].push(l);
+  });
+
+  const deltas = [];
+  const slowTxns = [];
+  Object.entries(evtGroups).forEach(([id, glogs]) => {
+    const sorted = [...glogs].sort((a,b) => new Date(a.timestamp)-new Date(b.timestamp));
+    let maxDelta = 0;
+    for (let i = 1; i < sorted.length; i++) {
+      const d = new Date(sorted[i].timestamp) - new Date(sorted[i-1].timestamp);
+      deltas.push(d);
+      if (d > maxDelta) maxDelta = d;
+    }
+    if (maxDelta > 2000) {
+      const totalDuration = sorted.length >= 2
+        ? new Date(sorted[sorted.length-1].timestamp) - new Date(sorted[0].timestamp)
+        : 0;
+      const hasErr = glogs.some(l => l.level === 'ERROR');
+      slowTxns.push({ id, maxDelta, totalDuration, app: glogs[0].applicationName, flow: glogs[0].flow, hasErr, steps: sorted.length });
+    }
+  });
+  slowTxns.sort((a,b) => b.maxDelta - a.maxDelta);
+
+  // Percentiles
+  const sortedDeltas = [...deltas].sort((a,b) => a-b);
+  const pct = (p) => {
+    if (!sortedDeltas.length) return 0;
+    const idx = Math.ceil(sortedDeltas.length * p / 100) - 1;
+    return sortedDeltas[Math.max(0, idx)] || 0;
+  };
+  const p50 = pct(50), p90 = pct(90), p95 = pct(95), p99 = pct(99);
+  const avg = deltas.length ? Math.round(deltas.reduce((s,d) => s+d, 0) / deltas.length) : 0;
+  const maxD = sortedDeltas[sortedDeltas.length - 1] || 0;
+  const formatMs = ms => ms >= 60000 ? (ms/60000).toFixed(1)+'m' : ms >= 1000 ? (ms/1000).toFixed(2)+'s' : ms+'ms';
+
+  // Throughput by bucket
+  const sorted = [...logs].sort((a,b) => new Date(a.timestamp)-new Date(b.timestamp));
+  let throughputHTML = '';
+  if (sorted.length >= 2) {
+    const t0 = new Date(sorted[0].timestamp).getTime();
+    const t1 = new Date(sorted[sorted.length-1].timestamp).getTime();
+    const span = t1 - t0 || 1;
+    const B = 12;
+    const bMs = span / B;
+    const buckets = Array.from({length:B}, () => ({count:0, errors:0, ts:0}));
+    sorted.forEach(l => {
+      const idx = Math.min(Math.floor((new Date(l.timestamp).getTime() - t0) / bMs), B-1);
+      buckets[idx].ts = new Date(l.timestamp).getTime();
+      buckets[idx].count++;
+      if (l.level === 'ERROR') buckets[idx].errors++;
+    });
+    const maxC = Math.max(...buckets.map(b => b.count), 1);
+    const H2 = 80;
+    throughputHTML = `
+      <div class="section">
+        <div class="section-header"><div class="section-title">Throughput vs Error Rate</div></div>
+        <div class="card">
+          <div style="display:flex;align-items:flex-end;gap:4px;height:${H2}px">
+            ${buckets.map(b => {
+              const tH = Math.round((b.count / maxC) * H2);
+              const eH = b.count ? Math.round((b.errors / b.count) * tH) : 0;
+              const label = b.ts ? new Date(b.ts).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}) : '';
+              return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:0" title="${label}: ${b.count} reqs, ${b.errors} errors">
+                <div style="width:70%;display:flex;flex-direction:column-reverse;gap:1px">
+                  ${eH ? `<div style="height:${eH}px;background:rgba(220,38,38,0.7);border-radius:2px"></div>` : ''}
+                  ${tH - eH > 0 ? `<div style="height:${tH - eH}px;background:rgba(37,99,235,0.3);border-radius:2px"></div>` : ''}
+                </div>
+              </div>`;
+            }).join('')}
+          </div>
+          <div class="timeline-legend" style="margin-top:8px">
+            <span class="tleg"><span class="tleg-dot" style="background:rgba(37,99,235,0.4)"></span>Traffic</span>
+            <span class="tleg"><span class="tleg-dot" style="background:rgba(220,38,38,0.7)"></span>Errors</span>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  const errRate = logs.length ? ((logs.filter(l => l.level==='ERROR').length / logs.length)*100).toFixed(1) : '0.0';
+
+  document.getElementById('view-performance').innerHTML = `
+    <div class="cards-grid" style="grid-template-columns:repeat(auto-fill,minmax(140px,1fr))">
+      <div class="perf-metric-card"><div class="perf-metric-label">Avg Latency</div><div class="perf-metric-value" style="font-size:22px;color:var(--accent)">${formatMs(avg)}</div><div class="perf-metric-sub">step-to-step</div></div>
+      <div class="perf-metric-card"><div class="perf-metric-label">P50</div><div class="perf-metric-value" style="font-size:22px;color:var(--success)">${formatMs(p50)}</div><div class="perf-metric-sub">median</div></div>
+      <div class="perf-metric-card"><div class="perf-metric-label">P95</div><div class="perf-metric-value" style="font-size:22px;color:var(--warn)">${formatMs(p95)}</div><div class="perf-metric-sub">95th pct</div></div>
+      <div class="perf-metric-card"><div class="perf-metric-label">P99</div><div class="perf-metric-value" style="font-size:22px;color:var(--error)">${formatMs(p99)}</div><div class="perf-metric-sub">99th pct</div></div>
+      <div class="perf-metric-card"><div class="perf-metric-label">Max</div><div class="perf-metric-value" style="font-size:22px;color:var(--error)">${formatMs(maxD)}</div><div class="perf-metric-sub">worst case</div></div>
+      <div class="perf-metric-card"><div class="perf-metric-label">Error Rate</div><div class="perf-metric-value" style="font-size:22px;color:${parseFloat(errRate)>5?'var(--error)':'var(--success)'}">${errRate}%</div><div class="perf-metric-sub">of all logs</div></div>
+    </div>
+
+    <div class="two-col">
+      <div class="card section">
+        <div class="section-header"><div class="section-title">Latency Percentiles</div><div class="section-sub">Step-to-step duration</div></div>
+        <div style="padding: 8px 0">
+          ${[['P50 (Median)', p50, 'var(--success)'],['P90', pct(90), 'var(--info)'],['P95', p95, 'var(--warn)'],['P99', p99, 'var(--error)'],['Max', maxD, '#991b1b']].map(([label, val, color]) => `
+            <div class="latency-bar-row">
+              <div class="latency-pct-label">${label}</div>
+              <div class="latency-bar-wrap"><div class="latency-bar-fill" style="width:${maxD ? (val/maxD*100).toFixed(1) : 0}%;background:${color}"></div></div>
+              <div class="latency-value" style="color:${color}">${formatMs(val)}</div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+      <div class="card section">
+        <div class="section-header"><div class="section-title">Latency Distribution</div><div class="section-sub">${deltas.length} measurements</div></div>
+        ${deltas.length ? (() => {
+          const bins = [0,50,100,200,500,1000,2000,5000,Infinity];
+          const labels = ['<50ms','50–100ms','100–200ms','200–500ms','500ms–1s','1–2s','2–5s','>5s'];
+          const counts = Array(8).fill(0);
+          deltas.forEach(d => {
+            for (let i = 0; i < bins.length-1; i++) {
+              if (d >= bins[i] && d < bins[i+1]) { counts[i]++; break; }
+            }
+          });
+          const maxC = Math.max(...counts, 1);
+          return `<div style="display:flex;flex-direction:column;gap:6px;padding:4px 0">
+            ${labels.map((l, i) => `
+              <div class="latency-bar-row" style="padding:4px 0">
+                <div style="font-size:10px;color:var(--text3);min-width:80px">${l}</div>
+                <div class="latency-bar-wrap"><div class="latency-bar-fill" style="width:${(counts[i]/maxC*100).toFixed(1)}%;background:${i>=6?'var(--error)':i>=4?'var(--warn)':'var(--accent)'}"></div></div>
+                <div class="latency-value">${counts[i]}</div>
+              </div>
+            `).join('')}
+          </div>`;
+        })() : '<div class="empty" style="padding:20px"><div>No latency data</div></div>'}
+      </div>
+    </div>
+
+    ${throughputHTML}
+
+    <div class="section">
+      <div class="section-header">
+        <div class="section-title">🐌 Slow Transactions</div>
+        <div class="section-sub">${slowTxns.length} transactions with steps &gt; 2s</div>
+      </div>
+      ${slowTxns.length ? `
+        <div class="table-wrap">
+          <table>
+            <thead><tr>
+              <th>Event ID</th>
+              <th>Max Step</th>
+              <th>Total Duration</th>
+              <th>Application</th>
+              <th>Flow</th>
+              <th>Steps</th>
+              <th>Status</th>
+              <th></th>
+            </tr></thead>
+            <tbody>
+              ${slowTxns.slice(0,20).map(s => `
+                <tr>
+                  <td class="cell-mono" style="font-size:11px">${esc(s.id)}</td>
+                  <td style="color:var(--warn);font-family:var(--mono);font-size:11px">${formatMs(s.maxDelta)}</td>
+                  <td style="font-family:var(--mono);font-size:11px">${formatMs(s.totalDuration)}</td>
+                  <td><span class="app-tag">${esc(s.app)}</span></td>
+                  <td class="cell-mono" style="font-size:10px">${esc(s.flow)}</td>
+                  <td style="font-family:var(--mono);font-size:11px">${s.steps}</td>
+                  <td>${s.hasErr ? '<span class="badge ERROR">ERROR</span>' : '<span class="slow-badge">Slow</span>'}</td>
+                  <td><button class="btn" style="font-size:10px;padding:3px 8px" onclick="selectJourney('${esc(s.id)}');setView('journey')">Trace →</button></td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      ` : '<div class="empty"><div class="empty-icon">⚡</div><h4>No slow transactions</h4><p>All event steps completed within 2 seconds.</p></div>'}
     </div>
   `;
 }
@@ -1136,6 +1814,7 @@ function renderTableHTML(logs) {
         <th>Application</th>
         <th>Flow</th>
         <th>Event ID</th>
+        <th>Corr ID</th>
         <th>Message</th>
       </tr></thead>
       <tbody>
@@ -1145,13 +1824,21 @@ function renderTableHTML(logs) {
             <td><span class="badge ${l.level}">${l.level}</span></td>
             <td><span class="app-tag" title="${esc(l.applicationName)}">${esc(l.applicationName)}</span></td>
             <td class="cell-mono cell-wrap" style="max-width:140px;font-size:10px">${esc(l.flow)}</td>
-            <td class="cell-mono" style="font-size:10px">${esc(l.eventId)}</td>
+            <td class="cell-mono" style="font-size:10px">${l.eventId ? `<span onclick="event.stopPropagation();document.getElementById('search-input').value='${esc(l.eventId)}';onSearch()" class="corr-link">${esc(l.eventId)}</span>` : '—'}</td>
+            <td class="cell-mono" style="font-size:10px">${l.correlationId ? `<span onclick="event.stopPropagation();filterByCorrelationId('${esc(l.correlationId)}')" class="corr-link" title="Filter by this Correlation ID">${esc(l.correlationId)}</span>` : '—'}</td>
             <td class="cell-wrap" style="color:${l.level==='ERROR'?'var(--error)':l.level==='WARN'?'var(--warn)':'inherit'}">${esc(l.message)}</td>
           </tr>
         `).join('')}
       </tbody>
     </table>
   `;
+}
+
+function filterByCorrelationId(corrId) {
+  document.getElementById('search-input').value = corrId;
+  setSearchMode('exact');
+  applyFilters();
+  showToast('Filtering by CorrID: ' + corrId);
 }
 
 function renderPagination(cur, total) {
@@ -1182,8 +1869,6 @@ function goPage(p) { page = p; renderCurrentView(); window.scrollTo(0,0); }
 function renderFlow() {
   const appFilter = document.getElementById('app-filter').value;
   const logs = filteredLogs;
-
-  // Build app → flow → subflow hierarchy
   const appMap = {};
   logs.forEach(l => {
     const app = l.applicationName;
@@ -1202,7 +1887,6 @@ function renderFlow() {
     return;
   }
 
-  // Build flow chains per app from flow names (parse sub-flow patterns)
   document.getElementById('view-flow').innerHTML = appNames.map((app, ai) => {
     const flows = appMap[app];
     const flowNames = Object.keys(flows).sort();
@@ -1260,7 +1944,6 @@ function renderFlow() {
     `;
   }).join('');
 
-  // Auto-open first if none open
   if (!openFlowApps.size && appNames.length) {
     openFlowApps.add(appNames[0]);
     renderFlow();
@@ -1274,12 +1957,8 @@ function toggleFlowApp(app) {
 }
 
 // ============================================================
-//  EVENT JOURNEY  (DOM-patching — no full re-render on expand/clear)
+//  EVENT JOURNEY
 // ============================================================
-let expandedSteps = new Set();
-let journeyErrorsOnly = false;
-let _journeyRenderedId = null; // track what is currently rendered
-
 function _journeyEventIds() {
   let ids = [...new Set(allLogs.map(l => l.eventId).filter(Boolean))].sort();
   if (journeyErrorsOnly) {
@@ -1293,13 +1972,8 @@ function renderJourney() {
   const allEventIds = _journeyEventIds();
   const sel = selectedJourneyId;
   const curIdx = allEventIds.indexOf(sel);
-
-  // ── If the journey scaffold already exists for the same selection,
-  //    only patch the dynamic parts (header controls + steps).
-  //    This avoids destroying/recreating everything on expand toggle.
   const container = document.getElementById('view-journey');
 
-  // Always rebuild the full scaffold when the selected ID changes or first render
   const journeyLogs = sel
     ? allLogs.filter(l => l.eventId === sel).sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
     : [];
@@ -1314,7 +1988,6 @@ function renderJourney() {
   const statusLevel = errCount ? 'ERROR' : warnCount ? 'WARN' : journeyLogs.length ? 'SUCCESS' : 'INFO';
   const statusLabel = errCount ? `${errCount} ERR` : warnCount ? `${warnCount} WARN` : 'OK';
 
-  // Build step rows HTML (expand state already known at render time)
   function stepsHTML() {
     return journeyLogs.map((l, i) => {
       const prevTs = i > 0 ? new Date(journeyLogs[i-1].timestamp) : null;
@@ -1341,11 +2014,12 @@ function renderJourney() {
           <div class="step-msg">${esc(l.message)}</div>
           <div class="step-expand-inline ${isExpanded ? 'open' : ''}">
             ${l.flow ? `<div class="step-expand-row"><span class="step-expand-label">Flow</span><span class="step-expand-val">${esc(l.flow)}</span></div>` : ''}
-            ${l.correlationId ? `<div class="step-expand-row"><span class="step-expand-label">Correlation</span><span class="step-expand-val">${esc(l.correlationId)}</span></div>` : ''}
+            ${l.correlationId ? `<div class="step-expand-row"><span class="step-expand-label">Correlation</span><span class="step-expand-val"><span class="corr-link" onclick="event.stopPropagation();filterByCorrelationId('${esc(l.correlationId)}')">${esc(l.correlationId)}</span></span></div>` : ''}
             ${l.threadId ? `<div class="step-expand-row"><span class="step-expand-label">Thread</span><span class="step-expand-val">${esc(l.threadId)}</span></div>` : ''}
-            ${l.payload ? `<div class="step-expand-row"><span class="step-expand-label">Payload</span><span class="step-expand-val err">${esc(l.payload.substring(0,400))}</span></div>` : ''}
-            <div style="margin-top:6px">
+            ${l.payload ? `<div class="step-expand-row"><span class="step-expand-label">Stack Trace</span><span class="step-expand-val err">${esc(l.payload.substring(0,600))}</span></div>` : ''}
+            <div style="margin-top:6px;display:flex;gap:6px">
               <button class="btn" style="font-size:10px;padding:3px 8px" onclick="event.stopPropagation();showDetail(${l._id})">Full Detail →</button>
+              ${l.correlationId ? `<button class="btn" style="font-size:10px;padding:3px 8px" onclick="event.stopPropagation();filterByCorrelationId('${esc(l.correlationId)}');setView('logs')">Related Logs →</button>` : ''}
             </div>
           </div>
         </div>
@@ -1353,7 +2027,6 @@ function renderJourney() {
     }).join('');
   }
 
-  // Dropdown HTML (only rebuilt when list changes)
   const dropdownHTML = `
     <option value="">— Select Event ID —</option>
     ${allEventIds.map(id => {
@@ -1372,9 +2045,9 @@ function renderJourney() {
         ${durationStr ? `<span class="journey-duration">⏱ ${durationStr}</span>` : ''}
         <span style="font-size:11px;color:var(--text3);flex:1">${[...new Set(journeyLogs.map(l => l.applicationName))].join(' → ')}</span>
         <div class="journey-nav">
-          <button class="journey-nav-btn" onclick="navigateJourney(-1)" ${curIdx <= 0 ? 'disabled' : ''} title="Previous Event ID">‹ Prev</button>
+          <button class="journey-nav-btn" onclick="navigateJourney(-1)" ${curIdx <= 0 ? 'disabled' : ''}>‹ Prev</button>
           <span style="font-size:11px;color:var(--text3);padding:0 4px">${curIdx + 1} / ${allEventIds.length}</span>
-          <button class="journey-nav-btn" onclick="navigateJourney(1)" ${curIdx >= allEventIds.length - 1 ? 'disabled' : ''} title="Next Event ID">Next ›</button>
+          <button class="journey-nav-btn" onclick="navigateJourney(1)" ${curIdx >= allEventIds.length - 1 ? 'disabled' : ''}>Next ›</button>
         </div>
       </div>
       <div class="journey-steps" id="journey-steps-body">${stepsHTML()}</div>
@@ -1393,7 +2066,7 @@ function renderJourney() {
             Errors only
           </label>
           <select id="journey-select" onchange="selectJourney(this.value)" style="min-width:200px;max-width:340px">${dropdownHTML}</select>
-          ${sel ? `<button class="journey-clear-btn" id="journey-clear-btn" onclick="clearJourney()" title="Clear selection (Esc)">✕ Clear</button>` : ''}
+          ${sel ? `<button class="journey-clear-btn" onclick="clearJourney()">✕ Clear</button>` : ''}
         </div>
       </div>
       <div id="journey-body-wrap">${bodyHTML}</div>
@@ -1409,7 +2082,6 @@ function selectJourney(id) {
 }
 
 function clearJourney() {
-  // Fast clear: just wipe state and re-render — no DOM lag
   selectedJourneyId = '';
   expandedSteps.clear();
   _journeyRenderedId = null;
@@ -1427,7 +2099,6 @@ function navigateJourney(dir) {
   }
 }
 
-// toggleStepExpand: DOM-only — no full re-render
 function toggleStepExpand(id, bodyEl) {
   const expandEl = bodyEl ? bodyEl.querySelector('.step-expand-inline') : null;
   const toggleEl = bodyEl ? bodyEl.querySelector('.step-expand-toggle') : null;
@@ -1513,42 +2184,79 @@ function expandAllGroups() {
 }
 
 // ============================================================
-//  LOG DETAIL PANEL
+//  LOG DETAIL PANEL  — enhanced with related logs + stack trace
 // ============================================================
 function showDetail(id) {
   const log = allLogs.find(l => l._id === id);
   if (!log) return;
+
+  // Find related logs by correlationId
+  const related = log.correlationId
+    ? allLogs.filter(l => l.correlationId === log.correlationId && l._id !== log._id).slice(0, 5)
+    : [];
+
   const fields = [
     ['Timestamp', formatTime(log.timestamp)],
     ['Level', `<span class="badge ${log.level}">${log.level}</span>`],
     ['Application', `<span class="app-tag">${esc(log.applicationName)}</span>`],
     ['Flow', log.flow || '—'],
     ['Event ID', log.eventId || '—'],
-    ['Correlation ID', log.correlationId || '—'],
+    ['Correlation ID', log.correlationId ? `<span class="corr-link" onclick="filterByCorrelationId('${esc(log.correlationId)}')" title="Click to filter related logs">${esc(log.correlationId)}</span>` : '—'],
     ['Thread', log.threadId || '—'],
     ['Message', log.message],
-    ['Payload / Exception', log.payload || '—'],
   ];
-  document.getElementById('detail-body').innerHTML = fields.map(([label, val]) => `
+
+  const stackHTML = log.payload ? `
     <div class="detail-row">
-      <div class="detail-label">${label}</div>
-      <div class="detail-val ${label === 'Payload / Exception' || label === 'Message' ? 'mono' : ''}">${val}</div>
-    </div>
-  `).join('') + `
+      <div class="detail-label">Stack Trace / Payload</div>
+      <div class="detail-val stacktrace">${esc(log.payload)}</div>
+    </div>` : '';
+
+  const relatedHTML = related.length ? `
     <div class="detail-row">
-      <div class="detail-label">Raw</div>
+      <div class="detail-label">Related Logs (same Correlation ID) <span style="color:var(--text3)">${related.length} found</span></div>
+      <div style="display:flex;flex-direction:column;gap:4px;margin-top:4px">
+        ${related.map(r => `
+          <div onclick="showDetail(${r._id})" style="padding:6px 10px;background:var(--surface2);border-radius:6px;cursor:pointer;display:flex;gap:8px;align-items:center;font-size:11px">
+            <span class="badge ${r.level}" style="font-size:9px">${r.level}</span>
+            <span style="font-family:var(--mono);font-size:10px;color:var(--text3)">${formatTime(r.timestamp)}</span>
+            <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(r.message)}</span>
+          </div>
+        `).join('')}
+      </div>
+    </div>` : '';
+
+  document.getElementById('detail-body').innerHTML =
+    fields.map(([label, val]) => `
+      <div class="detail-row">
+        <div class="detail-label">${label}</div>
+        <div class="detail-val ${label === 'Message' ? 'mono' : ''}">${val}</div>
+      </div>
+    `).join('') +
+    stackHTML +
+    relatedHTML +
+    `<div class="detail-row">
+      <div class="detail-label">Raw JSON</div>
       <div class="detail-val mono">${esc(JSON.stringify(log.raw, null, 2))}</div>
     </div>
-    <div style="margin-top:12px;display:flex;gap:8px">
-      <button class="btn" onclick="selectJourney('${esc(log.eventId)}');setView('journey');closeDetail()">Trace Event →</button>
-    </div>
-  `;
+    <div class="detail-actions">
+      ${log.eventId ? `<button class="btn primary" onclick="selectJourney('${esc(log.eventId)}');setView('journey');closeDetail()">◎ Trace Event →</button>` : ''}
+      ${log.correlationId ? `<button class="btn" onclick="filterByCorrelationId('${esc(log.correlationId)}');setView('logs');closeDetail()">Related Logs →</button>` : ''}
+      <button class="btn" onclick="copyToClipboard(${log._id})">⎘ Copy JSON</button>
+    </div>`;
+
   document.getElementById('detail-overlay').style.display = 'flex';
 }
 function closeDetail() { document.getElementById('detail-overlay').style.display = 'none'; }
 
+function copyToClipboard(id) {
+  const log = allLogs.find(l => l._id === id);
+  if (!log) return;
+  navigator.clipboard.writeText(JSON.stringify(log.raw, null, 2)).then(() => showToast('✓ JSON copied'));
+}
+
 // ============================================================
-//  CLEAR  (fast path — skip re-renders, just wipe DOM directly)
+//  CLEAR
 // ============================================================
 function clearData() {
   if (!confirm('Clear all loaded logs?')) return;
@@ -1556,20 +2264,22 @@ function clearData() {
   openGroups.clear(); openFlowApps.clear(); expandedSteps.clear();
   selectedJourneyId = ''; journeyErrorsOnly = false;
   _journeyRenderedId = null;
-  // Fast DOM reset — no renderCurrentView() call needed
   document.getElementById('view-landing').style.display = '';
   document.getElementById('controls-bar').style.display = 'none';
   document.getElementById('btn-clear').style.display = 'none';
-  ['overview','logs','errors','flow','journey','group'].forEach(id => {
+  document.getElementById('btn-save-view').style.display = 'none';
+  document.getElementById('time-range-bar').style.display = 'none';
+  document.getElementById('live-indicator').style.display = 'none';
+  ['overview','logs','errors','timeline','performance','flow','journey','group'].forEach(id => {
     const el = document.getElementById('view-' + id);
     el.style.display = 'none';
-    el.innerHTML = ''; // free memory
+    el.innerHTML = '';
   });
   document.getElementById('app-nav-list').innerHTML = '<div style="font-size:11px;color:var(--text3);padding:6px 8px">No apps loaded</div>';
   document.getElementById('sidebar-stats').textContent = 'No logs loaded';
   document.getElementById('badge-total').style.display = 'none';
   document.getElementById('badge-errors').style.display = 'none';
-  document.getElementById('header-title').textContent = 'MuleSoft Log Analyzer';
+  document.getElementById('header-title').textContent = 'ObserveX — MuleSoft Log Analyzer';
   document.getElementById('search-input').value = '';
   document.getElementById('result-count').textContent = '';
   currentView = 'overview';
@@ -1596,20 +2306,25 @@ function showToast(msg) {
   setTimeout(() => t.remove(), 3000);
 }
 
-// Keyboard shortcut
+// Keyboard shortcuts
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
-    if (document.getElementById('detail-overlay').style.display !== 'none') {
-      closeDetail();
-    } else if (currentView === 'journey' && selectedJourneyId) {
-      clearJourney();
-    }
+    if (document.getElementById('save-view-modal').style.display !== 'none') { closeSaveViewModal(); return; }
+    if (document.getElementById('detail-overlay').style.display !== 'none') { closeDetail(); return; }
+    if (currentView === 'journey' && selectedJourneyId) clearJourney();
   }
   if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
     e.preventDefault();
     document.getElementById('search-input')?.focus();
   }
+  if ((e.metaKey || e.ctrlKey) && e.key === 's') {
+    e.preventDefault();
+    if (allLogs.length) openSaveViewModal();
+  }
 });
+
+// Init saved views on load
+renderSavedViewsList();
 </script>
 </body>
 </html>
