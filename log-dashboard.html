@@ -971,6 +971,7 @@ function ingestLogs(newLogs) {
   document.getElementById('time-range-bar').style.display = 'flex';
   document.getElementById('live-indicator').style.display = 'flex';
   setView(currentView === 'overview' ? 'overview' : currentView);
+  _journeyShellRendered = false;
   renderSavedViewsList();
 }
 
@@ -1070,6 +1071,7 @@ function applyFilters() {
   });
   page = 1;
   document.getElementById('result-count').textContent = filteredLogs.length + ' / ' + allLogs.length + ' logs';
+  markAllViewsStale();
   renderCurrentView();
 }
 
@@ -1208,7 +1210,17 @@ function confirmSaveView() {
 // ============================================================
 //  NAVIGATION
 // ============================================================
+// Track which views are stale and need re-rendering
+const _staleViews = new Set(['overview','logs','errors','timeline','performance','flow','journey','group']);
+function markAllViewsStale() {
+  _staleViews.add('overview'); _staleViews.add('logs'); _staleViews.add('errors');
+  _staleViews.add('timeline'); _staleViews.add('performance'); _staleViews.add('flow');
+  _staleViews.add('journey'); _staleViews.add('group');
+  _journeyShellRendered = false; // force journey to rebuild dropdown on next visit
+}
+
 function setView(v) {
+  const prevView = currentView;
   currentView = v;
   ['overview','logs','errors','timeline','performance','flow','journey','group'].forEach(id => {
     document.getElementById('view-' + id).style.display = 'none';
@@ -1228,7 +1240,11 @@ function setView(v) {
     group: 'Grouped by Event ID',
   };
   document.getElementById('header-title').textContent = titles[v] || v;
-  renderCurrentView();
+  // Only render if this view is stale (data changed) or it's a fresh switch
+  if (_staleViews.has(v)) {
+    _staleViews.delete(v);
+    renderCurrentView();
+  }
 }
 
 function renderCurrentView() {
@@ -2004,6 +2020,8 @@ function _journeyEventIds() {
   return ids;
 }
 
+let _journeyShellRendered = false; // tracks if outer shell (dropdown etc.) is painted
+
 function renderJourney() {
   const allEventIds = _journeyEventIds();
   const sel = selectedJourneyId;
@@ -2070,7 +2088,71 @@ function renderJourney() {
       return `<option value="${esc(id)}" ${id === sel ? 'selected' : ''}>${hasErr ? '⚠ ' : ''}${esc(id)}</option>`;
     }).join('')}`;
 
-  const bodyHTML = sel && journeyLogs.length ? `
+  // If the outer shell already exists, do surgical updates only
+  const existingShell = container.querySelector('.section');
+  if (existingShell && _journeyShellRendered) {
+    // Update dropdown selection without rebuilding it
+    const selectEl = container.querySelector('#journey-select');
+    if (selectEl) selectEl.value = sel || '';
+
+    // Update or hide/show the clear button
+    const headerControls = container.querySelector('.section-header > div[style]');
+
+    // Update the body wrap surgically
+    const bodyWrap = container.querySelector('#journey-body-wrap');
+    if (bodyWrap) {
+      if (sel && journeyLogs.length) {
+        const existingJourneyWrap = bodyWrap.querySelector('.journey-wrap');
+        if (existingJourneyWrap && _journeyRenderedId === sel) {
+          // Same event ID — just update the steps body (expand/collapse)
+          const stepsEl = bodyWrap.querySelector('#journey-steps-body');
+          if (stepsEl) stepsEl.innerHTML = stepsHTML();
+          return;
+        }
+        // Different event ID — update just the body wrap
+        bodyWrap.innerHTML = _journeyBodyHTML(sel, journeyLogs, stepsHTML, durationStr, statusLevel, statusLabel, curIdx, allEventIds);
+      } else if (sel) {
+        bodyWrap.innerHTML = `<div class="empty"><div class="empty-icon">◎</div><h4>No logs found for this Event ID</h4><p>Try clearing filters or selecting a different event</p></div>`;
+      } else {
+        bodyWrap.innerHTML = `<div class="empty"><div class="empty-icon">◎</div><h4>Select an Event ID</h4><p>Choose from the dropdown to trace its full journey across applications and flows.<br>Click any step to expand inline details.</p></div>`;
+      }
+      // Update clear button visibility
+      const clearBtn = container.querySelector('.journey-clear-btn');
+      if (clearBtn) clearBtn.style.display = sel ? '' : 'none';
+      _journeyRenderedId = sel;
+      return;
+    }
+  }
+
+  // Full render (first time or stale)
+  const bodyHTML = sel && journeyLogs.length
+    ? _journeyBodyHTML(sel, journeyLogs, stepsHTML, durationStr, statusLevel, statusLabel, curIdx, allEventIds)
+    : sel
+      ? `<div class="empty"><div class="empty-icon">◎</div><h4>No logs found for this Event ID</h4><p>Try clearing filters or selecting a different event</p></div>`
+      : `<div class="empty"><div class="empty-icon">◎</div><h4>Select an Event ID</h4><p>Choose from the dropdown to trace its full journey across applications and flows.<br>Click any step to expand inline details.</p></div>`;
+
+  container.innerHTML = `
+    <div class="section">
+      <div class="section-header">
+        <div class="section-title">Trace Event ID Journey</div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <label style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);cursor:pointer;user-select:none">
+            <input type="checkbox" id="journey-err-toggle" ${journeyErrorsOnly ? 'checked' : ''} onchange="journeyErrorsOnly=this.checked;selectedJourneyId='';_journeyShellRendered=false;renderJourney()" style="accent-color:var(--error)" />
+            Errors only
+          </label>
+          <select id="journey-select" onchange="selectJourney(this.value)" style="min-width:200px;max-width:340px">${dropdownHTML}</select>
+          <button class="journey-clear-btn" onclick="clearJourney()" style="display:${sel ? '' : 'none'}">✕ Clear</button>
+        </div>
+      </div>
+      <div id="journey-body-wrap">${bodyHTML}</div>
+    </div>`;
+
+  _journeyRenderedId = sel;
+  _journeyShellRendered = true;
+}
+
+function _journeyBodyHTML(sel, journeyLogs, stepsHTML, durationStr, statusLevel, statusLabel, curIdx, allEventIds) {
+  return `
     <div class="journey-wrap">
       <div class="journey-header">
         <div class="journey-id-wrap">
@@ -2087,33 +2169,13 @@ function renderJourney() {
         </div>
       </div>
       <div class="journey-steps" id="journey-steps-body">${stepsHTML()}</div>
-    </div>`
-  : sel
-    ? `<div class="empty"><div class="empty-icon">◎</div><h4>No logs found for this Event ID</h4><p>Try clearing filters or selecting a different event</p></div>`
-    : `<div class="empty"><div class="empty-icon">◎</div><h4>Select an Event ID</h4><p>Choose from the dropdown to trace its full journey across applications and flows.<br>Click any step to expand inline details.</p></div>`;
-
-  container.innerHTML = `
-    <div class="section">
-      <div class="section-header">
-        <div class="section-title">Trace Event ID Journey</div>
-        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-          <label style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);cursor:pointer;user-select:none">
-            <input type="checkbox" id="journey-err-toggle" ${journeyErrorsOnly ? 'checked' : ''} onchange="journeyErrorsOnly=this.checked;selectedJourneyId='';renderJourney()" style="accent-color:var(--error)" />
-            Errors only
-          </label>
-          <select id="journey-select" onchange="selectJourney(this.value)" style="min-width:200px;max-width:340px">${dropdownHTML}</select>
-          ${sel ? `<button class="journey-clear-btn" onclick="clearJourney()">✕ Clear</button>` : ''}
-        </div>
-      </div>
-      <div id="journey-body-wrap">${bodyHTML}</div>
     </div>`;
-
-  _journeyRenderedId = sel;
 }
 
 function selectJourney(id) {
   selectedJourneyId = id;
   expandedSteps.clear();
+  // _journeyRenderedId mismatch will trigger surgical body update
   renderJourney();
 }
 
@@ -2121,6 +2183,7 @@ function clearJourney() {
   selectedJourneyId = '';
   expandedSteps.clear();
   _journeyRenderedId = null;
+  // Don't reset shell — surgical update will hide the clear button and reset body
   renderJourney();
 }
 
@@ -2212,22 +2275,29 @@ function renderGroup() {
 }
 
 function toggleGroup(id) {
-  // Surgical DOM patch — find the group-item and toggle without full re-render
   const item = document.querySelector(`.group-item[data-group-id="${CSS.escape(id)}"]`);
-  if (!item) { renderGroup(); return; }
+  if (!item) return; // silently skip if item not in DOM — do NOT call renderGroup()
 
   const chevron = item.querySelector('.group-header .group-chevron');
   const existingRows = item.querySelector('.group-rows');
 
   if (openGroups.has(id)) {
     openGroups.delete(id);
-    if (existingRows) existingRows.remove();
+    if (existingRows) {
+      existingRows.style.opacity = '0';
+      existingRows.style.transition = 'opacity 0.1s';
+      setTimeout(() => existingRows.remove(), 100);
+    }
     if (chevron) chevron.classList.remove('open');
   } else {
     openGroups.add(id);
-    // Rebuild rows from current filteredLogs for this eventId
     const glogs = filteredLogs.filter(l => (l.eventId || '(no event id)') === id);
-    item.insertAdjacentHTML('beforeend', _buildGroupRows(glogs));
+    const rowsHTML = _buildGroupRows(glogs);
+    // Use insertAdjacentHTML which is faster than innerHTML for appending
+    item.insertAdjacentHTML('beforeend', rowsHTML);
+    // Animate in
+    const newRows = item.querySelector('.group-rows');
+    if (newRows) { newRows.style.opacity = '0'; requestAnimationFrame(() => { newRows.style.transition = 'opacity 0.12s'; newRows.style.opacity = '1'; }); }
     if (chevron) chevron.classList.add('open');
   }
 }
