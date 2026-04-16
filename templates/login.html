@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ObserveX Enterprise</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
+</head>
+<body class="login-page">
+  <main class="login-shell">
+    <section class="login-card">
+      <div class="brand-block">
+        <div class="brand-mark large">VX</div>
+        <div>
+          <p class="eyebrow">ObserveX Enterprise</p>
+          <h1>Unified log operations for every system.</h1>
+          <p class="hero-copy">Upload files, connect S3, integrate APIs, define alert rules, and manage tenant-level observability from one clean control plane.</p>
+        </div>
+      </div>
+
+      <div class="callout-grid">
+        <div class="mini-card"><strong>Multi-tenant</strong><span>Organization-aware branding and settings</span></div>
+        <div class="mini-card"><strong>Persistent</strong><span>SQLite-backed demo data and uploaded logs</span></div>
+        <div class="mini-card"><strong>Extensible</strong><span>Ready for background jobs and RBAC expansion</span></div>
+      </div>
+
+      <form id="loginForm" class="login-form">
+        <div>
+          <label>Email</label>
+          <input type="email" name="email" value="admin@vewit.local" required />
+        </div>
+        <div>
+          <label>Password</label>
+          <input type="password" name="password" value="admin123" required />
+        </div>
+        <button class="primary-btn wide" type="submit">Open workspace</button>
+      </form>
+      <div id="loginStatus" class="result-box">Demo credentials are prefilled for you.</div>
+    </section>
+  </main>
+  <script>
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const form = new FormData(e.target);
+      const payload = Object.fromEntries(form.entries());
+      const res = await fetch('/login', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload)});
+      const data = await res.json();
+      if (!res.ok) {
+        document.getElementById('loginStatus').textContent = data.error || 'Login failed';
+        return;
+      }
+      window.location.href = '/workspace';
+    });
+  </script>
+</body>
+</html>

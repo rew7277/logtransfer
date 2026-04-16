@@ -1,7 +1,6 @@
 const state = {
+  bootstrap: null,
   records: [],
-  summary: null,
-  integrations: { s3: [], api: [] },
 };
 
 const $ = (id) => document.getElementById(id);
@@ -10,73 +9,149 @@ function formatNumber(value) {
   return new Intl.NumberFormat().format(value || 0);
 }
 
-function setActiveNav(sectionId) {
-  document.querySelectorAll('.nav-link').forEach(btn => {
-    btn.classList.toggle('active', btn.dataset.section === sectionId);
-  });
-}
-
-function renderMetrics() {
-  const levels = state.summary?.levels || {};
-  $('metricTotal').textContent = formatNumber(state.summary?.total || 0);
-  $('metricErrors').textContent = formatNumber(levels.error || 0);
-  $('metricWarn').textContent = formatNumber(levels.warn || 0);
-  $('metricSources').textContent = formatNumber((state.summary?.sources || []).length);
-}
-
-function renderSources() {
-  const el = $('sourceList');
-  const sources = state.summary?.sources || [];
-  if (!sources.length) {
-    el.className = 'list-box empty-state';
-    el.textContent = 'Upload data to populate source analytics.';
-    return;
-  }
-  el.className = 'list-box';
-  el.innerHTML = sources.map(([source, count]) => `
-    <div class="list-item">
-      <span>${escapeHtml(source)}</span>
-      <strong>${formatNumber(count)}</strong>
-    </div>
-  `).join('');
-}
-
-function renderTerms() {
-  const el = $('termList');
-  const terms = state.summary?.top_terms || [];
-  if (!terms.length) {
-    el.className = 'tag-box empty-state';
-    el.textContent = 'Upload data to see repeated operational terms.';
-    return;
-  }
-  el.className = 'tag-box';
-  el.innerHTML = terms.map(([term, count]) => `<span class="tag">${escapeHtml(term)} · ${count}</span>`).join('');
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
 }
 
 function badge(level) {
   return `<span class="level-badge level-${level}">${escapeHtml(level)}</span>`;
 }
 
-function filterRecords() {
-  const q = $('searchInput').value.trim().toLowerCase();
-  const level = $('levelFilter').value;
-  return state.records.filter((record) => {
-    const matchesLevel = level === 'all' || record.level === level;
-    const blob = `${record.message} ${record.source} ${record.event_id}`.toLowerCase();
-    const matchesQuery = !q || blob.includes(q);
-    return matchesLevel && matchesQuery;
+function setActiveNav(sectionId) {
+  document.querySelectorAll('.nav-link').forEach((btn) => {
+    btn.classList.toggle('active', btn.dataset.section === sectionId);
   });
 }
 
+function applyOrgTheme() {
+  const org = state.bootstrap?.organization;
+  if (!org) return;
+  document.documentElement.style.setProperty('--primary', org.theme_color || '#5b8cff');
+  $('orgName').textContent = org.name;
+  $('orgLogo').textContent = org.logo_text;
+  $('orgSlug').textContent = org.slug;
+  $('orgForm').name.value = org.name;
+  $('orgForm').logo_text.value = org.logo_text;
+  $('orgForm').theme_color.value = org.theme_color;
+}
+
+function renderSummary() {
+  const summary = state.bootstrap?.summary || { totals: {}, levels: {}, source_breakdown: [], error_rate: 0 };
+  $('metricLogs').textContent = formatNumber(summary.totals.logs || 0);
+  $('metricIntegrations').textContent = formatNumber(summary.totals.integrations || 0);
+  $('metricJobs').textContent = formatNumber(summary.totals.jobs || 0);
+  $('metricAlerts').textContent = formatNumber(summary.totals.alerts || 0);
+  $('heroErrorRate').textContent = `${summary.error_rate || 0}%`;
+
+  const sourceList = $('sourceList');
+  if (!summary.source_breakdown.length) {
+    sourceList.className = 'list-box empty-state';
+    sourceList.textContent = 'Upload logs to populate analytics.';
+  } else {
+    sourceList.className = 'list-box';
+    sourceList.innerHTML = summary.source_breakdown.map(item => `
+      <div class="list-item"><span>${escapeHtml(item.source)}</span><strong>${formatNumber(item.count)}</strong></div>
+    `).join('');
+  }
+}
+
+function renderIntegrations() {
+  const list = $('integrationList');
+  const items = state.bootstrap?.integrations || [];
+  if (!items.length) {
+    list.className = 'list-box empty-state';
+    list.textContent = 'No integrations saved yet.';
+    return;
+  }
+  list.className = 'list-box';
+  list.innerHTML = items.map(item => `
+    <div class="list-item">
+      <div>
+        <strong>${escapeHtml(item.name)}</strong>
+        <div class="muted">${escapeHtml(item.kind.toUpperCase())} · ${escapeHtml(item.status)}</div>
+      </div>
+      <span class="pill">configured</span>
+    </div>
+  `).join('');
+}
+
+function renderJobs() {
+  const list = $('jobsList');
+  const items = state.bootstrap?.jobs || [];
+  if (!items.length) {
+    list.className = 'list-box empty-state';
+    list.textContent = 'No jobs configured yet.';
+    return;
+  }
+  list.className = 'list-box';
+  list.innerHTML = items.map(item => `
+    <div class="list-item">
+      <div>
+        <strong>${escapeHtml(item.name)}</strong>
+        <div class="muted">${escapeHtml(item.source_type.toUpperCase())} · ${escapeHtml(item.status)} · ${escapeHtml(item.schedule)}</div>
+      </div>
+      <span class="pill">job</span>
+    </div>
+  `).join('');
+}
+
+function renderAlerts() {
+  const list = $('alertsList');
+  const items = state.bootstrap?.alerts || [];
+  if (!items.length) {
+    list.className = 'list-box empty-state';
+    list.textContent = 'No alert rules configured yet.';
+    return;
+  }
+  list.className = 'list-box';
+  list.innerHTML = items.map(item => `
+    <div class="list-item">
+      <div>
+        <strong>${escapeHtml(item.name)}</strong>
+        <div class="muted">${escapeHtml(item.severity.toUpperCase())} · ${escapeHtml(item.channel)} · ${escapeHtml(item.status)}</div>
+        <div class="muted top-gap-sm">${escapeHtml(item.condition_text)}</div>
+      </div>
+      <span class="pill">rule</span>
+    </div>
+  `).join('');
+}
+
+async function fetchBootstrap() {
+  const res = await fetch('/api/bootstrap');
+  if (!res.ok) {
+    if (res.status === 401) window.location.href = '/';
+    return;
+  }
+  state.bootstrap = await res.json();
+  applyOrgTheme();
+  renderSummary();
+  renderIntegrations();
+  renderJobs();
+  renderAlerts();
+}
+
+async function fetchLogs() {
+  const q = $('searchInput').value.trim();
+  const level = $('levelFilter').value;
+  const params = new URLSearchParams({ q, level });
+  const res = await fetch(`/api/logs?${params.toString()}`);
+  const data = await res.json();
+  state.records = data.records || [];
+  renderRecords();
+}
+
 function renderRecords() {
-  const rows = filterRecords();
   const el = $('recordsBody');
-  if (!rows.length) {
+  if (!state.records.length) {
     el.innerHTML = '<tr><td colspan="5" class="empty-cell">No matching records.</td></tr>';
     return;
   }
-
-  el.innerHTML = rows.slice(0, 200).map(record => `
+  el.innerHTML = state.records.map(record => `
     <tr>
       <td>${escapeHtml(record.timestamp)}</td>
       <td>${badge(record.level)}</td>
@@ -87,56 +162,24 @@ function renderRecords() {
   `).join('');
 }
 
-function renderIntegrations() {
-  const el = $('integrationList');
-  const all = [...(state.integrations.s3 || []), ...(state.integrations.api || [])];
-  if (!all.length) {
-    el.className = 'list-box empty-state';
-    el.textContent = 'No integrations saved yet.';
-    return;
-  }
-  el.className = 'list-box';
-  el.innerHTML = all.map(item => `
-    <div class="list-item">
-      <div>
-        <strong>${escapeHtml(item.name)}</strong>
-        <div class="muted">${escapeHtml(item.kind.toUpperCase())} · created ${escapeHtml(item.created_at)}</div>
-      </div>
-      <span class="pill">saved</span>
-    </div>
-  `).join('');
-}
-
-async function fetchIntegrations() {
-  const res = await fetch('/api/integrations');
-  state.integrations = await res.json();
-  renderIntegrations();
-}
-
 async function uploadFile(file) {
   const formData = new FormData();
   formData.append('file', file);
-  $('uploadStatus').textContent = `Parsing ${file.name}...`;
-
+  $('uploadStatus').textContent = `Parsing ${file.name} and storing it for this organization...`;
   const response = await fetch('/api/upload', { method: 'POST', body: formData });
   const data = await response.json();
   if (!response.ok) {
     $('uploadStatus').textContent = data.error || 'Upload failed.';
     return;
   }
-
-  state.records = data.records || [];
-  state.summary = data.summary || {};
-  $('uploadStatus').textContent = `${data.filename} parsed successfully. Showing up to 200 recent records.`;
-  renderMetrics();
-  renderSources();
-  renderTerms();
-  renderRecords();
+  $('uploadStatus').textContent = `${data.filename} parsed successfully and stored in the database.`;
+  state.bootstrap.summary = data.dashboard;
+  renderSummary();
+  await fetchLogs();
 }
 
 async function testS3() {
-  const form = new FormData($('s3Form'));
-  const payload = Object.fromEntries(form.entries());
+  const payload = Object.fromEntries(new FormData($('s3Form')).entries());
   $('s3Result').textContent = 'Testing S3 connection...';
   const response = await fetch('/api/integrations/s3/test', {
     method: 'POST',
@@ -145,13 +188,12 @@ async function testS3() {
   });
   const data = await response.json();
   $('s3Result').textContent = data.success
-    ? `${data.message}${data.objects?.length ? ` Sample objects: ${data.objects.map(o => o.key).join(', ')}` : ''}`
+    ? `${data.message}${data.objects?.length ? ` Sample: ${data.objects.map(o => o.key).join(', ')}` : ''}`
     : data.message;
 }
 
 async function testApi() {
-  const form = new FormData($('apiForm'));
-  const payload = Object.fromEntries(form.entries());
+  const payload = Object.fromEntries(new FormData($('apiForm')).entries());
   try {
     payload.headers = payload.headers ? JSON.parse(payload.headers) : {};
   } catch {
@@ -166,58 +208,84 @@ async function testApi() {
   });
   const data = await response.json();
   $('apiResult').textContent = data.success
-    ? `${data.message} Status: ${data.status_code}. Preview: ${data.preview || 'No response body.'}`
+    ? `${data.message} Status ${data.status_code}. Preview: ${data.preview || 'No response body.'}`
     : data.message;
 }
 
-async function saveIntegration(kind, formId) {
-  const form = new FormData($(formId));
-  const payload = Object.fromEntries(form.entries());
+async function saveIntegration(kind, formId, resultId) {
+  const payload = Object.fromEntries(new FormData($(formId)).entries());
   if (kind === 'api') {
     try {
       payload.headers = payload.headers ? JSON.parse(payload.headers) : {};
     } catch {
-      $('apiResult').textContent = 'Headers must be valid JSON before saving.';
+      $(resultId).textContent = 'Headers must be valid JSON before saving.';
       return;
     }
   }
-  const response = await fetch('/api/integrations', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ kind, name: payload.name, settings: payload }),
+  const res = await fetch('/api/integrations', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ kind, name: payload.name, status: 'configured', settings: payload }),
   });
-  const data = await response.json();
-  if (kind === 's3') $('s3Result').textContent = data.message || 'Integration saved.';
-  if (kind === 'api') $('apiResult').textContent = data.message || 'Integration saved.';
-  await fetchIntegrations();
+  const data = await res.json();
+  $(resultId).textContent = data.message || 'Integration saved.';
+  await fetchBootstrap();
 }
 
-function escapeHtml(value) {
-  return String(value ?? '')
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#39;');
+async function saveJob() {
+  const payload = Object.fromEntries(new FormData($('jobForm')).entries());
+  try {
+    payload.details = payload.details ? JSON.parse(payload.details) : {};
+  } catch {
+    $('jobResult').textContent = 'Job details must be valid JSON.';
+    return;
+  }
+  const res = await fetch('/api/jobs', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
+  });
+  const data = await res.json();
+  $('jobResult').textContent = data.message || 'Job created.';
+  $('jobForm').reset();
+  await fetchBootstrap();
+}
+
+async function saveAlert() {
+  const payload = Object.fromEntries(new FormData($('alertForm')).entries());
+  const res = await fetch('/api/alerts', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
+  });
+  const data = await res.json();
+  $('alertResult').textContent = data.message || 'Alert created.';
+  await fetchBootstrap();
+}
+
+async function saveOrg() {
+  const payload = Object.fromEntries(new FormData($('orgForm')).entries());
+  const res = await fetch('/api/org', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
+  });
+  const data = await res.json();
+  $('orgResult').textContent = data.message || 'Organization updated.';
+  await fetchBootstrap();
+}
+
+async function logout() {
+  await fetch('/logout', { method: 'POST' });
+  window.location.href = '/';
 }
 
 window.addEventListener('DOMContentLoaded', async () => {
   document.querySelectorAll('.nav-link').forEach(btn => {
     btn.addEventListener('click', () => {
-      const section = document.getElementById(btn.dataset.section);
-      section?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      document.getElementById(btn.dataset.section)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       setActiveNav(btn.dataset.section);
     });
   });
 
-  $('jumpUpload').addEventListener('click', () => document.getElementById('upload').scrollIntoView({ behavior: 'smooth' }));
-  $('jumpIntegrations').addEventListener('click', () => document.getElementById('integrations').scrollIntoView({ behavior: 'smooth' }));
+  $('jumpUpload').addEventListener('click', () => $('upload').scrollIntoView({ behavior: 'smooth' }));
+  $('jumpIntegrations').addEventListener('click', () => $('integrations').scrollIntoView({ behavior: 'smooth' }));
+  $('logoutBtn').addEventListener('click', logout);
 
-  $('fileInput').addEventListener('change', (e) => {
-    const [file] = e.target.files;
-    if (file) uploadFile(file);
-  });
-
+  $('fileInput').addEventListener('change', (e) => { const [file] = e.target.files; if (file) uploadFile(file); });
   const zone = $('uploadZone');
   zone.addEventListener('dragover', (e) => { e.preventDefault(); zone.classList.add('drag-over'); });
   zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
@@ -229,13 +297,17 @@ window.addEventListener('DOMContentLoaded', async () => {
   });
   zone.addEventListener('click', () => $('fileInput').click());
 
+  $('refreshLogsBtn').addEventListener('click', fetchLogs);
+  $('searchInput').addEventListener('input', fetchLogs);
+  $('levelFilter').addEventListener('change', fetchLogs);
   $('testS3Btn').addEventListener('click', testS3);
   $('testApiBtn').addEventListener('click', testApi);
-  $('s3Form').addEventListener('submit', async (e) => { e.preventDefault(); await saveIntegration('s3', 's3Form'); });
-  $('apiForm').addEventListener('submit', async (e) => { e.preventDefault(); await saveIntegration('api', 'apiForm'); });
-  $('searchInput').addEventListener('input', renderRecords);
-  $('levelFilter').addEventListener('change', renderRecords);
+  $('s3Form').addEventListener('submit', async (e) => { e.preventDefault(); await saveIntegration('s3', 's3Form', 's3Result'); });
+  $('apiForm').addEventListener('submit', async (e) => { e.preventDefault(); await saveIntegration('api', 'apiForm', 'apiResult'); });
+  $('jobForm').addEventListener('submit', async (e) => { e.preventDefault(); await saveJob(); });
+  $('alertForm').addEventListener('submit', async (e) => { e.preventDefault(); await saveAlert(); });
+  $('orgForm').addEventListener('submit', async (e) => { e.preventDefault(); await saveOrg(); });
 
-  await fetchIntegrations();
-  renderMetrics();
+  await fetchBootstrap();
+  await fetchLogs();
 });

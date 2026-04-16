@@ -1,21 +1,28 @@
-# ObserveX
+# ObserveX Enterprise v2
 
-ObserveX is a system-agnostic log observability starter app built for any platform that emits logs.
+ObserveX Enterprise v2 is a polished Flask-based observability starter platform for **all systems**, not tied to MuleSoft or any single vendor.
 
-It includes:
-- professional web UI for upload, search, and operational review
-- local file parsing for `.log`, `.txt`, `.json`, `.ndjson`, and `.csv`
-- AWS S3 integration test and local config save flow
-- API feed integration test and local config save flow
-- generic branding and language suitable for all systems, not MuleSoft-specific
+## What is included
 
-## Stack
-- Flask backend
-- Vanilla HTML, CSS, and JavaScript frontend
-- boto3 for S3 connectivity
-- requests for API connectivity tests
+- secure login screen with seeded demo credentials
+- organization-aware workspace and branding settings
+- SQLite-backed persistence for uploads, logs, jobs, alerts, and integrations
+- log upload and parsing for text, JSON, NDJSON, and CSV
+- S3 connection testing and integration saving
+- API connection testing and integration saving
+- ingestion job management UI
+- alert rule management UI
+- searchable log explorer over persisted records
+
+## Demo login
+
+- **Email:** `admin@vewit.local`
+- **Password:** `admin123`
+
+Change these immediately before any real deployment.
 
 ## Run locally
+
 ```bash
 python -m venv .venv
 source .venv/bin/activate   # Windows: .venv\Scripts\activate
@@ -23,28 +30,28 @@ pip install -r requirements.txt
 python app.py
 ```
 
-Then open:
-```text
-http://localhost:8080
-```
+Open `http://localhost:8080`
 
-## Main routes
-- `/` — application UI
-- `/api/health` — health endpoint
-- `/api/upload` — upload and parse log files
-- `/api/integrations` — list and save integrations
-- `/api/integrations/s3/test` — test S3 connection
-- `/api/integrations/api/test` — test API connection
+## Deployment notes
 
-## Notes
-- integration records are stored locally in `data/integrations.json`
-- uploaded files are parsed in memory and not persisted by default
-- this is a strong starter implementation, not a full enterprise ingestion pipeline yet
+This project is suitable as a strong starter for Railway, Render, or a VM/container deployment.
 
-## Suggested next upgrades
-- background jobs for scheduled S3/API polling
-- authentication and role-based access
-- persistent storage for uploaded logs and parsed events
-- charting and saved dashboards
-- alert rules and notification channels
-- multi-tenant organization support
+For production, the next recommended upgrades are:
+
+- PostgreSQL instead of SQLite
+- background workers for scheduled S3/API ingestion
+- real RBAC and user invitations
+- object storage for uploaded files
+- charting and dashboard visualizations
+- audit logs and secrets management
+- queue-based ingestion pipeline
+
+## Structure
+
+- `app.py` — Flask app, auth, API routes, DB bootstrap, parsing
+- `templates/login.html` — login experience
+- `templates/index.html` — enterprise workspace UI
+- `static/app.js` — client-side behavior
+- `static/styles.css` — visual system
+- `data/observex.db` — local demo database created on first run
+
