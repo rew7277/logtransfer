@@ -1,28 +1,27 @@
-# ObserveX Enterprise v2
+# ObserveX Enterprise Workspace
 
-ObserveX Enterprise v2 is a polished Flask-based observability starter platform for **all systems**, not tied to MuleSoft or any single vendor.
+A generic log observability starter platform for all systems.
 
-## What is included
-
-- secure login screen with seeded demo credentials
-- organization-aware workspace and branding settings
-- SQLite-backed persistence for uploads, logs, jobs, alerts, and integrations
-- log upload and parsing for text, JSON, NDJSON, and CSV
-- S3 connection testing and integration saving
-- API connection testing and integration saving
-- ingestion job management UI
-- alert rule management UI
-- searchable log explorer over persisted records
+## What's included
+- Shared workspace login
+- Admin-created user accounts
+- Admin-only workspace mode toggle
+- Organization branding and slug for future subdomain routing like `company.vewit.com`
+- Multiline-safe log parsing for Mule-style and generic logs
+- Full log detail viewer
+- Upload logs into SQLite-backed storage
+- AWS S3 connector test and save
+- API connector test and save
+- Ingestion jobs with manual **Run now** and optional APScheduler polling
+- Alert rules
+- Audit trail
+- Simple charts and dashboard cards
 
 ## Demo login
-
-- **Email:** `admin@vewit.local`
-- **Password:** `admin123`
-
-Change these immediately before any real deployment.
+- Email: `admin@vewit.local`
+- Password: `admin123`
 
 ## Run locally
-
 ```bash
 python -m venv .venv
 source .venv/bin/activate   # Windows: .venv\Scripts\activate
@@ -30,28 +29,19 @@ pip install -r requirements.txt
 python app.py
 ```
 
-Open `http://localhost:8080`
+App default URL:
+- `http://localhost:8080`
 
-## Deployment notes
+## Notes
+- This is a strong starter, not a complete production SaaS yet.
+- SQLite is included for easy local testing. Move to PostgreSQL for real deployment.
+- APScheduler is included for simple scheduled job execution in a single-process environment.
+- The parser redacts some obvious sensitive patterns, but production masking should be stronger and more configurable.
 
-This project is suitable as a strong starter for Railway, Render, or a VM/container deployment.
-
-For production, the next recommended upgrades are:
-
-- PostgreSQL instead of SQLite
-- background workers for scheduled S3/API ingestion
-- real RBAC and user invitations
-- object storage for uploaded files
-- charting and dashboard visualizations
-- audit logs and secrets management
-- queue-based ingestion pipeline
-
-## Structure
-
-- `app.py` — Flask app, auth, API routes, DB bootstrap, parsing
-- `templates/login.html` — login experience
-- `templates/index.html` — enterprise workspace UI
-- `static/app.js` — client-side behavior
-- `static/styles.css` — visual system
-- `data/observex.db` — local demo database created on first run
-
+## Suggested next steps
+- PostgreSQL
+- Real background workers (Celery / RQ)
+- Per-user permissions screens
+- Alert delivery integrations
+- Tenant subdomain routing and reverse proxy config
+- Search indexing and richer analytics

@@ -3,36 +3,22 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ObserveX Enterprise</title>
+  <title>ObserveX Login</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
 </head>
-<body class="login-page">
+<body class="login-body">
   <main class="login-shell">
-    <section class="login-card">
-      <div class="brand-block">
-        <div class="brand-mark large">VX</div>
-        <div>
-          <p class="eyebrow">ObserveX Enterprise</p>
-          <h1>Unified log operations for every system.</h1>
-          <p class="hero-copy">Upload files, connect S3, integrate APIs, define alert rules, and manage tenant-level observability from one clean control plane.</p>
-        </div>
+    <section class="login-panel">
+      <div class="eyebrow">ObserveX Enterprise</div>
+      <h1>Shared observability workspace</h1>
+      <p>Use the demo admin account to create users, turn on admin-only mode, upload multiline logs, and manage S3 or API ingestion.</p>
+      <div class="mini-grid">
+        <div class="mini-card"><strong>Demo login</strong><span>admin@vewit.local / admin123</span></div>
+        <div class="mini-card"><strong>Generic</strong><span>Works for all systems, not just MuleSoft</span></div>
       </div>
-
-      <div class="callout-grid">
-        <div class="mini-card"><strong>Multi-tenant</strong><span>Organization-aware branding and settings</span></div>
-        <div class="mini-card"><strong>Persistent</strong><span>SQLite-backed demo data and uploaded logs</span></div>
-        <div class="mini-card"><strong>Extensible</strong><span>Ready for background jobs and RBAC expansion</span></div>
-      </div>
-
       <form id="loginForm" class="login-form">
-        <div>
-          <label>Email</label>
-          <input type="email" name="email" value="admin@vewit.local" required />
-        </div>
-        <div>
-          <label>Password</label>
-          <input type="password" name="password" value="admin123" required />
-        </div>
+        <div><label>Email</label><input type="email" name="email" value="admin@vewit.local" required /></div>
+        <div><label>Password</label><input type="password" name="password" value="admin123" required /></div>
         <button class="primary-btn wide" type="submit">Open workspace</button>
       </form>
       <div id="loginStatus" class="result-box">Demo credentials are prefilled for you.</div>

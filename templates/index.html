@@ -4,100 +4,101 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ObserveX Enterprise Workspace</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
 </head>
 <body>
   <div class="app-shell">
     <aside class="sidebar">
       <div>
-        <div class="brand">
-          <div class="brand-mark" id="orgLogo">{{ user.logo_text }}</div>
+        <div class="brand-lockup">
+          <div class="brand-badge" id="orgLogo">VX</div>
           <div>
-            <h1 id="orgName">{{ user.org_name }}</h1>
-            <p>Enterprise observability workspace</p>
+            <div class="eyebrow">ObserveX Enterprise</div>
+            <h1 id="orgName">Vewit</h1>
+            <p id="orgSlug">vewit</p>
           </div>
         </div>
-        <nav class="nav">
-          <button class="nav-link active" data-section="overview">Overview</button>
-          <button class="nav-link" data-section="upload">Upload</button>
-          <button class="nav-link" data-section="records">Explorer</button>
-          <button class="nav-link" data-section="integrations">Integrations</button>
-          <button class="nav-link" data-section="automation">Automation</button>
-          <button class="nav-link" data-section="governance">Governance</button>
-          <button class="nav-link" data-section="org-settings">Organization</button>
+
+        <nav class="nav-stack">
+          <button class="nav-link active" data-section="overviewSection">Overview</button>
+          <button class="nav-link" data-section="logsSection">Log explorer</button>
+          <button class="nav-link" data-section="integrationsSection">Integrations</button>
+          <button class="nav-link" data-section="jobsSection">Ingestion jobs</button>
+          <button class="nav-link" data-section="alertsSection">Alert rules</button>
+          <button class="nav-link" data-section="usersSection">Users & RBAC</button>
+          <button class="nav-link" data-section="orgSection">Organization</button>
+          <button class="nav-link" data-section="auditSection">Audit trail</button>
         </nav>
       </div>
-      <div class="side-card">
-        <span class="pill" id="userRolePill">{{ user.role }}</span>
-        <h3>{{ user.name }}</h3>
-        <p>{{ user.email }}</p>
-        <button id="logoutBtn" class="ghost-btn wide top-space">Sign out</button>
+
+      <div class="side-footer">
+        <div class="user-box">
+          <div class="small-label">Signed in as</div>
+          <strong>{{ user.name }}</strong>
+          <span>{{ user.role }}</span>
+        </div>
+        <button class="ghost-btn wide" id="logoutBtn">Logout</button>
       </div>
     </aside>
 
-    <main class="main">
-      <section class="hero" id="overview">
+    <main class="main-content">
+      <header class="page-header">
         <div>
-          <div class="eyebrow">Control plane</div>
-          <h2>Professional observability workspace for file uploads, S3 ingestion, and API-driven log pipelines.</h2>
-          <p class="hero-copy">Built for every system, not tied to one vendor stack. Use this as your enterprise v2 foundation for Vewit or any organization-aware logging platform.</p>
-          <div class="hero-actions">
-            <button class="primary-btn" id="jumpUpload">Upload logs</button>
-            <button class="ghost-btn" id="jumpIntegrations">Manage integrations</button>
-          </div>
+          <div class="eyebrow">Shared observability workspace</div>
+          <h2>Upload logs, wire S3 and APIs, and govern everything from one control plane.</h2>
         </div>
-        <div class="hero-note">
-          <div class="mini-stat"><span>Error rate</span><strong id="heroErrorRate">0%</strong></div>
-          <div class="mini-stat"><span>Org slug</span><strong id="orgSlug">vewit</strong></div>
+        <div class="header-badges">
+          <span class="pill" id="adminModeBadge">Admin-only: Off</span>
+          <span class="pill" id="subdomainHint">vewit.vewit.com</span>
+        </div>
+      </header>
+
+      <section id="overviewSection" class="content-section active">
+        <div class="metric-grid">
+          <article class="metric-card"><span>Total logs</span><strong id="metricLogs">0</strong></article>
+          <article class="metric-card"><span>Users</span><strong id="metricUsers">0</strong></article>
+          <article class="metric-card"><span>Integrations</span><strong id="metricIntegrations">0</strong></article>
+          <article class="metric-card"><span>Error rate</span><strong id="heroErrorRate">0%</strong></article>
+        </div>
+
+        <div class="panel-grid two-up">
+          <section class="panel">
+            <div class="panel-head"><h3>Log level mix</h3><span class="muted">Live from stored records</span></div>
+            <canvas id="levelChart" height="180"></canvas>
+          </section>
+          <section class="panel">
+            <div class="panel-head"><h3>Top sources</h3><span class="muted">Most active systems</span></div>
+            <canvas id="sourceChart" height="180"></canvas>
+          </section>
+        </div>
+
+        <div class="panel-grid two-up">
+          <section class="panel">
+            <div class="panel-head"><h3>Fast actions</h3></div>
+            <div class="action-grid">
+              <label class="upload-box">
+                <input type="file" id="logFileInput" hidden />
+                <strong>Upload logs</strong>
+                <span>Supports multiline Mule-style and generic log files.</span>
+              </label>
+              <button class="secondary-btn" data-jump="logsSection">Open explorer</button>
+              <button class="secondary-btn" data-jump="usersSection">Manage users</button>
+              <button class="secondary-btn" data-jump="orgSection">Brand workspace</button>
+            </div>
+            <div id="uploadStatus" class="result-box">No upload started yet.</div>
+          </section>
+          <section class="panel">
+            <div class="panel-head"><h3>Platform signals</h3></div>
+            <div class="signal-list" id="sourceList"></div>
+          </section>
         </div>
       </section>
 
-      <section class="grid metrics-grid">
-        <article class="metric-card"><span>Total logs</span><strong id="metricLogs">0</strong><small>Persisted records</small></article>
-        <article class="metric-card"><span>Integrations</span><strong id="metricIntegrations">0</strong><small>S3 and API connectors</small></article>
-        <article class="metric-card"><span>Jobs</span><strong id="metricJobs">0</strong><small>Scheduled ingestion pipelines</small></article>
-        <article class="metric-card"><span>Alerts</span><strong id="metricAlerts">0</strong><small>Operational rules</small></article>
-      </section>
-
-      <section class="grid split-grid">
-        <article class="panel" id="upload">
-          <div class="panel-head">
-            <div>
-              <h3>Upload and parse logs</h3>
-              <p>Supports plain text, JSON, NDJSON, and CSV. Parsed records are stored for this organization.</p>
-            </div>
-          </div>
-          <div class="upload-zone" id="uploadZone">
-            <div class="upload-icon">⭳</div>
-            <h4>Drop your log file here</h4>
-            <p>or click to choose a file from your machine</p>
-            <label class="primary-btn file-btn">
-              Choose file
-              <input type="file" id="fileInput" />
-            </label>
-          </div>
-          <div class="status-row" id="uploadStatus">No file uploaded yet.</div>
-        </article>
-
-        <article class="panel">
-          <div class="panel-head compact">
-            <div>
-              <h3>Top sources</h3>
-              <p>Fast operational snapshot from stored events.</p>
-            </div>
-          </div>
-          <div id="sourceList" class="list-box empty-state">Upload logs to populate analytics.</div>
-        </article>
-      </section>
-
-      <section class="panel" id="records">
-        <div class="panel-head">
-          <div>
-            <h3>Log explorer</h3>
-            <p>Filter persisted records by keyword or level.</p>
-          </div>
+      <section id="logsSection" class="content-section">
+        <div class="panel">
           <div class="toolbar">
-            <input id="searchInput" placeholder="Search message, source, or event id" />
+            <input id="searchInput" type="search" placeholder="Search message, source, or event id" />
             <select id="levelFilter">
               <option value="all">All levels</option>
               <option value="error">Error</option>
@@ -106,108 +107,165 @@
               <option value="success">Success</option>
               <option value="debug">Debug</option>
             </select>
-            <button id="refreshLogsBtn" class="ghost-btn">Refresh</button>
+            <button class="primary-btn" id="searchBtn">Refresh</button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Timestamp</th>
+                  <th>Level</th>
+                  <th>Source</th>
+                  <th>Event</th>
+                  <th>Message</th>
+                </tr>
+              </thead>
+              <tbody id="recordsBody"></tbody>
+            </table>
           </div>
         </div>
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Timestamp</th>
-                <th>Level</th>
-                <th>Source</th>
-                <th>Event ID</th>
-                <th>Message</th>
-              </tr>
-            </thead>
-            <tbody id="recordsBody"><tr><td colspan="5" class="empty-cell">No parsed records yet.</td></tr></tbody>
-          </table>
+      </section>
+
+      <section id="integrationsSection" class="content-section">
+        <div class="panel-grid two-up">
+          <section class="panel">
+            <div class="panel-head"><h3>AWS S3 integration</h3><span class="muted">Test a bucket, save the connector, and attach it to ingestion jobs.</span></div>
+            <form id="s3Form" class="form-grid">
+              <input name="name" placeholder="Archive Bucket" value="Archive Bucket" />
+              <input name="region" placeholder="ap-south-1" value="ap-south-1" />
+              <input name="bucket" placeholder="Bucket name" />
+              <input name="prefix" placeholder="Prefix" />
+              <input name="access_key" placeholder="Access key" />
+              <input name="secret_key" placeholder="Secret key" type="password" />
+            </form>
+            <div class="button-row"><button class="secondary-btn" id="testS3Btn">Test S3</button><button class="primary-btn" id="saveS3Btn">Save integration</button></div>
+            <div id="s3Result" class="result-box">No S3 test run yet.</div>
+          </section>
+          <section class="panel">
+            <div class="panel-head"><h3>API integration</h3><span class="muted">Connect any log-producing endpoint with optional token and custom headers.</span></div>
+            <form id="apiForm" class="form-grid">
+              <input name="name" placeholder="Remote Log API" value="Remote Log API" />
+              <input name="url" placeholder="https://api.example.com/logs" value="https://api.example.com/logs" />
+              <input name="token" placeholder="Bearer token (optional)" />
+              <textarea name="headers" placeholder='Optional JSON headers, e.g. {"x-api-key":"..."}'></textarea>
+            </form>
+            <div class="button-row"><button class="secondary-btn" id="testApiBtn">Test API</button><button class="primary-btn" id="saveApiBtn">Save integration</button></div>
+            <div id="apiResult" class="result-box">No API test run yet.</div>
+          </section>
+        </div>
+        <section class="panel top-gap">
+          <div class="panel-head"><h3>Saved integrations</h3><span class="muted">Configured connectors available to this organization.</span></div>
+          <div id="integrationList" class="list-box"></div>
+        </section>
+      </section>
+
+      <section id="jobsSection" class="content-section">
+        <div class="panel-grid two-up">
+          <section class="panel">
+            <div class="panel-head"><h3>Ingestion jobs</h3><span class="muted">Define schedule-driven ingestion workflows for S3 and API sources.</span></div>
+            <form id="jobForm" class="form-grid">
+              <input name="name" placeholder="Hourly API poller" value="Hourly API poller" />
+              <select name="source_type"><option value="api">API</option><option value="s3">S3</option></select>
+              <select name="status"><option value="scheduled">Scheduled</option><option value="paused">Paused</option></select>
+              <input name="schedule" placeholder="0 * * * *" value="0 * * * *" />
+              <textarea name="details" placeholder='Optional JSON details, e.g. {"batch_size":500}'></textarea>
+            </form>
+            <div class="button-row"><button class="primary-btn" id="createJobBtn">Create job</button></div>
+            <div id="jobResult" class="result-box">No jobs created in this session.</div>
+          </section>
+          <section class="panel">
+            <div class="panel-head"><h3>Configured jobs</h3></div>
+            <div id="jobsList" class="list-box"></div>
+          </section>
         </div>
       </section>
 
-      <section class="grid split-grid" id="integrations">
-        <article class="panel">
-          <div class="panel-head compact"><div><h3>AWS S3 integration</h3><p>Test a bucket, save the connector, and attach it to ingestion jobs.</p></div></div>
-          <form id="s3Form" class="form-grid">
-            <input name="name" placeholder="Integration name" value="Archive Bucket" />
-            <input name="region" placeholder="AWS region" value="ap-south-1" />
-            <input name="bucket" placeholder="Bucket name" />
-            <input name="prefix" placeholder="Prefix" />
-            <input name="access_key" placeholder="Access key" />
-            <input name="secret_key" placeholder="Secret key" type="password" />
-            <div class="form-actions full-span">
-              <button type="button" class="ghost-btn" id="testS3Btn">Test S3</button>
-              <button type="submit" class="primary-btn">Save integration</button>
-            </div>
-          </form>
-          <div class="result-box" id="s3Result">No S3 test run yet.</div>
-        </article>
-
-        <article class="panel">
-          <div class="panel-head compact"><div><h3>API integration</h3><p>Connect any log-producing endpoint with optional token and custom headers.</p></div></div>
-          <form id="apiForm" class="form-grid">
-            <input name="name" placeholder="Integration name" value="Remote Log API" />
-            <input name="url" placeholder="https://api.example.com/logs" />
-            <input name="token" placeholder="Bearer token (optional)" type="password" class="full-span" />
-            <textarea name="headers" placeholder='Optional JSON headers, e.g. {"x-api-key":"..."}' class="full-span"></textarea>
-            <div class="form-actions full-span">
-              <button type="button" class="ghost-btn" id="testApiBtn">Test API</button>
-              <button type="submit" class="primary-btn">Save integration</button>
-            </div>
-          </form>
-          <div class="result-box" id="apiResult">No API test run yet.</div>
-        </article>
+      <section id="alertsSection" class="content-section">
+        <div class="panel-grid two-up">
+          <section class="panel">
+            <div class="panel-head"><h3>Alert rules</h3><span class="muted">Codify platform thresholds and escalation channels.</span></div>
+            <form id="alertForm" class="form-grid">
+              <input name="name" placeholder="Error spike" value="Error spike" />
+              <select name="severity"><option value="sev1">SEV-1</option><option value="sev2" selected>SEV-2</option><option value="sev3">SEV-3</option></select>
+              <select name="channel"><option>Slack</option><option>Email</option><option>PagerDuty</option></select>
+              <select name="status"><option value="active">Active</option><option value="draft">Draft</option></select>
+              <input name="condition_text" placeholder="error rate > 5% over 5m" value="error rate > 5% over 5m" />
+            </form>
+            <div class="button-row"><button class="primary-btn" id="createAlertBtn">Create alert</button></div>
+            <div id="alertResult" class="result-box">No alert created in this session.</div>
+          </section>
+          <section class="panel">
+            <div class="panel-head"><h3>Current rules</h3></div>
+            <div id="alertsList" class="list-box"></div>
+          </section>
+        </div>
       </section>
 
-      <section class="grid split-grid" id="automation">
-        <article class="panel">
-          <div class="panel-head compact"><div><h3>Ingestion jobs</h3><p>Define schedule-driven ingestion workflows for S3 and API sources.</p></div></div>
-          <form id="jobForm" class="form-grid">
-            <input name="name" placeholder="Job name" value="Hourly API poller" />
-            <select name="source_type"><option value="api">API</option><option value="s3">S3</option></select>
-            <select name="status"><option value="scheduled">Scheduled</option><option value="paused">Paused</option></select>
-            <input name="schedule" placeholder="Cron schedule" value="0 * * * *" />
-            <textarea name="details" class="full-span" placeholder='Optional JSON details, e.g. {"batch_size":500}'></textarea>
-            <div class="form-actions full-span"><button type="submit" class="primary-btn">Create job</button></div>
-          </form>
-          <div class="result-box" id="jobResult">No jobs created in this session.</div>
-          <div id="jobsList" class="list-box top-space"></div>
-        </article>
-
-        <article class="panel" id="governance">
-          <div class="panel-head compact"><div><h3>Alert rules</h3><p>Codify platform thresholds and escalation channels.</p></div></div>
-          <form id="alertForm" class="form-grid">
-            <input name="name" placeholder="Alert name" value="Error spike" />
-            <select name="severity"><option value="sev1">SEV-1</option><option value="sev2" selected>SEV-2</option><option value="sev3">SEV-3</option><option value="sev4">SEV-4</option></select>
-            <select name="channel"><option value="Slack">Slack</option><option value="PagerDuty">PagerDuty</option><option value="Email">Email</option></select>
-            <select name="status"><option value="active">Active</option><option value="draft">Draft</option></select>
-            <textarea name="condition_text" class="full-span" placeholder="Describe the alert condition">error rate > 5% over 5m</textarea>
-            <div class="form-actions full-span"><button type="submit" class="primary-btn">Create alert</button></div>
-          </form>
-          <div class="result-box" id="alertResult">No alert created in this session.</div>
-          <div id="alertsList" class="list-box top-space"></div>
-        </article>
+      <section id="usersSection" class="content-section">
+        <div class="panel-grid two-up">
+          <section class="panel">
+            <div class="panel-head"><h3>Create account</h3><span class="muted">For shared workspace login and role-based access.</span></div>
+            <form id="userForm" class="form-grid">
+              <input name="name" placeholder="Full name" />
+              <input name="email" placeholder="user@vewit.local" />
+              <input name="password" placeholder="Temporary password" type="password" />
+              <select name="role"><option value="member">Member</option><option value="analyst">Analyst</option><option value="admin">Admin</option></select>
+            </form>
+            <div class="button-row"><button class="primary-btn" id="createUserBtn">Create user</button></div>
+            <div id="userResult" class="result-box">No user created in this session.</div>
+          </section>
+          <section class="panel">
+            <div class="panel-head"><h3>Current users</h3></div>
+            <div id="userList" class="list-box"></div>
+          </section>
+        </div>
       </section>
 
-      <section class="grid split-grid" id="org-settings">
-        <article class="panel">
-          <div class="panel-head compact"><div><h3>Organization settings</h3><p>Change tenant-level branding to make the product organization-aware.</p></div></div>
-          <form id="orgForm" class="form-grid">
-            <input name="name" placeholder="Organization name" />
-            <input name="logo_text" placeholder="Logo text" maxlength="3" />
-            <input name="theme_color" placeholder="#5b8cff" class="full-span" />
-            <div class="form-actions full-span"><button type="submit" class="primary-btn">Save branding</button></div>
-          </form>
-          <div class="result-box" id="orgResult">Current organization settings loaded from the database.</div>
-        </article>
+      <section id="orgSection" class="content-section">
+        <div class="panel-grid two-up">
+          <section class="panel">
+            <div class="panel-head"><h3>Organization settings</h3><span class="muted">Change tenant-level branding to make the product organization-aware.</span></div>
+            <form id="orgForm" class="form-grid">
+              <input name="name" placeholder="Vewit" />
+              <input name="slug" placeholder="vewit" />
+              <input name="logo_text" placeholder="VX" />
+              <input name="theme_color" type="color" value="#5b8cff" />
+              <label class="checkbox-row"><input type="checkbox" name="admin_only" /> Keep everything admin only</label>
+            </form>
+            <div class="button-row"><button class="primary-btn" id="saveOrgBtn">Save branding</button></div>
+            <div id="orgResult" class="result-box">Current organization settings loaded from the database.</div>
+          </section>
+          <section class="panel">
+            <div class="panel-head"><h3>Mode explanation</h3></div>
+            <div class="copy-block">
+              <p><strong>Admin only:</strong> only admins can sign in and make changes. This is useful for small teams.</p>
+              <p><strong>Shared workspace:</strong> admins, analysts, and members can each have separate accounts and audit visibility.</p>
+              <p><strong>Subdomain-ready:</strong> the slug field is included now so you can later route workspaces like <code>company.vewit.com</code>.</p>
+            </div>
+          </section>
+        </div>
+      </section>
 
-        <article class="panel">
-          <div class="panel-head compact"><div><h3>Saved integrations</h3><p>Configured connectors available to this organization.</p></div></div>
-          <div id="integrationList" class="list-box empty-state">No integrations saved yet.</div>
-        </article>
+      <section id="auditSection" class="content-section">
+        <section class="panel">
+          <div class="panel-head"><h3>Audit trail</h3><span class="muted">Recent administrative and operational activity.</span></div>
+          <div id="auditList" class="list-box"></div>
+        </section>
       </section>
     </main>
   </div>
+
+  <dialog id="logModal" class="log-modal">
+    <div class="modal-head">
+      <h3>Log detail</h3>
+      <button class="ghost-btn" id="closeModalBtn">Close</button>
+    </div>
+    <div class="modal-body">
+      <div id="logMeta" class="meta-grid"></div>
+      <pre id="logPayload"></pre>
+    </div>
+  </dialog>
+
   <script src="{{ url_for('static', filename='app.js') }}"></script>
 </body>
 </html>
