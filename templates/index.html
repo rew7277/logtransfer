@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ObserveX • Universal Log Intelligence</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div>
+        <div class="brand">
+          <div class="brand-mark">OX</div>
+          <div>
+            <h1>ObserveX</h1>
+            <p>Universal log intelligence</p>
+          </div>
+        </div>
+
+        <nav class="nav">
+          <button class="nav-link active" data-section="overview">Overview</button>
+          <button class="nav-link" data-section="upload">Upload & Parse</button>
+          <button class="nav-link" data-section="integrations">Integrations</button>
+          <button class="nav-link" data-section="records">Log Explorer</button>
+        </nav>
+      </div>
+
+      <div class="side-card">
+        <div class="pill">System-agnostic</div>
+        <h3>Built for any platform</h3>
+        <p>Apps, servers, APIs, gateways, containers, schedulers, cloud exports, and generic structured logs.</p>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="hero" id="overview">
+        <div>
+          <div class="eyebrow">Modern log observability workspace</div>
+          <h2>Upload files, connect S3, or wire an API feed into one clean operational view.</h2>
+          <p class="hero-copy">This interface is intentionally generic — no MuleSoft assumptions, no vendor lock-in language. It is designed for cross-system log operations.</p>
+        </div>
+        <div class="hero-actions">
+          <button class="primary-btn" id="jumpUpload">Upload logs</button>
+          <button class="ghost-btn" id="jumpIntegrations">Configure integrations</button>
+        </div>
+      </header>
+
+      <section class="grid metrics-grid">
+        <article class="metric-card">
+          <span>Parsed events</span>
+          <strong id="metricTotal">0</strong>
+          <small>Rows currently loaded</small>
+        </article>
+        <article class="metric-card">
+          <span>Error events</span>
+          <strong id="metricErrors">0</strong>
+          <small>Detected from uploaded data</small>
+        </article>
+        <article class="metric-card">
+          <span>Warnings</span>
+          <strong id="metricWarn">0</strong>
+          <small>Operational caution signals</small>
+        </article>
+        <article class="metric-card">
+          <span>Sources</span>
+          <strong id="metricSources">0</strong>
+          <small>Unique systems seen</small>
+        </article>
+      </section>
+
+      <section class="panel" id="upload">
+        <div class="panel-head">
+          <div>
+            <h3>Upload & parse logs</h3>
+            <p>Supports .log, .txt, .json, .ndjson, and .csv.</p>
+          </div>
+          <label class="primary-btn file-btn">
+            Choose file
+            <input type="file" id="fileInput" accept=".log,.txt,.json,.ndjson,.csv" hidden />
+          </label>
+        </div>
+
+        <div class="upload-zone" id="uploadZone">
+          <div class="upload-icon">⇪</div>
+          <h4>Drop a log file here</h4>
+          <p>Or choose a file to instantly parse records, levels, sources, and key terms.</p>
+        </div>
+
+        <div class="status-row" id="uploadStatus">No file uploaded yet.</div>
+      </section>
+
+      <section class="grid split-grid" id="integrations">
+        <article class="panel">
+          <div class="panel-head compact">
+            <div>
+              <h3>AWS S3 integration</h3>
+              <p>Connect a bucket and validate access before saving the config.</p>
+            </div>
+          </div>
+          <form id="s3Form" class="form-grid">
+            <input name="name" placeholder="Connection name" value="Primary S3 Source" />
+            <input name="region" placeholder="AWS region" value="ap-south-1" />
+            <input name="bucket" placeholder="Bucket name" />
+            <input name="prefix" placeholder="Optional prefix / folder" />
+            <input name="access_key" placeholder="Access key" />
+            <input name="secret_key" placeholder="Secret key" type="password" />
+            <div class="form-actions full-span">
+              <button type="button" class="ghost-btn" id="testS3Btn">Test connection</button>
+              <button type="submit" class="primary-btn">Save integration</button>
+            </div>
+          </form>
+          <div class="result-box" id="s3Result">No S3 test run yet.</div>
+        </article>
+
+        <article class="panel">
+          <div class="panel-head compact">
+            <div>
+              <h3>API integration</h3>
+              <p>Call a REST endpoint and preview response payload before onboarding.</p>
+            </div>
+          </div>
+          <form id="apiForm" class="form-grid">
+            <input name="name" placeholder="Connection name" value="Primary API Feed" />
+            <input name="url" placeholder="https://api.example.com/logs" />
+            <input name="token" placeholder="Bearer token (optional)" type="password" class="full-span" />
+            <textarea name="headers" placeholder='Optional JSON headers, e.g. {"x-api-key":"..."}' class="full-span"></textarea>
+            <div class="form-actions full-span">
+              <button type="button" class="ghost-btn" id="testApiBtn">Test API</button>
+              <button type="submit" class="primary-btn">Save integration</button>
+            </div>
+          </form>
+          <div class="result-box" id="apiResult">No API test run yet.</div>
+        </article>
+      </section>
+
+      <section class="grid split-grid">
+        <article class="panel">
+          <div class="panel-head compact">
+            <div>
+              <h3>Top sources</h3>
+              <p>Where the currently loaded events are coming from.</p>
+            </div>
+          </div>
+          <div id="sourceList" class="list-box empty-state">Upload data to populate source analytics.</div>
+        </article>
+        <article class="panel">
+          <div class="panel-head compact">
+            <div>
+              <h3>Common terms</h3>
+              <p>Fast signal extraction from current event messages.</p>
+            </div>
+          </div>
+          <div id="termList" class="tag-box empty-state">Upload data to see repeated operational terms.</div>
+        </article>
+      </section>
+
+      <section class="panel" id="records">
+        <div class="panel-head">
+          <div>
+            <h3>Log explorer</h3>
+            <p>Search and filter parsed records from the latest upload.</p>
+          </div>
+          <div class="toolbar">
+            <input id="searchInput" placeholder="Search message, source, or event id" />
+            <select id="levelFilter">
+              <option value="all">All levels</option>
+              <option value="error">Error</option>
+              <option value="warn">Warn</option>
+              <option value="info">Info</option>
+              <option value="success">Success</option>
+              <option value="debug">Debug</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Timestamp</th>
+                <th>Level</th>
+                <th>Source</th>
+                <th>Event ID</th>
+                <th>Message</th>
+              </tr>
+            </thead>
+            <tbody id="recordsBody">
+              <tr><td colspan="5" class="empty-cell">No parsed records yet.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head compact">
+          <div>
+            <h3>Saved integrations</h3>
+            <p>Local config records stored by this application.</p>
+          </div>
+        </div>
+        <div id="integrationList" class="list-box empty-state">No integrations saved yet.</div>
+      </section>
+    </main>
+  </div>
+
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>
