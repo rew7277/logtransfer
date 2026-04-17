@@ -468,6 +468,20 @@ function bindEvents() {
     const files = e.target.files;
     if (files && files.length) uploadFiles(files);
   });
+
+  const dnd = $('dndUploadZone');
+  if (dnd) {
+    ['dragenter','dragover'].forEach((evt)=>dnd.addEventListener(evt,(e)=>{e.preventDefault(); dnd.classList.add('drag-active');}));
+    ['dragleave','drop'].forEach((evt)=>dnd.addEventListener(evt,(e)=>{e.preventDefault(); dnd.classList.remove('drag-active');}));
+    dnd.addEventListener('drop', (e) => {
+      const files = e.dataTransfer?.files;
+      if (files && files.length) uploadFiles(files);
+    });
+    dnd.addEventListener('click', () => $('logFileInput').click());
+    dnd.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); $('logFileInput').click(); }
+    });
+  }
   $('createUserBtn').addEventListener('click', handleCreateUser);
   $('saveOrgBtn').addEventListener('click', handleSaveOrg);
   $('saveS3Btn').addEventListener('click', handleSaveS3);

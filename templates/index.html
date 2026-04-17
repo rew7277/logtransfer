@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ObserveX Enterprise Workspace</title>
+  <title>ObserveX Workspace</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
 </head>
-<body class="theme-white">
+<body class="theme-dark">
   <div class="app-shell">
     <aside class="sidebar">
       <div>
@@ -47,8 +47,8 @@
     <main class="main-content">
       <header class="page-header">
         <div>
-          <div class="eyebrow">Shared observability workspace</div>
-          <h2>Upload local logs, run S3 and API ingestion, save dashboards, and manage the organization from one workspace.</h2>
+          <div class="eyebrow">ObserveX workspace</div>
+          <h2>Investigate logs, run connectors, save dashboards, and manage the organization from one premium control plane.</h2>
         </div>
         <div class="header-badges"><label class="primary-btn upload-header-btn" for="logFileInput">Upload logs</label><button class="secondary-btn" data-jump="logsSection">Open explorer</button></div>
       </header>
@@ -75,15 +75,19 @@
         <div class="panel-grid two-up">
           <section class="panel">
             <div class="panel-head"><h3>Fast actions</h3></div>
-            <div class="action-grid">
-              <label class="upload-box">
+            <div class="action-grid single-col">
+              <div class="dnd-upload-zone" id="dndUploadZone" role="button" tabindex="0" aria-label="Upload log files">
                 <input type="file" id="logFileInput" hidden multiple accept=".log,.txt,.json,.csv,.ndjson" />
-                <strong>Upload logs</strong>
-                <span>Supports multiline Mule-style and generic log files.</span>
-              </label>
-              <button class="secondary-btn" data-jump="logsSection">Open explorer</button>
-              <button class="secondary-btn" data-jump="usersSection">Manage users</button>
-              <button class="secondary-btn" data-jump="orgSection">Brand workspace</button>
+                <div class="dnd-upload-icon">⬆</div>
+                <div class="dnd-upload-title">Drag and drop log files here</div>
+                <div class="dnd-upload-sub">or <span class="dnd-browse-link">click to browse</span></div>
+                <div class="dnd-upload-formats"><span>.log</span><span>.json</span><span>.ndjson</span><span>.csv</span><span>.txt</span></div>
+              </div>
+              <div class="action-grid compact-actions">
+                <button class="secondary-btn" data-jump="logsSection">Open explorer</button>
+                <button class="secondary-btn" data-jump="usersSection">Manage users</button>
+                <button class="secondary-btn" data-jump="orgSection">Brand workspace</button>
+              </div>
             </div>
             <div id="uploadStatus" class="result-box">No upload started yet.</div>
           </section>
@@ -261,8 +265,7 @@
             <div class="copy-block">
               <p><strong>Admin:</strong> full control, branding, users, integrations, alerts, jobs.</p>
               <p><strong>Manager / Developer / Tester:</strong> can sign in with their own account and use the shared workspace within the same organization.</p>
-              <p><strong>Admin only mode:</strong> blocks non-admin logins if you want everything controlled only by admins.</p>
-              <p><strong>Subdomain-ready:</strong> slug is stored now so you can later route workspaces like <code>fsbl.observex.in</code>.</p>
+                            <p><strong>Subdomain-ready:</strong> slug is stored now so you can later route workspaces like <code>fsbl.observex.in</code>.</p>
             </div>
           </section>
         </div>
