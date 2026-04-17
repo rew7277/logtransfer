@@ -48,10 +48,10 @@
       <header class="page-header">
         <div>
           <div class="eyebrow">Shared observability workspace</div>
-          <h2>Upload logs, wire S3 and APIs, and govern everything from one control plane.</h2>
+          <h2>Run uploads, S3, API ingestion, dashboards, alerts, and team access from one workspace.</h2>
         </div>
         <div class="header-badges">
-          <span class="muted" id="workspaceMeta">workspace</span>
+          
         </div>
       </header>
 
@@ -79,7 +79,7 @@
             <div class="panel-head"><h3>Fast actions</h3></div>
             <div class="action-grid">
               <label class="upload-box">
-                <input type="file" id="logFileInput" hidden />
+                <input type="file" id="logFileInput" hidden multiple accept=".log,.txt,.json,.csv,.ndjson" />
                 <strong>Upload logs</strong>
                 <span>Supports multiline Mule-style and generic log files.</span>
               </label>
@@ -228,19 +228,30 @@
         </div>
       </section>
 
+      <section id="dashboardsSection" class="content-section">
+        <div class="panel-grid two-up">
+          <section class="panel">
+            <div class="panel-head"><h3>Saved dashboards</h3><span class="muted">Store important operational views for your team.</span></div>
+            <form id="dashboardForm" class="form-grid">
+              <input id="dashboardName" name="name" placeholder="Operations overview" />
+            </form>
+            <div class="button-row"><button class="primary-btn" id="saveDashboardBtn">Save dashboard</button></div>
+            <div id="dashboardResult" class="result-box">Save common views for incidents, latency, or ingestion health.</div>
+          </section>
+          <section class="panel"><div class="panel-head"><h3>Existing dashboards</h3></div><div id="dashboardList" class="list-box"></div></section>
+        </div>
+        <section class="panel top-gap"><div class="panel-head"><h3>Background ingestion runs</h3></div><div id="runList" class="list-box"></div></section>
+      </section>
+
       <section id="orgSection" class="content-section">
         <div class="panel-grid two-up">
           <section class="panel">
-            <div class="panel-head"><h3>Organization settings</h3><span class="muted">Change branding, login mode, and theme.</span></div>
+            <div class="panel-head"><h3>Organization settings</h3><span class="muted">Keep org basics clean and subdomain-ready.</span></div>
             <form id="orgForm" class="form-grid">
               <input name="name" placeholder="Vewit" />
               <input name="slug" placeholder="vewit" />
               <input name="logo_text" placeholder="VX" maxlength="3" />
-              <select name="theme_mode" id="themeModeSelect">
-                <option value="black">Black theme</option>
-                <option value="white">White theme</option>
-                <option value="green">Green theme</option>
-              </select>
+              <select name="theme_mode" id="themeModeSelect"><option value="white">White theme</option></select>
               <input name="theme_color" type="color" value="#5b8cff" />
               <label class="checkbox-row"><input type="checkbox" name="admin_only" /> Keep everything admin only</label>
             </form>
@@ -253,29 +264,12 @@
               <p><strong>Admin:</strong> full control, branding, users, integrations, alerts, jobs.</p>
               <p><strong>Manager / Developer / Tester:</strong> can sign in with their own account and use the shared workspace within the same organization.</p>
               <p><strong>Admin only mode:</strong> blocks non-admin logins if you want everything controlled only by admins.</p>
-              <p><strong>Subdomain-ready:</strong> slug is stored now so you can later route workspaces like <code>company.vewit.com</code>.</p>
+              <p><strong>Subdomain-ready:</strong> slug is stored now so you can later route workspaces like <code>fsbl.observex.in</code>.</p>
             </div>
           </section>
         </div>
       </section>
 
-
-      <section id="dashboardsSection" class="content-section">
-        <div class="panel-grid two-up">
-          <section class="panel">
-            <div class="panel-head"><h3>Saved dashboards</h3><span class="muted">Reusable workspace views</span></div>
-            <div class="stack-form">
-              <input id="dashboardName" type="text" placeholder="Operations overview" />
-              <button class="primary-btn" id="saveDashboardBtn">Save current dashboard</button>
-            </div>
-            <div id="dashboardResult" class="result-box">Save named dashboard presets for your workspace.</div>
-          </section>
-          <section class="panel">
-            <div class="panel-head"><h3>Saved dashboard list</h3></div>
-            <div id="dashboardList" class="list-box empty-state">No saved dashboards yet.</div>
-          </section>
-        </div>
-      </section>
 
       <section id="invitesSection" class="content-section">
         <div class="panel-grid two-up">
@@ -295,7 +289,8 @@
         </div>
       </section>
 
-      <section id="auditSection" class="content-section">        <section class="panel">
+      <section id="auditSection" class="content-section">
+        <section class="panel">
           <div class="panel-head"><h3>Audit trail</h3><span class="muted">Recent administrative and operational activity.</span></div>
           <div id="auditList" class="list-box"></div>
         </section>

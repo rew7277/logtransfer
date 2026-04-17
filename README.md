@@ -1,46 +1,20 @@
-# ObserveX Enterprise Workspace
+# ObserveX
 
-A generic log observability starter for all systems.
+Updated SaaS-style observability workspace with:
+- separate landing, sign-in, and create-account pages
+- multi-file log upload and multiline parsing
+- S3 and API connectors
+- background ingestion worker queue
+- saved dashboards
+- invites, email verification, reset password
+- SMTP-ready email sending
+- PostgreSQL package scaffold in requirements for next deployment step
+- wildcard subdomain-ready org slug model
 
-## What is included
-- shared workspace login
-- self-service organization creation
-- organization slug for future `company.vewit.com`
-- roles: admin, manager, developer, tester
-- admin-created user accounts inside an organization
-- optional admin-only mode
-- multiline-safe parser for Mule-style logs
-- upload + searchable log explorer
-- full log detail modal
-- AWS S3 test/save
-- API test/save
-- ingestion jobs with run-now
-- alert rules
-- audit trail
-- theme modes: black, white, green
-- SQLite persistence
-- APScheduler hook for basic scheduled polling
-
-## Demo login
-- Email: `admin@vewit.local`
-- Password: `admin123`
-
-## Run locally
-```bash
-pip install -r requirements.txt
-python app.py
-```
-
-Open `http://localhost:8080`
+## Environment
+- `SECRET_KEY`
+- `PUBLIC_BASE_URL`
+- `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_FROM`
 
 ## Notes
-- This is a strong starter, not a full production platform yet.
-- For production, move to PostgreSQL, background workers, stronger RBAC, and real subdomain routing.
-
-
-## New in this update
-- public landing website at the top of the product
-- feature-rich hero section with animations
-- screenshot-based product preview image
-- create account and sign in directly from the website
-- feature sections for uploads, S3, API, jobs, alerts, users, themes, and audit trail
+SQLite is still the default embedded database. `psycopg[binary]` is included as the next step toward PostgreSQL deployment.

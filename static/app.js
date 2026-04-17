@@ -52,8 +52,6 @@ function applyOrgTheme() {
   $('orgSlug').textContent = org.slug;
   $('currentUserName').textContent = user.name;
   $('currentUserRole').textContent = user.role;
-  const workspaceMeta = $('workspaceMeta');
-  if (workspaceMeta) workspaceMeta.textContent = org.workspace_url || `${org.slug}.observex.in`;
   $('userOrgName').value = org.name;
 
   const orgForm = $('orgForm');
@@ -242,6 +240,7 @@ async function fetchBootstrap() {
   renderAudit();
   renderInvitations();
   renderDashboards();
+  renderRuns();
 }
 
 function renderInvitations() {
@@ -309,10 +308,10 @@ async function showLogDetail(id) {
   $('logModal').showModal();
 }
 
-async function uploadFile(file) {
+async function uploadFiles(files) {
   const formData = new FormData();
-  formData.append('file', file);
-  $('uploadStatus').textContent = `Parsing ${file.name} and storing it for this organization...`;
+  Array.from(files).forEach(file => formData.append('files', file));
+  $('uploadStatus').textContent = `Parsing ${files.length} file(s) and storing them for this organization...`;
   const response = await fetch('/api/upload', { method: 'POST', body: formData });
   const data = await response.json();
   if (!response.ok) {
@@ -466,8 +465,8 @@ function bindEvents() {
     if (row) showLogDetail(row.dataset.id);
   });
   $('logFileInput').addEventListener('change', (e) => {
-    const file = e.target.files?.[0];
-    if (file) uploadFile(file);
+    const files = e.target.files;
+    if (files && files.length) uploadFiles(files);
   });
   $('createUserBtn').addEventListener('click', handleCreateUser);
   $('saveOrgBtn').addEventListener('click', handleSaveOrg);
@@ -508,7 +507,7 @@ window.addEventListener('DOMContentLoaded', () => {
   });
   const saveBtn = $('saveDashboardBtn');
   if (saveBtn) saveBtn.addEventListener('click', async () => {
-    const name = $('dashboardName').value.trim();
+    const name = ($('dashboardName')?.value || '').trim();
     const payload = {name, config:{section: document.querySelector('.nav-link.active')?.dataset.section || 'overviewSection'}};
     const res = await fetch('/api/dashboards', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)});
     const data = await res.json();

@@ -7,6 +7,10 @@ import os
 import re
 import secrets
 import sqlite3
+import smtplib
+import threading
+from email.message import EmailMessage
+from queue import Queue
 from collections import Counter
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -70,6 +74,8 @@ DEFAULT_THEME_COLORS = {
 }
 
 scheduler: BackgroundScheduler | None = None
+INGESTION_QUEUE: Queue[int] = Queue()
+worker_thread: threading.Thread | None = None
 
 
 # ----------------------------- DB helpers -----------------------------
@@ -112,12 +118,52 @@ def row_to_dict(row: sqlite3.Row | None) -> dict[str, Any] | None:
     return dict(row) if row else None
 
 
+def request_payload() -> dict[str, Any]:
+    data = request.get_json(silent=True)
+    if isinstance(data, dict):
+        return data
+    if request.form:
+        return request.form.to_dict()
+    return {}
+
+
+def send_email_message(subject: str, to_email: str, body_text: str) -> None:
+    host = os.environ.get("SMTP_HOST")
+    port = int(os.environ.get("SMTP_PORT", "587"))
+    username = os.environ.get("SMTP_USER")
+    password = os.environ.get("SMTP_PASSWORD")
+    sender = os.environ.get("SMTP_FROM", username or "noreply@observex.in")
+    if not host:
+        return
+    msg = EmailMessage()
+    msg["Subject"] = subject
+    msg["From"] = sender
+    msg["To"] = to_email
+    msg.set_content(body_text)
+    with smtplib.SMTP(host, port, timeout=20) as smtp:
+        smtp.starttls()
+        if username and password:
+            smtp.login(username, password)
+        smtp.send_message(msg)
+
+
 def public_base_url() -> str:
     return os.environ.get('PUBLIC_BASE_URL', 'https://observex.in').rstrip('/')
 
 
 def org_public_url(slug: str) -> str:
     return f"https://{slug}.observex.in"
+
+
+def create_verification_token(user_id: int) -> str:
+    db = get_db()
+    token = secrets.token_urlsafe(24)
+    db.execute(
+        "INSERT INTO verification_tokens (user_id, token, status, created_at, expires_at) VALUES (?, ?, 'pending', ?, ?)",
+        (user_id, token, iso_now(), (datetime.now(timezone.utc) + timedelta(days=2)).isoformat()),
+    )
+    db.commit()
+    return token
 
 
 def init_db() -> None:
@@ -225,6 +271,73 @@ def init_db() -> None:
             FOREIGN KEY(user_id) REFERENCES users(id)
         );
 
+        CREATE TABLE IF NOT EXISTS invitations (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            org_id INTEGER NOT NULL,
+            email TEXT NOT NULL,
+            role TEXT NOT NULL,
+            token TEXT NOT NULL UNIQUE,
+            status TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            expires_at TEXT NOT NULL,
+            created_by INTEGER,
+            FOREIGN KEY(org_id) REFERENCES organizations(id),
+            FOREIGN KEY(created_by) REFERENCES users(id)
+        );
+
+        CREATE TABLE IF NOT EXISTS verification_tokens (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            token TEXT NOT NULL UNIQUE,
+            status TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            expires_at TEXT NOT NULL,
+            FOREIGN KEY(user_id) REFERENCES users(id)
+        );
+
+        CREATE TABLE IF NOT EXISTS password_resets (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            token TEXT NOT NULL UNIQUE,
+            status TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            expires_at TEXT NOT NULL,
+            FOREIGN KEY(user_id) REFERENCES users(id)
+        );
+
+        CREATE TABLE IF NOT EXISTS saved_dashboards (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            org_id INTEGER NOT NULL,
+            user_id INTEGER NOT NULL,
+            name TEXT NOT NULL,
+            config_json TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            FOREIGN KEY(org_id) REFERENCES organizations(id),
+            FOREIGN KEY(user_id) REFERENCES users(id)
+        );
+
+        CREATE TABLE IF NOT EXISTS demo_requests (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            company TEXT,
+            email TEXT NOT NULL,
+            message TEXT,
+            created_at TEXT NOT NULL
+        );
+
+        CREATE TABLE IF NOT EXISTS ingestion_runs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            org_id INTEGER NOT NULL,
+            job_id INTEGER NOT NULL,
+            status TEXT NOT NULL,
+            message TEXT,
+            record_count INTEGER NOT NULL DEFAULT 0,
+            created_at TEXT NOT NULL,
+            completed_at TEXT,
+            FOREIGN KEY(org_id) REFERENCES organizations(id),
+            FOREIGN KEY(job_id) REFERENCES ingestion_jobs(id)
+        );
+
         CREATE INDEX IF NOT EXISTS idx_logs_org_ts ON log_events(org_id, timestamp DESC);
         CREATE INDEX IF NOT EXISTS idx_logs_org_level ON log_events(org_id, level);
         CREATE INDEX IF NOT EXISTS idx_integrations_org ON integrations(org_id);
@@ -252,31 +365,6 @@ def init_db() -> None:
             (org_id, "Platform Admin", "admin@vewit.local", generate_password_hash("admin123"), "admin", now, 1),
         )
         admin_id = db.execute("SELECT id FROM users WHERE email = ?", ("admin@vewit.local",)).fetchone()[0]
-        seed_integrations = [
-            (org_id, "s3", "Production Archive", "healthy", json.dumps({"bucket": "vewit-prod-logs", "region": "ap-south-1", "prefix": "apps/"}), now, now),
-            (org_id, "api", "Partner Event API", "configured", json.dumps({"url": "https://api.example.com/logs", "method": "GET"}), now, now),
-        ]
-        db.executemany(
-            "INSERT INTO integrations (org_id, kind, name, status, settings_json, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
-            seed_integrations,
-        )
-        seed_jobs = [
-            (org_id, None, "Nightly S3 Sync", "s3", "scheduled", "0 */6 * * *", None, None, json.dumps({"mode": "incremental", "retention": "90d"}), now),
-            (org_id, None, "API Poller", "api", "paused", "*/15 * * * *", None, None, json.dumps({"batch_size": 500, "timeout_sec": 20}), now),
-        ]
-        db.executemany(
-            "INSERT INTO ingestion_jobs (org_id, integration_id, name, source_type, status, schedule, last_run_at, next_run_at, details_json, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            seed_jobs,
-        )
-        seed_alerts = [
-            (org_id, "High error rate", "sev2", "error rate > 5% over 5m", "active", "Slack", now),
-            (org_id, "Ingestion stalled", "sev1", "no logs received for 5m", "active", "PagerDuty", now),
-            (org_id, "SLA breach spike", "sev2", "slow requests > 50 in 10m", "draft", "Email", now),
-        ]
-        db.executemany(
-            "INSERT INTO alert_rules (org_id, name, severity, condition_text, status, channel, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
-            seed_alerts,
-        )
         db.execute(
             "INSERT INTO audit_events (org_id, user_id, action, target_type, target_id, detail_json, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
             (org_id, admin_id, "seeded_demo_workspace", "workspace", str(org_id), json.dumps({"email": "admin@vewit.local"}), now),
@@ -737,6 +825,49 @@ def run_ingestion_job_internal(user: dict[str, Any], job_id: int) -> tuple[bool,
     return True, f"Job ran successfully and ingested {len(records)} records.", len(records)
 
 
+def ingestion_worker() -> None:
+    while True:
+        job_id = INGESTION_QUEUE.get()
+        conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
+        try:
+            job = conn.execute("SELECT * FROM ingestion_jobs WHERE id = ?", (job_id,)).fetchone()
+            if not job:
+                continue
+            user_row = conn.execute(
+                "SELECT u.id, u.org_id, u.role, o.slug, o.name AS org_name, o.theme_color, o.theme_mode, o.logo_text, o.admin_only, u.email, u.name FROM users u JOIN organizations o ON o.id = u.org_id WHERE u.org_id = ? ORDER BY CASE WHEN u.role='admin' THEN 0 ELSE 1 END, u.id LIMIT 1",
+                (job["org_id"],),
+            ).fetchone()
+            run_id = conn.execute("INSERT INTO ingestion_runs (org_id, job_id, status, message, record_count, created_at) VALUES (?, ?, 'queued', ?, 0, ?)", (job["org_id"], job_id, 'Queued for execution.', iso_now())).lastrowid
+            conn.commit()
+            if user_row:
+                with app.app_context():
+                    g.db = sqlite3.connect(DB_PATH)
+                    g.db.row_factory = sqlite3.Row
+                    g.db.execute("UPDATE ingestion_runs SET status = 'running', message = ? WHERE id = ?", ('Running background ingestion.', run_id))
+                    g.db.commit()
+                    try:
+                        success, message, count = run_ingestion_job_internal(dict(user_row), job_id)
+                        g.db.execute("UPDATE ingestion_runs SET status = ?, message = ?, record_count = ?, completed_at = ? WHERE id = ?", ('completed' if success else 'failed', message, count, iso_now(), run_id))
+                        g.db.commit()
+                    except Exception as exc:
+                        g.db.execute("UPDATE ingestion_runs SET status = 'failed', message = ?, completed_at = ? WHERE id = ?", (str(exc), iso_now(), run_id))
+                        g.db.commit()
+                    finally:
+                        close_db(None)
+        finally:
+            conn.close()
+            INGESTION_QUEUE.task_done()
+
+
+def start_worker() -> None:
+    global worker_thread
+    if worker_thread is not None:
+        return
+    worker_thread = threading.Thread(target=ingestion_worker, daemon=True, name='observex-ingestion-worker')
+    worker_thread.start()
+
+
 def scheduler_tick() -> None:
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
@@ -810,7 +941,7 @@ def workspace():
 
 @app.post("/login")
 def login():
-    payload = request.get_json(force=True)
+    payload = request_payload()
     email = (payload.get("email") or "").strip().lower()
     password = payload.get("password") or ""
     db = get_db()
@@ -837,7 +968,7 @@ def login():
 
 @app.post("/register")
 def register_org_and_admin():
-    payload = request.get_json(force=True)
+    payload = request_payload()
     org_name = (payload.get("organization_name") or "").strip()
     admin_name = (payload.get("name") or "").strip()
     email = (payload.get("email") or "").strip().lower()
@@ -869,13 +1000,20 @@ def register_org_and_admin():
     org_id = cur.lastrowid
     user_cur = db.execute(
         "INSERT INTO users (org_id, name, email, password_hash, role, created_at, email_verified) VALUES (?, ?, ?, ?, ?, ?, ?)",
-        (org_id, admin_name, email, generate_password_hash(password), "admin", now),
+        (org_id, admin_name, email, generate_password_hash(password), "admin", now, 0),
     )
     db.commit()
-    session["user_id"] = user_cur.lastrowid
+    user_id = user_cur.lastrowid
+    token = create_verification_token(user_id)
+    verify_url = f"{public_base_url()}/verify-email/{token}"
+    try:
+        send_email_message("Verify your ObserveX workspace email", email, f"Hello {admin_name},\n\nVerify your email to activate the workspace: {verify_url}\n\nWorkspace URL: {org_public_url(slug)}")
+    except Exception:
+        pass
+    session["user_id"] = user_id
     session["csrf"] = secrets.token_hex(16)
-    audit(org_id, user_cur.lastrowid, "created_workspace", "organization", str(org_id), {"slug": slug, "email": email, "theme_mode": theme_mode})
-    return jsonify({"message": "Workspace created successfully.", "slug": slug, "verify_url": f"/verify-email/{token}", "workspace_url": org_public_url(slug)})
+    audit(org_id, user_id, "created_workspace", "organization", str(org_id), {"slug": slug, "email": email, "theme_mode": theme_mode})
+    return jsonify({"message": "Workspace created successfully.", "slug": slug, "verify_url": verify_url, "workspace_url": org_public_url(slug)})
 
 
 @app.post("/logout")
@@ -921,6 +1059,11 @@ def bootstrap():
         item["details"] = json.loads(item.pop("details_json"))
     for item in audit_events:
         item["detail"] = json.loads(item.pop("detail_json"))
+    invitations = [dict(row) for row in db.execute("SELECT id, email, role, token, status, created_at, expires_at FROM invitations WHERE org_id = ? ORDER BY id DESC LIMIT 20", (user["org_id"],)).fetchall()]
+    dashboards = [dict(row) for row in db.execute("SELECT id, name, config_json, created_at FROM saved_dashboards WHERE org_id = ? ORDER BY id DESC", (user["org_id"],)).fetchall()]
+    runs = [dict(row) for row in db.execute("SELECT id, job_id, status, message, record_count, created_at, completed_at FROM ingestion_runs WHERE org_id = ? ORDER BY id DESC LIMIT 20", (user["org_id"],)).fetchall()]
+    for item in dashboards:
+        item["config"] = json.loads(item.pop("config_json"))
     return jsonify({
         "user": user,
         "organization": {
@@ -990,39 +1133,50 @@ def upload_logs():
     user, error = require_auth()
     if error:
         return error
-    if "file" not in request.files:
+    files = request.files.getlist("files") or request.files.getlist("file")
+    if not files:
         return jsonify({"error": "No file uploaded."}), 400
 
-    file = request.files["file"]
-    filename = safe_filename(file.filename or "upload.log")
-    raw = file.read()
-    try:
-        text = raw.decode("utf-8")
-    except UnicodeDecodeError:
-        text = raw.decode("latin-1", errors="ignore")
-
-    records = parse_text_by_extension(filename, text)
-    if not records:
-        return jsonify({"error": "No log records could be parsed from this file."}), 400
-
+    all_records: list[dict[str, Any]] = []
+    filenames: list[str] = []
     db = get_db()
     now = iso_now()
-    cur = db.execute(
-        "INSERT INTO uploads (org_id, user_id, filename, total_records, created_at) VALUES (?, ?, ?, ?, ?)",
-        (user["org_id"], user["id"], filename, len(records), now),
-    )
-    upload_id = cur.lastrowid
-    db.executemany(
-        "INSERT INTO log_events (org_id, upload_id, timestamp, level, source, event_id, message, payload_json, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-        [(
-            user["org_id"], upload_id, record["timestamp"], record["level"], record["source"], record.get("event_id") or "", record["message"], json.dumps(record.get("payload", {})), now
-        ) for record in records],
-    )
+
+    for file in files:
+        if not file or not (file.filename or '').strip():
+            continue
+        filename = safe_filename(file.filename or "upload.log")
+        filenames.append(filename)
+        raw = file.read()
+        try:
+            text = raw.decode("utf-8")
+        except UnicodeDecodeError:
+            text = raw.decode("latin-1", errors="ignore")
+        records = parse_text_by_extension(filename, text)
+        if not records:
+            continue
+        cur = db.execute(
+            "INSERT INTO uploads (org_id, user_id, filename, total_records, created_at) VALUES (?, ?, ?, ?, ?)",
+            (user["org_id"], user["id"], filename, len(records), now),
+        )
+        upload_id = cur.lastrowid
+        db.executemany(
+            "INSERT INTO log_events (org_id, upload_id, timestamp, level, source, event_id, message, payload_json, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            [
+                (user["org_id"], upload_id, record["timestamp"], record["level"], record["source"], record.get("event_id") or "", record["message"], json.dumps(record.get("payload", {})), now)
+                for record in records
+            ],
+        )
+        audit(user["org_id"], user["id"], "uploaded_logs", "upload", str(upload_id), {"filename": filename, "records": len(records)})
+        all_records.extend(records)
+
     db.commit()
-    audit(user["org_id"], user["id"], "uploaded_logs", "upload", str(upload_id), {"filename": filename, "records": len(records)})
+    if not all_records:
+        return jsonify({"error": "No log records could be parsed from the uploaded files."}), 400
     return jsonify({
-        "filename": filename,
-        "summary": summarize(records),
+        "filename": ", ".join(filenames),
+        "files_uploaded": len(filenames),
+        "summary": summarize(all_records),
         "dashboard": dashboard_summary(user["org_id"]),
     })
 
@@ -1032,7 +1186,7 @@ def create_user():
     user, error = require_admin()
     if error:
         return error
-    payload = request.get_json(force=True)
+    payload = request_payload()
     email = (payload.get("email") or "").strip().lower()
     name = (payload.get("name") or "").strip()
     password = payload.get("password") or ""
@@ -1059,7 +1213,7 @@ def add_integration():
     user, error = require_admin()
     if error:
         return error
-    payload = request.get_json(force=True)
+    payload = request_payload()
     kind = payload.get("kind")
     if kind not in {"s3", "api"}:
         return jsonify({"error": "Unsupported integration kind."}), 400
@@ -1079,7 +1233,7 @@ def add_alert():
     user, error = require_admin()
     if error:
         return error
-    payload = request.get_json(force=True)
+    payload = request_payload()
     now = iso_now()
     db = get_db()
     cur = db.execute(
@@ -1096,7 +1250,7 @@ def add_job():
     user, error = require_admin()
     if error:
         return error
-    payload = request.get_json(force=True)
+    payload = request_payload()
     now = iso_now()
     db = get_db()
     source_type = payload.get("source_type") or "api"
@@ -1115,9 +1269,9 @@ def run_job(job_id: int):
     user, error = require_admin()
     if error:
         return error
-    success, message, count = run_ingestion_job_internal(user, job_id)
-    status = 200 if success else 400
-    return jsonify({"message": message, "count": count, "success": success}), status
+    INGESTION_QUEUE.put(job_id)
+    audit(user["org_id"], user["id"], "queued_ingestion_job", "job", str(job_id), {})
+    return jsonify({"message": "Job queued. Background worker will ingest records shortly.", "queued": True, "success": True})
 
 
 @app.post("/api/org")
@@ -1125,7 +1279,7 @@ def update_org():
     user, error = require_admin()
     if error:
         return error
-    payload = request.get_json(force=True)
+    payload = request_payload()
     slug = slugify(payload.get("slug") or user["slug"])
     theme_mode = (payload.get("theme_mode") or user["theme_mode"] or "white").lower()
     if theme_mode not in VALID_THEMES:
@@ -1149,7 +1303,7 @@ def test_s3():
     _, error = require_auth()
     if error:
         return error
-    payload = request.get_json(force=True)
+    payload = request_payload()
     if boto3 is None:
         return jsonify({"success": False, "message": "boto3 is not installed in this environment."}), 500
     try:
@@ -1177,7 +1331,7 @@ def test_api():
     _, error = require_auth()
     if error:
         return error
-    payload = request.get_json(force=True)
+    payload = request_payload()
     if requests is None:
         return jsonify({"success": False, "message": "requests is not installed in this environment."}), 500
     url = payload.get("url")
@@ -1238,7 +1392,7 @@ def create_invitation():
     user, error = require_admin()
     if error:
         return error
-    payload = request.get_json(force=True)
+    payload = request_payload()
     email = (payload.get("email") or "").strip().lower()
     role = (payload.get("role") or "developer").strip().lower()
     if not email:
@@ -1252,12 +1406,16 @@ def create_invitation():
     cur = db.execute("INSERT INTO invitations (org_id, email, role, token, status, created_at, expires_at, created_by) VALUES (?, ?, ?, ?, 'pending', ?, ?, ?)", (user["org_id"], email, role, token, now, expires_at, user["id"]))
     db.commit()
     invite_url = f"{public_base_url()}/accept-invite/{token}"
+    try:
+        send_email_message("You have been invited to ObserveX", email, f"Join the workspace using this link: {invite_url}")
+    except Exception:
+        pass
     audit(user["org_id"], user["id"], "created_invitation", "invitation", str(cur.lastrowid), {"email": email, "role": role})
     return jsonify({"message": "Invitation created.", "invite_url": invite_url})
 
 @app.post("/api/invitations/accept")
 def accept_invitation():
-    payload = request.get_json(force=True)
+    payload = request_payload()
     token = payload.get("token") or ""
     name = (payload.get("name") or "").strip()
     password = payload.get("password") or ""
@@ -1278,7 +1436,7 @@ def accept_invitation():
 
 @app.post("/api/password/forgot")
 def forgot_password():
-    payload = request.get_json(force=True)
+    payload = request_payload()
     email = (payload.get("email") or "").strip().lower()
     db = get_db()
     user = db.execute("SELECT id FROM users WHERE lower(email) = ?", (email,)).fetchone()
@@ -1288,11 +1446,16 @@ def forgot_password():
     now = iso_now()
     db.execute("INSERT INTO password_resets (user_id, token, status, created_at, expires_at) VALUES (?, ?, 'pending', ?, ?)", (user["id"], token, now, (datetime.now(timezone.utc) + timedelta(hours=4)).isoformat()))
     db.commit()
-    return jsonify({"message": "Reset link created.", "reset_url": f"{public_base_url()}/reset-password/{token}"})
+    reset_url = f"{public_base_url()}/reset-password/{token}"
+    try:
+        send_email_message("Reset your ObserveX password", email, f"Use this link to reset your password: {reset_url}")
+    except Exception:
+        pass
+    return jsonify({"message": "Reset link created.", "reset_url": reset_url})
 
 @app.post("/api/password/reset")
 def reset_password():
-    payload = request.get_json(force=True)
+    payload = request_payload()
     token = payload.get("token") or ""
     password = payload.get("password") or ""
     db = get_db()
@@ -1309,7 +1472,7 @@ def save_dashboard():
     user, error = require_auth()
     if error:
         return error
-    payload = request.get_json(force=True)
+    payload = request_payload()
     name = (payload.get("name") or "").strip()
     if not name:
         return jsonify({"error": "Dashboard name is required."}), 400
@@ -1321,7 +1484,7 @@ def save_dashboard():
 
 @app.post("/api/demo-request")
 def demo_request():
-    payload = request.get_json(force=True)
+    payload = request_payload()
     name = (payload.get("name") or "").strip()
     email = (payload.get("email") or "").strip().lower()
     company = (payload.get("company") or "").strip()
@@ -1336,6 +1499,8 @@ def demo_request():
 if __name__ == "__main__":
     init_db()
     start_scheduler()
+    start_worker()
+    start_worker()
     port = int(os.environ.get("PORT", 8080))
     app.run(host="0.0.0.0", port=port, debug=True)
 else:
