@@ -235,7 +235,7 @@ def init_db() -> None:
         now = iso_now()
         db.execute(
             "INSERT INTO organizations (name, slug, theme_color, theme_mode, logo_text, admin_only, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
-            ("Vewit", "vewit", DEFAULT_THEME_COLORS["black"], "black", "VX", 0, now),
+            ("Vewit", "vewit", DEFAULT_THEME_COLORS["white"], "white", "VX", 0, now),
         )
         org_id = db.execute("SELECT id FROM organizations WHERE slug = ?", ("vewit",)).fetchone()[0]
         db.execute(
