@@ -1,3 +1,348 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Sign in | ObserveX</title><link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}"></head>
-<body class="login-body theme-white auth-page-body"><main class="auth-page-shell auth-page-shell-tight single-focus"><section class="login-panel auth-page-form-panel"><a class="site-brand auth-page-brand" href="/"><span class="site-brand-badge">OX</span><span><strong>ObserveX</strong><small>Enterprise observability</small></span></a><div class="eyebrow">Sign in</div><h2 class="auth-form-title">Access your workspace</h2><p class="muted auth-copy-muted">Use your organization account to access uploads, dashboards, integrations, jobs, alerts, and team controls.</p><form class="form-grid" id="loginForm"><div><label>Email</label><input type="email" name="email" value="admin@vewit.local" required></div><div><label>Password</label><input type="password" name="password" value="admin123" required></div><button class="primary-btn wide" type="submit">Sign in</button></form><div id="loginResult" class="result-box">Use your workspace account. If email verification is enabled, verify first.</div><div class="auth-page-links"><a href="/forgot-password">Forgot password?</a><span class="dot-sep">•</span><a href="/create-account">Create workspace</a></div></section></main><script>const f=document.getElementById('loginForm');const box=document.getElementById('loginResult');f.addEventListener('submit',async(e)=>{e.preventDefault();box.textContent='Signing in...';const payload=Object.fromEntries(new FormData(f).entries());try{const r=await fetch('/login',{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify(payload)});const d=await r.json();if(!r.ok)throw new Error(d.error||'Unable to sign in.');window.location.href='/workspace';}catch(err){box.textContent=err.message;}});</script></body></html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sign in — ObserveX</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:      #04091a;
+      --panel:   #080f20;
+      --border:  rgba(255,255,255,0.07);
+      --text:    #e2eaff;
+      --muted:   #7a8fb5;
+      --primary: #4f7cff;
+      --error:   #f87171;
+      --success: #34d399;
+    }
+
+    html, body { height: 100%; }
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background: var(--bg); color: var(--text);
+      display: grid; grid-template-columns: 1fr 1fr; min-height: 100vh;
+    }
+
+    /* ── Left panel: brand + feature highlights ── */
+    .auth-left {
+      background: linear-gradient(135deg, #050d22 0%, #080f28 60%, #0a1535 100%);
+      border-right: 1px solid var(--border);
+      display: flex; flex-direction: column; justify-content: space-between;
+      padding: 48px; position: relative; overflow: hidden;
+    }
+    .auth-left::before {
+      content: '';
+      position: absolute; inset: 0; z-index: 0;
+      background-image: radial-gradient(circle, rgba(79,124,255,0.1) 1px, transparent 1px);
+      background-size: 24px 24px;
+    }
+    .auth-left-orb {
+      position: absolute; border-radius: 50%; pointer-events: none; z-index: 0;
+      filter: blur(80px); opacity: 0.3;
+      width: 400px; height: 400px; background: #1a3aff; bottom: -80px; left: -80px;
+    }
+    .auth-left > * { position: relative; z-index: 1; }
+
+    .brand-link {
+      display: inline-flex; align-items: center; gap: 14px;
+      text-decoration: none; color: var(--text);
+    }
+    .brand-mark {
+      width: 44px; height: 44px; border-radius: 13px;
+      background: linear-gradient(135deg, #4f7cff, #2952cc);
+      display: grid; place-items: center;
+      font-family: 'Sora', sans-serif; font-size: 14px; font-weight: 800; color: white;
+      box-shadow: 0 0 24px rgba(79,124,255,0.4);
+    }
+    .brand-text-main { font-family: 'Sora', sans-serif; font-weight: 700; font-size: 18px; }
+    .brand-text-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+    .left-hero { flex: 1; display: flex; flex-direction: column; justify-content: center; padding: 32px 0; }
+    .left-hero h1 {
+      font-family: 'Sora', sans-serif; font-size: clamp(28px, 3vw, 40px);
+      font-weight: 800; letter-spacing: -0.03em; line-height: 1.12;
+      color: #f0f5ff; margin-bottom: 16px;
+    }
+    .left-hero h1 span { color: var(--primary); }
+    .left-hero p { font-size: 15px; color: var(--muted); line-height: 1.65; margin-bottom: 36px; max-width: 360px; }
+
+    .feature-list { display: grid; gap: 16px; }
+    .feature-item {
+      display: flex; align-items: flex-start; gap: 14px;
+    }
+    .feature-item-icon {
+      width: 36px; height: 36px; border-radius: 10px;
+      display: grid; place-items: center; font-size: 16px; flex-shrink: 0;
+      background: rgba(79,124,255,0.12); border: 1px solid rgba(79,124,255,0.2);
+    }
+    .feature-item-text strong { display: block; font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 2px; }
+    .feature-item-text span { font-size: 12px; color: var(--muted); line-height: 1.5; }
+
+    /* Log stream preview at bottom */
+    .left-log-preview {
+      background: rgba(4,9,26,0.7); border: 1px solid var(--border);
+      border-radius: 14px; padding: 14px 16px; overflow: hidden;
+    }
+    .log-line-mini {
+      display: flex; gap: 10px; align-items: baseline; padding: 2px 0;
+      font-family: 'JetBrains Mono', monospace; font-size: 11px;
+      border-bottom: 1px solid rgba(255,255,255,0.03); animation: fadeUp 0.3s ease both;
+    }
+    @keyframes fadeUp { from{opacity:0;transform:translateY(-4px)} to{opacity:1;transform:translateY(0)} }
+    .lm-ts { color: #2d4470; flex-shrink: 0; }
+    .lm-badge { padding: 1px 6px; border-radius: 4px; font-size: 10px; font-weight: 700; flex-shrink: 0; }
+    .lm-error  { background:rgba(248,113,113,0.18); color:#f87171; }
+    .lm-warn   { background:rgba(251,191,36,0.18); color:#fbbf24; }
+    .lm-info   { background:rgba(79,124,255,0.18); color:#88a8ff; }
+    .lm-ok     { background:rgba(52,211,153,0.18); color:#34d399; }
+    .lm-msg { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    /* ── Right panel: login form ── */
+    .auth-right {
+      display: flex; align-items: center; justify-content: center;
+      padding: 48px 40px; background: var(--panel);
+    }
+    .auth-form-box { width: min(420px, 100%); }
+
+    .auth-eyebrow {
+      font-size: 11px; font-weight: 700; letter-spacing: 0.1em;
+      text-transform: uppercase; color: var(--primary); margin-bottom: 10px;
+    }
+    .auth-title {
+      font-family: 'Sora', sans-serif; font-size: 28px; font-weight: 700;
+      letter-spacing: -0.025em; color: #f0f5ff; margin-bottom: 8px;
+    }
+    .auth-subtitle { font-size: 14px; color: var(--muted); margin-bottom: 36px; line-height: 1.6; }
+
+    .form-group { margin-bottom: 18px; }
+    .form-label {
+      display: block; font-size: 12px; font-weight: 600; color: var(--muted);
+      text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px;
+    }
+    .form-input {
+      width: 100%; padding: 13px 16px; border-radius: 13px;
+      border: 1px solid rgba(255,255,255,0.1);
+      background: rgba(255,255,255,0.04); color: var(--text);
+      font-family: 'Plus Jakarta Sans', sans-serif; font-size: 14px;
+      transition: all 0.2s; outline: none;
+    }
+    .form-input:focus {
+      border-color: rgba(79,124,255,0.55);
+      background: rgba(79,124,255,0.05);
+      box-shadow: 0 0 0 3px rgba(79,124,255,0.12);
+    }
+    .form-input::placeholder { color: #2d4470; }
+
+    .form-input-row { display: flex; align-items: stretch; gap: 0; position: relative; }
+    .pw-toggle {
+      position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
+      background: transparent; border: none; cursor: pointer; color: var(--muted);
+      font-size: 16px; padding: 4px;
+      transition: color 0.2s;
+    }
+    .pw-toggle:hover { color: var(--text); }
+
+    .form-footer-row {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 24px;
+    }
+    .form-link { font-size: 13px; color: var(--primary); transition: opacity 0.2s; }
+    .form-link:hover { opacity: 0.75; }
+
+    .btn-submit {
+      width: 100%; padding: 14px; border-radius: 13px; border: none; cursor: pointer;
+      background: linear-gradient(135deg, #4f7cff, #2952cc);
+      color: white; font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 15px; font-weight: 600; letter-spacing: -0.01em;
+      transition: all 0.2s;
+      box-shadow: 0 4px 24px rgba(79,124,255,0.35);
+    }
+    .btn-submit:hover { transform: translateY(-1px); box-shadow: 0 6px 32px rgba(79,124,255,0.5); }
+    .btn-submit:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+    .status-box {
+      margin-top: 16px; padding: 13px 16px; border-radius: 12px;
+      font-size: 13px; display: none; align-items: center; gap: 10px;
+    }
+    .status-box.error   { background: rgba(248,113,113,0.1); border: 1px solid rgba(248,113,113,0.25); color: var(--error); display: flex; }
+    .status-box.success { background: rgba(52,211,153,0.1); border: 1px solid rgba(52,211,153,0.25); color: var(--success); display: flex; }
+    .status-box.loading { background: rgba(79,124,255,0.1); border: 1px solid rgba(79,124,255,0.2); color: #88a8ff; display: flex; }
+
+    .auth-divider { border: none; border-top: 1px solid var(--border); margin: 28px 0; }
+    .auth-bottom-links {
+      text-align: center; font-size: 13px; color: var(--muted);
+    }
+    .auth-bottom-links a { color: var(--primary); margin: 0 4px; }
+
+    @media (max-width: 768px) {
+      body { grid-template-columns: 1fr; }
+      .auth-left { display: none; }
+      .auth-right { padding: 40px 24px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Left: brand + features ── -->
+<div class="auth-left">
+  <div class="auth-left-orb"></div>
+
+  <a class="brand-link" href="/">
+    <div class="brand-mark">OX</div>
+    <div>
+      <div class="brand-text-main">ObserveX</div>
+      <div class="brand-text-sub">Enterprise observability</div>
+    </div>
+  </a>
+
+  <div class="left-hero">
+    <h1>Your log operations<br><span>workspace awaits.</span></h1>
+    <p>Sign in to upload files, run ingestion jobs, set alert rules, and collaborate with your team — all in one place.</p>
+
+    <div class="feature-list">
+      <div class="feature-item">
+        <div class="feature-item-icon">📤</div>
+        <div class="feature-item-text">
+          <strong>Drag-and-drop log upload</strong>
+          <span>Drop .log, .json, .csv, or .ndjson files — parsed and indexed in seconds.</span>
+        </div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-item-icon">🔗</div>
+        <div class="feature-item-text">
+          <strong>S3 &amp; API ingestion</strong>
+          <span>Connect to AWS S3 buckets or REST log endpoints with background scheduling.</span>
+        </div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-item-icon">🔔</div>
+        <div class="feature-item-text">
+          <strong>Alerts &amp; dashboards</strong>
+          <span>Set error-rate thresholds and save operational views for your team.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="left-log-preview" id="loginLogPreview">
+    <!-- animated log lines inserted by JS -->
+  </div>
+</div>
+
+<!-- ── Right: login form ── -->
+<div class="auth-right">
+  <div class="auth-form-box">
+    <div class="auth-eyebrow">Workspace sign in</div>
+    <h1 class="auth-title">Welcome back</h1>
+    <p class="auth-subtitle">Sign in to access your organization's workspace, dashboards, and logs.</p>
+
+    <form id="loginForm">
+      <div class="form-group">
+        <label class="form-label" for="loginEmail">Email address</label>
+        <input class="form-input" id="loginEmail" type="email" name="email" placeholder="you@company.com" autocomplete="email" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="loginPassword">Password</label>
+        <div style="position:relative">
+          <input class="form-input" id="loginPassword" type="password" name="password" placeholder="••••••••" autocomplete="current-password" required style="padding-right:48px">
+          <button type="button" class="pw-toggle" id="pwToggle" title="Show password">👁</button>
+        </div>
+      </div>
+
+      <div class="form-footer-row">
+        <span></span>
+        <a class="form-link" href="/forgot-password">Forgot password?</a>
+      </div>
+
+      <button type="submit" class="btn-submit" id="loginSubmit">Sign in →</button>
+    </form>
+
+    <div class="status-box" id="loginStatus"></div>
+
+    <hr class="auth-divider">
+    <div class="auth-bottom-links">
+      No workspace yet? <a href="/create-account">Create one →</a>
+      <br><br>
+      <a href="/" style="color:var(--muted)">← Back to website</a>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Animated log preview ──
+const LOG_LINES = [
+  { ts: '14:22:01', level:'info', cls:'lm-info', msg:'[upload-svc] File payment-jan.log indexed — 1,204 records' },
+  { ts: '14:22:03', level:'warn', cls:'lm-warn', msg:'[db-pool] Connection pool at 90% utilization' },
+  { ts: '14:22:05', level:'error',cls:'lm-error',msg:'[order-svc] Timeout contacting inventory after 10s' },
+  { ts: '14:22:07', level:'ok',  cls:'lm-ok',   msg:'[payment-svc] Transaction TXN-8821 settled OK' },
+  { ts: '14:22:09', level:'info', cls:'lm-info', msg:'[scheduler] Ingestion job #42 queued for S3 bucket' },
+  { ts: '14:22:11', level:'warn', cls:'lm-warn', msg:'[alert-engine] Error rate 6.2% exceeds threshold' },
+  { ts: '14:22:13', level:'ok',  cls:'lm-ok',   msg:'[audit] Admin uploaded access-logs-2025-04.log' },
+];
+
+const preview = document.getElementById('loginLogPreview');
+let li = 0;
+function addLine() {
+  const l = LOG_LINES[li++ % LOG_LINES.length];
+  const el = document.createElement('div');
+  el.className = 'log-line-mini';
+  el.innerHTML = `<span class="lm-ts">${l.ts}</span><span class="lm-badge ${l.cls}">${l.level.toUpperCase()}</span><span class="lm-msg">${l.msg}</span>`;
+  preview.appendChild(el);
+  if (preview.children.length > 5) preview.removeChild(preview.firstChild);
+}
+for (let i = 0; i < 4; i++) addLine();
+setInterval(addLine, 1800);
+
+// ── Password toggle ──
+document.getElementById('pwToggle').addEventListener('click', function() {
+  const inp = document.getElementById('loginPassword');
+  const isText = inp.type === 'text';
+  inp.type = isText ? 'password' : 'text';
+  this.textContent = isText ? '👁' : '🙈';
+});
+
+// ── Login form submit ──
+document.getElementById('loginForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const btn = document.getElementById('loginSubmit');
+  const status = document.getElementById('loginStatus');
+
+  btn.disabled = true; btn.textContent = 'Signing in…';
+  status.className = 'status-box loading'; status.textContent = 'Authenticating…';
+
+  const payload = {
+    email: document.getElementById('loginEmail').value.trim(),
+    password: document.getElementById('loginPassword').value,
+  };
+
+  try {
+    const r = await fetch('/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const d = await r.json();
+
+    if (r.ok) {
+      status.className = 'status-box success';
+      status.textContent = '✓ Signed in — redirecting to workspace…';
+      setTimeout(() => window.location.href = '/workspace', 600);
+    } else {
+      status.className = 'status-box error';
+      status.textContent = d.error || 'Invalid credentials. Please try again.';
+      btn.disabled = false; btn.textContent = 'Sign in →';
+    }
+  } catch {
+    status.className = 'status-box error';
+    status.textContent = 'Network error — please check your connection.';
+    btn.disabled = false; btn.textContent = 'Sign in →';
+  }
+});
+</script>
+</body>
+</html>

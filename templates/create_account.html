@@ -1,3 +1,465 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Create account | ObserveX</title><link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}"></head>
-<body class="login-body theme-white auth-page-body"><main class="auth-page-shell auth-page-shell-tight auth-layout-simple"><section class="login-panel auth-page-form-panel"><a class="site-brand auth-page-brand" href="/"><span class="site-brand-badge">OX</span><span><strong>ObserveX</strong><small>Enterprise observability</small></span></a><div class="eyebrow">Create workspace</div><h2 class="auth-form-title">Start your workspace</h2><p class="muted auth-copy-muted">Create your organization, become the first admin, and invite the rest of the team later.</p><form class="form-grid" id="registerForm"><div class="two-col-form"><div><label>Organization name</label><input type="text" name="organization_name" placeholder="Marq Systems" required></div><div><label>Organization slug</label><input type="text" name="organization_slug" placeholder="marq" required></div></div><div class="two-col-form"><div><label>Your name</label><input type="text" name="name" value="Marq" required></div><div><label>Your email</label><input type="email" name="email" placeholder="admin@yourorg.com" required></div></div><div class="two-col-form"><div><label>Password</label><input type="password" name="password" placeholder="Create password" required></div><div><label>Role</label><select name="role"><option value="admin">Admin</option></select></div></div><input type="hidden" name="theme_mode" value="white"><button class="primary-btn wide" type="submit">Create workspace</button></form><div id="registerResult" class="result-box">New organizations create a workspace here. Existing users should use Sign in.</div><div class="auth-page-links"><a href="/login">Sign in</a><span class="dot-sep">•</span><a href="/">Back to website</a></div></section></main><script>const form=document.getElementById('registerForm');const result=document.getElementById('registerResult');form.addEventListener('submit',async(e)=>{e.preventDefault();result.textContent='Creating workspace...';const payload=Object.fromEntries(new FormData(form).entries());try{const r=await fetch('/register',{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify(payload)});const d=await r.json();if(!r.ok)throw new Error(d.error||'Unable to create workspace.');result.innerHTML=`Workspace created. <a href="/login">Sign in</a> or verify email here: <a href="${d.verify_url}">Verify email</a>`;}catch(err){result.textContent=err.message;}});</script></body></html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Create workspace — ObserveX</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:      #04091a;
+      --panel:   #080f20;
+      --border:  rgba(255,255,255,0.07);
+      --text:    #e2eaff;
+      --muted:   #7a8fb5;
+      --primary: #4f7cff;
+      --error:   #f87171;
+      --success: #34d399;
+    }
+
+    html, body { height: 100%; }
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background: var(--bg); color: var(--text);
+      min-height: 100vh; display: flex; align-items: stretch;
+    }
+
+    /* ── Left rail: steps + brand ── */
+    .auth-left {
+      width: 340px; flex-shrink: 0;
+      background: linear-gradient(160deg, #060e24 0%, #070d1e 100%);
+      border-right: 1px solid var(--border);
+      display: flex; flex-direction: column; justify-content: space-between;
+      padding: 48px 36px; position: relative; overflow: hidden;
+    }
+    .auth-left::before {
+      content: '';
+      position: absolute; inset: 0; z-index: 0;
+      background-image: radial-gradient(circle, rgba(79,124,255,0.1) 1px, transparent 1px);
+      background-size: 24px 24px;
+    }
+    .auth-left-orb {
+      position: absolute; border-radius: 50%; pointer-events: none; z-index: 0;
+      filter: blur(90px); opacity: 0.28;
+      width: 380px; height: 380px; background: #1030e0; top: -80px; right: -120px;
+    }
+    .auth-left > * { position: relative; z-index: 1; }
+
+    .brand-link {
+      display: inline-flex; align-items: center; gap: 12px;
+      text-decoration: none; color: var(--text);
+    }
+    .brand-mark {
+      width: 42px; height: 42px; border-radius: 12px;
+      background: linear-gradient(135deg, #4f7cff, #2952cc);
+      display: grid; place-items: center;
+      font-family: 'Sora', sans-serif; font-size: 13px; font-weight: 800; color: white;
+      box-shadow: 0 0 20px rgba(79,124,255,0.4);
+    }
+    .brand-text-main { font-family: 'Sora', sans-serif; font-weight: 700; font-size: 17px; }
+    .brand-text-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+    .steps-section { flex: 1; display: flex; flex-direction: column; justify-content: center; }
+    .steps-title { font-size: 12px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 28px; }
+    .step-list { display: grid; gap: 0; }
+    .step-item { display: flex; gap: 16px; align-items: flex-start; padding: 16px 0; border-bottom: 1px solid var(--border); }
+    .step-item:last-child { border-bottom: none; }
+    .step-dot {
+      width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0;
+      display: grid; place-items: center; font-size: 13px; font-weight: 700;
+      border: 1px solid rgba(79,124,255,0.3); background: rgba(79,124,255,0.1);
+      color: #88a8ff; transition: all 0.3s;
+    }
+    .step-dot.active { background: var(--primary); border-color: var(--primary); color: white; box-shadow: 0 0 16px rgba(79,124,255,0.4); }
+    .step-dot.done { background: rgba(52,211,153,0.15); border-color: rgba(52,211,153,0.3); color: var(--success); }
+    .step-body strong { display: block; font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 3px; }
+    .step-body span { font-size: 12px; color: var(--muted); line-height: 1.5; }
+
+    .left-bottom p { font-size: 12px; color: var(--muted); line-height: 1.65; }
+    .left-bottom a { color: var(--primary); }
+
+    /* ── Right: form ── */
+    .auth-right {
+      flex: 1; display: flex; align-items: center; justify-content: center;
+      padding: 48px 40px; background: var(--panel);
+      overflow-y: auto;
+    }
+    .auth-form-box { width: min(560px, 100%); }
+
+    .auth-eyebrow {
+      font-size: 11px; font-weight: 700; letter-spacing: 0.1em;
+      text-transform: uppercase; color: var(--primary); margin-bottom: 10px;
+    }
+    .auth-title {
+      font-family: 'Sora', sans-serif; font-size: 28px; font-weight: 700;
+      letter-spacing: -0.025em; color: #f0f5ff; margin-bottom: 8px;
+    }
+    .auth-subtitle { font-size: 14px; color: var(--muted); margin-bottom: 36px; line-height: 1.65; }
+
+    /* Step sections */
+    .form-step { display: none; }
+    .form-step.active { display: block; }
+
+    .form-section-label {
+      font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+      color: var(--muted); margin-bottom: 16px; padding-bottom: 10px;
+      border-bottom: 1px solid var(--border);
+    }
+    .form-grid { display: grid; gap: 16px; margin-bottom: 24px; }
+    .form-row-2 { grid-template-columns: 1fr 1fr; }
+    .form-group { display: grid; gap: 7px; }
+    .form-label {
+      font-size: 12px; font-weight: 600; color: var(--muted);
+      text-transform: uppercase; letter-spacing: 0.06em;
+    }
+    .form-label-hint { font-size: 11px; color: #3a4f70; text-transform: none; letter-spacing: 0; font-weight: 400; margin-left: 6px; }
+    .form-input {
+      width: 100%; padding: 13px 16px; border-radius: 13px;
+      border: 1px solid rgba(255,255,255,0.1);
+      background: rgba(255,255,255,0.04); color: var(--text);
+      font-family: 'Plus Jakarta Sans', sans-serif; font-size: 14px;
+      transition: all 0.2s; outline: none;
+    }
+    .form-input:focus {
+      border-color: rgba(79,124,255,0.55);
+      background: rgba(79,124,255,0.04);
+      box-shadow: 0 0 0 3px rgba(79,124,255,0.1);
+    }
+    .form-input::placeholder { color: #2d4470; }
+    .form-select {
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%237a8fb5' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 14px center;
+      padding-right: 40px;
+    }
+
+    .slug-preview {
+      margin-top: 6px; padding: 8px 12px; border-radius: 10px;
+      background: rgba(79,124,255,0.06); border: 1px solid rgba(79,124,255,0.15);
+      font-size: 12px; color: var(--muted);
+      display: flex; align-items: center; gap: 6px;
+    }
+    .slug-preview span { color: #88a8ff; font-weight: 600; }
+
+    .pw-strength { margin-top: 8px; display: grid; gap: 6px; }
+    .pw-bar-row { display: flex; gap: 4px; }
+    .pw-bar { height: 3px; border-radius: 3px; flex: 1; background: rgba(255,255,255,0.08); transition: all 0.3s; }
+    .pw-bar.filled-weak { background: var(--error); }
+    .pw-bar.filled-fair { background: var(--warn, #fbbf24); }
+    .pw-bar.filled-good { background: #60a5fa; }
+    .pw-bar.filled-strong{ background: var(--success); }
+    .pw-strength-label { font-size: 11px; color: var(--muted); }
+
+    .btn-submit {
+      width: 100%; padding: 14px; border-radius: 13px; border: none; cursor: pointer;
+      background: linear-gradient(135deg, #4f7cff, #2952cc);
+      color: white; font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 15px; font-weight: 600;
+      transition: all 0.2s;
+      box-shadow: 0 4px 24px rgba(79,124,255,0.35);
+    }
+    .btn-submit:hover { transform: translateY(-1px); box-shadow: 0 6px 32px rgba(79,124,255,0.5); }
+    .btn-submit:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+    .btn-back {
+      width: 100%; padding: 13px; border-radius: 13px;
+      background: transparent; border: 1px solid var(--border);
+      color: var(--muted); font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 14px; font-weight: 500; cursor: pointer; margin-top: 10px;
+      transition: all 0.2s;
+    }
+    .btn-back:hover { border-color: rgba(255,255,255,0.15); color: var(--text); }
+
+    .status-box {
+      margin-top: 16px; padding: 13px 16px; border-radius: 12px;
+      font-size: 13px; display: none; align-items: flex-start; gap: 10px; line-height: 1.55;
+    }
+    .status-box.error   { background:rgba(248,113,113,0.1); border:1px solid rgba(248,113,113,0.25); color:var(--error); display:flex; }
+    .status-box.success { background:rgba(52,211,153,0.1); border:1px solid rgba(52,211,153,0.25); color:var(--success); display:flex; }
+    .status-box.loading { background:rgba(79,124,255,0.1); border:1px solid rgba(79,124,255,0.2); color:#88a8ff; display:flex; }
+
+    .auth-divider { border: none; border-top: 1px solid var(--border); margin: 28px 0; }
+    .auth-bottom-links { text-align: center; font-size: 13px; color: var(--muted); }
+    .auth-bottom-links a { color: var(--primary); }
+
+    .info-note {
+      padding: 12px 16px; border-radius: 12px;
+      background: rgba(79,124,255,0.07); border: 1px solid rgba(79,124,255,0.15);
+      font-size: 13px; color: var(--muted); margin-bottom: 20px; line-height: 1.55;
+    }
+    .info-note strong { color: var(--text); }
+
+    @media (max-width: 820px) {
+      .auth-left { display: none; }
+      body { display: block; }
+      .auth-right { min-height: 100vh; }
+    }
+    @media (max-width: 500px) {
+      .form-row-2 { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Left rail ── -->
+<div class="auth-left">
+  <div class="auth-left-orb"></div>
+
+  <a class="brand-link" href="/">
+    <div class="brand-mark">OX</div>
+    <div>
+      <div class="brand-text-main">ObserveX</div>
+      <div class="brand-text-sub">Enterprise observability</div>
+    </div>
+  </a>
+
+  <div class="steps-section">
+    <div class="steps-title">Setup steps</div>
+    <div class="step-list">
+      <div class="step-item">
+        <div class="step-dot active" id="dot-1">1</div>
+        <div class="step-body">
+          <strong>Organization details</strong>
+          <span>Name your workspace and set a unique URL slug.</span>
+        </div>
+      </div>
+      <div class="step-item">
+        <div class="step-dot" id="dot-2">2</div>
+        <div class="step-body">
+          <strong>Admin account</strong>
+          <span>Create the first administrator account for this workspace.</span>
+        </div>
+      </div>
+      <div class="step-item">
+        <div class="step-dot" id="dot-3">3</div>
+        <div class="step-body">
+          <strong>You're in</strong>
+          <span>Sign in and start uploading logs or inviting your team.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="left-bottom">
+    <p>Already have a workspace? <a href="/login">Sign in →</a><br><br>This creates a new workspace where you become the first admin. You can invite teammates afterwards.</p>
+  </div>
+</div>
+
+<!-- ── Right: form ── -->
+<div class="auth-right">
+  <div class="auth-form-box">
+
+    <!-- Step 1: Organization -->
+    <div class="form-step active" id="step1">
+      <div class="auth-eyebrow">Step 1 of 2</div>
+      <h1 class="auth-title">Name your workspace</h1>
+      <p class="auth-subtitle">Your workspace is where your team uploads logs, views dashboards, and manages access. You can change these details later.</p>
+
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label" for="orgName">Organization name</label>
+          <input class="form-input" id="orgName" name="organization_name" placeholder="Acme Engineering" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="orgSlug">
+            Workspace URL slug
+            <span class="form-label-hint">letters, numbers, hyphens only</span>
+          </label>
+          <input class="form-input" id="orgSlug" name="organization_slug" placeholder="acme" required pattern="[a-z0-9-]+" maxlength="40">
+          <div class="slug-preview">Your workspace URL: <span id="slugPreview">acme</span>.observex.in</div>
+        </div>
+      </div>
+
+      <button type="button" class="btn-submit" id="nextBtn">Continue →</button>
+    </div>
+
+    <!-- Step 2: Admin account -->
+    <div class="form-step" id="step2">
+      <div class="auth-eyebrow">Step 2 of 2</div>
+      <h1 class="auth-title">Create admin account</h1>
+      <p class="auth-subtitle">You will be the first administrator. You can invite the rest of the team after signing in.</p>
+
+      <div class="info-note">
+        Creating workspace for: <strong id="orgPreview">—</strong>
+      </div>
+
+      <form id="registerForm">
+        <div class="form-grid form-row-2">
+          <div class="form-group">
+            <label class="form-label" for="adminName">Your name</label>
+            <input class="form-input" id="adminName" name="name" placeholder="Arjun Mehta" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="adminEmail">Work email</label>
+            <input class="form-input" id="adminEmail" type="email" name="email" placeholder="arjun@acme.com" required>
+          </div>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label" for="adminPassword">Password</label>
+            <div style="position:relative">
+              <input class="form-input" id="adminPassword" type="password" name="password" placeholder="Create a strong password" required minlength="8" style="padding-right:48px">
+              <button type="button" id="pwToggle" style="position:absolute;right:14px;top:50%;transform:translateY(-50%);background:transparent;border:none;cursor:pointer;color:var(--muted);font-size:15px;padding:4px;">👁</button>
+            </div>
+            <div class="pw-strength">
+              <div class="pw-bar-row" id="pwBars">
+                <div class="pw-bar" id="bar1"></div>
+                <div class="pw-bar" id="bar2"></div>
+                <div class="pw-bar" id="bar3"></div>
+                <div class="pw-bar" id="bar4"></div>
+              </div>
+              <div class="pw-strength-label" id="pwLabel">Enter a password (min. 8 characters)</div>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="adminRole">Role</label>
+            <select class="form-input form-select" id="adminRole" name="role">
+              <option value="admin">Admin (workspace owner)</option>
+            </select>
+          </div>
+        </div>
+
+        <input type="hidden" name="organization_name" id="hiddenOrgName">
+        <input type="hidden" name="organization_slug" id="hiddenOrgSlug">
+        <input type="hidden" name="theme_mode" value="white">
+
+        <button type="submit" class="btn-submit" id="registerSubmit">Create workspace →</button>
+        <button type="button" class="btn-back" id="backBtn">← Back</button>
+      </form>
+
+      <div class="status-box" id="registerStatus"></div>
+    </div>
+
+    <!-- Step 3: Success -->
+    <div class="form-step" id="step3">
+      <div style="text-align:center;padding:32px 0">
+        <div style="font-size:56px;margin-bottom:20px">🎉</div>
+        <div class="auth-eyebrow" style="justify-content:center">Workspace created</div>
+        <h1 class="auth-title" style="margin-bottom:12px">You're ready to go</h1>
+        <p class="auth-subtitle" style="margin:0 auto;max-width:360px" id="successMsg">Your workspace has been created. Sign in to start uploading logs and inviting your team.</p>
+        <div style="margin-top:32px;display:grid;gap:12px">
+          <a href="/login" class="btn-submit" style="display:block;text-decoration:none;text-align:center;line-height:1">Sign in to workspace →</a>
+        </div>
+      </div>
+    </div>
+
+    <hr class="auth-divider">
+    <div class="auth-bottom-links" id="bottomLinks">
+      Already have a workspace? <a href="/login">Sign in</a>
+      &nbsp;•&nbsp; <a href="/" style="color:var(--muted)">← Website</a>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Slug auto-generate from org name ──
+const orgNameInput = document.getElementById('orgName');
+const orgSlugInput = document.getElementById('orgSlug');
+const slugPreview  = document.getElementById('slugPreview');
+let slugLocked = false;
+
+orgNameInput.addEventListener('input', () => {
+  if (slugLocked) return;
+  const slug = orgNameInput.value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40);
+  orgSlugInput.value = slug;
+  slugPreview.textContent = slug || 'yourorg';
+});
+orgSlugInput.addEventListener('input', () => {
+  slugLocked = true;
+  slugPreview.textContent = orgSlugInput.value || 'yourorg';
+});
+orgSlugInput.addEventListener('focus', () => { slugLocked = true; });
+
+// ── Step navigation ──
+function setStep(n) {
+  document.querySelectorAll('.form-step').forEach((el, i) => el.classList.toggle('active', i + 1 === n));
+  [1,2,3].forEach(i => {
+    const dot = document.getElementById(`dot-${i}`);
+    dot.classList.remove('active','done');
+    if (i < n) dot.classList.add('done'), dot.textContent = '✓';
+    else if (i === n) dot.classList.add('active'), dot.textContent = String(i);
+    else dot.textContent = String(i);
+  });
+  if (n === 3) document.getElementById('bottomLinks').style.display = 'none';
+}
+
+document.getElementById('nextBtn').addEventListener('click', () => {
+  const name = orgNameInput.value.trim();
+  const slug = orgSlugInput.value.trim();
+  if (!name || !slug) { alert('Please fill in both fields.'); return; }
+  if (!/^[a-z0-9-]+$/.test(slug)) { alert('Slug must be lowercase letters, numbers, and hyphens only.'); return; }
+  document.getElementById('orgPreview').textContent = name + ' (' + slug + ')';
+  document.getElementById('hiddenOrgName').value = name;
+  document.getElementById('hiddenOrgSlug').value = slug;
+  setStep(2);
+});
+
+document.getElementById('backBtn').addEventListener('click', () => setStep(1));
+
+// ── Password strength ──
+const pwInput = document.getElementById('adminPassword');
+pwInput.addEventListener('input', () => {
+  const v = pwInput.value;
+  let score = 0;
+  if (v.length >= 8) score++;
+  if (/[A-Z]/.test(v)) score++;
+  if (/[0-9]/.test(v)) score++;
+  if (/[^A-Za-z0-9]/.test(v)) score++;
+  const labels = ['', 'Weak', 'Fair', 'Good', 'Strong'];
+  const classes = ['', 'filled-weak', 'filled-fair', 'filled-good', 'filled-strong'];
+  [1,2,3,4].forEach(i => {
+    const bar = document.getElementById(`bar${i}`);
+    bar.className = 'pw-bar ' + (i <= score ? classes[score] : '');
+  });
+  document.getElementById('pwLabel').textContent = v.length ? (labels[score] || 'Weak') + ' password' : 'Enter a password (min. 8 characters)';
+});
+
+// ── Password toggle ──
+document.getElementById('pwToggle').addEventListener('click', function() {
+  const isText = pwInput.type === 'text';
+  pwInput.type = isText ? 'password' : 'text';
+  this.textContent = isText ? '👁' : '🙈';
+});
+
+// ── Registration submit ──
+document.getElementById('registerForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const btn = document.getElementById('registerSubmit');
+  const status = document.getElementById('registerStatus');
+  btn.disabled = true; btn.textContent = 'Creating workspace…';
+  status.className = 'status-box loading'; status.textContent = 'Setting up your workspace…';
+
+  const payload = Object.fromEntries(new FormData(e.target).entries());
+
+  try {
+    const r = await fetch('/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const d = await r.json();
+
+    if (r.ok) {
+      if (d.verify_url) {
+        document.getElementById('successMsg').innerHTML =
+          'Your workspace is ready. <a href="' + d.verify_url + '" style="color:var(--primary)">Verify your email</a> then sign in.';
+      }
+      setStep(3);
+    } else {
+      status.className = 'status-box error';
+      status.textContent = d.error || 'Something went wrong. Please try again.';
+      btn.disabled = false; btn.textContent = 'Create workspace →';
+    }
+  } catch {
+    status.className = 'status-box error';
+    status.textContent = 'Network error. Please check your connection.';
+    btn.disabled = false; btn.textContent = 'Create workspace →';
+  }
+});
+</script>
+</body>
+</html>

@@ -3,122 +3,898 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ObserveX | Log observability workspace</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
+  <title>ObserveX — Enterprise Log Observability</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #04091a;
+      --bg-2:     #060d1f;
+      --panel:    #0a1428;
+      --panel-2:  #0d1830;
+      --border:   rgba(255,255,255,0.07);
+      --border-2: rgba(79,124,255,0.22);
+      --text:     #e2eaff;
+      --muted:    #7a8fb5;
+      --primary:  #4f7cff;
+      --primary-h:#6b95ff;
+      --success:  #34d399;
+      --error:    #f87171;
+      --warn:     #fbbf24;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── Dot grid background ── */
+    body::before {
+      content: '';
+      position: fixed; inset: 0; z-index: 0;
+      background-image: radial-gradient(circle, rgba(79,124,255,0.12) 1px, transparent 1px);
+      background-size: 28px 28px;
+      pointer-events: none;
+    }
+
+    /* ── Glow orbs ── */
+    .orb {
+      position: fixed; border-radius: 50%; pointer-events: none; z-index: 0;
+      filter: blur(100px); opacity: 0.35;
+    }
+    .orb-1 { width: 600px; height: 600px; background: #1a3aff; top: -120px; left: -120px; }
+    .orb-2 { width: 500px; height: 500px; background: #0a1fff; bottom: 0; right: -80px; }
+
+    a { color: var(--primary); text-decoration: none; }
+    h1, h2, h3, h4 { font-family: 'Sora', sans-serif; }
+    code, .mono { font-family: 'JetBrains Mono', monospace; }
+
+    /* ── NAV ── */
+    .site-nav {
+      position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+      width: min(1280px, calc(100% - 40px));
+      display: flex; align-items: center; gap: 0; justify-content: space-between;
+      z-index: 100;
+      background: rgba(10, 20, 40, 0.75);
+      backdrop-filter: blur(20px) saturate(160%);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 14px 24px;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.4), 0 0 0 1px rgba(79,124,255,0.08);
+    }
+
+    .nav-brand {
+      display: flex; align-items: center; gap: 12px;
+      font-family: 'Sora', sans-serif; font-weight: 700; color: var(--text);
+    }
+    .nav-brand-mark {
+      width: 36px; height: 36px; border-radius: 10px;
+      background: linear-gradient(135deg, #4f7cff, #2952cc);
+      display: grid; place-items: center;
+      font-size: 13px; font-weight: 800; color: white;
+      box-shadow: 0 0 20px rgba(79,124,255,0.4);
+    }
+    .nav-brand-name { font-size: 15px; letter-spacing: -0.01em; }
+    .nav-brand-tag { font-size: 10px; font-weight: 400; color: var(--muted); font-family: 'Plus Jakarta Sans'; }
+
+    .nav-links { display: flex; align-items: center; gap: 4px; }
+    .nav-links a {
+      color: var(--muted); font-size: 14px; font-weight: 500;
+      padding: 8px 14px; border-radius: 10px; transition: all 0.2s;
+    }
+    .nav-links a:hover { color: var(--text); background: rgba(255,255,255,0.06); }
+
+    .nav-actions { display: flex; align-items: center; gap: 10px; }
+    .btn-ghost {
+      padding: 9px 18px; border-radius: 12px; font-size: 14px; font-weight: 500;
+      color: var(--muted); border: 1px solid var(--border); background: transparent;
+      cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px;
+    }
+    .btn-ghost:hover { color: var(--text); border-color: rgba(255,255,255,0.15); }
+    .btn-primary {
+      padding: 9px 20px; border-radius: 12px; font-size: 14px; font-weight: 600;
+      color: white; background: linear-gradient(135deg, #4f7cff, #2952cc);
+      border: 1px solid rgba(79,124,255,0.5); cursor: pointer;
+      transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px;
+      box-shadow: 0 4px 20px rgba(79,124,255,0.3);
+    }
+    .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 28px rgba(79,124,255,0.45); }
+    .btn-primary-lg {
+      padding: 14px 28px; font-size: 15px; border-radius: 14px;
+      box-shadow: 0 6px 28px rgba(79,124,255,0.35);
+    }
+    .btn-ghost-lg {
+      padding: 13px 24px; font-size: 15px; border-radius: 14px;
+    }
+
+    /* ── HERO ── */
+    .hero {
+      position: relative; z-index: 1;
+      min-height: 100vh;
+      display: flex; align-items: center;
+      padding: 120px 20px 60px;
+    }
+    .hero-inner {
+      width: min(1280px, 100%); margin: 0 auto;
+      display: grid; grid-template-columns: 1fr 1fr; gap: 64px; align-items: center;
+    }
+    .hero-eyebrow {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 6px 14px; border-radius: 999px;
+      background: rgba(79,124,255,0.12); border: 1px solid rgba(79,124,255,0.25);
+      font-size: 12px; font-weight: 600; letter-spacing: 0.08em;
+      text-transform: uppercase; color: #88a8ff; margin-bottom: 24px;
+    }
+    .hero-eyebrow-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--primary); animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.4} }
+
+    .hero h1 {
+      font-size: clamp(36px, 5vw, 58px); font-weight: 800;
+      line-height: 1.08; letter-spacing: -0.03em; color: #f0f5ff;
+      margin-bottom: 20px;
+    }
+    .hero h1 span { color: var(--primary); }
+    .hero-lead {
+      font-size: 17px; line-height: 1.65; color: var(--muted); margin-bottom: 32px;
+      max-width: 480px;
+    }
+    .hero-actions { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 48px; }
+    .hero-stats {
+      display: flex; gap: 32px; padding-top: 24px;
+      border-top: 1px solid var(--border);
+    }
+    .hero-stat-num {
+      font-family: 'Sora', sans-serif; font-size: 22px; font-weight: 700; color: var(--text);
+    }
+    .hero-stat-label { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+    /* ── HERO VISUAL ── */
+    .hero-visual {
+      position: relative;
+    }
+    .drop-zone-demo {
+      background: var(--panel);
+      border: 2px dashed rgba(79,124,255,0.35);
+      border-radius: 20px;
+      padding: 32px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s;
+      position: relative; overflow: hidden;
+    }
+    .drop-zone-demo:hover, .drop-zone-demo.drag-over {
+      border-color: var(--primary);
+      background: rgba(79,124,255,0.06);
+      box-shadow: 0 0 40px rgba(79,124,255,0.15), inset 0 0 40px rgba(79,124,255,0.05);
+    }
+    .drop-zone-demo::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: radial-gradient(circle at center, rgba(79,124,255,0.08) 0%, transparent 70%);
+      opacity: 0; transition: opacity 0.3s;
+    }
+    .drop-zone-demo:hover::before, .drop-zone-demo.drag-over::before { opacity: 1; }
+
+    .drop-icon {
+      width: 56px; height: 56px; border-radius: 16px;
+      background: rgba(79,124,255,0.15); border: 1px solid rgba(79,124,255,0.3);
+      display: grid; place-items: center; margin: 0 auto 16px;
+      font-size: 24px;
+    }
+    .drop-title { font-family: 'Sora', sans-serif; font-weight: 600; font-size: 15px; color: var(--text); margin-bottom: 6px; }
+    .drop-sub { font-size: 13px; color: var(--muted); margin-bottom: 20px; }
+    .drop-types {
+      display: flex; gap: 6px; justify-content: center; flex-wrap: wrap;
+    }
+    .drop-badge {
+      padding: 4px 10px; border-radius: 8px; font-size: 11px; font-weight: 600;
+      background: rgba(255,255,255,0.06); border: 1px solid var(--border);
+      color: var(--muted); font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* Log stream preview */
+    .log-stream {
+      margin-top: 16px; padding: 16px;
+      background: rgba(4,9,26,0.8); border: 1px solid var(--border);
+      border-radius: 14px; overflow: hidden; height: 180px;
+    }
+    .log-line {
+      display: flex; gap: 12px; align-items: baseline;
+      padding: 3px 0; font-family: 'JetBrains Mono', monospace; font-size: 11px;
+      animation: slideIn 0.3s ease both;
+      border-bottom: 1px solid rgba(255,255,255,0.03);
+    }
+    @keyframes slideIn { from{opacity:0;transform:translateY(-6px)} to{opacity:1;transform:translateY(0)} }
+    .ll-ts { color: #3d5a8a; white-space: nowrap; }
+    .ll-badge { padding: 1px 7px; border-radius: 4px; font-size: 10px; font-weight: 700; white-space: nowrap; }
+    .ll-error  { background:rgba(248,113,113,0.18); color:#f87171; }
+    .ll-warn   { background:rgba(251,191,36,0.18); color:#fbbf24; }
+    .ll-info   { background:rgba(79,124,255,0.18); color:#88a8ff; }
+    .ll-success{ background:rgba(52,211,153,0.18); color:#34d399; }
+    .ll-msg { color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    /* Upload result overlay */
+    .upload-result {
+      display: none; margin-top: 12px; padding: 12px 16px;
+      background: rgba(52,211,153,0.08); border: 1px solid rgba(52,211,153,0.2);
+      border-radius: 12px; font-size: 13px; color: var(--success); text-align: left;
+    }
+    #heroFileInput { display: none; }
+
+    /* ── SECTIONS ── */
+    section { position: relative; z-index: 1; }
+    .container { width: min(1280px, calc(100% - 40px)); margin: 0 auto; }
+
+    .section-header { text-align: center; margin-bottom: 56px; }
+    .section-eyebrow {
+      display: inline-block; font-size: 11px; font-weight: 700; letter-spacing: 0.12em;
+      text-transform: uppercase; color: var(--primary); margin-bottom: 14px;
+    }
+    .section-header h2 {
+      font-size: clamp(26px, 3vw, 40px); font-weight: 700; letter-spacing: -0.025em;
+      color: #e8f0ff; margin-bottom: 14px; line-height: 1.15;
+    }
+    .section-header p { font-size: 17px; color: var(--muted); max-width: 560px; margin: 0 auto; }
+
+    /* ── DIVIDER ── */
+    .section-divider { border: none; border-top: 1px solid var(--border); margin: 0; }
+
+    /* ── FEATURES ── */
+    .features { padding: 100px 20px; }
+    .feature-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+    .feature-card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 24px 22px;
+      transition: all 0.25s;
+      position: relative; overflow: hidden;
+    }
+    .feature-card::after {
+      content: ''; position: absolute; inset: 0;
+      background: linear-gradient(135deg, rgba(79,124,255,0.06) 0%, transparent 60%);
+      opacity: 0; transition: opacity 0.3s; border-radius: 18px;
+    }
+    .feature-card:hover { border-color: var(--border-2); transform: translateY(-2px); box-shadow: 0 12px 40px rgba(0,0,0,0.3); }
+    .feature-card:hover::after { opacity: 1; }
+
+    .feature-icon {
+      width: 42px; height: 42px; border-radius: 12px;
+      display: grid; place-items: center; font-size: 20px;
+      margin-bottom: 16px;
+    }
+    .feature-card h3 { font-size: 15px; font-weight: 600; margin-bottom: 8px; color: var(--text); }
+    .feature-card p { font-size: 13px; color: var(--muted); line-height: 1.6; }
+
+    /* ── HOW IT WORKS ── */
+    .how-it-works { padding: 100px 20px; background: linear-gradient(180deg, transparent, rgba(10,20,40,0.5), transparent); }
+    .steps { display: grid; grid-template-columns: repeat(3,1fr); gap: 32px; }
+    .step { text-align: center; }
+    .step-num {
+      width: 48px; height: 48px; border-radius: 50%;
+      background: rgba(79,124,255,0.12); border: 1px solid rgba(79,124,255,0.3);
+      display: grid; place-items: center; margin: 0 auto 20px;
+      font-family: 'Sora', sans-serif; font-weight: 700; color: var(--primary);
+    }
+    .step h3 { font-size: 18px; font-weight: 600; margin-bottom: 10px; }
+    .step p { font-size: 14px; color: var(--muted); line-height: 1.65; }
+    .step-connector {
+      display: flex; align-items: center; justify-content: center;
+      padding-top: 24px; color: var(--border);
+    }
+
+    /* ── DRAG-DROP FULL WIDTH ── */
+    .dnd-section { padding: 80px 20px; }
+    .dnd-hero {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 24px; padding: 48px;
+      display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: center;
+    }
+    .dnd-copy h2 { font-size: 32px; font-weight: 700; letter-spacing: -0.025em; margin-bottom: 14px; }
+    .dnd-copy p { color: var(--muted); line-height: 1.65; margin-bottom: 24px; }
+    .dnd-formats { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 24px; }
+    .dnd-format-tag {
+      padding: 5px 12px; border-radius: 8px; font-size: 12px; font-weight: 600;
+      background: rgba(79,124,255,0.1); border: 1px solid rgba(79,124,255,0.2);
+      color: #88a8ff; font-family: 'JetBrains Mono', monospace;
+    }
+    .dnd-zone {
+      border: 2px dashed rgba(79,124,255,0.3); border-radius: 20px;
+      padding: 48px 32px; text-align: center; cursor: pointer;
+      transition: all 0.3s; background: rgba(79,124,255,0.04);
+      position: relative;
+    }
+    .dnd-zone:hover, .dnd-zone.drag-active {
+      border-color: var(--primary);
+      background: rgba(79,124,255,0.08);
+      box-shadow: 0 0 60px rgba(79,124,255,0.12);
+    }
+    .dnd-zone-icon { font-size: 40px; margin-bottom: 14px; display: block; }
+    .dnd-zone h3 { font-size: 18px; font-weight: 600; margin-bottom: 8px; }
+    .dnd-zone p { font-size: 14px; color: var(--muted); margin-bottom: 20px; }
+    .dnd-zone .btn-primary { margin: 0 auto; }
+    #dndFileInput { display: none; }
+    .dnd-result {
+      display: none; margin-top: 16px; padding: 14px 18px;
+      border-radius: 14px; font-size: 14px; text-align: left;
+    }
+    .dnd-result.success { background:rgba(52,211,153,0.08); border:1px solid rgba(52,211,153,0.2); color:var(--success); }
+    .dnd-result.error   { background:rgba(248,113,113,0.08); border:1px solid rgba(248,113,113,0.2); color:var(--error); }
+
+    /* ── PRICING ── */
+    .pricing { padding: 100px 20px; }
+    .pricing-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 20px; }
+    .pricing-card {
+      background: var(--panel); border: 1px solid var(--border);
+      border-radius: 20px; padding: 32px; position: relative; overflow: hidden;
+    }
+    .pricing-card.featured {
+      border-color: rgba(79,124,255,0.35);
+      background: linear-gradient(135deg, rgba(79,124,255,0.08), var(--panel));
+      box-shadow: 0 0 60px rgba(79,124,255,0.1);
+    }
+    .pricing-card.featured::before {
+      content: 'Most popular';
+      position: absolute; top: 20px; right: 20px;
+      padding: 4px 12px; border-radius: 999px; font-size: 11px; font-weight: 700;
+      background: rgba(79,124,255,0.2); border: 1px solid rgba(79,124,255,0.35); color: #88a8ff;
+    }
+    .pricing-tier { font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--primary); margin-bottom: 10px; }
+    .pricing-name { font-size: 22px; font-weight: 700; margin-bottom: 8px; }
+    .pricing-desc { font-size: 13px; color: var(--muted); margin-bottom: 24px; line-height: 1.6; }
+    .pricing-features { list-style: none; display: grid; gap: 10px; margin-bottom: 28px; }
+    .pricing-features li { display: flex; gap: 10px; align-items: baseline; font-size: 13px; color: var(--muted); }
+    .pricing-features li::before { content: '✓'; color: var(--success); font-weight: 700; flex-shrink: 0; }
+
+    /* ── FAQ ── */
+    .faq { padding: 100px 20px; }
+    .faq-list { max-width: 720px; margin: 0 auto; display: grid; gap: 8px; }
+    .faq-item {
+      border: 1px solid var(--border); border-radius: 14px;
+      background: var(--panel); overflow: hidden;
+    }
+    .faq-q {
+      width: 100%; text-align: left; padding: 20px 24px;
+      background: transparent; border: none; cursor: pointer;
+      display: flex; justify-content: space-between; align-items: center; gap: 16px;
+      font-family: 'Plus Jakarta Sans', sans-serif; font-size: 15px; font-weight: 500;
+      color: var(--text); transition: background 0.2s;
+    }
+    .faq-q:hover { background: rgba(255,255,255,0.03); }
+    .faq-icon { font-size: 18px; color: var(--primary); transition: transform 0.3s; flex-shrink: 0; }
+    .faq-item.open .faq-icon { transform: rotate(45deg); }
+    .faq-a {
+      max-height: 0; overflow: hidden; transition: max-height 0.35s ease;
+    }
+    .faq-a-inner { padding: 0 24px 20px; font-size: 14px; color: var(--muted); line-height: 1.7; }
+    .faq-item.open .faq-a { max-height: 300px; }
+
+    /* ── DEMO FORM ── */
+    .demo { padding: 100px 20px; }
+    .demo-box {
+      max-width: 640px; margin: 0 auto;
+      background: var(--panel); border: 1px solid var(--border);
+      border-radius: 24px; padding: 48px;
+    }
+    .demo-form { display: grid; gap: 14px; margin-top: 32px; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .form-group { display: grid; gap: 6px; }
+    .form-label { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+    .form-input {
+      width: 100%; padding: 12px 16px; border-radius: 12px;
+      border: 1px solid var(--border); background: rgba(255,255,255,0.04);
+      color: var(--text); font-family: 'Plus Jakarta Sans', sans-serif; font-size: 14px;
+      transition: all 0.2s; outline: none;
+    }
+    .form-input:focus { border-color: rgba(79,124,255,0.5); background: rgba(79,124,255,0.04); box-shadow: 0 0 0 3px rgba(79,124,255,0.1); }
+    .form-input::placeholder { color: #3a4f70; }
+    .form-textarea { resize: vertical; min-height: 96px; }
+    .demo-result {
+      display: none; margin-top: 14px; padding: 14px 16px;
+      border-radius: 12px; font-size: 14px;
+    }
+
+    /* ── FOOTER ── */
+    .site-footer {
+      position: relative; z-index: 1;
+      border-top: 1px solid var(--border);
+      padding: 40px 20px;
+    }
+    .footer-inner {
+      width: min(1280px, 100%); margin: 0 auto;
+      display: flex; justify-content: space-between; align-items: center; gap: 24px;
+      flex-wrap: wrap;
+    }
+    .footer-brand { display: flex; align-items: center; gap: 10px; }
+    .footer-brand-mark {
+      width: 30px; height: 30px; border-radius: 8px;
+      background: linear-gradient(135deg, #4f7cff, #2952cc);
+      display: grid; place-items: center; font-size: 11px; font-weight: 800; color: white;
+    }
+    .footer-copy { font-size: 13px; color: var(--muted); }
+    .footer-links { display: flex; gap: 20px; }
+    .footer-links a { font-size: 13px; color: var(--muted); transition: color 0.2s; }
+    .footer-links a:hover { color: var(--text); }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 900px) {
+      .hero-inner, .dnd-hero { grid-template-columns: 1fr; }
+      .feature-grid { grid-template-columns: repeat(2, 1fr); }
+      .pricing-grid, .steps { grid-template-columns: 1fr; }
+      .form-row { grid-template-columns: 1fr; }
+      .hero h1 { font-size: 36px; }
+    }
+    @media (max-width: 640px) {
+      .feature-grid { grid-template-columns: 1fr; }
+      .nav-links { display: none; }
+      .hero-actions { flex-direction: column; }
+      .dnd-hero { padding: 24px; }
+    }
+  </style>
 </head>
-<body class="theme-white landing-body">
-  <header class="site-header glass-panel site-header-clean">
-    <a class="site-brand" href="/">
-      <span class="site-brand-badge">OX</span>
-      <span><strong>ObserveX</strong><small>Enterprise observability workspace</small></span>
-    </a>
-    <nav class="site-nav">
-      <a href="#features">Features</a>
-      <a href="/pricing">Pricing</a>
-      <a href="#faq">FAQ</a>
-      <a href="#contact">Book demo</a>
-    </nav>
-    <div class="site-header-actions">
-      <a class="secondary-btn" href="/login">Sign in</a>
-      <a class="primary-btn" href="/create-account">Create account</a>
+<body>
+
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+
+<!-- ── NAVIGATION ── -->
+<nav class="site-nav">
+  <a class="nav-brand" href="/">
+    <div class="nav-brand-mark">OX</div>
+    <div>
+      <div class="nav-brand-name">ObserveX</div>
+      <div class="nav-brand-tag">Enterprise observability</div>
     </div>
-  </header>
+  </a>
+  <div class="nav-links">
+    <a href="#features">Features</a>
+    <a href="#how-it-works">How it works</a>
+    <a href="#pricing">Pricing</a>
+    <a href="#faq">FAQ</a>
+    <a href="#demo">Contact</a>
+  </div>
+  <div class="nav-actions">
+    <a class="btn-ghost" href="/login">Sign in</a>
+    <a class="btn-primary" href="/create-account">Create workspace</a>
+  </div>
+</nav>
 
-  <main class="landing-shell landing-wide">
-    <section class="hero-grid hero-grid-wide hero-clean">
-      <div class="hero-copy">
-        <div class="eyebrow">Uploads, S3, APIs, dashboards, alerts, and access control</div>
-        <h1>One clean control plane for log operations.</h1>
-        <p class="hero-lead">ObserveX brings local file upload, multiline parsing, AWS S3 ingestion, remote API ingestion, saved dashboards, alerts, audit trail, and role-based workspace access into one product. It is built for generic enterprise systems, not just one platform.</p>
-        <div class="hero-actions">
-          <a class="primary-btn" href="/create-account">Create workspace</a>
-          <a class="secondary-btn" href="/login">Sign in</a>
-          <a class="secondary-btn" href="/pricing">View pricing</a>
+<!-- ── HERO ── -->
+<section class="hero">
+  <div class="hero-inner">
+    <div class="hero-copy">
+      <div class="hero-eyebrow">
+        <span class="hero-eyebrow-dot"></span>
+        Enterprise log observability workspace
+      </div>
+      <h1>One control plane for all your <span>log operations.</span></h1>
+      <p class="hero-lead">Upload files, connect S3 archives and live APIs, run background ingestion, set alert rules, and collaborate as a team — all from one clean workspace.</p>
+      <div class="hero-actions">
+        <a class="btn-primary btn-primary-lg" href="/create-account">Start free workspace →</a>
+        <a class="btn-ghost btn-ghost-lg" href="/login">Sign in</a>
+      </div>
+      <div class="hero-stats">
+        <div>
+          <div class="hero-stat-num">5</div>
+          <div class="hero-stat-label">Supported file formats</div>
         </div>
-        <div class="hero-proof-grid compact-proof-grid">
-          <article class="proof-card"><strong>Upload logs instantly</strong><span>Drag in .log, .txt, .json, .ndjson, and .csv files with multiline-safe parsing.</span></article>
-          <article class="proof-card"><strong>Connect live sources</strong><span>Bring in AWS S3 archives and remote APIs, then automate ingestion jobs.</span></article>
-          <article class="proof-card"><strong>Operate as a team</strong><span>Admins, managers, developers, and testers can work in one shared organization.</span></article>
+        <div>
+          <div class="hero-stat-num">4</div>
+          <div class="hero-stat-label">Role-based access levels</div>
+        </div>
+        <div>
+          <div class="hero-stat-num">∞</div>
+          <div class="hero-stat-label">Log events per workspace</div>
         </div>
       </div>
-      <div class="hero-visual hero-visual-large glass-panel">
-        <div class="hero-visual-topbar"><span></span><span></span><span></span></div>
-        <div class="hero-visual-frame"><img src="{{ url_for('static', filename='dashboard-preview.png') }}" alt="ObserveX dashboard preview" /></div>
-        <div class="hero-float hero-float-left"><strong>Fast upload path</strong><span>Manual upload stays visible in the workspace overview and log explorer.</span></div>
-        <div class="hero-float hero-float-right"><strong>Background jobs</strong><span>Queue API and S3 ingestion runs without blocking the UI.</span></div>
-      </div>
-    </section>
+    </div>
 
-    <section id="features" class="marketing-section compact-section">
-      <div class="section-heading">
-        <div class="eyebrow">Platform features</div>
-        <h2>Everything teams usually split across multiple tools</h2>
+    <!-- Hero visual: drag-drop demo + animated log stream -->
+    <div class="hero-visual">
+      <div class="drop-zone-demo" id="heroDropZone" onclick="document.getElementById('heroFileInput').click()">
+        <div class="drop-icon">📂</div>
+        <div class="drop-title">Drop log files here to analyse</div>
+        <div class="drop-sub">Or click to browse — no workspace required to preview</div>
+        <div class="drop-types">
+          <span class="drop-badge">.log</span>
+          <span class="drop-badge">.json</span>
+          <span class="drop-badge">.ndjson</span>
+          <span class="drop-badge">.csv</span>
+          <span class="drop-badge">.txt</span>
+        </div>
+        <input type="file" id="heroFileInput" multiple accept=".log,.txt,.json,.csv,.ndjson" />
       </div>
-      <div class="feature-grid feature-grid-4">
-        <article class="feature-card"><h3>Manual uploads</h3><p>Upload logs from local desktop files straight into the workspace for immediate analysis.</p></article>
-        <article class="feature-card"><h3>Multiline parsing</h3><p>Keep stack traces and Mule-style multiline events together instead of breaking them into useless rows.</p></article>
-        <article class="feature-card"><h3>S3 + API ingestion</h3><p>Save connectors, test connectivity, and run scheduled ingestion against archive buckets or log APIs.</p></article>
-        <article class="feature-card"><h3>Saved dashboards</h3><p>Capture the most useful operational views for latency, error spikes, and source health.</p></article>
-        <article class="feature-card"><h3>Alert rules</h3><p>Create rules for error-rate spikes, ingestion stalls, and system thresholds.</p></article>
-        <article class="feature-card"><h3>User invitations</h3><p>Invite internal users by email and assign admin, manager, developer, or tester access.</p></article>
-        <article class="feature-card"><h3>Audit trail</h3><p>Track log uploads, integrations, user changes, and workspace activity in one place.</p></article>
-        <article class="feature-card"><h3>Subdomain-ready model</h3><p>Store org slug now and move to <code>org.observex.in</code> when Railway DNS is ready.</p></article>
-      </div>
-    </section>
 
-    <section class="marketing-section compact-section light-panel">
-      <div class="section-heading">
-        <div class="eyebrow">Best-fit use cases</div>
-        <h2>Where ObserveX helps most</h2>
+      <div class="log-stream" id="heroLogStream">
+        <!-- animated log lines injected by JS -->
       </div>
-      <div class="feature-grid feature-grid-3">
-        <article class="feature-card"><h3>Support and incident triage</h3><p>Upload problematic logs, search errors quickly, and save investigation dashboards for repeat issues.</p></article>
-        <article class="feature-card"><h3>Operations control plane</h3><p>Connect archives and APIs, schedule ingestion, and monitor pipeline health from one shared UI.</p></article>
-        <article class="feature-card"><h3>Migration from ad hoc tools</h3><p>Reduce dependency on scattered scripts, one-off file viewers, and disconnected monitoring pages.</p></article>
-      </div>
-    </section>
 
-    <section class="marketing-section compact-section" id="faq">
-      <div class="section-heading">
-        <div class="eyebrow">FAQ</div>
-        <h2>Common questions</h2>
-      </div>
-      <div class="faq-list">
-        <article><strong>Can users access the workspace without sign in?</strong><p>No. The public site, pricing page, sign-in page, create-account page, and demo form stay public. The workspace and all operational APIs require login.</p></article>
-        <article><strong>Why do subdomains not show automatically?</strong><p>The app stores organization slug in code and data, but real tenant URLs need Railway custom domains plus wildcard DNS.</p></article>
-        <article><strong>Can I still upload local logs?</strong><p>Yes. Manual file upload stays available inside the workspace overview and log explorer.</p></article>
-      </div>
-    </section>
+      <div class="upload-result" id="heroUploadResult"></div>
+    </div>
+  </div>
+</section>
 
-    <section id="contact" class="marketing-section compact-section light-panel">
-      <div class="section-heading">
-        <div class="eyebrow">Book a demo</div>
-        <h2>Need a walkthrough for your team?</h2>
+<!-- ── FEATURES ── -->
+<hr class="section-divider">
+<section class="features" id="features">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-eyebrow">Platform features</div>
+      <h2>Everything teams usually split across multiple tools</h2>
+      <p>One workspace replaces scattered scripts, one-off viewers, and disconnected monitoring pages.</p>
+    </div>
+    <div class="feature-grid">
+      <div class="feature-card">
+        <div class="feature-icon" style="background:rgba(79,124,255,0.15)">📤</div>
+        <h3>Manual log upload</h3>
+        <p>Drag-and-drop .log, .json, .ndjson, .csv, and .txt files. Multiline stack traces are kept intact.</p>
       </div>
-      <form id="demoForm" class="demo-inline-form">
-        <input name="name" placeholder="Your name" />
-        <input name="company" placeholder="Company" />
-        <input name="email" placeholder="Work email" />
-        <input name="message" placeholder="What do you want to see?" />
-        <button class="primary-btn" type="submit">Request demo</button>
+      <div class="feature-card">
+        <div class="feature-icon" style="background:rgba(52,211,153,0.15)">🔗</div>
+        <h3>S3 + API connectors</h3>
+        <p>Connect to AWS S3 buckets or remote log APIs. Test connectivity and save reusable connectors.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon" style="background:rgba(251,191,36,0.15)">⏱️</div>
+        <h3>Background ingestion jobs</h3>
+        <p>Schedule automated ingestion runs that run in the background without blocking your UI.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon" style="background:rgba(248,113,113,0.15)">🔔</div>
+        <h3>Alert rules</h3>
+        <p>Create rules for error-rate spikes, ingestion stalls, and threshold breaches with configurable channels.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon" style="background:rgba(167,139,250,0.15)">📊</div>
+        <h3>Saved dashboards</h3>
+        <p>Capture operational views for latency, error trends, and source health. Share across the team.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon" style="background:rgba(79,124,255,0.15)">👥</div>
+        <h3>Role-based access</h3>
+        <p>Admin, Manager, Developer, and Tester roles. Invite by email with token-based onboarding.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon" style="background:rgba(52,211,153,0.15)">🔒</div>
+        <h3>Sensitive data redaction</h3>
+        <p>JWT tokens, passwords, and correlation IDs are automatically masked before storage.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon" style="background:rgba(251,191,36,0.15)">📋</div>
+        <h3>Full audit trail</h3>
+        <p>Every upload, integration change, and user action is recorded with actor, timestamp, and details.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── DRAG & DROP HIGHLIGHT ── -->
+<hr class="section-divider">
+<section class="dnd-section" id="upload">
+  <div class="container">
+    <div class="dnd-hero">
+      <div class="dnd-copy">
+        <div class="section-eyebrow">Zero-friction ingestion</div>
+        <h2>Drop logs in. Results in seconds.</h2>
+        <p>No configuration required. Drag log files directly from your desktop into any view — the workspace parses, classifies, and indexes entries automatically.</p>
+        <div class="dnd-formats">
+          <span class="dnd-format-tag">.log</span>
+          <span class="dnd-format-tag">.json</span>
+          <span class="dnd-format-tag">.ndjson</span>
+          <span class="dnd-format-tag">.csv</span>
+          <span class="dnd-format-tag">.txt</span>
+        </div>
+        <p style="font-size:13px;color:var(--muted)">Multiline events (Mule-style, Java stack traces) are kept intact as single records. Timestamps, levels, and sources are extracted automatically.</p>
+      </div>
+
+      <div>
+        <div class="dnd-zone" id="dndZone">
+          <span class="dnd-zone-icon">☁️</span>
+          <h3>Drag &amp; drop your log file</h3>
+          <p>Supports plain text, JSON, NDJSON, and CSV log formats</p>
+          <label class="btn-primary" style="cursor:pointer;display:inline-flex;align-items:center;gap:6px;padding:12px 22px;border-radius:12px;">
+            📁 Browse files
+            <input type="file" id="dndFileInput" multiple accept=".log,.txt,.json,.csv,.ndjson">
+          </label>
+        </div>
+        <div class="dnd-result" id="dndResult"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── HOW IT WORKS ── -->
+<hr class="section-divider">
+<section class="how-it-works" id="how-it-works">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-eyebrow">How it works</div>
+      <h2>From upload to insight in three steps</h2>
+    </div>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <h3>Upload or connect</h3>
+        <p>Drop a local log file or connect an S3 bucket or API endpoint. The workspace auto-detects the format and begins parsing immediately.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <h3>Search &amp; analyse</h3>
+        <p>Filter by level, source, or keyword in the log explorer. View level-mix charts and top-source breakdowns on the overview dashboard.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <h3>Alert &amp; collaborate</h3>
+        <p>Set alert rules for critical thresholds. Save useful views as dashboards. Invite your team and assign appropriate roles.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── PRICING ── -->
+<hr class="section-divider">
+<section class="pricing" id="pricing">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-eyebrow">Pricing</div>
+      <h2>Simple plans for growing teams</h2>
+      <p>Start with uploads and workspace basics, scale into connectors, background workers, and production routing.</p>
+    </div>
+    <div class="pricing-grid">
+      <div class="pricing-card">
+        <div class="pricing-tier">Starter</div>
+        <div class="pricing-name">Evaluation</div>
+        <div class="pricing-desc">Try the workspace, validate log parsing, and explore the UI before committing.</div>
+        <ul class="pricing-features">
+          <li>Workspace creation</li>
+          <li>Manual file upload</li>
+          <li>Multiline log parsing</li>
+          <li>Log explorer &amp; search</li>
+          <li>Basic audit trail</li>
+        </ul>
+        <a class="btn-ghost btn-ghost-lg" style="display:block;text-align:center;" href="/create-account">Get started</a>
+      </div>
+      <div class="pricing-card featured">
+        <div class="pricing-tier">Growth</div>
+        <div class="pricing-name">Operations</div>
+        <div class="pricing-desc">For teams that need active ingestion, saved views, alerts, and shared access control.</div>
+        <ul class="pricing-features">
+          <li>All Starter features</li>
+          <li>AWS S3 + API connectors</li>
+          <li>Scheduled ingestion jobs</li>
+          <li>Background worker queue</li>
+          <li>Saved dashboards &amp; alert rules</li>
+          <li>User invitations (4 role levels)</li>
+          <li>Email verification &amp; password reset</li>
+        </ul>
+        <a class="btn-primary btn-primary-lg" style="display:block;text-align:center;" href="/create-account">Create workspace</a>
+      </div>
+      <div class="pricing-card">
+        <div class="pricing-tier">Enterprise</div>
+        <div class="pricing-name">Production rollout</div>
+        <div class="pricing-desc">For organizations moving from prototype to full multi-tenant production deployment.</div>
+        <ul class="pricing-features">
+          <li>All Growth features</li>
+          <li>PostgreSQL deployment</li>
+          <li>SMTP delivery integration</li>
+          <li>Gunicorn production runtime</li>
+          <li>Wildcard subdomain routing</li>
+          <li>Onboarding &amp; hardening support</li>
+        </ul>
+        <a class="btn-ghost btn-ghost-lg" style="display:block;text-align:center;" href="#demo">Book a demo</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── FAQ ── -->
+<hr class="section-divider">
+<section class="faq" id="faq">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-eyebrow">FAQ</div>
+      <h2>Common questions</h2>
+    </div>
+    <div class="faq-list">
+      <div class="faq-item">
+        <button class="faq-q">Can users access the workspace without signing in?<span class="faq-icon">+</span></button>
+        <div class="faq-a"><div class="faq-a-inner">No. The public site, pricing page, sign-in page, and create-account page stay public. Every workspace route and operational API endpoint requires an authenticated session.</div></div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q">What log formats are supported?<span class="faq-icon">+</span></button>
+        <div class="faq-a"><div class="faq-a-inner">ObserveX handles .log, .txt, .json, .ndjson, and .csv files. It also parses Mule-style multiline events (INFO/WARN/ERROR headers with stack traces) as single coherent records rather than broken rows.</div></div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q">How does the drag-and-drop upload work?<span class="faq-icon">+</span></button>
+        <div class="faq-a"><div class="faq-a-inner">Once inside the workspace, you can drag log files directly from your desktop onto the overview panel or the log explorer toolbar. Files are parsed server-side, indexed, and immediately available for search and analysis.</div></div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q">Are passwords and tokens redacted from logs?<span class="faq-icon">+</span></button>
+        <div class="faq-a"><div class="faq-a-inner">Yes. Before any log event is stored, ObserveX runs masking patterns over the content. JWT tokens, Authorization headers, passwords in key=value pairs, and common correlation IDs are replaced with [REDACTED] markers.</div></div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q">Can we host this on our own infrastructure?<span class="faq-icon">+</span></button>
+        <div class="faq-a"><div class="faq-a-inner">Yes. ObserveX is a Flask application deployable on Railway, Render, or any host that runs Python/Gunicorn. Set SECRET_KEY, PUBLIC_BASE_URL, and optional SMTP environment variables and you are running.</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── DEMO FORM ── -->
+<hr class="section-divider">
+<section class="demo" id="demo">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-eyebrow">Book a demo</div>
+      <h2>Need a walkthrough for your team?</h2>
+      <p>Tell us what you're working with and we'll set up a session tailored to your stack.</p>
+    </div>
+    <div class="demo-box">
+      <form class="demo-form" id="demoForm">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Your name</label>
+            <input class="form-input" name="name" placeholder="Arjun Mehta" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Company</label>
+            <input class="form-input" name="company" placeholder="Acme Corp">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Work email</label>
+          <input class="form-input" type="email" name="email" placeholder="arjun@acme.com" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">What do you want to see?</label>
+          <textarea class="form-input form-textarea" name="message" placeholder="We have MuleSoft logs in S3 and want to..."></textarea>
+        </div>
+        <button type="submit" class="btn-primary btn-primary-lg" style="justify-content:center;">Send demo request →</button>
       </form>
-      <div id="demoResult" class="result-box">We create a demo request record now and can send email later when SMTP is configured.</div>
-    </section>
-  </main>
+      <div class="demo-result" id="demoResult"></div>
+    </div>
+  </div>
+</section>
 
-  <footer class="site-footer compact-footer">
-    <span>ObserveX</span>
-    <span>Upload logs · S3 ingestion · API ingestion · saved dashboards · audit trail</span>
-  </footer>
+<!-- ── FOOTER ── -->
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <div class="footer-brand-mark">OX</div>
+      <div>
+        <div style="font-weight:600;font-size:14px;">ObserveX</div>
+        <div style="font-size:12px;color:var(--muted);">Enterprise observability workspace</div>
+      </div>
+    </div>
+    <div class="footer-copy">Upload logs · S3 ingestion · API connectors · Dashboards · Alerts · Audit trail</div>
+    <div class="footer-links">
+      <a href="/login">Sign in</a>
+      <a href="/create-account">Create account</a>
+      <a href="/pricing">Pricing</a>
+    </div>
+  </div>
+</footer>
 
-  <script>
-    document.getElementById('demoForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const payload = Object.fromEntries(new FormData(e.target).entries());
-      const r = await fetch('/api/demo-request', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload)});
-      const d = await r.json();
-      document.getElementById('demoResult').textContent = d.message || d.error || 'Request submitted';
-    });
-  </script>
+<script>
+// ── Animated log stream in hero ──
+const DEMO_LOGS = [
+  { ts: '10:42:01.233', level: 'info',    msg: '[payment-svc] Initiated transaction TXN-8821' },
+  { ts: '10:42:01.891', level: 'info',    msg: '[auth-svc] Token validated for user@acme.com' },
+  { ts: '10:42:02.445', level: 'warn',    msg: '[db-pool] Connection pool at 87% capacity' },
+  { ts: '10:42:02.991', level: 'error',   msg: '[order-svc] Timeout connecting to inventory API' },
+  { ts: '10:42:03.112', level: 'info',    msg: '[scheduler] Ingestion job #42 completed — 1,204 events' },
+  { ts: '10:42:03.880', level: 'success', msg: '[payment-svc] Transaction TXN-8821 settled OK' },
+  { ts: '10:42:04.200', level: 'warn',    msg: '[alert-engine] Error rate exceeded threshold 5%' },
+  { ts: '10:42:04.710', level: 'error',   msg: '[inventory-svc] NullPointerException in StockManager.java:142' },
+  { ts: '10:42:05.008', level: 'info',    msg: '[upload-svc] File payment-2024-12.log parsed — 892 records' },
+  { ts: '10:42:05.440', level: 'success', msg: '[audit] User admin@acme.com uploaded logs' },
+];
+
+const stream = document.getElementById('heroLogStream');
+let logIdx = 0;
+
+function addLogLine() {
+  const log = DEMO_LOGS[logIdx % DEMO_LOGS.length];
+  logIdx++;
+  const line = document.createElement('div');
+  line.className = 'log-line';
+  const lvlClass = log.level === 'success' ? 'll-success' : `ll-${log.level}`;
+  line.innerHTML = `<span class="ll-ts">${log.ts}</span><span class="ll-badge ${lvlClass}">${log.level.toUpperCase()}</span><span class="ll-msg">${log.msg}</span>`;
+  stream.appendChild(line);
+  if (stream.children.length > 8) stream.removeChild(stream.firstChild);
+}
+// Seed initial lines
+for (let i = 0; i < 6; i++) addLogLine();
+setInterval(addLogLine, 1400);
+
+// ── Hero drag-and-drop ──
+const heroZone = document.getElementById('heroDropZone');
+const heroInput = document.getElementById('heroFileInput');
+const heroResult = document.getElementById('heroUploadResult');
+
+heroZone.addEventListener('dragover', e => { e.preventDefault(); heroZone.classList.add('drag-over'); });
+heroZone.addEventListener('dragleave', () => heroZone.classList.remove('drag-over'));
+heroZone.addEventListener('drop', e => {
+  e.preventDefault(); heroZone.classList.remove('drag-over');
+  handleHeroFiles(e.dataTransfer.files);
+});
+heroInput.addEventListener('change', e => handleHeroFiles(e.target.files));
+
+function handleHeroFiles(files) {
+  if (!files.length) return;
+  const names = Array.from(files).map(f => f.name).join(', ');
+  heroResult.style.display = 'block';
+  heroResult.innerHTML = `✓ <strong>${files.length} file${files.length>1?'s':''} selected:</strong> ${names}<br><span style="font-size:12px;opacity:0.75">Sign in or create a workspace to upload and analyse these logs.</span>`;
+  setTimeout(() => {
+    const el = document.createElement('a');
+    el.href = '/workspace'; el.style.display = 'none';
+    document.body.appendChild(el);
+  }, 1200);
+}
+
+// ── Main DnD section ──
+const dndZone = document.getElementById('dndZone');
+const dndInput = document.getElementById('dndFileInput');
+const dndResult = document.getElementById('dndResult');
+
+dndZone.addEventListener('dragover', e => { e.preventDefault(); dndZone.classList.add('drag-active'); });
+dndZone.addEventListener('dragleave', () => dndZone.classList.remove('drag-active'));
+dndZone.addEventListener('drop', e => {
+  e.preventDefault(); dndZone.classList.remove('drag-active');
+  handleDndFiles(e.dataTransfer.files);
+});
+dndInput.addEventListener('change', e => handleDndFiles(e.target.files));
+
+function handleDndFiles(files) {
+  if (!files.length) return;
+  const totalSize = Array.from(files).reduce((s, f) => s + f.size, 0);
+  const sizeStr = totalSize < 1024*1024 ? `${(totalSize/1024).toFixed(1)} KB` : `${(totalSize/1024/1024).toFixed(2)} MB`;
+  dndResult.style.display = 'block';
+  dndResult.className = 'dnd-result success';
+  dndResult.innerHTML = `✓ <strong>${files.length} file${files.length>1?'s':''} ready</strong> (${sizeStr})<br>
+    <span style="font-size:13px;margin-top:4px;display:block">Create a workspace or sign in to upload and analyse: <strong>${Array.from(files).map(f=>f.name).join(', ')}</strong></span>
+    <div style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap">
+      <a href="/workspace" style="padding:8px 18px;border-radius:10px;background:rgba(52,211,153,0.15);border:1px solid rgba(52,211,153,0.3);color:#34d399;font-size:13px;font-weight:600;">Open workspace →</a>
+      <a href="/create-account" style="padding:8px 18px;border-radius:10px;background:rgba(79,124,255,0.12);border:1px solid rgba(79,124,255,0.25);color:#88a8ff;font-size:13px;font-weight:600;">Create account</a>
+    </div>`;
+}
+
+// ── FAQ accordion ──
+document.querySelectorAll('.faq-q').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const item = btn.closest('.faq-item');
+    const wasOpen = item.classList.contains('open');
+    document.querySelectorAll('.faq-item').forEach(i => i.classList.remove('open'));
+    if (!wasOpen) item.classList.add('open');
+  });
+});
+
+// ── Demo form ──
+document.getElementById('demoForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const btn = e.target.querySelector('[type=submit]');
+  btn.disabled = true; btn.textContent = 'Sending...';
+  const payload = Object.fromEntries(new FormData(e.target));
+  const res = document.getElementById('demoResult');
+  try {
+    const r = await fetch('/api/demo-request', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+    const d = await r.json();
+    res.style.display = 'block';
+    res.className = 'demo-result ' + (r.ok ? 'dnd-result success' : 'dnd-result error');
+    res.textContent = r.ok ? '✓ Demo request submitted. We will be in touch soon.' : (d.error || 'Something went wrong.');
+    if (r.ok) e.target.reset();
+  } catch { res.style.display='block'; res.className='demo-result dnd-result error'; res.textContent='Network error. Please try again.'; }
+  btn.disabled = false; btn.innerHTML = 'Send demo request →';
+});
+</script>
 </body>
 </html>
