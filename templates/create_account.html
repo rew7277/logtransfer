@@ -90,7 +90,7 @@
         const data = await response.json();
         if (!response.ok) throw new Error(data.error || 'Unable to create workspace.');
         registerResult.textContent = data.message || 'Workspace created successfully.';
-        window.location.href = '/workspace';
+        registerResult.innerHTML = `Workspace created. <a href="${data.verify_url}">Verify email</a> and then continue to <a href="/workspace">workspace</a>.`; setTimeout(() => { window.location.href = data.verify_url || "/workspace"; }, 1200);
       } catch (error) {
         registerResult.textContent = error.message;
       }

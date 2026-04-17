@@ -46,15 +46,14 @@ function applyOrgTheme() {
   if (!org) return;
   document.documentElement.style.setProperty('--primary', org.theme_color || '#5b8cff');
   document.body.classList.remove('theme-black', 'theme-white', 'theme-green');
-  document.body.classList.add(`theme-${org.theme_mode || 'black'}`);
+  document.body.classList.add(`theme-${org.theme_mode || 'white'}`);
   $('orgName').textContent = org.name;
   $('orgLogo').textContent = org.logo_text;
   $('orgSlug').textContent = org.slug;
   $('currentUserName').textContent = user.name;
   $('currentUserRole').textContent = user.role;
-  $('adminModeBadge').textContent = `Admin-only: ${org.admin_only ? 'On' : 'Off'}`;
-  $('subdomainHint').textContent = org.subdomain_hint;
-  $('themeBadge').textContent = `Theme: ${(org.theme_mode || 'black').replace(/^./, c => c.toUpperCase())}`;
+  const workspaceMeta = $('workspaceMeta');
+  if (workspaceMeta) workspaceMeta.textContent = org.workspace_url || `${org.slug}.observex.in`;
   $('userOrgName').value = org.name;
 
   const orgForm = $('orgForm');
@@ -62,7 +61,7 @@ function applyOrgTheme() {
   orgForm.slug.value = org.slug;
   orgForm.logo_text.value = org.logo_text;
   orgForm.theme_color.value = org.theme_color;
-  orgForm.theme_mode.value = org.theme_mode || 'black';
+  orgForm.theme_mode.value = org.theme_mode || 'white';
   orgForm.admin_only.checked = !!org.admin_only;
 
   const isAdmin = user.role === 'admin';
@@ -241,7 +240,33 @@ async function fetchBootstrap() {
   renderAlerts();
   renderUsers();
   renderAudit();
+  renderInvitations();
+  renderDashboards();
 }
+
+function renderInvitations() {
+  const list = $('invitationList');
+  if (!list) return;
+  const items = state.bootstrap?.invitations || [];
+  if (!items.length) { list.className='list-box empty-state'; list.textContent='No invites sent yet.'; return; }
+  list.className='list-box';
+  list.innerHTML = items.map(item => `
+    <div class="list-item">
+      <div><strong>${escapeHtml(item.email)}</strong><div class="muted">${escapeHtml(item.role)} · ${escapeHtml(item.status)}</div></div>
+      <button class="secondary-btn copy-link-btn" data-copy="${window.location.origin}/accept-invite/${item.token}">Copy invite</button>
+    </div>
+  `).join('');
+}
+
+function renderDashboards() {
+  const list = $('dashboardList');
+  if (!list) return;
+  const items = state.bootstrap?.saved_dashboards || [];
+  if (!items.length) { list.className='list-box empty-state'; list.textContent='No saved dashboards yet.'; return; }
+  list.className='list-box';
+  list.innerHTML = items.map(item => `<div class="list-item"><div><strong>${escapeHtml(item.name)}</strong><div class="muted">Saved ${escapeHtml(item.created_at)}</div></div><span class="pill">saved</span></div>`).join('');
+}
+
 
 async function fetchLogs() {
   const q = $('searchInput').value.trim();
@@ -464,3 +489,30 @@ function bindEvents() {
   await fetchBootstrap();
   await fetchLogs();
 })();
+
+
+document.addEventListener('click', (event) => {
+  const btn = event.target.closest('.copy-link-btn');
+  if (btn) { navigator.clipboard.writeText(btn.dataset.copy || ''); toast('Invite link copied'); }
+});
+
+window.addEventListener('DOMContentLoaded', () => {
+  const inviteForm = $('inviteForm');
+  if (inviteForm) inviteForm.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const payload = Object.fromEntries(new FormData(inviteForm).entries());
+    const res = await fetch('/api/invitations', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)});
+    const data = await res.json();
+    $('inviteResult').textContent = data.invite_url ? `Invite created: ${data.invite_url}` : (data.message || data.error || 'Done');
+    if (res.ok) await fetchBootstrap();
+  });
+  const saveBtn = $('saveDashboardBtn');
+  if (saveBtn) saveBtn.addEventListener('click', async () => {
+    const name = $('dashboardName').value.trim();
+    const payload = {name, config:{section: document.querySelector('.nav-link.active')?.dataset.section || 'overviewSection'}};
+    const res = await fetch('/api/dashboards', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)});
+    const data = await res.json();
+    $('dashboardResult').textContent = data.message || data.error || 'Done';
+    if (res.ok) await fetchBootstrap();
+  });
+});

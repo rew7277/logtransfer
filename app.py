@@ -112,6 +112,14 @@ def row_to_dict(row: sqlite3.Row | None) -> dict[str, Any] | None:
     return dict(row) if row else None
 
 
+def public_base_url() -> str:
+    return os.environ.get('PUBLIC_BASE_URL', 'https://observex.in').rstrip('/')
+
+
+def org_public_url(slug: str) -> str:
+    return f"https://{slug}.observex.in"
+
+
 def init_db() -> None:
     db = sqlite3.connect(DB_PATH)
     db.executescript(
@@ -229,6 +237,7 @@ def init_db() -> None:
     ensure_column(db, "organizations", "theme_mode", "theme_mode TEXT NOT NULL DEFAULT 'white'")
     ensure_column(db, "organizations", "admin_only", "admin_only INTEGER NOT NULL DEFAULT 0")
     ensure_column(db, "ingestion_jobs", "integration_id", "integration_id INTEGER")
+    ensure_column(db, "users", "email_verified", "email_verified INTEGER NOT NULL DEFAULT 0")
 
     row = db.execute("SELECT id FROM organizations WHERE slug = ?", ("vewit",)).fetchone()
     if row is None:
@@ -239,8 +248,8 @@ def init_db() -> None:
         )
         org_id = db.execute("SELECT id FROM organizations WHERE slug = ?", ("vewit",)).fetchone()[0]
         db.execute(
-            "INSERT INTO users (org_id, name, email, password_hash, role, created_at) VALUES (?, ?, ?, ?, ?, ?)",
-            (org_id, "Platform Admin", "admin@vewit.local", generate_password_hash("admin123"), "admin", now),
+            "INSERT INTO users (org_id, name, email, password_hash, role, created_at, email_verified) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (org_id, "Platform Admin", "admin@vewit.local", generate_password_hash("admin123"), "admin", now, 1),
         )
         admin_id = db.execute("SELECT id FROM users WHERE email = ?", ("admin@vewit.local",)).fetchone()[0]
         seed_integrations = [
@@ -807,7 +816,7 @@ def login():
     db = get_db()
     user = db.execute(
         """
-        SELECT u.id, u.name, u.email, u.role, u.org_id, u.password_hash, o.admin_only
+        SELECT u.id, u.name, u.email, u.role, u.org_id, u.password_hash, u.email_verified, o.admin_only
         FROM users u
         JOIN organizations o ON o.id = u.org_id
         WHERE lower(u.email) = ?
@@ -818,6 +827,8 @@ def login():
         return jsonify({"error": "Invalid email or password."}), 401
     if user["admin_only"] and user["role"] != "admin":
         return jsonify({"error": "This workspace is in admin-only mode."}), 403
+    if not user["email_verified"]:
+        return jsonify({"error": "Please verify your email before signing in."}), 403
     session["user_id"] = user["id"]
     session["csrf"] = secrets.token_hex(16)
     audit(user["org_id"], user["id"], "logged_in", "session", str(user["id"]), {"email": user["email"]})
@@ -857,14 +868,14 @@ def register_org_and_admin():
     )
     org_id = cur.lastrowid
     user_cur = db.execute(
-        "INSERT INTO users (org_id, name, email, password_hash, role, created_at) VALUES (?, ?, ?, ?, ?, ?)",
+        "INSERT INTO users (org_id, name, email, password_hash, role, created_at, email_verified) VALUES (?, ?, ?, ?, ?, ?, ?)",
         (org_id, admin_name, email, generate_password_hash(password), "admin", now),
     )
     db.commit()
     session["user_id"] = user_cur.lastrowid
     session["csrf"] = secrets.token_hex(16)
     audit(org_id, user_cur.lastrowid, "created_workspace", "organization", str(org_id), {"slug": slug, "email": email, "theme_mode": theme_mode})
-    return jsonify({"message": "Workspace created successfully.", "slug": slug})
+    return jsonify({"message": "Workspace created successfully.", "slug": slug, "verify_url": f"/verify-email/{token}", "workspace_url": org_public_url(slug)})
 
 
 @app.post("/logout")
@@ -920,7 +931,7 @@ def bootstrap():
             "theme_mode": user["theme_mode"],
             "logo_text": user["logo_text"],
             "admin_only": bool(user["admin_only"]),
-            "subdomain_hint": f"{user['slug']}.vewit.com",
+            "workspace_url": org_public_url(user['slug']),
         },
         "summary": dashboard_summary(user["org_id"]),
         "integrations": integrations,
@@ -928,6 +939,8 @@ def bootstrap():
         "alerts": alerts,
         "users": users,
         "audit": audit_events,
+        "invitations": invitations,
+        "saved_dashboards": [{**item, "config": json.loads(item.pop("config_json"))} for item in dashboards],
         "role_options": sorted(VALID_ROLES),
         "theme_options": sorted(VALID_THEMES),
     })
@@ -1033,8 +1046,8 @@ def create_user():
     if exists:
         return jsonify({"error": "A user with that email already exists."}), 400
     cur = db.execute(
-        "INSERT INTO users (org_id, name, email, password_hash, role, created_at) VALUES (?, ?, ?, ?, ?, ?)",
-        (user["org_id"], name, email, generate_password_hash(password), role, iso_now()),
+        "INSERT INTO users (org_id, name, email, password_hash, role, created_at, email_verified) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        (user["org_id"], name, email, generate_password_hash(password), role, iso_now(), 1),
     )
     db.commit()
     audit(user["org_id"], user["id"], "created_user", "user", str(cur.lastrowid), {"email": email, "role": role})
@@ -1180,6 +1193,145 @@ def test_api():
     except Exception as exc:
         return jsonify({"success": False, "message": f"API connection failed: {exc}"}), 400
 
+
+
+@app.get("/pricing")
+def pricing_page():
+    return render_template("pricing.html")
+
+@app.get("/forgot-password")
+def forgot_password_page():
+    if session.get("user_id"):
+        return redirect("/workspace")
+    return render_template("forgot_password.html")
+
+@app.get("/reset-password/<token>")
+def reset_password_page(token: str):
+    if session.get("user_id"):
+        return redirect("/workspace")
+    return render_template("reset_password.html", token=token)
+
+@app.get("/verify-email/<token>")
+def verify_email_page(token: str):
+    db = get_db()
+    row = db.execute("SELECT vt.id, vt.user_id, vt.status, vt.expires_at, u.org_id FROM verification_tokens vt JOIN users u ON u.id = vt.user_id WHERE vt.token = ?", (token,)).fetchone()
+    if not row or row["status"] != "pending" or row["expires_at"] < iso_now():
+        return render_template("status_page.html", title="Verification link invalid", message="This verification link is invalid or expired.", action_label="Back to login", action_href="/login")
+    db.execute("UPDATE verification_tokens SET status = 'used' WHERE id = ?", (row["id"],))
+    db.execute("UPDATE users SET email_verified = 1 WHERE id = ?", (row["user_id"],))
+    db.commit()
+    audit(row["org_id"], row["user_id"], "verified_email", "user", str(row["user_id"]), {})
+    return render_template("status_page.html", title="Email verified", message="Your email has been verified. You can sign in now.", action_label="Sign in", action_href="/login")
+
+@app.get("/accept-invite/<token>")
+def accept_invite_page(token: str):
+    if session.get("user_id"):
+        return redirect("/workspace")
+    db = get_db()
+    invite = db.execute("SELECT i.*, o.name AS org_name FROM invitations i JOIN organizations o ON o.id = i.org_id WHERE i.token = ?", (token,)).fetchone()
+    if not invite:
+        return render_template("status_page.html", title="Invite not found", message="This invite is invalid or expired.", action_label="Back to website", action_href="/")
+    return render_template("accept_invite.html", invite=dict(invite))
+
+@app.post("/api/invitations")
+def create_invitation():
+    user, error = require_admin()
+    if error:
+        return error
+    payload = request.get_json(force=True)
+    email = (payload.get("email") or "").strip().lower()
+    role = (payload.get("role") or "developer").strip().lower()
+    if not email:
+        return jsonify({"error": "Email is required."}), 400
+    if role not in VALID_ROLES:
+        return jsonify({"error": "Invalid role."}), 400
+    token = secrets.token_urlsafe(24)
+    now = iso_now()
+    expires_at = (datetime.now(timezone.utc) + timedelta(days=7)).isoformat()
+    db = get_db()
+    cur = db.execute("INSERT INTO invitations (org_id, email, role, token, status, created_at, expires_at, created_by) VALUES (?, ?, ?, ?, 'pending', ?, ?, ?)", (user["org_id"], email, role, token, now, expires_at, user["id"]))
+    db.commit()
+    invite_url = f"{public_base_url()}/accept-invite/{token}"
+    audit(user["org_id"], user["id"], "created_invitation", "invitation", str(cur.lastrowid), {"email": email, "role": role})
+    return jsonify({"message": "Invitation created.", "invite_url": invite_url})
+
+@app.post("/api/invitations/accept")
+def accept_invitation():
+    payload = request.get_json(force=True)
+    token = payload.get("token") or ""
+    name = (payload.get("name") or "").strip()
+    password = payload.get("password") or ""
+    db = get_db()
+    invite = db.execute("SELECT * FROM invitations WHERE token = ?", (token,)).fetchone()
+    if not invite or invite["status"] != "pending" or invite["expires_at"] < iso_now():
+        return jsonify({"error": "Invite is invalid or expired."}), 400
+    exists = db.execute("SELECT id FROM users WHERE lower(email) = ?", ((invite["email"] or "").lower(),)).fetchone()
+    if exists:
+        return jsonify({"error": "A user with this email already exists."}), 400
+    cur = db.execute("INSERT INTO users (org_id, name, email, password_hash, role, created_at, email_verified) VALUES (?, ?, ?, ?, ?, ?, ?)", (invite["org_id"], name or invite["email"].split("@")[0], invite["email"], generate_password_hash(password), invite["role"], iso_now(), 1))
+    db.execute("UPDATE invitations SET status = 'accepted' WHERE id = ?", (invite["id"],))
+    db.commit()
+    session["user_id"] = cur.lastrowid
+    session["csrf"] = secrets.token_hex(16)
+    audit(invite["org_id"], cur.lastrowid, "accepted_invitation", "invitation", str(invite["id"]), {"email": invite["email"]})
+    return jsonify({"message": "Welcome to your workspace."})
+
+@app.post("/api/password/forgot")
+def forgot_password():
+    payload = request.get_json(force=True)
+    email = (payload.get("email") or "").strip().lower()
+    db = get_db()
+    user = db.execute("SELECT id FROM users WHERE lower(email) = ?", (email,)).fetchone()
+    if not user:
+        return jsonify({"message": "If that email exists, a reset link has been created."})
+    token = secrets.token_urlsafe(24)
+    now = iso_now()
+    db.execute("INSERT INTO password_resets (user_id, token, status, created_at, expires_at) VALUES (?, ?, 'pending', ?, ?)", (user["id"], token, now, (datetime.now(timezone.utc) + timedelta(hours=4)).isoformat()))
+    db.commit()
+    return jsonify({"message": "Reset link created.", "reset_url": f"{public_base_url()}/reset-password/{token}"})
+
+@app.post("/api/password/reset")
+def reset_password():
+    payload = request.get_json(force=True)
+    token = payload.get("token") or ""
+    password = payload.get("password") or ""
+    db = get_db()
+    row = db.execute("SELECT * FROM password_resets WHERE token = ?", (token,)).fetchone()
+    if not row or row["status"] != "pending" or row["expires_at"] < iso_now():
+        return jsonify({"error": "Reset link is invalid or expired."}), 400
+    db.execute("UPDATE users SET password_hash = ? WHERE id = ?", (generate_password_hash(password), row["user_id"]))
+    db.execute("UPDATE password_resets SET status = 'used' WHERE id = ?", (row["id"],))
+    db.commit()
+    return jsonify({"message": "Password reset successful."})
+
+@app.post("/api/dashboards")
+def save_dashboard():
+    user, error = require_auth()
+    if error:
+        return error
+    payload = request.get_json(force=True)
+    name = (payload.get("name") or "").strip()
+    if not name:
+        return jsonify({"error": "Dashboard name is required."}), 400
+    db = get_db()
+    cur = db.execute("INSERT INTO saved_dashboards (org_id, user_id, name, config_json, created_at) VALUES (?, ?, ?, ?, ?)", (user["org_id"], user["id"], name, json.dumps(payload.get("config") or {}), iso_now()))
+    db.commit()
+    audit(user["org_id"], user["id"], "saved_dashboard", "dashboard", str(cur.lastrowid), {"name": name})
+    return jsonify({"message": "Dashboard saved."})
+
+@app.post("/api/demo-request")
+def demo_request():
+    payload = request.get_json(force=True)
+    name = (payload.get("name") or "").strip()
+    email = (payload.get("email") or "").strip().lower()
+    company = (payload.get("company") or "").strip()
+    message = (payload.get("message") or "").strip()
+    if not name or not email:
+        return jsonify({"error": "Name and email are required."}), 400
+    db = get_db()
+    db.execute("INSERT INTO demo_requests (name, company, email, message, created_at) VALUES (?, ?, ?, ?, ?)", (name, company, email, message, iso_now()))
+    db.commit()
+    return jsonify({"message": "Demo request submitted successfully."})
 
 if __name__ == "__main__":
     init_db()

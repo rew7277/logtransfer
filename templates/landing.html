@@ -23,10 +23,13 @@
       <a href="#features">Features</a>
       <a href="#workflows">Workflows</a>
       <a href="#security">Security</a>
+      <a href="#pricing">Pricing</a>
+      <a href="#faq">FAQ</a>
       <a href="#cta">Get Started</a>
     </nav>
 
     <div class="site-header-actions">
+      <a class="ghost-btn" href="/pricing">Pricing</a>
       <a class="ghost-btn" href="/login">Sign in</a>
       <a class="primary-btn" href="/create-account">Create account</a>
     </div>
@@ -223,5 +226,8 @@
       </div>
     </section>
   </main>
-</body>
+<script>
+const demoForm=document.getElementById('demoForm');
+if(demoForm){demoForm.addEventListener('submit',async(e)=>{e.preventDefault();const payload=Object.fromEntries(new FormData(demoForm).entries());const box=document.getElementById('demoResult');box.textContent='Submitting...';const r=await fetch('/api/demo-request',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});const d=await r.json();box.textContent=d.message||d.error||'Done';});}
+</script></body>
 </html>

@@ -7,7 +7,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
 </head>
-<body class="theme-black">
+<body class="theme-white">
   <div class="app-shell">
     <aside class="sidebar">
       <div>
@@ -27,6 +27,8 @@
           <button class="nav-link" data-section="jobsSection">Ingestion jobs</button>
           <button class="nav-link" data-section="alertsSection">Alert rules</button>
           <button class="nav-link" data-section="usersSection">Users & access</button>
+          <button class="nav-link" data-section="dashboardsSection">Saved dashboards</button>
+          <button class="nav-link" data-section="invitesSection">Invites</button>
           <button class="nav-link" data-section="orgSection">Organization</button>
           <button class="nav-link" data-section="auditSection">Audit trail</button>
         </nav>
@@ -49,9 +51,7 @@
           <h2>Upload logs, wire S3 and APIs, and govern everything from one control plane.</h2>
         </div>
         <div class="header-badges">
-          <span class="pill" id="adminModeBadge">Admin-only: Off</span>
-          <span class="pill" id="subdomainHint">vewit.vewit.com</span>
-          <span class="pill" id="themeBadge">Theme: Black</span>
+          <span class="muted" id="workspaceMeta">workspace</span>
         </div>
       </header>
 
@@ -259,8 +259,43 @@
         </div>
       </section>
 
-      <section id="auditSection" class="content-section">
-        <section class="panel">
+
+      <section id="dashboardsSection" class="content-section">
+        <div class="panel-grid two-up">
+          <section class="panel">
+            <div class="panel-head"><h3>Saved dashboards</h3><span class="muted">Reusable workspace views</span></div>
+            <div class="stack-form">
+              <input id="dashboardName" type="text" placeholder="Operations overview" />
+              <button class="primary-btn" id="saveDashboardBtn">Save current dashboard</button>
+            </div>
+            <div id="dashboardResult" class="result-box">Save named dashboard presets for your workspace.</div>
+          </section>
+          <section class="panel">
+            <div class="panel-head"><h3>Saved dashboard list</h3></div>
+            <div id="dashboardList" class="list-box empty-state">No saved dashboards yet.</div>
+          </section>
+        </div>
+      </section>
+
+      <section id="invitesSection" class="content-section">
+        <div class="panel-grid two-up">
+          <section class="panel">
+            <div class="panel-head"><h3>Invite users</h3><span class="muted">Send invite links into your organization</span></div>
+            <form class="stack-form" id="inviteForm">
+              <input name="email" type="email" placeholder="new.user@company.com" />
+              <select name="role"><option value="manager">Manager</option><option value="developer">Developer</option><option value="tester">Tester</option><option value="admin">Admin</option></select>
+              <button class="primary-btn" type="submit">Create invite link</button>
+            </form>
+            <div id="inviteResult" class="result-box">Create an invite link and share it manually or through email.</div>
+          </section>
+          <section class="panel">
+            <div class="panel-head"><h3>Recent invites</h3></div>
+            <div id="invitationList" class="list-box empty-state">No invites sent yet.</div>
+          </section>
+        </div>
+      </section>
+
+      <section id="auditSection" class="content-section">        <section class="panel">
           <div class="panel-head"><h3>Audit trail</h3><span class="muted">Recent administrative and operational activity.</span></div>
           <div id="auditList" class="list-box"></div>
         </section>
