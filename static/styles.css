@@ -236,3 +236,54 @@ html { scroll-behavior: smooth; }
   .hero-float-left, .hero-float-right { position: static; margin-top: 14px; max-width: none; }
   .two-col-form, .mini-grid { grid-template-columns: 1fr; }
 }
+
+
+body.theme-white .glass-panel,
+body.theme-white .login-panel,
+body.theme-white .panel,
+body.theme-white .metric-card,
+body.theme-white .sidebar,
+body.theme-white .proof-card,
+body.theme-white .feature-card,
+body.theme-white .workflow-copy,
+body.theme-white .mini-showcase,
+body.theme-white .auth-marketing,
+body.theme-white .auth-page-copy {
+  box-shadow: 0 22px 60px rgba(37, 99, 235, 0.08);
+}
+
+.landing-wide { width: min(1460px, calc(100% - 48px)); }
+.hero-grid-wide { grid-template-columns: 1.05fr .95fr; gap: 40px; }
+.feature-grid-wide { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.workflow-grid-wide { grid-template-columns: 1.05fr .95fr; }
+.hero-visual-large { padding: 20px; }
+.auth-layout-simple { grid-template-columns: 1fr; }
+.auth-page-body {
+  background: radial-gradient(circle at top left, rgba(37,99,235,.08), transparent 24%),
+              radial-gradient(circle at bottom right, rgba(59,130,246,.08), transparent 24%),
+              linear-gradient(180deg, #eef4fb, #f8fbff);
+}
+.auth-page-shell {
+  width: min(1320px, calc(100% - 48px));
+  display: grid;
+  grid-template-columns: .95fr 1.05fr;
+  gap: 24px;
+  align-items: stretch;
+}
+.auth-page-shell-wide { grid-template-columns: .95fr 1.05fr; }
+.auth-page-copy, .auth-page-form-panel { padding: 32px; border-radius: 24px; }
+.auth-page-brand { margin-bottom: 28px; }
+.auth-form-title { margin: 8px 0 16px; font-size: 30px; line-height: 1.08; letter-spacing: -0.03em; }
+.compact-lead { font-size: 17px; max-width: 56ch; }
+.auth-page-links { margin-top: 16px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.auth-page-links a { text-decoration: none; font-weight: 600; }
+.dot-sep { opacity: .55; }
+
+@media (max-width: 1120px) {
+  .auth-page-shell, .auth-page-shell-wide, .hero-grid-wide, .workflow-grid-wide { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 860px) {
+  .landing-wide, .auth-page-shell, .auth-page-shell-wide { width: min(100%, calc(100% - 28px)); }
+  .auth-page-copy, .auth-page-form-panel { padding: 22px; }
+}

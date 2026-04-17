@@ -64,11 +64,9 @@ MASK_PATTERNS = [
 ]
 
 VALID_ROLES = {"admin", "manager", "developer", "tester"}
-VALID_THEMES = {"black", "white", "green"}
+VALID_THEMES = {"white"}
 DEFAULT_THEME_COLORS = {
-    "black": "#5b8cff",
     "white": "#2563eb",
-    "green": "#16a34a",
 }
 
 scheduler: BackgroundScheduler | None = None
@@ -123,7 +121,7 @@ def init_db() -> None:
             name TEXT NOT NULL,
             slug TEXT NOT NULL UNIQUE,
             theme_color TEXT NOT NULL DEFAULT '#5b8cff',
-            theme_mode TEXT NOT NULL DEFAULT 'black',
+            theme_mode TEXT NOT NULL DEFAULT 'white',
             logo_text TEXT NOT NULL DEFAULT 'VX',
             admin_only INTEGER NOT NULL DEFAULT 0,
             created_at TEXT NOT NULL
@@ -228,7 +226,7 @@ def init_db() -> None:
         """
     )
 
-    ensure_column(db, "organizations", "theme_mode", "theme_mode TEXT NOT NULL DEFAULT 'black'")
+    ensure_column(db, "organizations", "theme_mode", "theme_mode TEXT NOT NULL DEFAULT 'white'")
     ensure_column(db, "organizations", "admin_only", "admin_only INTEGER NOT NULL DEFAULT 0")
     ensure_column(db, "ingestion_jobs", "integration_id", "integration_id INTEGER")
 
@@ -769,6 +767,27 @@ def start_scheduler() -> None:
 def root():
     if session.get("user_id"):
         return redirect("/workspace")
+    return render_template("landing.html")
+
+
+
+
+@app.get("/login-page")
+def login_page_redirect():
+    return redirect("/login")
+
+
+@app.get("/create-account")
+def create_account_page():
+    if session.get("user_id"):
+        return redirect("/workspace")
+    return render_template("create_account.html")
+
+
+@app.get("/login")
+def login_page():
+    if session.get("user_id"):
+        return redirect("/workspace")
     return render_template("login.html")
 
 
@@ -813,14 +832,14 @@ def register_org_and_admin():
     email = (payload.get("email") or "").strip().lower()
     password = payload.get("password") or ""
     role = (payload.get("role") or "admin").strip().lower()
-    theme_mode = (payload.get("theme_mode") or "black").strip().lower()
+    theme_mode = (payload.get("theme_mode") or "white").strip().lower()
     slug = slugify(payload.get("organization_slug") or org_name)
     if not org_name or not admin_name or not email or not password:
         return jsonify({"error": "Organization name, your name, email, and password are required."}), 400
     if role != "admin":
         return jsonify({"error": "Workspace creator must be an admin."}), 400
     if theme_mode not in VALID_THEMES:
-        theme_mode = "black"
+        theme_mode = "white"
 
     db = get_db()
     existing_org = db.execute("SELECT id FROM organizations WHERE slug = ?", (slug,)).fetchone()
@@ -1095,9 +1114,9 @@ def update_org():
         return error
     payload = request.get_json(force=True)
     slug = slugify(payload.get("slug") or user["slug"])
-    theme_mode = (payload.get("theme_mode") or user["theme_mode"] or "black").lower()
+    theme_mode = (payload.get("theme_mode") or user["theme_mode"] or "white").lower()
     if theme_mode not in VALID_THEMES:
-        theme_mode = "black"
+        theme_mode = "white"
     theme_color = payload.get("theme_color") or DEFAULT_THEME_COLORS[theme_mode]
     db = get_db()
     existing = db.execute("SELECT id FROM organizations WHERE slug = ? AND id != ?", (slug, user["org_id"])).fetchone()

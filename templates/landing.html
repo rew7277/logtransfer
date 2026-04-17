@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ObserveX | Log observability for modern teams</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
+</head>
+<body class="landing-body theme-white">
+  <div class="landing-orb orb-one"></div>
+  <div class="landing-orb orb-two"></div>
+
+  <header class="site-header glass-panel landing-wide">
+    <a class="site-brand" href="#top">
+      <span class="site-brand-badge">OX</span>
+      <span>
+        <strong>ObserveX</strong>
+        <small>Enterprise observability workspace</small>
+      </span>
+    </a>
+
+    <nav class="site-nav">
+      <a href="#features">Features</a>
+      <a href="#workflows">Workflows</a>
+      <a href="#security">Security</a>
+      <a href="#cta">Get Started</a>
+    </nav>
+
+    <div class="site-header-actions">
+      <a class="ghost-btn" href="/login">Sign in</a>
+      <a class="primary-btn" href="/create-account">Create account</a>
+    </div>
+  </header>
+
+  <main id="top" class="landing-shell landing-wide">
+    <section class="hero-grid hero-grid-wide">
+      <div class="hero-copy">
+        <div class="eyebrow">Professional log observability for every organization</div>
+        <h1>One sleek website for your product. Separate sign in and create account pages for a cleaner SaaS experience.</h1>
+        <p class="hero-lead">
+          ObserveX helps teams upload logs, parse multiline events correctly, connect AWS S3,
+          integrate remote log APIs, create ingestion jobs, manage alerts, and run a shared workspace
+          with role-based users inside each organization.
+        </p>
+
+        <div class="hero-actions">
+          <a class="primary-btn" href="/create-account">Create workspace</a>
+          <a class="secondary-btn" href="/login">Sign in</a>
+        </div>
+
+        <div class="hero-proof-grid">
+          <article class="proof-card float-card">
+            <strong>Complete log handling</strong>
+            <span>Upload, parse, search, and inspect full log events without broken multiline payloads.</span>
+          </article>
+          <article class="proof-card float-card delay-one">
+            <strong>Shared workspace</strong>
+            <span>Create one organization and add admins, managers, developers, and testers inside it.</span>
+          </article>
+          <article class="proof-card float-card delay-two">
+            <strong>Operational control</strong>
+            <span>Use S3, API connectors, ingestion jobs, alert rules, audit trail, and organization branding.</span>
+          </article>
+        </div>
+      </div>
+
+      <div class="hero-visual glass-panel hero-visual-large">
+        <div class="hero-visual-topbar"><span></span><span></span><span></span></div>
+        <div class="hero-visual-frame">
+          <img src="{{ url_for('static', filename='dashboard-preview.png') }}" alt="ObserveX dashboard preview" />
+        </div>
+        <div class="hero-float hero-float-left">
+          <strong>Multiline-safe parser</strong>
+          <span>Prevents one payload from breaking into dozens of partial rows.</span>
+        </div>
+        <div class="hero-float hero-float-right">
+          <strong>S3 + API connectors</strong>
+          <span>Connect remote sources, schedule ingestion, and view everything in one workspace.</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="section-block" id="features">
+      <div class="section-head">
+        <div>
+          <div class="eyebrow">Features</div>
+          <h2>Everything your platform needs to look polished and work like a real SaaS product.</h2>
+        </div>
+        <p>
+          The public website explains your value clearly, while the product workspace handles ingestion,
+          observability, users, and governance.
+        </p>
+      </div>
+
+      <div class="feature-grid feature-grid-wide">
+        <article class="feature-card glass-panel">
+          <div class="feature-icon">📤</div>
+          <h3>Upload and parse logs</h3>
+          <p>Users can upload log files directly and inspect complete events, including multiline stack traces and payload blocks.</p>
+        </article>
+        <article class="feature-card glass-panel">
+          <div class="feature-icon">☁️</div>
+          <h3>AWS S3 integration</h3>
+          <p>Test buckets, save connectors, and attach them to ingestion jobs for archive or scheduled sync use cases.</p>
+        </article>
+        <article class="feature-card glass-panel">
+          <div class="feature-icon">🔌</div>
+          <h3>Remote API ingestion</h3>
+          <p>Connect endpoints with bearer tokens and custom headers so external platforms can feed logs into ObserveX.</p>
+        </article>
+        <article class="feature-card glass-panel">
+          <div class="feature-icon">⏱️</div>
+          <h3>Ingestion jobs</h3>
+          <p>Create cron-style jobs for API polling and S3 sync, with run-now actions and scheduling support.</p>
+        </article>
+        <article class="feature-card glass-panel">
+          <div class="feature-icon">🚨</div>
+          <h3>Alert rules</h3>
+          <p>Define rule-based thresholds such as error spikes, stalled ingestion, and SLA breaches with channel mapping.</p>
+        </article>
+        <article class="feature-card glass-panel">
+          <div class="feature-icon">👥</div>
+          <h3>Organization users</h3>
+          <p>Admins can add users inside the same organization with roles like admin, manager, developer, and tester.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="section-block" id="workflows">
+      <div class="workflow-grid workflow-grid-wide">
+        <div class="workflow-copy glass-panel">
+          <div class="eyebrow">Workflows</div>
+          <h2>Professional entry flow: website first, then dedicated sign in and create account pages.</h2>
+          <div class="step-list">
+            <div class="step-row"><span>1</span><div><strong>Public landing page</strong><p>Show the product, visuals, features, and value proposition clearly before asking the user to authenticate.</p></div></div>
+            <div class="step-row"><span>2</span><div><strong>Create account page</strong><p>New organizations create their workspace with organization name, slug, admin details, and password.</p></div></div>
+            <div class="step-row"><span>3</span><div><strong>Sign in page</strong><p>Existing users go to a clean dedicated login page and enter the shared workspace after authentication.</p></div></div>
+            <div class="step-row"><span>4</span><div><strong>Workspace operations</strong><p>Inside the product, admins create more users, manage integrations, jobs, alert rules, and audit trail.</p></div></div>
+          </div>
+        </div>
+
+        <div class="workflow-stack">
+          <article class="mini-showcase glass-panel">
+            <div class="eyebrow">Designed for teams</div>
+            <h3>Cleaner and more professional than mixing sign in and create account in one block.</h3>
+            <p>A separate page flow feels more polished, easier to understand, and more aligned with modern SaaS products.</p>
+          </article>
+          <article class="mini-showcase glass-panel">
+            <div class="eyebrow">Future ready</div>
+            <h3>Organization-first structure</h3>
+            <p>Workspace slugs are stored now so you can later support subdomain-style access like company.vewit.com.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section-block" id="security">
+      <div class="section-head compact">
+        <div>
+          <div class="eyebrow">Security and governance</div>
+          <h2>Control the workspace with roles, admin-only mode, and audit visibility.</h2>
+        </div>
+      </div>
+      <div class="feature-grid feature-grid-wide">
+        <article class="feature-card glass-panel"><div class="feature-icon">🛡️</div><h3>Role-based users</h3><p>Give the right level of access to admins, managers, developers, and testers within each organization.</p></article>
+        <article class="feature-card glass-panel"><div class="feature-icon">🔒</div><h3>Admin-only option</h3><p>Lock the workspace to admins only when you want tighter control during rollout or operations.</p></article>
+        <article class="feature-card glass-panel"><div class="feature-icon">🧾</div><h3>Audit trail</h3><p>Track account creation, user changes, ingestion actions, and configuration events in one place.</p></article>
+      </div>
+    </section>
+
+    <section class="section-block auth-section" id="cta">
+      <div class="auth-layout auth-layout-simple">
+        <div class="auth-marketing glass-panel">
+          <div class="eyebrow">Get started</div>
+          <h3>Start with the page that matches the user’s intent.</h3>
+          <ul class="feature-listing">
+            <li>New organizations create a workspace from the create account page.</li>
+            <li>Existing users sign in from a clean dedicated login page.</li>
+            <li>Everything stays on a bright, premium white theme.</li>
+          </ul>
+          <div class="hero-actions top-gap">
+            <a class="primary-btn" href="/create-account">Create account</a>
+            <a class="secondary-btn" href="/login">Sign in</a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

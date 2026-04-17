@@ -3,293 +3,75 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ObserveX | Unified Log Observability Workspace</title>
+  <title>Sign in | ObserveX</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
 </head>
-<body class="landing-body theme-black">
-  <div class="landing-orb orb-one"></div>
-  <div class="landing-orb orb-two"></div>
-  <div class="landing-orb orb-three"></div>
-
-  <header class="site-header glass-panel">
-    <a class="site-brand" href="#top">
-      <span class="site-brand-badge">OX</span>
-      <span>
-        <strong>ObserveX</strong>
-        <small>Enterprise Observability</small>
-      </span>
-    </a>
-
-    <nav class="site-nav">
-      <a href="#features">Features</a>
-      <a href="#workflows">Workflows</a>
-      <a href="#security">Security</a>
-      <a href="#auth">Create Account</a>
-      <a href="#auth">Sign In</a>
-    </nav>
-
-    <div class="site-header-actions">
-      <button class="theme-chip active" type="button" data-landing-theme="black">Black</button>
-      <button class="theme-chip" type="button" data-landing-theme="white">White</button>
-      <button class="theme-chip" type="button" data-landing-theme="green">Green</button>
-      <a class="ghost-btn" href="#auth">Login</a>
-      <a class="primary-btn" href="#auth">Get Started</a>
-    </div>
-  </header>
-
-  <main id="top" class="landing-shell">
-    <section class="hero-grid">
-      <div class="hero-copy">
-        <div class="eyebrow">SaaS landing page + workspace access</div>
-        <h1>One beautiful website for your product, then a secure shared workspace for every organization.</h1>
-        <p class="hero-lead">
-          ObserveX lets teams upload logs, connect AWS S3, ingest from remote APIs, create alert rules,
-          manage users inside organizations, and operate from one sleek observability control plane.
-        </p>
-
-        <div class="hero-actions">
-          <a class="primary-btn" href="#auth">Create Workspace</a>
-          <a class="secondary-btn" href="#features">Explore Features</a>
-        </div>
-
-        <div class="hero-proof-grid">
-          <article class="proof-card float-card">
-            <strong>All systems supported</strong>
-            <span>Not MuleSoft-only. Generic logs, APIs, and storage integrations.</span>
-          </article>
-          <article class="proof-card float-card delay-one">
-            <strong>Organization-aware</strong>
-            <span>Create one workspace per org with branding, roles, admin mode, and future subdomains.</span>
-          </article>
-          <article class="proof-card float-card delay-two">
-            <strong>Shared or admin-only</strong>
-            <span>Keep it collaborative or lock everything to admins only.</span>
-          </article>
-        </div>
+<body class="login-body theme-white auth-page-body">
+  <main class="auth-page-shell">
+    <section class="auth-page-copy glass-panel">
+      <a class="site-brand auth-page-brand" href="/">
+        <span class="site-brand-badge">OX</span>
+        <span>
+          <strong>ObserveX</strong>
+          <small>Enterprise observability</small>
+        </span>
+      </a>
+      <div class="eyebrow">Welcome back</div>
+      <h1>Sign in to your organization workspace.</h1>
+      <p class="hero-lead compact-lead">Access your shared dashboard, integrations, alert rules, ingestion jobs, and organization settings from one professional control plane.</p>
+      <div class="mini-grid auth-mini-grid">
+        <article class="mini-card"><strong>Shared workspace</strong><span>Every user enters the same organization workspace with the right role and permissions.</span></article>
+        <article class="mini-card"><strong>Secure access</strong><span>Admins can keep the workspace shared or enable admin-only mode whenever needed.</span></article>
       </div>
-
-      <div class="hero-visual glass-panel">
-        <div class="hero-visual-topbar">
-          <span></span><span></span><span></span>
-        </div>
-        <div class="hero-visual-frame">
-          <img src="{{ url_for('static', filename='dashboard-preview.png') }}" alt="ObserveX dashboard preview" />
-        </div>
-        <div class="hero-float hero-float-left">
-          <strong>Upload logs</strong>
-          <span>Multiline-safe parsing for broken events</span>
-        </div>
-        <div class="hero-float hero-float-right">
-          <strong>S3 + API connectors</strong>
-          <span>Test, save, schedule, and run ingestion</span>
-        </div>
+      <div class="result-box">
+        <strong>Demo login</strong><br />
+        admin@vewit.local / admin123
       </div>
     </section>
 
-    <section class="logo-strip glass-panel">
-      <div>Upload & parse logs</div>
-      <div>AWS S3 integration</div>
-      <div>Remote API ingestion</div>
-      <div>Ingestion jobs</div>
-      <div>Alert rules</div>
-      <div>Audit trail</div>
-      <div>Role-based users</div>
-      <div>Org branding</div>
-    </section>
-
-    <section id="features" class="section-block">
-      <div class="section-head">
+    <section class="login-panel auth-page-form-panel">
+      <div class="eyebrow">Sign in</div>
+      <h2 class="auth-form-title">Enter your details</h2>
+      <form class="login-form" id="loginForm">
         <div>
-          <div class="eyebrow">Platform features</div>
-          <h2>Everything your website should explain before the user clicks Create Account.</h2>
+          <label>Email address</label>
+          <input type="email" name="email" value="admin@vewit.local" required />
         </div>
-        <p>Each organization can sign in, manage access, connect data sources, and monitor logs from a clean enterprise workspace.</p>
-      </div>
-
-      <div class="feature-grid">
-        <article class="feature-card glass-panel">
-          <div class="feature-icon">📂</div>
-          <h3>Upload any log files</h3>
-          <p>Users can upload application logs, plain text logs, multiline stack traces, and structured files without breaking event grouping.</p>
-        </article>
-        <article class="feature-card glass-panel">
-          <div class="feature-icon">☁️</div>
-          <h3>AWS S3 integration</h3>
-          <p>Test buckets, save credentials, attach prefixes, and use them as a scheduled ingestion source for archived or live operational logs.</p>
-        </article>
-        <article class="feature-card glass-panel">
-          <div class="feature-icon">🔌</div>
-          <h3>Remote API ingestion</h3>
-          <p>Connect any log-producing API endpoint with optional bearer tokens and JSON headers, then validate it before saving.</p>
-        </article>
-        <article class="feature-card glass-panel">
-          <div class="feature-icon">⏱️</div>
-          <h3>Scheduled ingestion jobs</h3>
-          <p>Create cron-based jobs for S3 and API polling, keep them paused or scheduled, and trigger run-now actions from the UI.</p>
-        </article>
-        <article class="feature-card glass-panel">
-          <div class="feature-icon">🚨</div>
-          <h3>Alert rules</h3>
-          <p>Define error spikes, SLA breach rules, stalled-ingestion detection, and channel-based escalation using Slack, email, or PagerDuty.</p>
-        </article>
-        <article class="feature-card glass-panel">
-          <div class="feature-icon">👥</div>
-          <h3>Organization users</h3>
-          <p>Admins can create users inside the same organization with roles like admin, manager, developer, and tester.</p>
-        </article>
-        <article class="feature-card glass-panel">
-          <div class="feature-icon">🛡️</div>
-          <h3>Admin-only mode</h3>
-          <p>If you want everything controlled only by admins, switch the workspace to admin-only and block non-admin access.</p>
-        </article>
-        <article class="feature-card glass-panel">
-          <div class="feature-icon">🎨</div>
-          <h3>Theme & branding</h3>
-          <p>Choose black, white, or green themes, set organization identity, and prepare for org subdomains like company.vewit.com.</p>
-        </article>
-        <article class="feature-card glass-panel">
-          <div class="feature-icon">📜</div>
-          <h3>Audit trail</h3>
-          <p>Track logins, user creation, integration changes, job updates, and other admin actions for better accountability.</p>
-        </article>
-      </div>
-    </section>
-
-    <section id="workflows" class="section-block workflow-grid">
-      <div class="workflow-copy glass-panel">
-        <div class="eyebrow">How it works</div>
-        <h2>A cleaner product journey for real users.</h2>
-        <div class="step-list">
-          <div class="step-row"><span>01</span><div><strong>Visit the website</strong><p>Read the product story, explore features, and understand what the platform can do.</p></div></div>
-          <div class="step-row"><span>02</span><div><strong>Create organization workspace</strong><p>Enter organization name, slug, admin name, email, password, and preferred theme.</p></div></div>
-          <div class="step-row"><span>03</span><div><strong>Invite or create internal users</strong><p>Admins add managers, developers, and testers inside the same organization.</p></div></div>
-          <div class="step-row"><span>04</span><div><strong>Connect data sources</strong><p>Upload logs, connect S3, connect APIs, define ingestion schedules, and create alert rules.</p></div></div>
-        </div>
-      </div>
-
-      <div class="workflow-stack">
-        <article class="mini-showcase glass-panel">
-          <div class="eyebrow">Designed for enterprise feel</div>
-          <h3>Sleek visuals, subtle motion, and polished UI.</h3>
-          <p>The landing page uses modern gradients, floating cards, animated highlights, and product screenshots so it feels like a real SaaS website.</p>
-        </article>
-        <article id="security" class="mini-showcase glass-panel">
-          <div class="eyebrow">Governance</div>
-          <h3>Shared workspace with control.</h3>
-          <p>Use role-based accounts, admin-only mode, audit trail visibility, and tenant-level configuration without losing the simplicity of a single control plane.</p>
-        </article>
-      </div>
-    </section>
-
-    <section id="auth" class="section-block auth-section">
-      <div class="section-head compact">
         <div>
-          <div class="eyebrow">Access the workspace</div>
-          <h2>Create account or sign in right from the website.</h2>
+          <label>Password</label>
+          <input type="password" name="password" value="admin123" required />
         </div>
-        <p>New organizations create a workspace here. Existing users just sign in and enter their shared dashboard.</p>
-      </div>
-
-      <div class="auth-layout">
-        <section class="auth-marketing glass-panel">
-          <div class="auth-badge-row">
-            <span class="tag-pill">Shared workspace</span>
-            <span class="tag-pill">Organization roles</span>
-            <span class="tag-pill">Beautiful themes</span>
-          </div>
-          <h3>ObserveX Enterprise</h3>
-          <p>Built for teams that want a better entry experience than a plain login screen.</p>
-          <ul class="feature-listing">
-            <li>Public website at the top</li>
-            <li>Create account and sign in in the same experience</li>
-            <li>Feature-rich messaging before the user registers</li>
-            <li>Professional look with motion and product visuals</li>
-          </ul>
-          <div class="mini-grid auth-mini-grid">
-            <div class="mini-card"><strong>Demo login</strong><span>admin@vewit.local / admin123</span></div>
-            <div class="mini-card"><strong>Roles</strong><span>Admin, Manager, Developer, Tester</span></div>
-          </div>
-        </section>
-
-        <section class="login-panel auth-card-panel">
-          <div class="tab-row">
-            <button class="tab-btn active" type="button" data-auth-tab="login">Sign in</button>
-            <button class="tab-btn" type="button" data-auth-tab="register">Create workspace</button>
-          </div>
-
-          <div id="loginTab" class="auth-tab active">
-            <form id="loginForm" class="login-form">
-              <div><label>Email</label><input type="email" name="email" value="admin@vewit.local" required /></div>
-              <div><label>Password</label><input type="password" name="password" value="admin123" required /></div>
-              <button class="primary-btn wide" type="submit">Open workspace</button>
-            </form>
-          </div>
-
-          <div id="registerTab" class="auth-tab">
-            <form id="registerForm" class="form-grid two-col-form">
-              <div><label>Organization name</label><input type="text" name="organization_name" placeholder="Vewit" required /></div>
-              <div><label>Organization slug</label><input type="text" name="organization_slug" placeholder="vewit" /></div>
-              <div><label>Your name</label><input type="text" name="name" placeholder="Prasanna" required /></div>
-              <div><label>Your email</label><input type="email" name="email" placeholder="admin@yourorg.com" required /></div>
-              <div><label>Password</label><input type="password" name="password" placeholder="Create password" required /></div>
-              <div><label>Role</label><select name="role"><option value="admin">Admin</option></select></div>
-              <div><label>Theme</label><select name="theme_mode"><option value="black">Black</option><option value="white">White</option><option value="green">Green</option></select></div>
-            </form>
-            <button class="primary-btn wide top-gap" id="createWorkspaceBtn" type="button">Create workspace</button>
-            <p class="muted top-gap-sm">After creating the organization, you can log in and add managers, developers, and testers inside that organization.</p>
-          </div>
-
-          <div id="loginStatus" class="result-box">Demo credentials are prefilled for you.</div>
-        </section>
+        <button class="primary-btn wide" type="submit">Sign in</button>
+      </form>
+      <div class="result-box" id="loginResult">Use your organization email and password to continue.</div>
+      <div class="auth-page-links">
+        <span>New here?</span>
+        <a href="/create-account">Create account</a>
+        <span class="dot-sep">•</span>
+        <a href="/">Back to website</a>
       </div>
     </section>
   </main>
-
   <script>
-    const statusBox = document.getElementById('loginStatus');
-    document.querySelectorAll('[data-auth-tab]').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        document.querySelectorAll('[data-auth-tab]').forEach((b) => b.classList.remove('active'));
-        document.querySelectorAll('.auth-tab').forEach((tab) => tab.classList.remove('active'));
-        btn.classList.add('active');
-        document.getElementById(btn.dataset.authTab + 'Tab').classList.add('active');
-      });
-    });
-
-    document.querySelectorAll('[data-landing-theme]').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        document.querySelectorAll('[data-landing-theme]').forEach((b) => b.classList.remove('active'));
-        btn.classList.add('active');
-        document.body.classList.remove('theme-black', 'theme-white', 'theme-green');
-        document.body.classList.add(`theme-${btn.dataset.landingTheme}`);
-      });
-    });
-
-    document.getElementById('loginForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const payload = Object.fromEntries(new FormData(e.target).entries());
-      statusBox.textContent = 'Signing in...';
-      const res = await fetch('/login', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload)});
-      const data = await res.json();
-      if (!res.ok) {
-        statusBox.textContent = data.error || 'Login failed';
-        return;
+    const loginForm = document.getElementById('loginForm');
+    const loginResult = document.getElementById('loginResult');
+    loginForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const payload = Object.fromEntries(new FormData(loginForm).entries());
+      loginResult.textContent = 'Signing in...';
+      try {
+        const response = await fetch('/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Unable to sign in.');
+        loginResult.textContent = data.message || 'Login successful.';
+        window.location.href = '/workspace';
+      } catch (error) {
+        loginResult.textContent = error.message;
       }
-      window.location.href = '/workspace';
-    });
-
-    document.getElementById('createWorkspaceBtn').addEventListener('click', async () => {
-      const form = document.getElementById('registerForm');
-      const payload = Object.fromEntries(new FormData(form).entries());
-      statusBox.textContent = 'Creating workspace...';
-      const res = await fetch('/register', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload)});
-      const data = await res.json();
-      if (!res.ok) {
-        statusBox.textContent = data.error || 'Workspace creation failed';
-        return;
-      }
-      statusBox.textContent = 'Workspace created. Redirecting...';
-      window.location.href = '/workspace';
     });
   </script>
 </body>
