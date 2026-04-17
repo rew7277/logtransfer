@@ -48,11 +48,9 @@
       <header class="page-header">
         <div>
           <div class="eyebrow">Shared observability workspace</div>
-          <h2>Run uploads, S3, API ingestion, dashboards, alerts, and team access from one workspace.</h2>
+          <h2>Upload local logs, run S3 and API ingestion, save dashboards, and manage the organization from one workspace.</h2>
         </div>
-        <div class="header-badges">
-          
-        </div>
+        <div class="header-badges"><label class="primary-btn upload-header-btn" for="logFileInput">Upload logs</label><button class="secondary-btn" data-jump="logsSection">Open explorer</button></div>
       </header>
 
       <section id="overviewSection" class="content-section active">
@@ -98,7 +96,7 @@
 
       <section id="logsSection" class="content-section">
         <div class="panel">
-          <div class="toolbar">
+          <div class="toolbar"><label class="secondary-btn toolbar-upload" for="logFileInput">Upload logs</label>
             <input id="searchInput" type="search" placeholder="Search message, source, or event id" />
             <select id="levelFilter">
               <option value="all">All levels</option>

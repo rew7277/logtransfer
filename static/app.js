@@ -227,7 +227,7 @@ function renderAudit() {
 async function fetchBootstrap() {
   const res = await fetch('/api/bootstrap');
   if (!res.ok) {
-    if (res.status === 401) window.location.href = '/';
+    if (res.status === 401) window.location.href = '/login';
     return;
   }
   state.bootstrap = await res.json();

@@ -16,7 +16,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
-from flask import Flask, g, jsonify, redirect, render_template, request, session
+from flask import Flask, g, jsonify, redirect, render_template, request, session, url_for
 from werkzeug.security import check_password_hash, generate_password_hash
 
 try:
@@ -935,7 +935,7 @@ def login_page():
 def workspace():
     user, error = require_auth()
     if error:
-        return redirect("/")
+        return redirect("/login")
     return render_template("index.html", user=user)
 
 

@@ -1,20 +1,20 @@
-# ObserveX
+# ObserveX v10 cleanup
 
-Updated SaaS-style observability workspace with:
-- separate landing, sign-in, and create-account pages
-- multi-file log upload and multiline parsing
-- S3 and API connectors
-- background ingestion worker queue
-- saved dashboards
-- invites, email verification, reset password
-- SMTP-ready email sending
-- PostgreSQL package scaffold in requirements for next deployment step
-- wildcard subdomain-ready org slug model
+Includes:
+- cleaned landing page and pricing page
+- visible pricing navigation
+- upload logs restored prominently in workspace overview and explorer
+- separate login and create-account pages
+- background worker, invites, email verification, password reset
+- Gunicorn runtime for Railway
+- subdomain-ready org slug model
 
-## Environment
+## Deploy
+Use Railway with the included `railway.toml`.
+
+## Required env
 - `SECRET_KEY`
 - `PUBLIC_BASE_URL`
-- `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_FROM`
 
-## Notes
-SQLite is still the default embedded database. `psycopg[binary]` is included as the next step toward PostgreSQL deployment.
+## Optional env
+- `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_FROM`

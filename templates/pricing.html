@@ -1,1 +1,55 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Pricing | ObserveX</title><link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}"></head><body class="theme-white marketing-body"><header class="site-topbar compact-topbar"><a class="site-brand" href="/"><span class="site-brand-badge">OX</span><span><strong>ObserveX</strong><small>Pricing</small></span></a><div class="top-actions"><a class="secondary-btn" href="/login">Sign in</a><a class="primary-btn" href="/create-account">Create account</a></div></header><main class="landing-shell landing-shell-wide"><section class="marketing-section compact-section"><div class="section-heading"><div class="eyebrow">Pricing</div><h1>Simple plans for teams that need one observability workspace, not five separate tools.</h1><p class="hero-lead">Start with the core product, then move into integrations, scheduled ingestion, and enterprise routing when your team is ready.</p></div><div class="pricing-grid"><article class="pricing-card"><div class="pill">Starter</div><h3>₹0 / evaluation</h3><p>Best for local trials and UI evaluation.</p><ul><li>Workspace creation</li><li>Single-org login</li><li>Manual uploads</li><li>Log explorer</li><li>Saved dashboards</li></ul></article><article class="pricing-card featured"><div class="pill">Growth</div><h3>Custom / month</h3><p>For teams that need real operations.</p><ul><li>S3 + API integrations</li><li>Background ingestion worker</li><li>Alerts, jobs, and audit trail</li><li>Invite users and email verification</li><li>SMTP-ready notifications</li></ul></article><article class="pricing-card"><div class="pill">Enterprise</div><h3>Custom</h3><p>For multi-tenant production rollout.</p><ul><li>PostgreSQL deployment option</li><li>Wildcard subdomain routing</li><li>Railway custom domain setup</li><li>Dedicated support and onboarding</li><li>Security review and hardening</li></ul></article></div></section><section class="marketing-section compact-section light-panel"><div class="section-heading"><div class="eyebrow">What to include in enterprise rollout</div><h2>Recommended production add-ons</h2></div><div class="feature-grid feature-grid-3"><article class="feature-card"><h3>PostgreSQL</h3><p>Use a managed relational database when you outgrow SQLite and want multi-instance deployment.</p></article><article class="feature-card"><h3>SMTP delivery</h3><p>Send invite links, password resets, and verification emails through your organization mail provider.</p></article><article class="feature-card"><h3>Wildcard domains</h3><p>Map organization slugs to <code>org.observex.in</code> after DNS and Railway public networking are configured.</p></article></div></section></main></body></html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pricing | ObserveX</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
+</head>
+<body class="theme-white landing-body">
+  <header class="site-header glass-panel site-header-clean">
+    <a class="site-brand" href="/"><span class="site-brand-badge">OX</span><span><strong>ObserveX</strong><small>Pricing</small></span></a>
+    <nav class="site-nav"><a href="/">Home</a><a href="/pricing">Pricing</a><a href="/login">Sign in</a></nav>
+    <div class="site-header-actions"><a class="secondary-btn" href="/login">Sign in</a><a class="primary-btn" href="/create-account">Create account</a></div>
+  </header>
+  <main class="landing-shell landing-wide">
+    <section class="marketing-section compact-section">
+      <div class="section-heading"><div class="eyebrow">Pricing</div><h1>Simple plans for growing teams and enterprise rollouts.</h1><p class="hero-lead">Start with manual uploads and workspace basics, then move into connectors, background workers, and production routing as your observability needs grow.</p></div>
+      <div class="pricing-grid">
+        <article class="pricing-card">
+          <div class="pill">Starter</div>
+          <h3>Evaluation</h3>
+          <p>Best for trying the UI and validating log parsing workflows.</p>
+          <ul>
+            <li>Workspace creation</li><li>Manual local file upload</li><li>Multiline parsing</li><li>Log explorer</li><li>Basic users and audit trail</li>
+          </ul>
+        </article>
+        <article class="pricing-card featured">
+          <div class="pill">Growth</div>
+          <h3>Operations</h3>
+          <p>For teams that need active ingestion, saved views, and shared control.</p>
+          <ul>
+            <li>AWS S3 + API connectors</li><li>Scheduled ingestion jobs</li><li>Background worker queue</li><li>Saved dashboards</li><li>Alert rules and ingestion run history</li><li>Invite users and role-based access</li><li>Email verification and password reset</li>
+          </ul>
+        </article>
+        <article class="pricing-card">
+          <div class="pill">Enterprise</div>
+          <h3>Production rollout</h3>
+          <p>For organizations moving from prototype to real multi-tenant deployment.</p>
+          <ul>
+            <li>PostgreSQL deployment</li><li>SMTP delivery integration</li><li>Gunicorn production runtime</li><li>Wildcard domain routing</li><li>Railway custom domain setup</li><li>Onboarding and hardening support</li>
+          </ul>
+        </article>
+      </div>
+    </section>
+    <section class="marketing-section compact-section light-panel">
+      <div class="section-heading"><div class="eyebrow">Included capabilities</div><h2>What teams usually ask about before rollout</h2></div>
+      <div class="feature-grid feature-grid-3">
+        <article class="feature-card"><h3>Manual + automated ingestion</h3><p>Use both local file upload and automated ingestion jobs. One does not replace the other.</p></article>
+        <article class="feature-card"><h3>Elastic and Splunk-friendly inputs</h3><p>Accept JSON events, exported log files, generic text logs, and mixed enterprise payloads.</p></article>
+        <article class="feature-card"><h3>Operational governance</h3><p>Keep integrations, dashboards, alerts, users, invites, and audit history in one workspace.</p></article>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

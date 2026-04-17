@@ -1,13 +1,124 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>ObserveX</title><link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}"></head>
-<body class="theme-white marketing-body">
-<header class="site-topbar compact-topbar"><a class="site-brand" href="/"><span class="site-brand-badge">OX</span><span><strong>ObserveX</strong><small>Enterprise observability workspace</small></span></a><nav class="top-nav"><a href="#features">Features</a><a href="/pricing">Pricing</a><a href="#faq">FAQ</a><a href="#contact">Contact</a></nav><div class="top-actions"><a class="secondary-btn" href="/login">Sign in</a><a class="primary-btn" href="/create-account">Create account</a></div></header>
-<main class="landing-shell landing-shell-wide">
-<section class="hero-row hero-row-tight"><div class="hero-copy"><div class="eyebrow">Log analysis, ingestion, and workspace governance</div><h1>Bring uploads, S3, APIs, saved dashboards, alerts, and user access into one clean control plane.</h1><p class="hero-lead">ObserveX helps teams ingest logs from generic systems, Elastic-style JSON streams, Splunk-like exports, multiline application logs, remote APIs, and S3 archives. Separate sign in and account creation pages keep the experience cleaner and more professional.</p><div class="button-row left"><a class="primary-btn" href="/create-account">Create workspace</a><a class="secondary-btn" href="/login">Sign in</a></div><div class="mini-grid compact-mini-grid"><article class="mini-card"><strong>Upload & parse</strong><span>Single or multiple files, multiline event grouping, JSON, CSV, and plain text.</span></article><article class="mini-card"><strong>Integrations</strong><span>AWS S3, remote APIs, saved connectors, scheduled jobs, and background ingestion.</span></article><article class="mini-card"><strong>Shared access</strong><span>Admins, managers, developers, and testers inside the same organization.</span></article></div></div><div class="hero-visual slim-visual"><img src="{{ url_for('static', filename='dashboard-preview.png') }}" alt="ObserveX preview"><div class="floating-card fc-1"><strong>Elastic & Splunk inputs</strong><span>JSON events, exported log files, multiline application logs.</span></div><div class="floating-card fc-2"><strong>Saved dashboards</strong><span>Keep your favorite views ready for teams.</span></div></div></section>
-<section id="features" class="marketing-section compact-section"><div class="section-heading"><div class="eyebrow">Core capabilities</div><h2>What the product can do right now</h2></div><div class="feature-grid feature-grid-4"><article class="feature-card"><h3>Log explorer</h3><p>Search by level, source, message, or event ID. Open full payload details from stored records.</p></article><article class="feature-card"><h3>Saved dashboards</h3><p>Save views for incident response, platform health, and operational reporting.</p></article><article class="feature-card"><h3>Workflow automation</h3><p>Define polling jobs for APIs and S3, then run them with a background ingestion worker.</p></article><article class="feature-card"><h3>Access & audit</h3><p>Invite users, verify email, reset passwords, and keep an audit trail of workspace actions.</p></article><article class="feature-card"><h3>Elastic-friendly input</h3><p>Accept JSON arrays, NDJSON, timestamped logs, and ECS-like records.</p></article><article class="feature-card"><h3>Splunk-friendly input</h3><p>Handle exported search results, raw log text, and mixed source fields from enterprise systems.</p></article><article class="feature-card"><h3>Organization routing</h3><p>Store workspace slug now and switch to wildcard subdomains when Railway/DNS is configured.</p></article><article class="feature-card"><h3>Operational contact</h3><p>Demo request form, pricing page, onboarding pages, and cleaner public website flow.</p></article></div></section>
-<section class="marketing-section compact-section light-panel" id="faq"><div class="section-heading"><div class="eyebrow">FAQ</div><h2>Common implementation questions</h2></div><div class="faq-list"><article><strong>Why separate sign in and create account?</strong><p>Because that is the standard SaaS flow. It improves clarity and feels more trustworthy for enterprise users.</p></article><article><strong>Why don’t subdomains show automatically?</strong><p>App code stores the organization slug, but real tenant URLs also need wildcard DNS and Railway custom domain routing.</p></article><article><strong>Can admins create users inside the organization?</strong><p>Yes. The first user is the admin, and admins can invite or create more users later.</p></article></div></section>
-<section class="marketing-section compact-section" id="contact"><div class="section-heading"><div class="eyebrow">Book a demo</div><h2>Need a walkthrough for your team?</h2></div><form id="demoForm" class="demo-inline-form"><input name="name" placeholder="Your name"><input name="company" placeholder="Company"><input name="email" placeholder="Work email"><input name="message" placeholder="What do you want to see?"><button class="primary-btn" type="submit">Request demo</button></form><div id="demoResult" class="result-box">We will create a demo request record and optionally send mail when SMTP is configured.</div></section>
-</main>
-<footer class="site-footer compact-footer"><span>ObserveX</span><span>Uploads · S3 · API ingestion · saved dashboards · audit trail</span></footer>
-<script>document.getElementById('demoForm').addEventListener('submit',async(e)=>{e.preventDefault();const payload=Object.fromEntries(new FormData(e.target).entries());const r=await fetch('/api/demo-request',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});const d=await r.json();document.getElementById('demoResult').textContent=d.message||d.error;});</script>
-</body></html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ObserveX | Log observability workspace</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
+</head>
+<body class="theme-white landing-body">
+  <header class="site-header glass-panel site-header-clean">
+    <a class="site-brand" href="/">
+      <span class="site-brand-badge">OX</span>
+      <span><strong>ObserveX</strong><small>Enterprise observability workspace</small></span>
+    </a>
+    <nav class="site-nav">
+      <a href="#features">Features</a>
+      <a href="/pricing">Pricing</a>
+      <a href="#faq">FAQ</a>
+      <a href="#contact">Book demo</a>
+    </nav>
+    <div class="site-header-actions">
+      <a class="secondary-btn" href="/login">Sign in</a>
+      <a class="primary-btn" href="/create-account">Create account</a>
+    </div>
+  </header>
+
+  <main class="landing-shell landing-wide">
+    <section class="hero-grid hero-grid-wide hero-clean">
+      <div class="hero-copy">
+        <div class="eyebrow">Uploads, S3, APIs, dashboards, alerts, and access control</div>
+        <h1>One clean control plane for log operations.</h1>
+        <p class="hero-lead">ObserveX brings local file upload, multiline parsing, AWS S3 ingestion, remote API ingestion, saved dashboards, alerts, audit trail, and role-based workspace access into one product. It is built for generic enterprise systems, not just one platform.</p>
+        <div class="hero-actions">
+          <a class="primary-btn" href="/create-account">Create workspace</a>
+          <a class="secondary-btn" href="/login">Sign in</a>
+          <a class="secondary-btn" href="/pricing">View pricing</a>
+        </div>
+        <div class="hero-proof-grid compact-proof-grid">
+          <article class="proof-card"><strong>Upload logs instantly</strong><span>Drag in .log, .txt, .json, .ndjson, and .csv files with multiline-safe parsing.</span></article>
+          <article class="proof-card"><strong>Connect live sources</strong><span>Bring in AWS S3 archives and remote APIs, then automate ingestion jobs.</span></article>
+          <article class="proof-card"><strong>Operate as a team</strong><span>Admins, managers, developers, and testers can work in one shared organization.</span></article>
+        </div>
+      </div>
+      <div class="hero-visual hero-visual-large glass-panel">
+        <div class="hero-visual-topbar"><span></span><span></span><span></span></div>
+        <div class="hero-visual-frame"><img src="{{ url_for('static', filename='dashboard-preview.png') }}" alt="ObserveX dashboard preview" /></div>
+        <div class="hero-float hero-float-left"><strong>Fast upload path</strong><span>Manual upload stays visible in the workspace overview and log explorer.</span></div>
+        <div class="hero-float hero-float-right"><strong>Background jobs</strong><span>Queue API and S3 ingestion runs without blocking the UI.</span></div>
+      </div>
+    </section>
+
+    <section id="features" class="marketing-section compact-section">
+      <div class="section-heading">
+        <div class="eyebrow">Platform features</div>
+        <h2>Everything teams usually split across multiple tools</h2>
+      </div>
+      <div class="feature-grid feature-grid-4">
+        <article class="feature-card"><h3>Manual uploads</h3><p>Upload logs from local desktop files straight into the workspace for immediate analysis.</p></article>
+        <article class="feature-card"><h3>Multiline parsing</h3><p>Keep stack traces and Mule-style multiline events together instead of breaking them into useless rows.</p></article>
+        <article class="feature-card"><h3>S3 + API ingestion</h3><p>Save connectors, test connectivity, and run scheduled ingestion against archive buckets or log APIs.</p></article>
+        <article class="feature-card"><h3>Saved dashboards</h3><p>Capture the most useful operational views for latency, error spikes, and source health.</p></article>
+        <article class="feature-card"><h3>Alert rules</h3><p>Create rules for error-rate spikes, ingestion stalls, and system thresholds.</p></article>
+        <article class="feature-card"><h3>User invitations</h3><p>Invite internal users by email and assign admin, manager, developer, or tester access.</p></article>
+        <article class="feature-card"><h3>Audit trail</h3><p>Track log uploads, integrations, user changes, and workspace activity in one place.</p></article>
+        <article class="feature-card"><h3>Subdomain-ready model</h3><p>Store org slug now and move to <code>org.observex.in</code> when Railway DNS is ready.</p></article>
+      </div>
+    </section>
+
+    <section class="marketing-section compact-section light-panel">
+      <div class="section-heading">
+        <div class="eyebrow">Best-fit use cases</div>
+        <h2>Where ObserveX helps most</h2>
+      </div>
+      <div class="feature-grid feature-grid-3">
+        <article class="feature-card"><h3>Support and incident triage</h3><p>Upload problematic logs, search errors quickly, and save investigation dashboards for repeat issues.</p></article>
+        <article class="feature-card"><h3>Operations control plane</h3><p>Connect archives and APIs, schedule ingestion, and monitor pipeline health from one shared UI.</p></article>
+        <article class="feature-card"><h3>Migration from ad hoc tools</h3><p>Reduce dependency on scattered scripts, one-off file viewers, and disconnected monitoring pages.</p></article>
+      </div>
+    </section>
+
+    <section class="marketing-section compact-section" id="faq">
+      <div class="section-heading">
+        <div class="eyebrow">FAQ</div>
+        <h2>Common questions</h2>
+      </div>
+      <div class="faq-list">
+        <article><strong>Can users access the workspace without sign in?</strong><p>No. The public site, pricing page, sign-in page, create-account page, and demo form stay public. The workspace and all operational APIs require login.</p></article>
+        <article><strong>Why do subdomains not show automatically?</strong><p>The app stores organization slug in code and data, but real tenant URLs need Railway custom domains plus wildcard DNS.</p></article>
+        <article><strong>Can I still upload local logs?</strong><p>Yes. Manual file upload stays available inside the workspace overview and log explorer.</p></article>
+      </div>
+    </section>
+
+    <section id="contact" class="marketing-section compact-section light-panel">
+      <div class="section-heading">
+        <div class="eyebrow">Book a demo</div>
+        <h2>Need a walkthrough for your team?</h2>
+      </div>
+      <form id="demoForm" class="demo-inline-form">
+        <input name="name" placeholder="Your name" />
+        <input name="company" placeholder="Company" />
+        <input name="email" placeholder="Work email" />
+        <input name="message" placeholder="What do you want to see?" />
+        <button class="primary-btn" type="submit">Request demo</button>
+      </form>
+      <div id="demoResult" class="result-box">We create a demo request record now and can send email later when SMTP is configured.</div>
+    </section>
+  </main>
+
+  <footer class="site-footer compact-footer">
+    <span>ObserveX</span>
+    <span>Upload logs · S3 ingestion · API ingestion · saved dashboards · audit trail</span>
+  </footer>
+
+  <script>
+    document.getElementById('demoForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const payload = Object.fromEntries(new FormData(e.target).entries());
+      const r = await fetch('/api/demo-request', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload)});
+      const d = await r.json();
+      document.getElementById('demoResult').textContent = d.message || d.error || 'Request submitted';
+    });
+  </script>
+</body>
+</html>
