@@ -36,3 +36,11 @@ Open `http://localhost:8080`
 ## Notes
 - This is a strong starter, not a full production platform yet.
 - For production, move to PostgreSQL, background workers, stronger RBAC, and real subdomain routing.
+
+
+## New in this update
+- public landing website at the top of the product
+- feature-rich hero section with animations
+- screenshot-based product preview image
+- create account and sign in directly from the website
+- feature sections for uploads, S3, API, jobs, alerts, users, themes, and audit trail
