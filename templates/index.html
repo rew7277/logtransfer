@@ -3,221 +3,104 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ObserveX Enterprise · Workspace</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700&display=swap" rel="stylesheet">
+  <title>ObserveX Enterprise Workspace</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
 </head>
-<body>
-  <div class="bg-mesh">
-    <div class="orb orb-1"></div>
-    <div class="orb orb-2"></div>
-    <div class="orb orb-3"></div>
-  </div>
-  <div class="noise-layer"></div>
-
+<body class="theme-black">
   <div class="app-shell">
-    <!-- ═══════════════════════════════ SIDEBAR ═══════════════════════════════ -->
     <aside class="sidebar">
-      <div class="sidebar-brand">
-        <div class="sidebar-logo" id="orgLogo">OX</div>
-        <div class="sidebar-brand-text">
-          <span class="sidebar-product">ObserveX</span>
-          <span class="sidebar-org" id="orgSlugDisplay">Enterprise</span>
-        </div>
-      </div>
-
-      <span class="nav-section-label">Platform</span>
-      <nav class="nav-list">
-        <button class="nav-item active" data-section="overviewSection">
-          <span class="nav-icon">
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="1" y="1" width="5" height="5" rx="1.5" stroke="currentColor" stroke-width="1.4"/><rect x="1" y="8" width="5" height="5" rx="1.5" stroke="currentColor" stroke-width="1.4"/><rect x="8" y="1" width="5" height="5" rx="1.5" stroke="currentColor" stroke-width="1.4"/><rect x="8" y="8" width="5" height="5" rx="1.5" stroke="currentColor" stroke-width="1.4"/></svg>
-          </span>
-          Overview
-        </button>
-        <button class="nav-item" data-section="logsSection">
-          <span class="nav-icon">
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 3h10M2 7h10M2 11h6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
-          </span>
-          Log explorer
-          <span class="nav-badge" id="logsBadge">0</span>
-        </button>
-        <button class="nav-item" data-section="integrationsSection">
-          <span class="nav-icon">
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="4" cy="7" r="2.5" stroke="currentColor" stroke-width="1.4"/><circle cx="10" cy="7" r="2.5" stroke="currentColor" stroke-width="1.4"/><path d="M6.5 7h1" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
-          </span>
-          Integrations
-        </button>
-        <button class="nav-item" data-section="jobsSection">
-          <span class="nav-icon">
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="5.5" stroke="currentColor" stroke-width="1.4"/><path d="M7 4v3l2 2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
-          </span>
-          Ingestion jobs
-        </button>
-      </nav>
-
-      <span class="nav-section-label">Governance</span>
-      <nav class="nav-list">
-        <button class="nav-item" data-section="alertsSection">
-          <span class="nav-icon">
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1.5L1.5 11.5h11L7 1.5Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M7 5.5v2.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><circle cx="7" cy="9.5" r="0.6" fill="currentColor"/></svg>
-          </span>
-          Alert rules
-        </button>
-        <button class="nav-item" data-section="usersSection">
-          <span class="nav-icon">
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="5" r="2.5" stroke="currentColor" stroke-width="1.4"/><path d="M2 12c0-2.761 2.239-4 5-4s5 1.239 5 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
-          </span>
-          Users &amp; RBAC
-        </button>
-        <button class="nav-item" data-section="orgSection">
-          <span class="nav-icon">
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="5.5" stroke="currentColor" stroke-width="1.4"/><circle cx="7" cy="7" r="2" stroke="currentColor" stroke-width="1.4"/></svg>
-          </span>
-          Organization
-        </button>
-        <button class="nav-item" data-section="auditSection">
-          <span class="nav-icon">
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 2h10v10H2zM5 2v10M2 5h3M2 8h3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
-          </span>
-          Audit trail
-        </button>
-      </nav>
-
-      <div class="sidebar-footer">
-        <div class="user-card">
-          <div class="user-avatar" id="userAvatarInitials">A</div>
-          <div class="user-info">
-            <span class="user-name" id="userNameDisplay">{{ user.name }}</span>
-            <span class="user-role" id="userRoleDisplay">{{ user.role }}</span>
+      <div>
+        <div class="brand-lockup">
+          <div class="brand-badge" id="orgLogo">VX</div>
+          <div>
+            <div class="eyebrow">ObserveX Enterprise</div>
+            <h1 id="orgName">Vewit</h1>
+            <p id="orgSlug">vewit</p>
           </div>
         </div>
-        <button class="btn-ghost" style="width:100%; justify-content:center; font-size:13px;" id="logoutBtn">
-          Sign out
-        </button>
+
+        <nav class="nav-stack">
+          <button class="nav-link active" data-section="overviewSection">Overview</button>
+          <button class="nav-link" data-section="logsSection">Log explorer</button>
+          <button class="nav-link" data-section="integrationsSection">Integrations</button>
+          <button class="nav-link" data-section="jobsSection">Ingestion jobs</button>
+          <button class="nav-link" data-section="alertsSection">Alert rules</button>
+          <button class="nav-link" data-section="usersSection">Users & access</button>
+          <button class="nav-link" data-section="orgSection">Organization</button>
+          <button class="nav-link" data-section="auditSection">Audit trail</button>
+        </nav>
+      </div>
+
+      <div class="side-footer">
+        <div class="user-box">
+          <div class="small-label">Signed in as</div>
+          <strong id="currentUserName">{{ user.name }}</strong>
+          <span id="currentUserRole">{{ user.role }}</span>
+        </div>
+        <button class="ghost-btn wide" id="logoutBtn">Logout</button>
       </div>
     </aside>
 
-    <!-- ════════════════════════════ MAIN CONTENT ════════════════════════════ -->
     <main class="main-content">
-      <!-- PAGE HEADER -->
-      <div class="page-topbar">
-        <div class="page-title-block">
-          <span class="page-eyebrow" id="pageSectionLabel">Overview</span>
-          <h2 class="page-title" id="orgNameDisplay">Vewit Workspace</h2>
+      <header class="page-header">
+        <div>
+          <div class="eyebrow">Shared observability workspace</div>
+          <h2>Upload logs, wire S3 and APIs, and govern everything from one control plane.</h2>
         </div>
-        <div class="topbar-pills">
-          <span class="pill-badge" id="adminModeBadge">Admin mode: off</span>
-          <span class="pill-badge active-pill" id="subdomainBadge">vewit.vewit.com</span>
+        <div class="header-badges">
+          <span class="pill" id="adminModeBadge">Admin-only: Off</span>
+          <span class="pill" id="subdomainHint">vewit.vewit.com</span>
+          <span class="pill" id="themeBadge">Theme: Black</span>
         </div>
-      </div>
+      </header>
 
-      <!-- ══════════ OVERVIEW ══════════ -->
-      <section id="overviewSection" class="section active">
-        <div class="metric-row">
-          <div class="metric-card metric-accent-accent">
-            <span class="metric-icon">📊</span>
-            <span class="metric-label">Total logs</span>
-            <strong class="metric-value" id="metricLogs">—</strong>
-            <span class="metric-trend">All time ingested</span>
-          </div>
-          <div class="metric-card metric-accent-success">
-            <span class="metric-icon">👥</span>
-            <span class="metric-label">Users</span>
-            <strong class="metric-value" id="metricUsers">—</strong>
-            <span class="metric-trend">In this org</span>
-          </div>
-          <div class="metric-card">
-            <span class="metric-icon">🔌</span>
-            <span class="metric-label">Integrations</span>
-            <strong class="metric-value" id="metricIntegrations">—</strong>
-            <span class="metric-trend">S3 &amp; API connectors</span>
-          </div>
-          <div class="metric-card metric-accent-error">
-            <span class="metric-icon">⚡</span>
-            <span class="metric-label">Error rate</span>
-            <strong class="metric-value" id="metricErrorRate">—</strong>
-            <span class="metric-trend">Across all sources</span>
-          </div>
+      <section id="overviewSection" class="content-section active">
+        <div class="metric-grid">
+          <article class="metric-card"><span>Total logs</span><strong id="metricLogs">0</strong></article>
+          <article class="metric-card"><span>Users</span><strong id="metricUsers">0</strong></article>
+          <article class="metric-card"><span>Integrations</span><strong id="metricIntegrations">0</strong></article>
+          <article class="metric-card"><span>Error rate</span><strong id="heroErrorRate">0%</strong></article>
         </div>
 
-        <div class="panel-grid panel-grid-2">
-          <div class="panel">
-            <div class="panel-header">
-              <span class="panel-title">Log level distribution</span>
-              <span class="panel-subtitle" style="font-size:12px;color:var(--text-tertiary)">Live data</span>
-            </div>
-            <canvas id="levelChart"></canvas>
-          </div>
-          <div class="panel">
-            <div class="panel-header">
-              <span class="panel-title">Top sources</span>
-              <span class="panel-subtitle" style="font-size:12px;color:var(--text-tertiary)">By volume</span>
-            </div>
-            <canvas id="sourceChart"></canvas>
-          </div>
+        <div class="panel-grid two-up">
+          <section class="panel">
+            <div class="panel-head"><h3>Log level mix</h3><span class="muted">Live from stored records</span></div>
+            <canvas id="levelChart" height="180"></canvas>
+          </section>
+          <section class="panel">
+            <div class="panel-head"><h3>Top sources</h3><span class="muted">Most active systems</span></div>
+            <canvas id="sourceChart" height="180"></canvas>
+          </section>
         </div>
 
-        <div class="panel-grid panel-grid-2">
-          <div class="panel">
-            <div class="panel-header">
-              <span class="panel-title">Quick actions</span>
+        <div class="panel-grid two-up">
+          <section class="panel">
+            <div class="panel-head"><h3>Fast actions</h3></div>
+            <div class="action-grid">
+              <label class="upload-box">
+                <input type="file" id="logFileInput" hidden />
+                <strong>Upload logs</strong>
+                <span>Supports multiline Mule-style and generic log files.</span>
+              </label>
+              <button class="secondary-btn" data-jump="logsSection">Open explorer</button>
+              <button class="secondary-btn" data-jump="usersSection">Manage users</button>
+              <button class="secondary-btn" data-jump="orgSection">Brand workspace</button>
             </div>
-            <label class="drop-zone" id="dropZone">
-              <input type="file" id="logFileInput" accept=".log,.txt,.json,.ndjson,.csv" />
-              <span class="drop-icon">📂</span>
-              <span class="drop-title">Upload log file</span>
-              <span class="drop-sub">Supports Mule-style, JSON, NDJSON, CSV, plain text</span>
-            </label>
-            <div class="sep"></div>
-            <div class="actions-grid">
-              <button class="action-tile" data-jump="logsSection">
-                <span class="action-tile-icon">🔍</span>
-                <span class="action-tile-title">Log explorer</span>
-                <span class="action-tile-sub">Browse and search stored records</span>
-              </button>
-              <button class="action-tile" data-jump="usersSection">
-                <span class="action-tile-icon">👤</span>
-                <span class="action-tile-title">Manage users</span>
-                <span class="action-tile-sub">RBAC and access control</span>
-              </button>
-              <button class="action-tile" data-jump="integrationsSection">
-                <span class="action-tile-icon">🔗</span>
-                <span class="action-tile-title">Integrations</span>
-                <span class="action-tile-sub">Wire S3 &amp; API sources</span>
-              </button>
-              <button class="action-tile" data-jump="orgSection">
-                <span class="action-tile-icon">🎨</span>
-                <span class="action-tile-title">Branding</span>
-                <span class="action-tile-sub">Customize your workspace</span>
-              </button>
-            </div>
-            <div class="result-box" id="uploadStatus">No upload started yet.</div>
-          </div>
-
-          <div class="panel">
-            <div class="panel-header">
-              <span class="panel-title">Platform signals</span>
-              <span class="panel-subtitle" style="font-size:12px;color:var(--text-tertiary)">Active sources</span>
-            </div>
-            <div id="sourceSignalList"></div>
-          </div>
+            <div id="uploadStatus" class="result-box">No upload started yet.</div>
+          </section>
+          <section class="panel">
+            <div class="panel-head"><h3>Platform signals</h3></div>
+            <div class="signal-list" id="sourceList"></div>
+          </section>
         </div>
       </section>
 
-      <!-- ══════════ LOG EXPLORER ══════════ -->
-      <section id="logsSection" class="section">
+      <section id="logsSection" class="content-section">
         <div class="panel">
-          <div class="table-toolbar">
-            <div class="search-wrap">
-              <svg class="search-icon" width="15" height="15" viewBox="0 0 15 15" fill="none">
-                <circle cx="6.5" cy="6.5" r="4.5" stroke="currentColor" stroke-width="1.4"/>
-                <path d="M10 10l3 3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
-              </svg>
-              <input class="search-input" type="search" id="searchInput" placeholder="Search message, source, or event ID…" />
-            </div>
-            <select class="filter-select" id="levelFilter">
+          <div class="toolbar">
+            <input id="searchInput" type="search" placeholder="Search message, source, or event id" />
+            <select id="levelFilter">
               <option value="all">All levels</option>
               <option value="error">Error</option>
               <option value="warn">Warn</option>
@@ -225,12 +108,8 @@
               <option value="success">Success</option>
               <option value="debug">Debug</option>
             </select>
-            <button class="btn-primary" id="searchBtn">
-              <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 1v11M1 6.5h11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-              Refresh
-            </button>
+            <button class="primary-btn" id="searchBtn">Refresh</button>
           </div>
-
           <div class="table-wrap">
             <table>
               <thead>
@@ -238,371 +117,167 @@
                   <th>Timestamp</th>
                   <th>Level</th>
                   <th>Source</th>
-                  <th>Event ID</th>
+                  <th>Event</th>
                   <th>Message</th>
                 </tr>
               </thead>
-              <tbody id="recordsBody">
-                <tr class="empty-row"><td colspan="5">Loading logs…</td></tr>
-              </tbody>
+              <tbody id="recordsBody"></tbody>
             </table>
           </div>
         </div>
       </section>
 
-      <!-- ══════════ INTEGRATIONS ══════════ -->
-      <section id="integrationsSection" class="section">
-        <div class="panel-grid panel-grid-2 panel-gap">
-          <!-- S3 -->
-          <div class="panel">
-            <div class="panel-header">
-              <div>
-                <div class="panel-title">AWS S3 integration</div>
-                <div class="panel-subtitle">Test a bucket and attach to ingestion jobs</div>
-              </div>
-              <span class="status-tag tag-blue">S3</span>
-            </div>
-            <div class="form-stack">
-              <div class="form-row">
-                <div class="form-group">
-                  <label class="form-label">Name</label>
-                  <input class="form-input" name="name" id="s3Name" placeholder="Archive Bucket" value="Archive Bucket" />
-                </div>
-                <div class="form-group">
-                  <label class="form-label">Region</label>
-                  <input class="form-input" name="region" id="s3Region" placeholder="ap-south-1" value="ap-south-1" />
-                </div>
-              </div>
-              <div class="form-row">
-                <div class="form-group">
-                  <label class="form-label">Bucket name</label>
-                  <input class="form-input" name="bucket" id="s3Bucket" placeholder="my-log-bucket" />
-                </div>
-                <div class="form-group">
-                  <label class="form-label">Prefix</label>
-                  <input class="form-input" name="prefix" id="s3Prefix" placeholder="apps/" />
-                </div>
-              </div>
-              <div class="form-row">
-                <div class="form-group">
-                  <label class="form-label">Access key</label>
-                  <input class="form-input" name="access_key" id="s3AccessKey" placeholder="AKIA…" />
-                </div>
-                <div class="form-group">
-                  <label class="form-label">Secret key</label>
-                  <input class="form-input" type="password" name="secret_key" id="s3SecretKey" placeholder="••••••••" />
-                </div>
-              </div>
-            </div>
-            <div class="btn-row">
-              <button class="btn-secondary" id="testS3Btn">Test connection</button>
-              <button class="btn-primary" id="saveS3Btn">Save integration</button>
-            </div>
-            <div class="result-box" id="s3Result">No S3 test run yet.</div>
-          </div>
-
-          <!-- API -->
-          <div class="panel">
-            <div class="panel-header">
-              <div>
-                <div class="panel-title">API integration</div>
-                <div class="panel-subtitle">Connect any log-producing HTTP endpoint</div>
-              </div>
-              <span class="status-tag tag-purple">API</span>
-            </div>
-            <div class="form-stack">
-              <div class="form-group">
-                <label class="form-label">Name</label>
-                <input class="form-input" id="apiName" placeholder="Remote Log API" value="Remote Log API" />
-              </div>
-              <div class="form-group">
-                <label class="form-label">Endpoint URL</label>
-                <input class="form-input" id="apiUrl" placeholder="https://api.example.com/logs" value="https://api.example.com/logs" />
-              </div>
-              <div class="form-group">
-                <label class="form-label">Bearer token (optional)</label>
-                <input class="form-input" id="apiToken" placeholder="eyJ…" />
-              </div>
-              <div class="form-group">
-                <label class="form-label">Custom headers (JSON)</label>
-                <textarea class="form-textarea" id="apiHeaders" placeholder='{"x-api-key": "..."}'></textarea>
-              </div>
-            </div>
-            <div class="btn-row">
-              <button class="btn-secondary" id="testApiBtn">Test connection</button>
-              <button class="btn-primary" id="saveApiBtn">Save integration</button>
-            </div>
-            <div class="result-box" id="apiResult">No API test run yet.</div>
-          </div>
+      <section id="integrationsSection" class="content-section">
+        <div class="panel-grid two-up">
+          <section class="panel">
+            <div class="panel-head"><h3>AWS S3 integration</h3><span class="muted">Test a bucket, save the connector, and attach it to ingestion jobs.</span></div>
+            <form id="s3Form" class="form-grid">
+              <input name="name" placeholder="Archive Bucket" value="Archive Bucket" />
+              <input name="region" placeholder="ap-south-1" value="ap-south-1" />
+              <input name="bucket" placeholder="Bucket name" />
+              <input name="prefix" placeholder="Prefix" />
+              <input name="access_key" placeholder="Access key" />
+              <input name="secret_key" placeholder="Secret key" type="password" />
+            </form>
+            <div class="button-row"><button class="secondary-btn" id="testS3Btn">Test S3</button><button class="primary-btn" id="saveS3Btn">Save integration</button></div>
+            <div id="s3Result" class="result-box">No S3 test run yet.</div>
+          </section>
+          <section class="panel">
+            <div class="panel-head"><h3>API integration</h3><span class="muted">Connect any log-producing endpoint with optional token and custom headers.</span></div>
+            <form id="apiForm" class="form-grid">
+              <input name="name" placeholder="Remote Log API" value="Remote Log API" />
+              <input name="url" placeholder="https://api.example.com/logs" value="https://api.example.com/logs" />
+              <input name="token" placeholder="Bearer token (optional)" />
+              <textarea name="headers" placeholder='Optional JSON headers, e.g. {"x-api-key":"..."}'></textarea>
+            </form>
+            <div class="button-row"><button class="secondary-btn" id="testApiBtn">Test API</button><button class="primary-btn" id="saveApiBtn">Save integration</button></div>
+            <div id="apiResult" class="result-box">No API test run yet.</div>
+          </section>
         </div>
+        <section class="panel top-gap">
+          <div class="panel-head"><h3>Saved integrations</h3><span class="muted">Configured connectors available to this organization.</span></div>
+          <div id="integrationList" class="list-box"></div>
+        </section>
+      </section>
 
-        <!-- Saved list -->
-        <div class="panel">
-          <div class="panel-header">
-            <div>
-              <div class="panel-title">Saved integrations</div>
-              <div class="panel-subtitle">Active connectors for this organization</div>
-            </div>
-          </div>
-          <div id="integrationList" class="list-stack"></div>
+      <section id="jobsSection" class="content-section">
+        <div class="panel-grid two-up">
+          <section class="panel">
+            <div class="panel-head"><h3>Ingestion jobs</h3><span class="muted">Define schedule-driven ingestion workflows for S3 and API sources.</span></div>
+            <form id="jobForm" class="form-grid">
+              <input name="name" placeholder="Hourly API poller" value="Hourly API poller" />
+              <select name="source_type"><option value="api">API</option><option value="s3">S3</option></select>
+              <select name="status"><option value="scheduled">Scheduled</option><option value="paused">Paused</option></select>
+              <input name="schedule" placeholder="0 * * * *" value="0 * * * *" />
+              <textarea name="details" placeholder='Optional JSON details, e.g. {"batch_size":500}'></textarea>
+            </form>
+            <div class="button-row"><button class="primary-btn" id="createJobBtn">Create job</button></div>
+            <div id="jobResult" class="result-box">No jobs created in this session.</div>
+          </section>
+          <section class="panel">
+            <div class="panel-head"><h3>Configured jobs</h3></div>
+            <div id="jobsList" class="list-box"></div>
+          </section>
         </div>
       </section>
 
-      <!-- ══════════ INGESTION JOBS ══════════ -->
-      <section id="jobsSection" class="section">
-        <div class="panel-grid panel-grid-2">
-          <div class="panel">
-            <div class="panel-header">
-              <div>
-                <div class="panel-title">Create ingestion job</div>
-                <div class="panel-subtitle">Schedule-driven log ingestion workflow</div>
-              </div>
-            </div>
-            <div class="form-stack">
-              <div class="form-group">
-                <label class="form-label">Job name</label>
-                <input class="form-input" id="jobName" placeholder="Hourly API poller" value="Hourly API poller" />
-              </div>
-              <div class="form-row">
-                <div class="form-group">
-                  <label class="form-label">Source type</label>
-                  <select class="form-select" id="jobSourceType">
-                    <option value="api">API</option>
-                    <option value="s3">S3</option>
-                  </select>
-                </div>
-                <div class="form-group">
-                  <label class="form-label">Status</label>
-                  <select class="form-select" id="jobStatus">
-                    <option value="scheduled">Scheduled</option>
-                    <option value="paused">Paused</option>
-                  </select>
-                </div>
-              </div>
-              <div class="form-group">
-                <label class="form-label">Cron schedule</label>
-                <input class="form-input" id="jobSchedule" placeholder="0 * * * *" value="0 * * * *" />
-              </div>
-              <div class="form-group">
-                <label class="form-label">Job details (JSON, optional)</label>
-                <textarea class="form-textarea" id="jobDetails" placeholder='{"batch_size": 500}'></textarea>
-              </div>
-            </div>
-            <div class="btn-row">
-              <button class="btn-primary" id="createJobBtn">Create job</button>
-            </div>
-            <div class="result-box" id="jobResult">No jobs created in this session.</div>
-          </div>
-
-          <div class="panel">
-            <div class="panel-header">
-              <span class="panel-title">Configured jobs</span>
-            </div>
-            <div id="jobsList" class="list-stack"></div>
-          </div>
+      <section id="alertsSection" class="content-section">
+        <div class="panel-grid two-up">
+          <section class="panel">
+            <div class="panel-head"><h3>Alert rules</h3><span class="muted">Codify platform thresholds and escalation channels.</span></div>
+            <form id="alertForm" class="form-grid">
+              <input name="name" placeholder="Error spike" value="Error spike" />
+              <select name="severity"><option value="sev1">SEV-1</option><option value="sev2" selected>SEV-2</option><option value="sev3">SEV-3</option></select>
+              <select name="channel"><option>Slack</option><option>Email</option><option>PagerDuty</option></select>
+              <select name="status"><option value="active">Active</option><option value="draft">Draft</option></select>
+              <input name="condition_text" placeholder="error rate > 5% over 5m" value="error rate > 5% over 5m" />
+            </form>
+            <div class="button-row"><button class="primary-btn" id="createAlertBtn">Create alert</button></div>
+            <div id="alertResult" class="result-box">No alert created in this session.</div>
+          </section>
+          <section class="panel">
+            <div class="panel-head"><h3>Current rules</h3></div>
+            <div id="alertsList" class="list-box"></div>
+          </section>
         </div>
       </section>
 
-      <!-- ══════════ ALERT RULES ══════════ -->
-      <section id="alertsSection" class="section">
-        <div class="panel-grid panel-grid-2">
-          <div class="panel">
-            <div class="panel-header">
-              <div>
-                <div class="panel-title">Create alert rule</div>
-                <div class="panel-subtitle">Codify platform thresholds and escalation channels</div>
-              </div>
-            </div>
-            <div class="form-stack">
-              <div class="form-group">
-                <label class="form-label">Rule name</label>
-                <input class="form-input" id="alertName" placeholder="Error spike" value="Error spike" />
-              </div>
-              <div class="form-row">
-                <div class="form-group">
-                  <label class="form-label">Severity</label>
-                  <select class="form-select" id="alertSeverity">
-                    <option value="sev1">SEV-1 — Critical</option>
-                    <option value="sev2" selected>SEV-2 — High</option>
-                    <option value="sev3">SEV-3 — Medium</option>
-                  </select>
-                </div>
-                <div class="form-group">
-                  <label class="form-label">Channel</label>
-                  <select class="form-select" id="alertChannel">
-                    <option>Slack</option>
-                    <option>Email</option>
-                    <option>PagerDuty</option>
-                  </select>
-                </div>
-              </div>
-              <div class="form-group">
-                <label class="form-label">Status</label>
-                <select class="form-select" id="alertStatus">
-                  <option value="active">Active</option>
-                  <option value="draft">Draft</option>
-                </select>
-              </div>
-              <div class="form-group">
-                <label class="form-label">Condition</label>
-                <input class="form-input" id="alertCondition" placeholder="error rate > 5% over 5m" value="error rate > 5% over 5m" />
-              </div>
-            </div>
-            <div class="btn-row">
-              <button class="btn-primary" id="createAlertBtn">Create rule</button>
-            </div>
-            <div class="result-box" id="alertResult">No alert created in this session.</div>
-          </div>
-
-          <div class="panel">
-            <div class="panel-header">
-              <span class="panel-title">Current rules</span>
-            </div>
-            <div id="alertsList" class="list-stack"></div>
-          </div>
+      <section id="usersSection" class="content-section">
+        <div class="panel-grid two-up">
+          <section class="panel">
+            <div class="panel-head"><h3>Create account inside this organization</h3><span class="muted">Admins can add users for shared workspace login.</span></div>
+            <form id="userForm" class="form-grid">
+              <input name="organization_name" id="userOrgName" placeholder="Organization" readonly />
+              <input name="name" placeholder="Full name" />
+              <input name="email" placeholder="user@company.com" />
+              <input name="password" placeholder="Temporary password" type="password" />
+              <select name="role" id="userRoleSelect">
+                <option value="developer">Developer</option>
+                <option value="tester">Tester</option>
+                <option value="manager">Manager</option>
+                <option value="admin">Admin</option>
+              </select>
+            </form>
+            <div class="button-row"><button class="primary-btn" id="createUserBtn">Create user</button></div>
+            <div id="userResult" class="result-box">Only admins can create users. Others can still explore their allowed views.</div>
+          </section>
+          <section class="panel">
+            <div class="panel-head"><h3>Current users</h3></div>
+            <div id="userList" class="list-box"></div>
+          </section>
         </div>
       </section>
 
-      <!-- ══════════ USERS & RBAC ══════════ -->
-      <section id="usersSection" class="section">
-        <div class="panel-grid panel-grid-2">
-          <div class="panel">
-            <div class="panel-header">
-              <div>
-                <div class="panel-title">Create account</div>
-                <div class="panel-subtitle">Workspace login with role-based access</div>
-              </div>
+      <section id="orgSection" class="content-section">
+        <div class="panel-grid two-up">
+          <section class="panel">
+            <div class="panel-head"><h3>Organization settings</h3><span class="muted">Change branding, login mode, and theme.</span></div>
+            <form id="orgForm" class="form-grid">
+              <input name="name" placeholder="Vewit" />
+              <input name="slug" placeholder="vewit" />
+              <input name="logo_text" placeholder="VX" maxlength="3" />
+              <select name="theme_mode" id="themeModeSelect">
+                <option value="black">Black theme</option>
+                <option value="white">White theme</option>
+                <option value="green">Green theme</option>
+              </select>
+              <input name="theme_color" type="color" value="#5b8cff" />
+              <label class="checkbox-row"><input type="checkbox" name="admin_only" /> Keep everything admin only</label>
+            </form>
+            <div class="button-row"><button class="primary-btn" id="saveOrgBtn">Save branding</button></div>
+            <div id="orgResult" class="result-box">Current organization settings loaded from the database.</div>
+          </section>
+          <section class="panel">
+            <div class="panel-head"><h3>How access works</h3></div>
+            <div class="copy-block">
+              <p><strong>Admin:</strong> full control, branding, users, integrations, alerts, jobs.</p>
+              <p><strong>Manager / Developer / Tester:</strong> can sign in with their own account and use the shared workspace within the same organization.</p>
+              <p><strong>Admin only mode:</strong> blocks non-admin logins if you want everything controlled only by admins.</p>
+              <p><strong>Subdomain-ready:</strong> slug is stored now so you can later route workspaces like <code>company.vewit.com</code>.</p>
             </div>
-            <div class="form-stack">
-              <div class="form-group">
-                <label class="form-label">Full name</label>
-                <input class="form-input" id="userName" placeholder="Full name" />
-              </div>
-              <div class="form-group">
-                <label class="form-label">Email address</label>
-                <input class="form-input" type="email" id="userEmail" placeholder="user@workspace.com" />
-              </div>
-              <div class="form-group">
-                <label class="form-label">Temporary password</label>
-                <input class="form-input" type="password" id="userPassword" placeholder="••••••••" />
-              </div>
-              <div class="form-group">
-                <label class="form-label">Role</label>
-                <select class="form-select" id="userRole">
-                  <option value="member">Member</option>
-                  <option value="analyst">Analyst</option>
-                  <option value="admin">Admin</option>
-                </select>
-              </div>
-            </div>
-            <div class="btn-row">
-              <button class="btn-primary" id="createUserBtn">Create user</button>
-            </div>
-            <div class="result-box" id="userResult">No user created in this session.</div>
-          </div>
-
-          <div class="panel">
-            <div class="panel-header">
-              <span class="panel-title">Current users</span>
-            </div>
-            <div id="userList" class="list-stack"></div>
-          </div>
+          </section>
         </div>
       </section>
 
-      <!-- ══════════ ORGANIZATION ══════════ -->
-      <section id="orgSection" class="section">
-        <div class="panel-grid panel-grid-2">
-          <div class="panel">
-            <div class="panel-header">
-              <div>
-                <div class="panel-title">Organization settings</div>
-                <div class="panel-subtitle">Tenant-level branding and access control</div>
-              </div>
-            </div>
-            <div class="form-stack">
-              <div class="form-group">
-                <label class="form-label">Organization name</label>
-                <input class="form-input" id="orgName" placeholder="Vewit" />
-              </div>
-              <div class="form-row">
-                <div class="form-group">
-                  <label class="form-label">Slug / subdomain</label>
-                  <input class="form-input" id="orgSlug" placeholder="vewit" />
-                </div>
-                <div class="form-group">
-                  <label class="form-label">Logo initials</label>
-                  <input class="form-input" id="orgLogoText" placeholder="VX" maxlength="4" />
-                </div>
-              </div>
-              <div class="form-group">
-                <label class="form-label">Brand color</label>
-                <input class="form-input" type="color" id="orgThemeColor" value="#0a84ff" style="height:44px;padding:4px 12px;cursor:pointer;" />
-              </div>
-              <label class="checkbox-row">
-                <input type="checkbox" id="orgAdminOnly" />
-                Admin-only mode (restricts login to admins)
-              </label>
-            </div>
-            <div class="btn-row">
-              <button class="btn-primary" id="saveOrgBtn">Save settings</button>
-            </div>
-            <div class="result-box" id="orgResult">Current organization settings loaded.</div>
-          </div>
-
-          <div class="panel">
-            <div class="panel-header">
-              <span class="panel-title">Mode guide</span>
-            </div>
-            <div style="display:flex;flex-direction:column;gap:16px;">
-              <div class="list-item" style="flex-direction:column;align-items:start;gap:6px;">
-                <div style="display:flex;align-items:center;gap:8px;"><span class="status-tag tag-red">Admin only</span></div>
-                <p style="font-size:13px;color:var(--text-secondary);line-height:1.5;">Only admin accounts can sign in and make changes. Useful for small teams with high security requirements.</p>
-              </div>
-              <div class="list-item" style="flex-direction:column;align-items:start;gap:6px;">
-                <div style="display:flex;align-items:center;gap:8px;"><span class="status-tag tag-green">Shared workspace</span></div>
-                <p style="font-size:13px;color:var(--text-secondary);line-height:1.5;">Admins, analysts, and members each have separate accounts with role-appropriate visibility and audit logs.</p>
-              </div>
-              <div class="list-item" style="flex-direction:column;align-items:start;gap:6px;">
-                <div style="display:flex;align-items:center;gap:8px;"><span class="status-tag tag-blue">Subdomain-ready</span></div>
-                <p style="font-size:13px;color:var(--text-secondary);line-height:1.5;">The slug field enables routing like <code style="font-family:monospace;font-size:12px;background:rgba(255,255,255,0.06);padding:2px 6px;border-radius:4px;">company.vewit.com</code> when integrated with your DNS.</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- ══════════ AUDIT TRAIL ══════════ -->
-      <section id="auditSection" class="section">
-        <div class="panel">
-          <div class="panel-header">
-            <div>
-              <div class="panel-title">Audit trail</div>
-              <div class="panel-subtitle">Recent administrative and operational activity</div>
-            </div>
-          </div>
-          <div id="auditList"></div>
-        </div>
+      <section id="auditSection" class="content-section">
+        <section class="panel">
+          <div class="panel-head"><h3>Audit trail</h3><span class="muted">Recent administrative and operational activity.</span></div>
+          <div id="auditList" class="list-box"></div>
+        </section>
       </section>
     </main>
   </div>
 
-  <!-- ══════════ LOG DETAIL MODAL ══════════ -->
-  <div class="modal-overlay" id="logModal">
-    <div class="modal">
-      <div class="modal-header">
-        <span class="modal-title">Log detail</span>
-        <button class="btn-ghost" id="closeModalBtn">
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 2l10 10M12 2L2 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-          Close
-        </button>
-      </div>
-      <div class="modal-body">
-        <div class="meta-grid" id="logMeta"></div>
-        <pre id="logPayload"></pre>
-      </div>
+  <dialog id="logModal" class="log-modal">
+    <div class="modal-head">
+      <h3>Log detail</h3>
+      <button class="ghost-btn" onclick="document.getElementById('logModal').close()">Close</button>
     </div>
-  </div>
+    <div class="modal-body">
+      <div class="meta-grid" id="logMeta"></div>
+      <pre id="logPayload"></pre>
+    </div>
+  </dialog>
 
   <script src="{{ url_for('static', filename='app.js') }}"></script>
 </body>

@@ -3,101 +3,87 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ObserveX · Sign in</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700&display=swap" rel="stylesheet">
+  <title>ObserveX Login</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
 </head>
-<body class="login-page">
-  <div class="bg-mesh">
-    <div class="orb orb-1"></div>
-    <div class="orb orb-2"></div>
-    <div class="orb orb-3"></div>
-  </div>
-  <div class="noise-layer"></div>
+<body class="login-body theme-black">
+  <main class="login-shell login-shell-wide">
+    <section class="login-panel">
+      <div class="eyebrow">ObserveX Enterprise</div>
+      <h1>Shared observability workspace</h1>
+      <p>Sign in to an existing organization or create a new workspace with your own organization name, admin account, and theme.</p>
 
-  <main class="login-container">
-    <div class="login-card" data-animate="fadeup">
-      <header class="login-header">
-        <div class="brand-mark" id="loginBrand">OX</div>
-        <div class="brand-info">
-          <span class="brand-name">ObserveX</span>
-          <span class="brand-tier">Enterprise</span>
-        </div>
-      </header>
-
-      <h1 class="login-title">Welcome back</h1>
-      <p class="login-caption">Sign in to your observability workspace</p>
-
-      <div class="demo-row">
-        <span class="demo-tag">Demo credentials pre-filled</span>
+      <div class="mini-grid">
+        <div class="mini-card"><strong>Demo login</strong><span>admin@vewit.local / admin123</span></div>
+        <div class="mini-card"><strong>Roles</strong><span>Admin, Manager, Developer, Tester</span></div>
       </div>
 
-      <div class="fields">
-        <div class="field">
-          <label class="field-label">Email address</label>
-          <input class="field-input" type="email" id="emailInput" value="admin@vewit.local" autocomplete="email" />
-        </div>
-        <div class="field">
-          <label class="field-label">Password</label>
-          <input class="field-input" type="password" id="passwordInput" value="admin123" autocomplete="current-password" />
-        </div>
+      <div class="tab-row">
+        <button class="tab-btn active" type="button" data-auth-tab="login">Sign in</button>
+        <button class="tab-btn" type="button" data-auth-tab="register">Create workspace</button>
       </div>
 
-      <button class="btn-primary btn-full" id="loginBtn">
-        <span class="btn-label">Sign in</span>
-        <svg class="btn-arrow" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      </button>
-
-      <div class="status-pill" id="loginStatus">
-        <span class="status-dot"></span>
-        Demo credentials ready — click Sign in
+      <div id="loginTab" class="auth-tab active">
+        <form id="loginForm" class="login-form">
+          <div><label>Email</label><input type="email" name="email" value="admin@vewit.local" required /></div>
+          <div><label>Password</label><input type="password" name="password" value="admin123" required /></div>
+          <button class="primary-btn wide" type="submit">Open workspace</button>
+        </form>
       </div>
-    </div>
+
+      <div id="registerTab" class="auth-tab">
+        <form id="registerForm" class="form-grid two-col-form">
+          <div><label>Organization name</label><input type="text" name="organization_name" placeholder="Vewit" required /></div>
+          <div><label>Organization slug</label><input type="text" name="organization_slug" placeholder="vewit" /></div>
+          <div><label>Your name</label><input type="text" name="name" placeholder="Prasanna" required /></div>
+          <div><label>Your email</label><input type="email" name="email" placeholder="admin@yourorg.com" required /></div>
+          <div><label>Password</label><input type="password" name="password" placeholder="Create password" required /></div>
+          <div><label>Role</label><select name="role"><option value="admin">Admin</option></select></div>
+          <div><label>Theme</label><select name="theme_mode"><option value="black">Black</option><option value="white">White</option><option value="green">Green</option></select></div>
+        </form>
+        <button class="primary-btn wide top-gap" id="createWorkspaceBtn" type="button">Create workspace</button>
+        <p class="muted top-gap-sm">After creating the organization, you can log in and add managers, developers, and testers inside that organization.</p>
+      </div>
+
+      <div id="loginStatus" class="result-box">Demo credentials are prefilled for you.</div>
+    </section>
   </main>
-
   <script>
-    const loginBtn = document.getElementById('loginBtn');
-    const statusEl = document.getElementById('loginStatus');
-
-    function setStatus(msg, type = 'idle') {
-      statusEl.textContent = msg;
-      statusEl.className = `status-pill ${type}`;
-    }
-
-    loginBtn.addEventListener('click', async () => {
-      const email = document.getElementById('emailInput').value.trim();
-      const password = document.getElementById('passwordInput').value;
-      if (!email || !password) { setStatus('Please enter your email and password.', 'error'); return; }
-
-      loginBtn.disabled = true;
-      loginBtn.querySelector('.btn-label').textContent = 'Signing in…';
-      setStatus('Authenticating…', 'loading');
-
-      try {
-        const res = await fetch('/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password })
-        });
-        const data = await res.json();
-        if (!res.ok) {
-          setStatus(data.error || 'Authentication failed. Please try again.', 'error');
-          loginBtn.disabled = false;
-          loginBtn.querySelector('.btn-label').textContent = 'Sign in';
-          return;
-        }
-        setStatus('Authenticated! Loading workspace…', 'success');
-        setTimeout(() => window.location.href = '/workspace', 700);
-      } catch {
-        setStatus('Network error — please try again.', 'error');
-        loginBtn.disabled = false;
-        loginBtn.querySelector('.btn-label').textContent = 'Sign in';
-      }
+    const statusBox = document.getElementById('loginStatus');
+    document.querySelectorAll('[data-auth-tab]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('[data-auth-tab]').forEach((b) => b.classList.remove('active'));
+        document.querySelectorAll('.auth-tab').forEach((tab) => tab.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById(btn.dataset.authTab + 'Tab').classList.add('active');
+      });
     });
 
-    document.getElementById('passwordInput').addEventListener('keydown', e => {
-      if (e.key === 'Enter') loginBtn.click();
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const payload = Object.fromEntries(new FormData(e.target).entries());
+      statusBox.textContent = 'Signing in...';
+      const res = await fetch('/login', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload)});
+      const data = await res.json();
+      if (!res.ok) {
+        statusBox.textContent = data.error || 'Login failed';
+        return;
+      }
+      window.location.href = '/workspace';
+    });
+
+    document.getElementById('createWorkspaceBtn').addEventListener('click', async () => {
+      const form = document.getElementById('registerForm');
+      const payload = Object.fromEntries(new FormData(form).entries());
+      statusBox.textContent = 'Creating workspace...';
+      const res = await fetch('/register', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload)});
+      const data = await res.json();
+      if (!res.ok) {
+        statusBox.textContent = data.error || 'Workspace creation failed';
+        return;
+      }
+      statusBox.textContent = 'Workspace created. Redirecting...';
+      window.location.href = '/workspace';
     });
   </script>
 </body>

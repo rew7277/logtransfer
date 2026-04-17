@@ -63,6 +63,14 @@ MASK_PATTERNS = [
     (re.compile(r"\bAPP-\d{4,}\b"), "APP-[REDACTED]"),
 ]
 
+VALID_ROLES = {"admin", "manager", "developer", "tester"}
+VALID_THEMES = {"black", "white", "green"}
+DEFAULT_THEME_COLORS = {
+    "black": "#5b8cff",
+    "white": "#2563eb",
+    "green": "#16a34a",
+}
+
 scheduler: BackgroundScheduler | None = None
 
 
@@ -89,6 +97,23 @@ def ensure_column(db: sqlite3.Connection, table: str, column: str, ddl: str) -> 
         db.execute(f"ALTER TABLE {table} ADD COLUMN {ddl}")
 
 
+def iso_now() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+
+def slugify(value: str) -> str:
+    cleaned = re.sub(r"[^a-zA-Z0-9]+", "-", (value or "").strip().lower()).strip("-")
+    return cleaned or "workspace"
+
+
+def safe_filename(name: str) -> str:
+    return re.sub(r"[^a-zA-Z0-9._-]", "_", name or "upload.log")
+
+
+def row_to_dict(row: sqlite3.Row | None) -> dict[str, Any] | None:
+    return dict(row) if row else None
+
+
 def init_db() -> None:
     db = sqlite3.connect(DB_PATH)
     db.executescript(
@@ -98,6 +123,7 @@ def init_db() -> None:
             name TEXT NOT NULL,
             slug TEXT NOT NULL UNIQUE,
             theme_color TEXT NOT NULL DEFAULT '#5b8cff',
+            theme_mode TEXT NOT NULL DEFAULT 'black',
             logo_text TEXT NOT NULL DEFAULT 'VX',
             admin_only INTEGER NOT NULL DEFAULT 0,
             created_at TEXT NOT NULL
@@ -202,6 +228,7 @@ def init_db() -> None:
         """
     )
 
+    ensure_column(db, "organizations", "theme_mode", "theme_mode TEXT NOT NULL DEFAULT 'black'")
     ensure_column(db, "organizations", "admin_only", "admin_only INTEGER NOT NULL DEFAULT 0")
     ensure_column(db, "ingestion_jobs", "integration_id", "integration_id INTEGER")
 
@@ -209,8 +236,8 @@ def init_db() -> None:
     if row is None:
         now = iso_now()
         db.execute(
-            "INSERT INTO organizations (name, slug, theme_color, logo_text, admin_only, created_at) VALUES (?, ?, ?, ?, ?, ?)",
-            ("Vewit", "vewit", "#5b8cff", "VX", 0, now),
+            "INSERT INTO organizations (name, slug, theme_color, theme_mode, logo_text, admin_only, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            ("Vewit", "vewit", DEFAULT_THEME_COLORS["black"], "black", "VX", 0, now),
         )
         org_id = db.execute("SELECT id FROM organizations WHERE slug = ?", ("vewit",)).fetchone()[0]
         db.execute(
@@ -253,18 +280,6 @@ def init_db() -> None:
 
 # ----------------------------- auth and audit -----------------------------
 
-def iso_now() -> str:
-    return datetime.now(timezone.utc).isoformat()
-
-
-def safe_filename(name: str) -> str:
-    return re.sub(r"[^a-zA-Z0-9._-]", "_", name or "upload.log")
-
-
-def row_to_dict(row: sqlite3.Row | None) -> dict[str, Any] | None:
-    return dict(row) if row else None
-
-
 def require_auth() -> tuple[dict[str, Any] | None, tuple[Any, int] | None]:
     user_id = session.get("user_id")
     if not user_id:
@@ -273,7 +288,7 @@ def require_auth() -> tuple[dict[str, Any] | None, tuple[Any, int] | None]:
     row = db.execute(
         """
         SELECT u.id, u.name, u.email, u.role, u.org_id,
-               o.name AS org_name, o.slug, o.theme_color, o.logo_text, o.admin_only
+               o.name AS org_name, o.slug, o.theme_color, o.theme_mode, o.logo_text, o.admin_only
         FROM users u
         JOIN organizations o ON o.id = u.org_id
         WHERE u.id = ?
@@ -724,7 +739,7 @@ def scheduler_tick() -> None:
     ).fetchall()
     for job in due:
         user_row = conn.execute(
-            "SELECT u.id, u.org_id, u.role, o.slug, o.name AS org_name, o.theme_color, o.logo_text, o.admin_only, u.email, u.name FROM users u JOIN organizations o ON o.id = u.org_id WHERE u.org_id = ? ORDER BY CASE WHEN u.role='admin' THEN 0 ELSE 1 END, u.id LIMIT 1",
+            "SELECT u.id, u.org_id, u.role, o.slug, o.name AS org_name, o.theme_color, o.theme_mode, o.logo_text, o.admin_only, u.email, u.name FROM users u JOIN organizations o ON o.id = u.org_id WHERE u.org_id = ? ORDER BY CASE WHEN u.role='admin' THEN 0 ELSE 1 END, u.id LIMIT 1",
             (job["org_id"],),
         ).fetchone()
         if user_row:
@@ -790,6 +805,49 @@ def login():
     return jsonify({"message": "Login successful."})
 
 
+@app.post("/register")
+def register_org_and_admin():
+    payload = request.get_json(force=True)
+    org_name = (payload.get("organization_name") or "").strip()
+    admin_name = (payload.get("name") or "").strip()
+    email = (payload.get("email") or "").strip().lower()
+    password = payload.get("password") or ""
+    role = (payload.get("role") or "admin").strip().lower()
+    theme_mode = (payload.get("theme_mode") or "black").strip().lower()
+    slug = slugify(payload.get("organization_slug") or org_name)
+    if not org_name or not admin_name or not email or not password:
+        return jsonify({"error": "Organization name, your name, email, and password are required."}), 400
+    if role != "admin":
+        return jsonify({"error": "Workspace creator must be an admin."}), 400
+    if theme_mode not in VALID_THEMES:
+        theme_mode = "black"
+
+    db = get_db()
+    existing_org = db.execute("SELECT id FROM organizations WHERE slug = ?", (slug,)).fetchone()
+    if existing_org:
+        return jsonify({"error": "That organization slug already exists. Try another organization name or slug."}), 400
+    existing_email = db.execute("SELECT id FROM users WHERE lower(email) = ?", (email,)).fetchone()
+    if existing_email:
+        return jsonify({"error": "A user with that email already exists."}), 400
+
+    now = iso_now()
+    logo_text = "".join([part[0] for part in org_name.split()[:2]]).upper() or "OX"
+    cur = db.execute(
+        "INSERT INTO organizations (name, slug, theme_color, theme_mode, logo_text, admin_only, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        (org_name, slug, DEFAULT_THEME_COLORS[theme_mode], theme_mode, logo_text[:3], 0, now),
+    )
+    org_id = cur.lastrowid
+    user_cur = db.execute(
+        "INSERT INTO users (org_id, name, email, password_hash, role, created_at) VALUES (?, ?, ?, ?, ?, ?)",
+        (org_id, admin_name, email, generate_password_hash(password), "admin", now),
+    )
+    db.commit()
+    session["user_id"] = user_cur.lastrowid
+    session["csrf"] = secrets.token_hex(16)
+    audit(org_id, user_cur.lastrowid, "created_workspace", "organization", str(org_id), {"slug": slug, "email": email, "theme_mode": theme_mode})
+    return jsonify({"message": "Workspace created successfully.", "slug": slug})
+
+
 @app.post("/logout")
 def logout():
     user_id = session.get("user_id")
@@ -822,7 +880,7 @@ def bootstrap():
         "SELECT * FROM alert_rules WHERE org_id = ? ORDER BY id DESC", (user["org_id"],)
     ).fetchall()]
     users = [dict(row) for row in db.execute(
-        "SELECT id, name, email, role, created_at FROM users WHERE org_id = ? ORDER BY role DESC, created_at ASC", (user["org_id"],)
+        "SELECT id, name, email, role, created_at FROM users WHERE org_id = ? ORDER BY CASE role WHEN 'admin' THEN 1 WHEN 'manager' THEN 2 WHEN 'developer' THEN 3 ELSE 4 END, created_at ASC", (user["org_id"],)
     ).fetchall()]
     audit_events = [dict(row) for row in db.execute(
         "SELECT created_at, action, target_type, target_id, detail_json FROM audit_events WHERE org_id = ? ORDER BY id DESC LIMIT 20", (user["org_id"],)
@@ -840,6 +898,7 @@ def bootstrap():
             "name": user["org_name"],
             "slug": user["slug"],
             "theme_color": user["theme_color"],
+            "theme_mode": user["theme_mode"],
             "logo_text": user["logo_text"],
             "admin_only": bool(user["admin_only"]),
             "subdomain_hint": f"{user['slug']}.vewit.com",
@@ -850,6 +909,8 @@ def bootstrap():
         "alerts": alerts,
         "users": users,
         "audit": audit_events,
+        "role_options": sorted(VALID_ROLES),
+        "theme_options": sorted(VALID_THEMES),
     })
 
 
@@ -943,11 +1004,11 @@ def create_user():
     email = (payload.get("email") or "").strip().lower()
     name = (payload.get("name") or "").strip()
     password = payload.get("password") or ""
-    role = (payload.get("role") or "member").strip().lower()
+    role = (payload.get("role") or "developer").strip().lower()
     if not email or not name or not password:
         return jsonify({"error": "Name, email, and password are required."}), 400
-    if role not in {"admin", "member", "analyst"}:
-        return jsonify({"error": "Unsupported role."}), 400
+    if role not in VALID_ROLES:
+        return jsonify({"error": f"Unsupported role. Use one of: {', '.join(sorted(VALID_ROLES))}."}), 400
     db = get_db()
     exists = db.execute("SELECT id FROM users WHERE lower(email) = ?", (email,)).fetchone()
     if exists:
@@ -1033,10 +1094,18 @@ def update_org():
     if error:
         return error
     payload = request.get_json(force=True)
+    slug = slugify(payload.get("slug") or user["slug"])
+    theme_mode = (payload.get("theme_mode") or user["theme_mode"] or "black").lower()
+    if theme_mode not in VALID_THEMES:
+        theme_mode = "black"
+    theme_color = payload.get("theme_color") or DEFAULT_THEME_COLORS[theme_mode]
     db = get_db()
+    existing = db.execute("SELECT id FROM organizations WHERE slug = ? AND id != ?", (slug, user["org_id"])).fetchone()
+    if existing:
+        return jsonify({"error": "That organization slug is already used by another workspace."}), 400
     db.execute(
-        "UPDATE organizations SET name = ?, slug = ?, theme_color = ?, logo_text = ?, admin_only = ? WHERE id = ?",
-        (payload.get("name") or user["org_name"], payload.get("slug") or user["slug"], payload.get("theme_color") or user["theme_color"], payload.get("logo_text") or user["logo_text"], 1 if payload.get("admin_only") else 0, user["org_id"]),
+        "UPDATE organizations SET name = ?, slug = ?, theme_color = ?, theme_mode = ?, logo_text = ?, admin_only = ? WHERE id = ?",
+        (payload.get("name") or user["org_name"], slug, theme_color, theme_mode, (payload.get("logo_text") or user["logo_text"])[:3].upper(), 1 if payload.get("admin_only") else 0, user["org_id"]),
     )
     db.commit()
     audit(user["org_id"], user["id"], "updated_org_settings", "organization", str(user["org_id"]), payload)
