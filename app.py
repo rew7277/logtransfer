@@ -1229,9 +1229,9 @@ def get_logs():
         sql += " AND level = ?"
         params.append(level)
     if q:
-        sql += " AND (lower(message) LIKE ? OR lower(source) LIKE ? OR lower(coalesce(event_id,'')) LIKE ?)"
+        sql += " AND (lower(message) LIKE ? OR lower(source) LIKE ? OR lower(coalesce(event_id,'')) LIKE ? OR lower(coalesce(payload_json,'')) LIKE ?)"
         pattern = f"%{q.lower()}%"
-        params.extend([pattern, pattern, pattern])
+        params.extend([pattern, pattern, pattern, pattern])
     # Time-based filter: relative (last N minutes) or absolute custom range
     try:
         mins = int(minutes)
@@ -1887,7 +1887,7 @@ def list_api_keys():
 
 @app.delete("/api/keys/<int:key_id>")
 def revoke_api_key(key_id: int):
-    """Revoke and delete an API key."""
+    """Revoke an API key."""
     user, error = require_auth()
     if error:
         return error
@@ -1895,11 +1895,10 @@ def revoke_api_key(key_id: int):
     row = db.execute("SELECT id FROM api_keys WHERE id = ? AND org_id = ?", (key_id, user["org_id"])).fetchone()
     if not row:
         return jsonify({"error": "Key not found."}), 404
-    # Audit before deletion so the record is preserved in audit log
-    audit(user["org_id"], user["id"], "revoked_api_key", "api_key", str(key_id), {})
-    db.execute("DELETE FROM api_keys WHERE id = ?", (key_id,))
+    db.execute("UPDATE api_keys SET status = 'revoked' WHERE id = ?", (key_id,))
     db.commit()
-    return jsonify({"message": "API key revoked and deleted."})
+    audit(user["org_id"], user["id"], "revoked_api_key", "api_key", str(key_id), {})
+    return jsonify({"message": "API key revoked."})
 
 
 @app.get("/api/logs/timeseries")
