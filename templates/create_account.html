@@ -12,6 +12,7 @@ body{font-family:'Syne',sans-serif;background:#f0f2f5;min-height:100vh;display:f
 .card{background:#fff;border-radius:12px;box-shadow:0 4px 24px rgba(0,0,0,.08),0 1px 4px rgba(0,0,0,.04);width:100%;max-width:440px;padding:36px 40px}
 .logo{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:24px}
 .logo-icon{width:36px;height:36px;border-radius:8px;background:linear-gradient(135deg,#1f6feb,#39c5cf);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:14px}
+.logo-name{font-size:18px;font-weight:800;color:#0d1117;letter-spacing:-0.3px}
 h1{font-size:20px;font-weight:700;text-align:center;margin-bottom:6px;color:#0d1117}
 .subtitle{font-size:13px;color:#656d76;text-align:center;margin-bottom:24px}
 .field{margin-bottom:14px}
@@ -19,6 +20,13 @@ label{display:block;font-size:12px;font-weight:600;color:#424a53;margin-bottom:5
 input,select{width:100%;padding:9px 12px;background:#f6f8fa;border:1px solid #d0d7de;border-radius:7px;font-family:'Syne',sans-serif;font-size:13px;color:#0d1117;outline:none;transition:border-color .15s,box-shadow .15s}
 input:focus,select:focus{border-color:#1f6feb;box-shadow:0 0 0 3px rgba(31,111,235,.12);background:#fff}
 input::placeholder{color:#adb5bd}
+.pw-wrap{position:relative}
+.pw-wrap input{padding-right:38px}
+.pw-toggle{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#adb5bd;display:flex;align-items:center;padding:2px}
+.pw-toggle:hover{color:#656d76}
+.strength-bar{height:3px;border-radius:2px;margin-top:6px;background:#e8eaed;overflow:hidden}
+.strength-fill{height:100%;border-radius:2px;transition:width .3s,background .3s;width:0}
+.strength-label{font-size:10px;color:#adb5bd;margin-top:3px}
 .btn{width:100%;padding:10px;background:#1f6feb;border:none;border-radius:7px;color:#fff;font-family:'Syne',sans-serif;font-size:14px;font-weight:700;cursor:pointer;transition:all .15s;margin-top:6px}
 .btn:hover{background:#388bfd;transform:translateY(-1px);box-shadow:0 4px 12px rgba(31,111,235,.3)}
 .btn:active{transform:none}
@@ -26,168 +34,141 @@ input::placeholder{color:#adb5bd}
 .msg{padding:10px 14px;border-radius:7px;font-size:12px;font-weight:500;margin-bottom:16px;display:none}
 .msg.error{background:#fff0f0;border:1px solid #ffcdd2;color:#c62828;display:block}
 .msg.success{background:#f0fff4;border:1px solid #c8e6c9;color:#2e7d32;display:block}
-.msg.warn{background:#fffde7;border:1px solid #fff59d;color:#f57f17;display:block}
 .link-row{text-align:center;margin-top:18px;font-size:12px;color:#656d76}
 .link-row a{color:#1f6feb;text-decoration:none;font-weight:600}
 .link-row a:hover{text-decoration:underline}
-.divider{height:1px;background:#d0d7de;margin:20px 0}
 .info-box{background:#f6f8fa;border:1px solid #d0d7de;border-radius:7px;padding:12px;font-size:12px;color:#656d76;margin-top:14px;line-height:1.6}
 .info-box strong{color:#0d1117}
-.verify-box{background:#e8f4fd;border:1px solid #b3d4f5;border-radius:7px;padding:14px;font-size:12px;color:#1565c0;margin-top:14px;line-height:1.6;display:none}
-.verify-box.show{display:block}
-.verify-link{font-family:'IBM Plex Mono',monospace;font-size:11px;background:#fff;border:1px solid #b3d4f5;border-radius:5px;padding:6px 10px;margin-top:8px;word-break:break-all;display:block}
-.copy-btn{display:inline-block;margin-top:8px;padding:5px 12px;background:#1f6feb;color:#fff;border:none;border-radius:5px;font-size:11px;cursor:pointer;font-family:'Syne',sans-serif;font-weight:600}
-.copy-btn:hover{background:#388bfd}
+code{font-family:'IBM Plex Mono',monospace;font-size:11px}
 </style>
 </head>
 <body>
 <div class="card">
   <div class="logo">
     <div class="logo-icon">OX</div>
+    <span class="logo-name">ObserveX</span>
   </div>
   <h1>Create Workspace</h1>
   <p class="subtitle">Start managing your logs with ObserveX</p>
 
   <div class="msg" id="msg"></div>
 
-  <!-- Organization name — field name MUST be "organization_name" -->
   <div class="field">
     <label for="organization_name">Organization name</label>
-    <input type="text" id="organization_name" name="organization_name" placeholder="e.g. FSBL" autocomplete="organization" required/>
+    <input type="text" id="organization_name" name="organization_name" placeholder="e.g. Acme Corp" autocomplete="organization" required/>
   </div>
 
-  <!-- Your name — field name MUST be "name" -->
   <div class="field">
     <label for="name">Your name</label>
     <input type="text" id="name" name="name" placeholder="Full name" autocomplete="name" required/>
   </div>
 
-  <!-- Email — field name MUST be "email" -->
   <div class="field">
     <label for="email">Email</label>
     <input type="email" id="email" name="email" placeholder="you@company.com" autocomplete="email" required/>
   </div>
 
-  <!-- Password — field name MUST be "password" -->
   <div class="field">
     <label for="password">Password</label>
-    <input type="password" id="password" name="password" placeholder="Min 6 characters" autocomplete="new-password" required/>
+    <div class="pw-wrap">
+      <input type="password" id="password" name="password" placeholder="Min 8 characters" autocomplete="new-password" required oninput="checkStrength(this.value)"/>
+      <button class="pw-toggle" type="button" onclick="togglePw()" title="Show/hide password">
+        <svg id="eyeIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+        </svg>
+      </button>
+    </div>
+    <div class="strength-bar"><div class="strength-fill" id="strengthFill"></div></div>
+    <div class="strength-label" id="strengthLabel"></div>
   </div>
 
-  <!-- theme_mode MUST be "white" — the only valid value in app.py -->
   <input type="hidden" name="theme_mode" value="white"/>
-  <!-- role MUST be "admin" for workspace creator -->
   <input type="hidden" name="role" value="admin"/>
 
   <button class="btn" id="submitBtn" onclick="createWorkspace()">Create workspace</button>
 
-  <!-- Shown after success when SMTP not configured — shows manual verify link -->
-  <div class="verify-box" id="verifyBox">
-    <strong>⚠ Email verification required</strong><br/>
-    SMTP is not configured on this server, so the verification email was not sent automatically.<br/>
-    Copy this link and open it in your browser to verify your account:
-    <span class="verify-link" id="verifyLink">—</span>
-    <button class="copy-btn" onclick="copyVerify()">Copy link</button>
-  </div>
-
   <div class="link-row">Already have a workspace? <a href="/login">Sign in</a></div>
 
   <div class="info-box">
-    <strong>Default demo account:</strong><br/>
-    Email: <code style="font-family:'IBM Plex Mono',monospace">admin@vewit.local</code><br/>
-    Password: <code style="font-family:'IBM Plex Mono',monospace">admin123</code><br/>
-    (pre-seeded, already verified — use this to sign in immediately)
+    <strong>Demo account:</strong><br/>
+    Email: <code>admin@vewit.local</code> &nbsp;·&nbsp; Password: <code>admin123</code>
   </div>
 </div>
 
 <script>
-async function createWorkspace() {
-  const btn = document.getElementById('submitBtn');
-  const msgEl = document.getElementById('msg');
-  msgEl.className = 'msg';
-  msgEl.textContent = '';
-
-  // Read values
-  const org_name = document.getElementById('organization_name').value.trim();
-  const name = document.getElementById('name').value.trim();
-  const email = document.getElementById('email').value.trim();
-  const password = document.getElementById('password').value;
-
-  // Client-side validation
-  if (!org_name) { showMsg('Organization name is required.', 'error'); return; }
-  if (!name)     { showMsg('Your name is required.', 'error'); return; }
-  if (!email || !email.includes('@')) { showMsg('A valid email is required.', 'error'); return; }
-  if (!password || password.length < 6) { showMsg('Password must be at least 6 characters.', 'error'); return; }
-
-  btn.disabled = true;
-  btn.textContent = 'Creating…';
-
-  try {
-    const res = await fetch('/register', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        organization_name: org_name,   // exact key Flask expects
-        name: name,                    // exact key Flask expects
-        email: email,
-        password: password,
-        theme_mode: 'white',           // only valid value in VALID_THEMES
-        role: 'admin'                  // workspace creator must be admin
-      })
-    });
-
-    const data = await res.json();
-
-    if (!res.ok) {
-      showMsg(data.error || 'Registration failed. Please try again.', 'error');
-      btn.disabled = false;
-      btn.textContent = 'Create workspace';
-      return;
-    }
-
-    // Success!
-    showMsg('Workspace created! ' + (data.verify_url ? 'Check below for your verification link.' : 'Redirecting…'), 'success');
-
-    // If verify_url returned (no SMTP), show the manual verify box
-    if (data.verify_url) {
-      document.getElementById('verifyLink').textContent = data.verify_url;
-      document.getElementById('verifyBox').classList.add('show');
-      btn.textContent = 'Open verify link to sign in';
-      btn.disabled = false;
-      btn.onclick = () => window.location.href = data.verify_url;
-    } else {
-      // Redirect to workspace
-      setTimeout(() => {
-        window.location.href = '/workspace/' + (data.slug || '');
-      }, 1200);
-    }
-
-  } catch(e) {
-    showMsg('Network error: ' + e.message, 'error');
-    btn.disabled = false;
-    btn.textContent = 'Create workspace';
+function togglePw(){
+  const inp=document.getElementById('password');
+  const ico=document.getElementById('eyeIcon');
+  if(inp.type==='password'){
+    inp.type='text';
+    ico.innerHTML='<path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/>';
+  }else{
+    inp.type='password';
+    ico.innerHTML='<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
   }
 }
 
-function showMsg(text, type) {
-  const el = document.getElementById('msg');
-  el.textContent = text;
-  el.className = 'msg ' + type;
+function checkStrength(pw){
+  const fill=document.getElementById('strengthFill');
+  const lbl=document.getElementById('strengthLabel');
+  if(!pw){fill.style.width='0';lbl.textContent='';return;}
+  let score=0;
+  if(pw.length>=8)score++;
+  if(pw.length>=12)score++;
+  if(/[A-Z]/.test(pw))score++;
+  if(/[0-9]/.test(pw))score++;
+  if(/[^A-Za-z0-9]/.test(pw))score++;
+  const levels=[
+    {w:'20%',c:'#ef4444',t:'Too weak'},
+    {w:'40%',c:'#f97316',t:'Weak'},
+    {w:'60%',c:'#eab308',t:'Fair'},
+    {w:'80%',c:'#22c55e',t:'Strong'},
+    {w:'100%',c:'#10b981',t:'Very strong'}
+  ];
+  const l=levels[Math.min(score-1,4)]||levels[0];
+  fill.style.width=l.w;fill.style.background=l.c;
+  lbl.textContent=l.t;lbl.style.color=l.c;
 }
 
-function copyVerify() {
-  const link = document.getElementById('verifyLink').textContent;
-  navigator.clipboard.writeText(link).then(() => {
-    const btn = document.querySelector('.copy-btn');
-    btn.textContent = 'Copied!';
-    setTimeout(() => btn.textContent = 'Copy link', 2000);
-  });
+function showMsg(text,type){
+  const el=document.getElementById('msg');
+  el.textContent=text;el.className='msg '+type;
 }
 
-// Allow Enter key to submit
-document.addEventListener('keydown', e => {
-  if (e.key === 'Enter') createWorkspace();
-});
+async function createWorkspace(){
+  const btn=document.getElementById('submitBtn');
+  const org_name=document.getElementById('organization_name').value.trim();
+  const name=document.getElementById('name').value.trim();
+  const email=document.getElementById('email').value.trim();
+  const password=document.getElementById('password').value;
+
+  if(!org_name){showMsg('Organization name is required.','error');return;}
+  if(!name){showMsg('Your name is required.','error');return;}
+  if(!email||!email.includes('@')){showMsg('A valid email is required.','error');return;}
+  if(!password||password.length<8){showMsg('Password must be at least 8 characters.','error');return;}
+
+  btn.disabled=true;btn.textContent='Creating…';
+
+  try{
+    const res=await fetch('/register',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({organization_name:org_name,name,email,password,theme_mode:'white',role:'admin'})
+    });
+    const data=await res.json();
+    if(!res.ok){
+      showMsg(data.error||'Registration failed. Please try again.','error');
+      btn.disabled=false;btn.textContent='Create workspace';return;
+    }
+    showMsg('Workspace created! Redirecting to your dashboard…','success');
+    setTimeout(()=>{window.location.href=data.workspace_url||'/workspace/'+data.slug;},1000);
+  }catch(e){
+    showMsg('Network error: '+e.message,'error');
+    btn.disabled=false;btn.textContent='Create workspace';
+  }
+}
+
+document.addEventListener('keydown',e=>{if(e.key==='Enter')createWorkspace();});
 </script>
 </body>
 </html>

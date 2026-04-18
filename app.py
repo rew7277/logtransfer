@@ -1259,8 +1259,6 @@ def login():
         return jsonify({"error": "Invalid email or password."}), 401
     if user["admin_only"] and user["role"] != "admin":
         return jsonify({"error": "This workspace is in admin-only mode."}), 403
-    if not user["email_verified"]:
-        return jsonify({"error": "Please verify your email before signing in."}), 403
     session.clear()
     session["user_id"] = user["id"]
     session["csrf"]    = secrets.token_hex(16)
@@ -1310,27 +1308,16 @@ def register_org_and_admin():
     org_id   = cur.lastrowid
     user_cur = db.execute(
         "INSERT INTO users (org_id, name, email, password_hash, role, created_at, email_verified) VALUES (?, ?, ?, ?, ?, ?, ?)",
-        (org_id, admin_name, email, generate_password_hash(password), "admin", now, 0),
+        (org_id, admin_name, email, generate_password_hash(password), "admin", now, 1),
     )
     db.commit()
     user_id = user_cur.lastrowid
-    token   = create_verification_token(user_id)
-    verify_url = f"{public_base_url()}/verify-email/{token}"
-    try:
-        send_email_message(
-            "Verify your ObserveX workspace email",
-            email,
-            f"Hello {admin_name},\n\nVerify your email to activate the workspace:\n{verify_url}\n\nWorkspace URL: {org_public_url(slug)}",
-        )
-    except Exception as exc:
-        logger.warning("Verification email failed: %s", exc)
     session.clear()
     session["user_id"] = user_id
     session["csrf"]    = secrets.token_hex(16)
     audit(org_id, user_id, "created_workspace", "organization", str(org_id), {"slug": slug, "email": email})
-    # SECURITY: Do NOT return the verify_url in the response — it must travel via email only.
     return jsonify({
-        "message": "Workspace created successfully. A verification email has been sent.",
+        "message": "Workspace created successfully. Welcome to ObserveX!",
         "slug":    slug,
         "workspace_url": org_public_url(slug),
     })
