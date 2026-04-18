@@ -1095,20 +1095,44 @@ async function createApiKey() {
   if (r.ok) {
     document.getElementById('newKeyName').value = '';
     // Remove any previous reveal banners
-    document.querySelectorAll('.api-key-reveal').forEach(el => el.remove());
-    // Show full key in a one-time reveal banner above the keys list
+    document.querySelectorAll('.api-key-reveal').forEach(function(el) { el.remove(); });
+    // Build banner using DOM methods to avoid any quote-escaping issues
     const wrap = document.getElementById('apiKeysWrap');
     const banner = document.createElement('div');
     banner.className = 'api-key-reveal';
     banner.style.cssText = 'background:var(--green-dim);border:1px solid var(--green);border-radius:var(--radius);padding:12px 14px;margin-bottom:12px;';
-    const keyVal = d.key;
-    banner.innerHTML =
-      '<div style="color:var(--green);font-weight:700;font-size:12px;margin-bottom:6px">⚠ Copy your API key now — it will not be shown again!</div>' +
-      '<div id="revealKeyText" style="font-family:var(--mono);font-size:11px;background:var(--surface);padding:8px 10px;border-radius:var(--radius-sm);word-break:break-all;user-select:all;border:1px solid var(--border)">' + keyVal + '</div>' +
-      '<div style="margin-top:8px;display:flex;gap:8px">' +
-        '<button onclick="copyText(document.getElementById('revealKeyText').textContent);this.textContent='\u2713 Copied!';this.style.background='var(--green)'" style="padding:4px 14px;background:var(--accent);border:none;border-radius:var(--radius-sm);color:#fff;font-weight:700;cursor:pointer;font-size:11px">Copy key</button>' +
-        '<button onclick="this.closest('.api-key-reveal').remove()" style="padding:4px 14px;background:var(--surface3);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text2);cursor:pointer;font-size:11px">Dismiss</button>' +
-      '</div>';
+
+    const warning = document.createElement('div');
+    warning.style.cssText = 'color:var(--green);font-weight:700;font-size:12px;margin-bottom:6px';
+    warning.textContent = '⚠ Copy your API key now — it will not be shown again!';
+
+    const keyBox = document.createElement('div');
+    keyBox.style.cssText = 'font-family:var(--mono);font-size:11px;background:var(--surface);padding:8px 10px;border-radius:var(--radius-sm);word-break:break-all;user-select:all;border:1px solid var(--border)';
+    keyBox.textContent = d.key;
+
+    const btnRow = document.createElement('div');
+    btnRow.style.cssText = 'margin-top:8px;display:flex;gap:8px';
+
+    const copyBtn = document.createElement('button');
+    copyBtn.textContent = 'Copy key';
+    copyBtn.style.cssText = 'padding:4px 14px;background:var(--accent);border:none;border-radius:var(--radius-sm);color:#fff;font-weight:700;cursor:pointer;font-size:11px';
+    copyBtn.addEventListener('click', function() {
+      navigator.clipboard.writeText(keyBox.textContent).then(function() {
+        copyBtn.textContent = '✓ Copied!';
+        copyBtn.style.background = 'var(--green)';
+      });
+    });
+
+    const dismissBtn = document.createElement('button');
+    dismissBtn.textContent = 'Dismiss';
+    dismissBtn.style.cssText = 'padding:4px 14px;background:var(--surface3);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text2);cursor:pointer;font-size:11px';
+    dismissBtn.addEventListener('click', function() { banner.remove(); });
+
+    btnRow.appendChild(copyBtn);
+    btnRow.appendChild(dismissBtn);
+    banner.appendChild(warning);
+    banner.appendChild(keyBox);
+    banner.appendChild(btnRow);
     wrap.prepend(banner);
     loadBootstrap();
   } else toast(d.error||'Error', 'error');
