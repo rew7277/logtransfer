@@ -151,15 +151,8 @@ def public_base_url() -> str:
     return os.environ.get('PUBLIC_BASE_URL', 'https://observex.in').rstrip('/')
 
 
-def public_base_url() -> str:
-    # Prefer env var; fall back to the actual request host so local dev works too
-    base = os.environ.get('PUBLIC_BASE_URL', '').rstrip('/')
-    if not base:
-        base = request.host_url.rstrip('/')
-    return base
-
 def org_public_url(slug: str) -> str:
-    return f"{public_base_url()}/workspace/{slug}"
+    return f"https://{slug}.observex.in"
 
 
 def create_verification_token(user_id: int) -> str:
@@ -1894,7 +1887,7 @@ def list_api_keys():
 
 @app.delete("/api/keys/<int:key_id>")
 def revoke_api_key(key_id: int):
-    """Revoke an API key."""
+    """Revoke and delete an API key."""
     user, error = require_auth()
     if error:
         return error
@@ -1902,10 +1895,11 @@ def revoke_api_key(key_id: int):
     row = db.execute("SELECT id FROM api_keys WHERE id = ? AND org_id = ?", (key_id, user["org_id"])).fetchone()
     if not row:
         return jsonify({"error": "Key not found."}), 404
-    db.execute("UPDATE api_keys SET status = 'revoked' WHERE id = ?", (key_id,))
-    db.commit()
+    # Audit before deletion so the record is preserved in audit log
     audit(user["org_id"], user["id"], "revoked_api_key", "api_key", str(key_id), {})
-    return jsonify({"message": "API key revoked."})
+    db.execute("DELETE FROM api_keys WHERE id = ?", (key_id,))
+    db.commit()
+    return jsonify({"message": "API key revoked and deleted."})
 
 
 @app.get("/api/logs/timeseries")
