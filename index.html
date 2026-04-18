@@ -8,6 +8,37 @@
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Syne:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
 <style>
 :root {
+  /* ── Light theme (default) ── */
+  --bg: #f5f7fa;
+  --surface: #ffffff;
+  --surface2: #f0f2f5;
+  --surface3: #e8eaed;
+  --border: rgba(0,0,0,0.09);
+  --border2: rgba(0,0,0,0.15);
+  --text: #0d1117;
+  --text2: #57606a;
+  --text3: #8c959f;
+  --accent: #1f6feb;
+  --accent2: #0969da;
+  --accent-glow: rgba(31,111,235,0.12);
+  --green: #1a7f37;
+  --green-dim: rgba(26,127,55,0.1);
+  --red: #cf222e;
+  --red-dim: rgba(207,34,46,0.1);
+  --yellow: #9a6700;
+  --yellow-dim: rgba(154,103,0,0.1);
+  --orange: #bc4c00;
+  --purple: #6639ba;
+  --purple-dim: rgba(102,57,186,0.1);
+  --cyan: #0969da;
+  --mono: 'IBM Plex Mono', monospace;
+  --sans: 'Syne', sans-serif;
+  --sidebar-w: 220px;
+  --radius: 8px;
+  --radius-sm: 5px;
+}
+/* ── Dark theme ── */
+html.dark {
   --bg: #080c10;
   --surface: #0d1117;
   --surface2: #161b22;
@@ -30,11 +61,6 @@
   --purple: #8b5cf6;
   --purple-dim: rgba(139,92,246,0.12);
   --cyan: #39c5cf;
-  --mono: 'IBM Plex Mono', monospace;
-  --sans: 'Syne', sans-serif;
-  --sidebar-w: 220px;
-  --radius: 8px;
-  --radius-sm: 5px;
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html{scroll-behavior:smooth}
@@ -249,8 +275,37 @@ svg.donut{transform:rotate(-90deg)}
 /* ── SCROLLBAR ── */
 ::-webkit-scrollbar{width:5px;height:5px}
 ::-webkit-scrollbar-track{background:transparent}
-::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:3px}
-::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.18)}
+::-webkit-scrollbar-thumb{background:rgba(0,0,0,.15);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:rgba(0,0,0,.25)}
+html.dark ::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1)}
+html.dark ::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.18)}
+
+/* ── SIDEBAR COLLAPSE ── */
+body.sidebar-collapsed .sidebar{width:52px;overflow:hidden}
+body.sidebar-collapsed .sidebar .brand-name,
+body.sidebar-collapsed .sidebar .brand-org,
+body.sidebar-collapsed .sidebar .nav-section,
+body.sidebar-collapsed .sidebar .nav-badge,
+body.sidebar-collapsed .sidebar .sidebar-user,
+body.sidebar-collapsed .sidebar .btn-logout{display:none}
+body.sidebar-collapsed .sidebar .nav-item{justify-content:center;margin:1px 4px;padding:8px 0}
+body.sidebar-collapsed .sidebar .nav-icon{width:20px;font-size:15px}
+body.sidebar-collapsed .main{margin-left:52px}
+body.sidebar-collapsed .sidebar-brand{justify-content:center;padding:14px 8px}
+body.sidebar-collapsed .sidebar-footer{padding:8px}
+.sidebar-toggle{background:none;border:none;cursor:pointer;color:var(--text2);font-size:16px;padding:4px 6px;border-radius:var(--radius-sm);transition:all .15s;line-height:1;flex-shrink:0}
+.sidebar-toggle:hover{background:var(--surface2);color:var(--text)}
+
+/* ── THEME TOGGLE ── */
+.theme-toggle{display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:var(--radius-sm);border:1px solid var(--border2);background:var(--surface2);cursor:pointer;font-size:15px;transition:all .15s;flex-shrink:0}
+.theme-toggle:hover{border-color:var(--accent);background:var(--accent-glow)}
+
+/* ── LIGHT MODE TWEAKS ── */
+html:not(.dark) .payload-pre{background:#f6f8fa;color:#24292f}
+html:not(.dark) .api-code{background:#f6f8fa;color:#1a7f37}
+html:not(.dark) .stat-card:hover{box-shadow:0 8px 24px rgba(0,0,0,.1)}
+html:not(.dark) .detail-panel{box-shadow:-4px 0 24px rgba(0,0,0,.1)}
+html:not(.dark) .toast{box-shadow:0 8px 24px rgba(0,0,0,.15)}
 
 /* ── INGEST API ── */
 .api-code{background:rgba(0,0,0,.5);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 14px;font-family:var(--mono);font-size:11px;color:#a5d6a7;white-space:pre-wrap;word-break:break-all;position:relative;margin-bottom:12px}
@@ -279,6 +334,7 @@ svg.donut{transform:rotate(-90deg)}
       <div class="brand-name">ObserveX</div>
       <div class="brand-org">{{ user.org_name | lower }}</div>
     </div>
+    <button class="sidebar-toggle" onclick="toggleSidebar()" title="Toggle sidebar">&#8285;</button>
   </div>
 
   <div class="nav-section">Workspace</div>
@@ -308,8 +364,10 @@ svg.donut{transform:rotate(-90deg)}
 
   <!-- TOPBAR -->
   <div class="topbar">
+    <button class="sidebar-toggle" onclick="toggleSidebar()" title="Toggle sidebar" style="margin-right:4px">&#9776;</button>
     <span class="topbar-title"><span>ObserveX</span> Workspace · {{ user.org_name }}</span>
     <div class="topbar-right">
+      <button class="theme-toggle" id="themeToggleBtn" onclick="toggleTheme()" title="Toggle dark/light mode">🌙</button>
       <button class="btn-primary" onclick="document.getElementById('fileInput').click()">⇡ Upload logs</button>
       <button class="btn-secondary" onclick="showPage('explorer')">Open explorer</button>
     </div>
@@ -327,13 +385,23 @@ svg.donut{transform:rotate(-90deg)}
       </div>
 
       <!-- Stats -->
-      <div class="stats-row">
+      <div class="stats-row" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr))">
         <div class="stat-card" onclick="showPage('explorer')"><div class="stat-label">Total logs</div><div class="stat-val" id="st-total">—</div></div>
         <div class="stat-card" onclick="showExplorerFiltered('error')"><div class="stat-label">Errors</div><div class="stat-val red" id="st-errors">—</div></div>
         <div class="stat-card" onclick="showExplorerFiltered('warn')"><div class="stat-label">Warnings</div><div class="stat-val yellow" id="st-warnings">—</div></div>
         <div class="stat-card" onclick="showExplorerFiltered('success')"><div class="stat-label">Success</div><div class="stat-val green" id="st-success">—</div></div>
         <div class="stat-card"><div class="stat-label">Error rate</div><div class="stat-val red" id="st-errrate">—</div></div>
         <div class="stat-card" onclick="showPage('ingest')"><div class="stat-label">Uploads</div><div class="stat-val" id="st-uploads">—</div></div>
+        <div class="stat-card" title="Logs ingested in last 60 minutes"><div class="stat-label">Logs / hr</div><div class="stat-val blue" id="st-logs-hr">—</div></div>
+        <div class="stat-card" title="System health score based on error rate"><div class="stat-label">Health</div><div class="stat-val green" id="st-health">—</div></div>
+      </div>
+      <!-- Live refresh indicator -->
+      <div style="display:flex;align-items:center;justify-content:flex-end;gap:8px;margin-bottom:12px;font-size:11px;color:var(--text3)">
+        <span id="lastRefreshLabel">—</span>
+        <button onclick="loadBootstrap()" style="padding:3px 10px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text2);font-size:11px;cursor:pointer;font-family:var(--sans)">↻ Refresh</button>
+        <label style="display:flex;align-items:center;gap:5px;cursor:pointer">
+          <input type="checkbox" id="autoRefreshToggle" onchange="toggleAutoRefresh()" style="cursor:pointer"/> Auto-refresh 30s
+        </label>
       </div>
 
       <!-- Upload zone -->
@@ -595,6 +663,37 @@ Content-Type: application/json
 <div class="toast-wrap" id="toastWrap"></div>
 
 <script>
+// ── THEME (persisted in localStorage, light = default) ──
+(function() {
+  var saved = localStorage.getItem('oxTheme');
+  if (saved === 'dark') document.documentElement.classList.add('dark');
+  // light is default — no class needed
+})();
+
+function toggleTheme() {
+  var isDark = document.documentElement.classList.toggle('dark');
+  localStorage.setItem('oxTheme', isDark ? 'dark' : 'light');
+  var btn = document.getElementById('themeToggleBtn');
+  if (btn) btn.textContent = isDark ? '☀️' : '🌙';
+}
+
+function applyThemeIcon() {
+  var btn = document.getElementById('themeToggleBtn');
+  if (btn) btn.textContent = document.documentElement.classList.contains('dark') ? '☀️' : '🌙';
+}
+
+// ── SIDEBAR COLLAPSE (persisted in localStorage) ──
+function toggleSidebar() {
+  var collapsed = document.body.classList.toggle('sidebar-collapsed');
+  localStorage.setItem('oxSidebar', collapsed ? 'collapsed' : 'open');
+}
+
+(function() {
+  if (localStorage.getItem('oxSidebar') === 'collapsed') {
+    document.body.classList.add('sidebar-collapsed');
+  }
+})();
+
 // ── STATE ──
 const ORG_SLUG = '{{ org_slug }}';
 const USER_ROLE = '{{ user.role }}';
@@ -605,6 +704,7 @@ let cachedLogs = [];
 
 // ── INIT ──
 document.addEventListener('DOMContentLoaded', () => {
+  applyThemeIcon();
   loadBootstrap();
   setupDragDrop();
   document.getElementById('fileInput').addEventListener('change', e => {
@@ -640,6 +740,34 @@ function applyBootstrap(d) {
   setText('st-uploads', (s.totals.uploads || 0).toLocaleString());
   setText('nb-all', s.totals.logs || 0);
   setText('nb-alerts', d.alerts.length || 0);
+
+  // ── Logs per hour (sum last hour from time_series) ──
+  var logsHr = 0;
+  var nowH = new Date(); nowH.setMinutes(0,0,0);
+  var prevH = new Date(nowH - 3600000);
+  var prevKey = prevH.toISOString().replace('.000','').slice(0,14) + '00:00Z';
+  var curKey  = nowH.toISOString().replace('.000','').slice(0,14) + '00:00Z';
+  var ts = s.time_series || {};
+  [prevKey, curKey].forEach(function(k) {
+    if (ts[k]) Object.values(ts[k]).forEach(function(v) { logsHr += v; });
+  });
+  setText('st-logs-hr', logsHr.toLocaleString());
+
+  // ── Health score ──
+  var errRate = parseFloat(s.error_rate) || 0;
+  var health, healthCls;
+  if (errRate === 0)       { health = '100%'; healthCls = 'green'; }
+  else if (errRate < 5)    { health = 'Good';  healthCls = 'green'; }
+  else if (errRate < 20)   { health = 'Fair';  healthCls = 'yellow'; }
+  else if (errRate < 50)   { health = 'Poor';  healthCls = 'red'; }
+  else                     { health = 'Crit';  healthCls = 'red'; }
+  var hEl = document.getElementById('st-health');
+  if (hEl) { hEl.textContent = health; hEl.className = 'stat-val ' + healthCls; }
+
+  // ── Last refresh timestamp ──
+  var lbl = document.getElementById('lastRefreshLabel');
+  if (lbl) lbl.textContent = 'Last updated: ' + new Date().toLocaleTimeString();
+
   renderHourlyChart(s.time_series);
   renderDonut(s.levels, s.totals.logs);
   renderSourceBars(s.source_breakdown);
@@ -650,6 +778,14 @@ function applyBootstrap(d) {
   renderJobs(d.jobs);
   renderAudit(d.audit);
   renderApiKeys(d.api_keys);
+}
+
+// ── Auto-refresh ──
+var _autoRefreshTimer = null;
+function toggleAutoRefresh() {
+  var on = document.getElementById('autoRefreshToggle').checked;
+  if (_autoRefreshTimer) { clearInterval(_autoRefreshTimer); _autoRefreshTimer = null; }
+  if (on) { _autoRefreshTimer = setInterval(loadBootstrap, 30000); }
 }
 
 function setText(id, val) {
@@ -994,16 +1130,12 @@ function renderAudit(events) {
 
 function renderApiKeys(keys) {
   const el = document.getElementById('apiKeysWrap');
-  const active = (keys || []).filter(k => k.status === 'active');
-  if (!active.length) {
-    el.innerHTML = '<p style="padding:12px;color:var(--text3);font-size:12px">No active API keys. Create one above.</p>';
-    return;
-  }
-  el.innerHTML = `<div>${active.map(k => `
+  if (!keys || !keys.length) return;
+  el.innerHTML = `<div>${keys.map(k => `
     <div class="api-key-row">
       <span class="api-key-prefix">${esc(k.prefix)}…</span>
       <span class="api-key-name">${esc(k.name)}</span>
-      <span class="lvl-badge lvl-success">ACTIVE</span>
+      <span class="lvl-badge lvl-${k.status==='active'?'success':'debug'}">${esc(k.status).toUpperCase()}</span>
       <span class="api-key-last">${k.last_used_at?'Last: '+fmtTs(k.last_used_at):'Never used'}</span>
       <button class="btn-danger" onclick="revokeKey(${k.id})">Revoke</button>
     </div>`).join('')}</div>`;
@@ -1093,56 +1225,17 @@ async function createApiKey() {
   const r = await api('/api/keys', 'POST', {name});
   const d = await r.json();
   if (r.ok) {
+    copyText(d.key);
+    toast(`API key created & copied! Starts with: ${d.prefix}…`, 'success');
     document.getElementById('newKeyName').value = '';
-    // Remove any previous reveal banners
-    document.querySelectorAll('.api-key-reveal').forEach(function(el) { el.remove(); });
-    // Build banner using DOM methods to avoid any quote-escaping issues
-    const wrap = document.getElementById('apiKeysWrap');
-    const banner = document.createElement('div');
-    banner.className = 'api-key-reveal';
-    banner.style.cssText = 'background:var(--green-dim);border:1px solid var(--green);border-radius:var(--radius);padding:12px 14px;margin-bottom:12px;';
-
-    const warning = document.createElement('div');
-    warning.style.cssText = 'color:var(--green);font-weight:700;font-size:12px;margin-bottom:6px';
-    warning.textContent = '⚠ Copy your API key now — it will not be shown again!';
-
-    const keyBox = document.createElement('div');
-    keyBox.style.cssText = 'font-family:var(--mono);font-size:11px;background:var(--surface);padding:8px 10px;border-radius:var(--radius-sm);word-break:break-all;user-select:all;border:1px solid var(--border)';
-    keyBox.textContent = d.key;
-
-    const btnRow = document.createElement('div');
-    btnRow.style.cssText = 'margin-top:8px;display:flex;gap:8px';
-
-    const copyBtn = document.createElement('button');
-    copyBtn.textContent = 'Copy key';
-    copyBtn.style.cssText = 'padding:4px 14px;background:var(--accent);border:none;border-radius:var(--radius-sm);color:#fff;font-weight:700;cursor:pointer;font-size:11px';
-    copyBtn.addEventListener('click', function() {
-      navigator.clipboard.writeText(keyBox.textContent).then(function() {
-        copyBtn.textContent = '✓ Copied!';
-        copyBtn.style.background = 'var(--green)';
-      });
-    });
-
-    const dismissBtn = document.createElement('button');
-    dismissBtn.textContent = 'Dismiss';
-    dismissBtn.style.cssText = 'padding:4px 14px;background:var(--surface3);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text2);cursor:pointer;font-size:11px';
-    dismissBtn.addEventListener('click', function() { banner.remove(); });
-
-    btnRow.appendChild(copyBtn);
-    btnRow.appendChild(dismissBtn);
-    banner.appendChild(warning);
-    banner.appendChild(keyBox);
-    banner.appendChild(btnRow);
-    wrap.prepend(banner);
     loadBootstrap();
   } else toast(d.error||'Error', 'error');
 }
 
 async function revokeKey(id) {
-  if (!confirm('Revoke and delete this API key? This cannot be undone.')) return;
+  if (!confirm('Revoke this API key?')) return;
   const r = await fetch(`/api/keys/${id}`, {method:'DELETE'});
-  if (r.ok) { toast('Key revoked and removed', 'success'); loadBootstrap(); }
-  else { const d = await r.json(); toast(d.error||'Failed to revoke key', 'error'); }
+  if (r.ok) { toast('Key revoked', 'success'); loadBootstrap(); }
 }
 
 async function doLogout() {

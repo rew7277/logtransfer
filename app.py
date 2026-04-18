@@ -38,10 +38,23 @@ except Exception:  # pragma: no cover
     BackgroundScheduler = None
 
 BASE_DIR = Path(__file__).resolve().parent
-# Use Railway persistent volume at /data if mounted, otherwise local ./data
-_volume = Path("/data")
-DATA_DIR = _volume if _volume.exists() and os.access(_volume, os.W_OK) else BASE_DIR / "data"
-DATA_DIR.mkdir(exist_ok=True)
+# Use Railway persistent volume if mounted (set RAILWAY_VOLUME_MOUNT_PATH in Railway dashboard)
+# Falls back to /data if writable, then local ./data
+_vol_env = os.environ.get("RAILWAY_VOLUME_MOUNT_PATH", "").strip()
+_vol_candidates = [Path(_vol_env)] if _vol_env else []
+_vol_candidates += [Path("/data")]
+def _pick_data_dir():
+    for p in _vol_candidates:
+        try:
+            p.mkdir(parents=True, exist_ok=True)
+            if os.access(p, os.W_OK):
+                return p
+        except Exception:
+            pass
+    fallback = BASE_DIR / "data"
+    fallback.mkdir(exist_ok=True)
+    return fallback
+DATA_DIR = _pick_data_dir()
 DB_PATH = DATA_DIR / "observex.db"
 
 app = Flask(__name__)
