@@ -1094,39 +1094,50 @@ async function createApiKey() {
   const d = await r.json();
   if (r.ok) {
     document.getElementById('newKeyName').value = '';
-    // Remove any previous reveal banners
+    // Reload the keys list first, THEN inject banner so renderApiKeys() doesn't wipe it
+    await loadBootstrap();
+    // Remove any leftover reveal banners from previous creations
     document.querySelectorAll('.api-key-reveal').forEach(function(el) { el.remove(); });
-    // Build banner using DOM methods to avoid any quote-escaping issues
+    // Build banner using DOM methods (no innerHTML string quoting issues)
     const wrap = document.getElementById('apiKeysWrap');
     const banner = document.createElement('div');
     banner.className = 'api-key-reveal';
-    banner.style.cssText = 'background:var(--green-dim);border:1px solid var(--green);border-radius:var(--radius);padding:12px 14px;margin-bottom:12px;';
+    banner.style.cssText = 'background:var(--green-dim);border:1px solid var(--green);border-radius:var(--radius);padding:14px 16px;margin-bottom:12px;';
 
     const warning = document.createElement('div');
-    warning.style.cssText = 'color:var(--green);font-weight:700;font-size:12px;margin-bottom:6px';
-    warning.textContent = '⚠ Copy your API key now — it will not be shown again!';
+    warning.style.cssText = 'color:var(--green);font-weight:700;font-size:12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center';
+
+    const warningText = document.createElement('span');
+    warningText.textContent = '⚠ Copy your API key now — it will not be shown again!';
+
+    const timer = document.createElement('span');
+    timer.style.cssText = 'font-family:var(--mono);font-size:11px;color:var(--text3);font-weight:400';
+    timer.textContent = 'Auto-clears in 3:00';
+    warning.appendChild(warningText);
+    warning.appendChild(timer);
 
     const keyBox = document.createElement('div');
-    keyBox.style.cssText = 'font-family:var(--mono);font-size:11px;background:var(--surface);padding:8px 10px;border-radius:var(--radius-sm);word-break:break-all;user-select:all;border:1px solid var(--border)';
+    keyBox.style.cssText = 'font-family:var(--mono);font-size:12px;background:var(--surface);padding:10px 12px;border-radius:var(--radius-sm);word-break:break-all;user-select:all;border:1px solid var(--border);letter-spacing:0.02em';
     keyBox.textContent = d.key;
 
     const btnRow = document.createElement('div');
-    btnRow.style.cssText = 'margin-top:8px;display:flex;gap:8px';
+    btnRow.style.cssText = 'margin-top:10px;display:flex;gap:8px;align-items:center';
 
     const copyBtn = document.createElement('button');
     copyBtn.textContent = 'Copy key';
-    copyBtn.style.cssText = 'padding:4px 14px;background:var(--accent);border:none;border-radius:var(--radius-sm);color:#fff;font-weight:700;cursor:pointer;font-size:11px';
+    copyBtn.style.cssText = 'padding:5px 16px;background:var(--accent);border:none;border-radius:var(--radius-sm);color:#fff;font-weight:700;cursor:pointer;font-size:12px';
     copyBtn.addEventListener('click', function() {
       navigator.clipboard.writeText(keyBox.textContent).then(function() {
         copyBtn.textContent = '✓ Copied!';
         copyBtn.style.background = 'var(--green)';
+        setTimeout(function() { copyBtn.textContent = 'Copy key'; copyBtn.style.background = 'var(--accent)'; }, 2000);
       });
     });
 
     const dismissBtn = document.createElement('button');
     dismissBtn.textContent = 'Dismiss';
-    dismissBtn.style.cssText = 'padding:4px 14px;background:var(--surface3);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text2);cursor:pointer;font-size:11px';
-    dismissBtn.addEventListener('click', function() { banner.remove(); });
+    dismissBtn.style.cssText = 'padding:5px 14px;background:var(--surface3);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text2);cursor:pointer;font-size:12px';
+    dismissBtn.addEventListener('click', function() { clearInterval(countdown); banner.remove(); });
 
     btnRow.appendChild(copyBtn);
     btnRow.appendChild(dismissBtn);
@@ -1134,7 +1145,17 @@ async function createApiKey() {
     banner.appendChild(keyBox);
     banner.appendChild(btnRow);
     wrap.prepend(banner);
-    loadBootstrap();
+
+    // Countdown timer: auto-dismiss after 3 minutes (180 seconds)
+    var secondsLeft = 180;
+    var countdown = setInterval(function() {
+      secondsLeft--;
+      var m = Math.floor(secondsLeft / 60);
+      var s = secondsLeft % 60;
+      timer.textContent = 'Auto-clears in ' + m + ':' + (s < 10 ? '0' : '') + s;
+      if (secondsLeft <= 0) { clearInterval(countdown); banner.remove(); }
+    }, 1000);
+
   } else toast(d.error||'Error', 'error');
 }
 
