@@ -1,860 +1,1161 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>ObserveX – {{ user.org_name }}</title>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>ObserveX — {{ user.org_name }}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Syne:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
 <style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  :root {
-    --sidebar-w: 210px;
-    --sidebar-bg: #0d1117;
-    --sidebar-text: #8b949e;
-    --sidebar-active-bg: #161b22;
-    --sidebar-active-text: #f0f6fc;
-    --sidebar-hover-bg: #161b22;
-    --accent: #2563eb;
-    --accent-hover: #1d4ed8;
-    --bg: #ffffff;
-    --surface: #f6f8fa;
-    --surface2: #eaeef2;
-    --border: #d0d7de;
-    --text: #1f2328;
-    --text2: #57606a;
-    --text3: #8c959f;
-    --red: #cf222e;
-    --red-bg: #ffebe9;
-    --yellow: #9a6700;
-    --yellow-bg: #fff8c5;
-    --green: #1a7f37;
-    --green-bg: #dafbe1;
-    --blue: #0550ae;
-    --blue-bg: #ddf4ff;
-    --radius: 8px;
-    --shadow: 0 1px 3px rgba(0,0,0,.1);
-  }
-  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); display: flex; height: 100vh; overflow: hidden; font-size: 14px; }
+:root {
+  --bg: #080c10;
+  --surface: #0d1117;
+  --surface2: #161b22;
+  --surface3: #1c2128;
+  --border: rgba(255,255,255,0.07);
+  --border2: rgba(255,255,255,0.12);
+  --text: #e6edf3;
+  --text2: #8b949e;
+  --text3: #484f58;
+  --accent: #1f6feb;
+  --accent2: #388bfd;
+  --accent-glow: rgba(31,111,235,0.2);
+  --green: #3fb950;
+  --green-dim: rgba(63,185,80,0.12);
+  --red: #f85149;
+  --red-dim: rgba(248,81,73,0.12);
+  --yellow: #e3b341;
+  --yellow-dim: rgba(227,179,65,0.12);
+  --orange: #d29922;
+  --purple: #8b5cf6;
+  --purple-dim: rgba(139,92,246,0.12);
+  --cyan: #39c5cf;
+  --mono: 'IBM Plex Mono', monospace;
+  --sans: 'Syne', sans-serif;
+  --sidebar-w: 220px;
+  --radius: 8px;
+  --radius-sm: 5px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;-webkit-font-smoothing:antialiased;display:flex}
 
-  /* ── Sidebar ── */
-  .sidebar { width: var(--sidebar-w); background: var(--sidebar-bg); display: flex; flex-direction: column; flex-shrink: 0; overflow-y: auto; }
-  .sidebar-brand { padding: 16px 14px 10px; border-bottom: 1px solid #21262d; }
-  .brand-label { font-size: 9px; font-weight: 700; letter-spacing: .12em; color: #484f58; text-transform: uppercase; margin-bottom: 10px; }
-  .brand-row { display: flex; align-items: center; gap: 10px; }
-  .brand-avatar { width: 32px; height: 32px; border-radius: 8px; background: var(--accent); color: #fff; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-  .brand-name { font-size: 13px; font-weight: 600; color: #f0f6fc; }
-  .brand-sub  { font-size: 11px; color: #484f58; }
-  .nav-section { padding: 8px 0; border-bottom: 1px solid #21262d; }
-  .nav-label { font-size: 9px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: #484f58; padding: 6px 14px 4px; }
-  .nav-item { display: flex; align-items: center; gap: 8px; padding: 7px 14px; font-size: 12.5px; color: var(--sidebar-text); cursor: pointer; border-radius: 0; transition: background .12s, color .12s; user-select: none; }
-  .nav-item:hover { background: var(--sidebar-hover-bg); color: #c9d1d9; }
-  .nav-item.active { background: var(--sidebar-active-bg); color: var(--sidebar-active-text); border-left: 2px solid var(--accent); padding-left: 12px; }
-  .nav-icon { font-size: 14px; width: 18px; text-align: center; flex-shrink: 0; }
-  .nav-badge { margin-left: auto; background: #21262d; color: #8b949e; font-size: 10px; font-weight: 600; padding: 1px 6px; border-radius: 10px; }
-  .nav-badge.red { background: #3d1a1c; color: #f85149; }
-  .sidebar-footer { margin-top: auto; padding: 12px 14px; border-top: 1px solid #21262d; }
-  .footer-label { font-size: 9px; color: #484f58; text-transform: uppercase; letter-spacing: .1em; margin-bottom: 6px; }
-  .footer-user { font-size: 12px; font-weight: 600; color: #c9d1d9; }
-  .footer-role { font-size: 11px; color: #484f58; margin-bottom: 10px; }
-  .logout-btn { width: 100%; padding: 6px; background: none; border: 1px solid #21262d; border-radius: 6px; color: #8b949e; font-size: 12px; cursor: pointer; transition: all .15s; }
-  .logout-btn:hover { border-color: var(--red); color: #f85149; }
+/* ── SIDEBAR ── */
+.sidebar{width:var(--sidebar-w);flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:100;overflow-y:auto}
+.sidebar-brand{padding:16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+.brand-icon{width:32px;height:32px;border-radius:6px;background:linear-gradient(135deg,var(--accent),var(--cyan));display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;color:#fff;flex-shrink:0}
+.brand-name{font-size:14px;font-weight:700;letter-spacing:-.3px}
+.brand-org{font-size:11px;color:var(--text2);font-family:var(--mono);font-weight:400}
+.nav-section{font-size:10px;font-weight:600;color:var(--text3);letter-spacing:1.2px;text-transform:uppercase;padding:14px 16px 6px}
+.nav-item{display:flex;align-items:center;gap:9px;padding:7px 14px;border-radius:var(--radius-sm);font-size:13px;font-weight:500;color:var(--text2);cursor:pointer;transition:all .15s;margin:1px 6px;position:relative;user-select:none}
+.nav-item:hover{background:var(--surface2);color:var(--text)}
+.nav-item.active{background:var(--surface2);color:var(--text)}
+.nav-item.active::before{content:'';position:absolute;left:-6px;top:20%;bottom:20%;width:3px;background:var(--accent2);border-radius:0 2px 2px 0}
+.nav-icon{width:16px;text-align:center;font-size:13px;flex-shrink:0}
+.nav-badge{margin-left:auto;font-size:10px;font-weight:600;padding:1px 6px;border-radius:10px;min-width:18px;text-align:center}
+.nb-red{background:var(--red-dim);color:var(--red)}
+.nb-green{background:var(--green-dim);color:var(--green)}
+.nb-yellow{background:var(--yellow-dim);color:var(--yellow)}
+.nb-blue{background:var(--accent-glow);color:var(--accent2)}
+.nb-muted{background:rgba(255,255,255,.06);color:var(--text2)}
+.sidebar-footer{margin-top:auto;padding:12px;border-top:1px solid var(--border)}
+.sidebar-user{font-size:11px;color:var(--text2);margin-bottom:8px;padding:0 2px}
+.sidebar-user strong{display:block;color:var(--text);font-size:12px;margin-bottom:1px}
+.btn-logout{width:100%;padding:7px;background:transparent;border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text2);font-family:var(--sans);font-size:12px;font-weight:500;cursor:pointer;transition:all .15s}
+.btn-logout:hover{border-color:var(--red);color:var(--red);background:var(--red-dim)}
 
-  /* ── Main ── */
-  .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
-  .topbar { padding: 18px 28px 14px; border-bottom: 1px solid var(--border); background: var(--bg); display: flex; align-items: flex-start; justify-content: space-between; flex-shrink: 0; }
-  .topbar-left .workspace-label { font-size: 10px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); margin-bottom: 4px; }
-  .topbar-left h1 { font-size: 20px; font-weight: 700; color: var(--text); line-height: 1.3; max-width: 520px; }
-  .topbar-actions { display: flex; gap: 10px; align-items: center; flex-shrink: 0; margin-top: 4px; }
-  .btn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 16px; border-radius: var(--radius); font-size: 13px; font-weight: 500; cursor: pointer; transition: all .15s; border: 1px solid transparent; }
-  .btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
-  .btn-primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
-  .btn-outline { background: var(--bg); color: var(--text); border-color: var(--border); }
-  .btn-outline:hover { background: var(--surface); }
-  .content { flex: 1; overflow-y: auto; padding: 24px 28px; }
+/* ── MAIN ── */
+.main{margin-left:var(--sidebar-w);flex:1;min-height:100vh;display:flex;flex-direction:column}
 
-  /* ── Section visibility ── */
-  .section { display: none; }
-  .section.active { display: block; }
+/* ── TOPBAR ── */
+.topbar{display:flex;align-items:center;gap:12px;padding:14px 24px;border-bottom:1px solid var(--border);background:var(--surface);position:sticky;top:0;z-index:50;backdrop-filter:blur(12px)}
+.topbar-title{font-size:13px;font-weight:600;color:var(--text2)}
+.topbar-title span{color:var(--text)}
+.topbar-right{margin-left:auto;display:flex;align-items:center;gap:8px}
+.btn-primary{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;background:var(--accent);border:none;border-radius:var(--radius-sm);color:#fff;font-family:var(--sans);font-size:12px;font-weight:600;cursor:pointer;transition:all .15s}
+.btn-primary:hover{background:var(--accent2);transform:translateY(-1px)}
+.btn-secondary{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;background:transparent;border:1px solid var(--border2);border-radius:var(--radius-sm);color:var(--text);font-family:var(--sans);font-size:12px;font-weight:500;cursor:pointer;transition:all .15s}
+.btn-secondary:hover{border-color:var(--accent);color:var(--accent2)}
 
-  /* ── Log explorer ── */
-  .explorer-toolbar { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
-  .search-wrap { flex: 1; min-width: 260px; position: relative; }
-  .search-wrap input { width: 100%; padding: 8px 14px; border: 1px solid var(--border); border-radius: var(--radius); font-size: 13px; background: var(--bg); color: var(--text); outline: none; }
-  .search-wrap input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(37,99,235,.1); }
-  .filter-select { padding: 7px 12px; border: 1px solid var(--border); border-radius: var(--radius); font-size: 13px; background: var(--bg); color: var(--text); cursor: pointer; outline: none; }
-  .filter-select:focus { border-color: var(--accent); }
-  .toolbar-btn { padding: 7px 14px; border: 1px solid var(--border); border-radius: var(--radius); font-size: 13px; background: var(--bg); color: var(--text); cursor: pointer; transition: all .15s; white-space: nowrap; }
-  .toolbar-btn:hover { background: var(--surface); }
-  .toolbar-btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
-  .toolbar-btn.primary:hover { background: var(--accent-hover); }
-  .records-count { font-size: 12px; color: var(--text3); white-space: nowrap; padding: 7px 4px; }
+/* ── PAGE CONTENT ── */
+.page{padding:24px;flex:1;display:none}
+.page.active{display:block}
+.page-header{margin-bottom:20px}
+.page-header h1{font-size:20px;font-weight:700;letter-spacing:-.4px}
+.page-header p{font-size:13px;color:var(--text2);margin-top:4px}
 
-  /* ── Table toolbar ── */
-  .table-toolbar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; padding: 10px 16px; border: 1px solid var(--border); border-bottom: none; border-radius: var(--radius) var(--radius) 0 0; background: var(--surface); }
-  .table-toolbar-left { display: flex; align-items: center; gap: 10px; }
-  .table-toolbar-right { display: flex; align-items: center; gap: 8px; }
-  .rpp-label { font-size: 12px; color: var(--text3); }
-  .rpp-select { padding: 4px 8px; border: 1px solid var(--border); border-radius: 6px; font-size: 12px; background: var(--bg); color: var(--text); cursor: pointer; }
-  .export-btn { display: inline-flex; align-items: center; gap: 4px; padding: 5px 10px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); font-size: 12px; color: var(--text2); cursor: pointer; transition: all .15s; }
-  .export-btn:hover { border-color: var(--accent); color: var(--accent); }
+/* ── STATS GRID ── */
+.stats-row{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:20px}
+@media(max-width:1200px){.stats-row{grid-template-columns:repeat(3,1fr)}}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;transition:all .2s;cursor:pointer}
+.stat-card:hover{border-color:var(--border2);transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.3)}
+.stat-label{font-size:10px;font-weight:600;color:var(--text3);letter-spacing:.8px;text-transform:uppercase;margin-bottom:8px}
+.stat-val{font-size:26px;font-weight:700;line-height:1;letter-spacing:-1px;font-family:var(--mono)}
+.stat-val.red{color:var(--red)}
+.stat-val.green{color:var(--green)}
+.stat-val.yellow{color:var(--yellow)}
+.stat-val.blue{color:var(--accent2)}
+.stat-val.purple{color:var(--purple)}
 
-  /* ── Log table ── */
-  .log-table-outer { border: 1px solid var(--border); border-radius: 0 0 var(--radius) var(--radius); overflow: hidden; }
-  .log-table-scroll { overflow-x: auto; }
-  .log-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
-  .log-table thead { position: sticky; top: 0; z-index: 5; }
-  .log-table thead th { background: var(--surface); padding: 9px 12px; text-align: left; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--text3); border-bottom: 1px solid var(--border); white-space: nowrap; user-select: none; }
-  .log-table thead th.sort-th { cursor: pointer; }
-  .log-table thead th.sort-th:hover { color: var(--accent); }
-  .sort-ind { margin-left: 4px; color: var(--accent); font-size: 10px; }
-  .log-table tbody tr { border-bottom: 1px solid var(--surface2); transition: background .1s; cursor: pointer; }
-  .log-table tbody tr:hover { background: var(--surface); }
-  .log-table tbody tr:last-child { border-bottom: none; }
-  .log-table tbody td { padding: 9px 12px; vertical-align: top; }
-  .td-ts { font-size: 12px; color: var(--text2); white-space: nowrap; font-family: 'SF Mono', 'Courier New', monospace; }
-  .td-source { color: var(--text2); white-space: nowrap; }
-  .td-event { color: var(--text3); font-family: monospace; font-size: 11px; max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .td-msg { max-width: 500px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text); }
-  .td-msg-wrap { display: flex; align-items: center; gap: 6px; }
-  .copy-btn { visibility: hidden; background: none; border: none; color: var(--text3); cursor: pointer; font-size: 13px; padding: 1px 4px; border-radius: 4px; }
-  .copy-btn:hover { color: var(--accent); }
-  .log-table tbody tr:hover .copy-btn { visibility: visible; }
+/* ── UPLOAD ZONE ── */
+.upload-zone{border:2px dashed var(--border2);border-radius:var(--radius);padding:36px 24px;text-align:center;cursor:pointer;transition:all .25s;margin-bottom:20px;background:var(--surface);position:relative}
+.upload-zone:hover,.upload-zone.drag-over{border-color:var(--accent);background:var(--accent-glow);box-shadow:0 0 32px rgba(31,111,235,.1)}
+.upload-zone-icon{font-size:36px;margin-bottom:10px;display:block}
+.upload-zone h3{font-size:15px;font-weight:700;margin-bottom:6px}
+.upload-zone p{font-size:12px;color:var(--text2)}
+.upload-zone code{font-family:var(--mono);font-size:11px;background:var(--surface2);padding:1px 5px;border-radius:3px}
+.upload-zone input{display:none}
+.upload-progress{display:none;margin-top:12px}
+.upload-progress.active{display:block}
+.progress-bar-wrap{height:3px;background:var(--border);border-radius:2px;overflow:hidden}
+.progress-bar{height:100%;background:linear-gradient(90deg,var(--accent),var(--cyan));border-radius:2px;width:0%;transition:width .3s}
 
-  /* Level badges */
-  .badge { display: inline-flex; align-items: center; justify-content: center; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; white-space: nowrap; }
-  .badge-error   { background: var(--red-bg);    color: var(--red);    }
-  .badge-warn    { background: var(--yellow-bg);  color: var(--yellow); }
-  .badge-info    { background: var(--blue-bg);    color: var(--blue);   }
-  .badge-success { background: var(--green-bg);   color: var(--green);  }
-  .badge-debug   { background: var(--surface2);   color: var(--text3);  }
+/* ── LOG TABLE ── */
+.table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.table-toolbar{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--border);flex-wrap:wrap}
+.search-box{flex:1;min-width:180px;position:relative}
+.search-box input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:7px 10px 7px 32px;color:var(--text);font-family:var(--sans);font-size:12px;outline:none;transition:border-color .15s}
+.search-box input:focus{border-color:var(--accent)}
+.search-box input::placeholder{color:var(--text3)}
+.search-icon{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:12px;pointer-events:none}
+.filter-chips{display:flex;gap:5px;flex-wrap:wrap}
+.chip{padding:4px 11px;border-radius:20px;font-size:11px;font-weight:600;border:1px solid var(--border);background:transparent;color:var(--text2);cursor:pointer;transition:all .15s;font-family:var(--sans)}
+.chip:hover{border-color:var(--border2);color:var(--text)}
+.chip.active{background:var(--accent);border-color:var(--accent);color:#fff}
+.chip.chip-red.active{background:var(--red);border-color:var(--red)}
+.chip.chip-green.active{background:var(--green);border-color:var(--green);color:#000}
+.chip.chip-yellow.active{background:var(--yellow);border-color:var(--yellow);color:#000}
+.chip.chip-purple.active{background:var(--purple);border-color:var(--purple)}
+.toolbar-right{margin-left:auto;display:flex;gap:6px;align-items:center}
+.rpp-select{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text2);font-size:11px;padding:4px 7px;cursor:pointer}
+.rpp-select:focus{outline:none;border-color:var(--accent)}
+.export-btn{padding:5px 10px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text2);font-size:11px;cursor:pointer;font-family:var(--sans);transition:all .15s}
+.export-btn:hover{border-color:var(--accent2);color:var(--accent2)}
+.log-table{width:100%;border-collapse:collapse;font-size:12px}
+.log-table thead th{background:var(--surface2);padding:9px 12px;text-align:left;font-size:10px;font-weight:600;color:var(--text3);letter-spacing:.6px;text-transform:uppercase;border-bottom:1px solid var(--border);white-space:nowrap;user-select:none}
+.log-table thead th.sortable{cursor:pointer}
+.log-table thead th.sortable:hover{color:var(--text)}
+.sort-ind{color:var(--accent2);margin-left:3px;font-size:10px}
+.log-table tbody tr{border-bottom:1px solid var(--border);cursor:pointer;transition:background .1s}
+.log-table tbody tr:last-child{border-bottom:none}
+.log-table tbody tr:hover{background:var(--surface2)}
+.log-table td{padding:9px 12px;vertical-align:middle}
+.level-dot{width:7px;height:7px;border-radius:50%;display:inline-block;flex-shrink:0}
+.dot-error{background:var(--red)}.dot-warn{background:var(--yellow)}.dot-success{background:var(--green)}.dot-info{background:var(--accent2)}.dot-debug{background:var(--text3)}
+.lvl-badge{display:inline-flex;align-items:center;justify-content:center;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:700;letter-spacing:.4px;min-width:70px;font-family:var(--mono)}
+.lvl-error{background:var(--red-dim);color:var(--red)}.lvl-warn{background:var(--yellow-dim);color:var(--yellow)}.lvl-success{background:var(--green-dim);color:var(--green)}.lvl-info{background:var(--accent-glow);color:var(--accent2)}.lvl-debug{background:rgba(255,255,255,.05);color:var(--text3)}
+.ts-cell{font-family:var(--mono);font-size:10.5px;color:var(--text2);white-space:nowrap}
+.msg-cell{max-width:380px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px}
+.src-tag{font-family:var(--mono);font-size:10px;background:var(--surface2);border:1px solid var(--border);padding:1px 6px;border-radius:3px;color:var(--text2);white-space:nowrap}
+.evt-id{font-family:var(--mono);font-size:10.5px;color:var(--cyan)}
+.copy-msg-btn{visibility:hidden;border:none;background:none;color:var(--text3);cursor:pointer;padding:0 3px;font-size:11px;border-radius:3px;margin-left:4px;transition:color .1s}
+.copy-msg-btn:hover{color:var(--accent2)}
+.log-table tbody tr:hover .copy-msg-btn{visibility:visible}
+.search-hl{background:rgba(31,111,235,.3);color:var(--accent2);border-radius:2px;padding:0 1px}
+.pagination{display:flex;align-items:center;justify-content:center;gap:3px;padding:10px 14px;border-top:1px solid var(--border);flex-wrap:wrap}
+.pg-info{font-size:11px;color:var(--text3);margin-right:8px}
+.pg-btn{min-width:28px;height:28px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text2);font-size:11px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;padding:0 6px;transition:all .1s;font-family:var(--sans)}
+.pg-btn:hover:not(:disabled){border-color:var(--accent);color:var(--accent2)}
+.pg-btn.active{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:700}
+.pg-btn:disabled{opacity:.3;cursor:default}
 
-  /* ── Pagination ── */
-  .pagination-bar { display: flex; align-items: center; justify-content: center; gap: 4px; padding: 12px 16px; border: 1px solid var(--border); border-top: none; border-radius: 0 0 var(--radius) var(--radius); background: var(--surface); flex-wrap: wrap; margin-bottom: 16px; }
-  .pg-info { font-size: 12px; color: var(--text3); margin-right: 8px; }
-  .pg-btn { min-width: 30px; height: 30px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-size: 13px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; transition: all .15s; padding: 0 6px; }
-  .pg-btn:hover:not(:disabled):not(.active) { border-color: var(--accent); color: var(--accent); }
-  .pg-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); font-weight: 600; }
-  .pg-btn:disabled { opacity: .4; cursor: default; }
-  .pg-ellipsis { color: var(--text3); font-size: 13px; padding: 0 4px; }
+/* ── DETAIL PANEL ── */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:200;backdrop-filter:blur(4px);opacity:0;pointer-events:none;transition:opacity .2s}
+.overlay.open{opacity:1;pointer-events:all}
+.detail-panel{position:fixed;top:0;right:0;bottom:0;width:480px;max-width:95vw;background:var(--surface);border-left:1px solid var(--border);z-index:201;overflow-y:auto;transform:translateX(100%);transition:transform .25s cubic-bezier(.4,0,.2,1);padding:20px}
+.detail-panel.open{transform:none}
+.detail-close{position:absolute;top:16px;right:16px;width:28px;height:28px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;transition:all .15s}
+.detail-close:hover{background:var(--red-dim);color:var(--red);border-color:var(--red)}
+.detail-kv{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;margin-bottom:10px}
+.detail-kv-label{font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:5px}
+.detail-kv-val{font-size:12px;word-break:break-all}
+.detail-kv-val.mono{font-family:var(--mono);font-size:11px;color:var(--cyan)}
+.payload-pre{background:rgba(0,0,0,.4);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;overflow:auto;max-height:320px;font-family:var(--mono);font-size:11px;color:#a8b9cc;white-space:pre-wrap;word-break:break-all}
+.json-key{color:#79c0ff}.json-str{color:#a5d6a7}.json-num{color:#ffab70}.json-bool{color:#c792ea}.json-null{color:var(--text3)}
 
-  /* ── Overview cards ── */
-  .stat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 16px; margin-bottom: 24px; }
-  .stat-card { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 20px; }
-  .stat-label { font-size: 11px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 8px; }
-  .stat-value { font-size: 28px; font-weight: 700; color: var(--text); }
-  .stat-value.red    { color: var(--red); }
-  .stat-value.green  { color: var(--green); }
-  .stat-value.blue   { color: var(--accent); }
+/* ── EMPTY STATE ── */
+.empty-state{text-align:center;padding:56px 24px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius)}
+.empty-icon{font-size:44px;margin-bottom:12px;opacity:.4}
+.empty-state h3{font-size:15px;font-weight:700;margin-bottom:6px}
+.empty-state p{font-size:12px;color:var(--text2)}
 
-  /* ── Empty / loading ── */
-  .empty-state { text-align: center; padding: 60px 20px; color: var(--text3); }
-  .empty-state .icon { font-size: 40px; margin-bottom: 14px; }
-  .empty-state h3 { font-size: 16px; font-weight: 600; color: var(--text2); margin-bottom: 6px; }
-  .empty-state p  { font-size: 13px; }
-  .loading { text-align: center; padding: 40px; color: var(--text3); font-size: 13px; }
+/* ── TOAST ── */
+.toast-wrap{position:fixed;bottom:20px;right:20px;z-index:999;display:flex;flex-direction:column;gap:6px}
+.toast{background:var(--surface2);border:1px solid var(--border2);border-radius:var(--radius);padding:10px 16px;font-size:12px;font-weight:500;display:flex;align-items:center;gap:8px;animation:toastIn .25s ease both;box-shadow:0 8px 24px rgba(0,0,0,.4);min-width:200px}
+@keyframes toastIn{from{opacity:0;transform:translateX(16px) scale(.95)}to{opacity:1;transform:none}}
+.toast.out{animation:toastOut .2s ease forwards}
+@keyframes toastOut{to{opacity:0;transform:translateX(8px) scale(.95)}}
 
-  /* ── Detail modal ── */
-  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 100; display: flex; align-items: center; justify-content: center; }
-  .modal-overlay.hidden { display: none; }
-  .modal { background: var(--bg); border-radius: var(--radius); border: 1px solid var(--border); width: 700px; max-width: 96vw; max-height: 85vh; overflow-y: auto; box-shadow: 0 8px 32px rgba(0,0,0,.15); }
-  .modal-header { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid var(--border); }
-  .modal-header h3 { font-size: 14px; font-weight: 600; }
-  .modal-close { background: none; border: none; font-size: 20px; cursor: pointer; color: var(--text3); line-height: 1; padding: 2px 6px; border-radius: 4px; }
-  .modal-close:hover { background: var(--surface2); color: var(--text); }
-  .modal-body { padding: 20px; }
-  .modal-field { margin-bottom: 14px; }
-  .modal-field label { display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--text3); margin-bottom: 4px; }
-  .modal-field pre { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 12px; font-size: 12px; overflow-x: auto; white-space: pre-wrap; word-break: break-all; color: var(--text); font-family: 'SF Mono', Consolas, monospace; }
+/* ── LOADING BAR ── */
+.loading-bar{position:fixed;top:0;left:0;right:0;height:2px;z-index:9999;background:linear-gradient(90deg,var(--accent),var(--cyan));transform:scaleX(0);transform-origin:left;display:none}
+.loading-bar.active{display:block;animation:ldBar 1s ease-in-out infinite}
+@keyframes ldBar{0%{transform:scaleX(0) translateX(0)}50%{transform:scaleX(.7) translateX(15%)}100%{transform:scaleX(1)}}
 
-  /* ── Upload modal ── */
-  .upload-drop { border: 2px dashed var(--border); border-radius: var(--radius); padding: 32px; text-align: center; color: var(--text3); cursor: pointer; transition: all .15s; }
-  .upload-drop:hover, .upload-drop.drag-over { border-color: var(--accent); background: rgba(37,99,235,.04); color: var(--accent); }
-  .upload-drop .icon { font-size: 32px; margin-bottom: 10px; }
-  .upload-drop p { font-size: 13px; }
-  .upload-drop input { display: none; }
+/* ── ALERT / SETTINGS SECTIONS ── */
+.section-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:12px}
+.section-card h3{font-size:14px;font-weight:700;margin-bottom:4px}
+.section-card p{font-size:12px;color:var(--text2);margin-bottom:14px}
+.form-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.form-input{flex:1;min-width:160px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 10px;color:var(--text);font-family:var(--sans);font-size:12px;outline:none;transition:border-color .15s}
+.form-input:focus{border-color:var(--accent)}
+.form-input::placeholder{color:var(--text3)}
+.form-select{flex:1;min-width:140px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 10px;color:var(--text);font-family:var(--sans);font-size:12px;outline:none;cursor:pointer}
+.form-select:focus{border-color:var(--accent)}
+.alert-row{display:flex;align-items:center;gap:12px;padding:12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:8px;transition:all .15s}
+.alert-row:hover{border-color:var(--border2)}
+.alert-name{font-size:13px;font-weight:600;flex:1}
+.alert-detail{font-size:11px;color:var(--text2);font-family:var(--mono)}
 
-  /* ── Toast ── */
-  .toast-wrap { position: fixed; bottom: 20px; right: 20px; z-index: 200; display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
-  .toast { padding: 10px 16px; border-radius: var(--radius); font-size: 13px; font-weight: 500; box-shadow: var(--shadow); pointer-events: auto; transition: opacity .3s, transform .3s; background: var(--text); color: var(--bg); max-width: 340px; }
-  .toast.out { opacity: 0; transform: translateX(20px); }
-  .toast.success { background: var(--green); color: #fff; }
-  .toast.error   { background: var(--red);   color: #fff; }
-  .toast.info    { background: var(--accent); color: #fff; }
+/* ── OVERVIEW CHARTS ── */
+.overview-grid{display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-bottom:20px}
+@media(max-width:1000px){.overview-grid{grid-template-columns:1fr}}
+.chart-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px}
+.chart-card h3{font-size:13px;font-weight:600;color:var(--text2);margin-bottom:14px;text-transform:uppercase;letter-spacing:.5px}
+.bar-chart{display:flex;align-items:flex-end;gap:3px;height:80px}
+.bar-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;height:100%;justify-content:flex-end}
+.bar-fill{width:100%;border-radius:2px 2px 0 0;transition:height .4s ease;cursor:pointer;min-height:2px}
+.bar-fill:hover{opacity:.8}
+.bar-lbl{font-size:9px;color:var(--text3);font-family:var(--mono)}
+.donut-wrap{display:flex;align-items:center;justify-content:center;gap:20px;padding:4px 0}
+.donut-legend{display:flex;flex-direction:column;gap:7px}
+.donut-item{display:flex;align-items:center;gap:7px;font-size:11px}
+.donut-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.donut-label{color:var(--text2)}
+.donut-count{font-weight:700;color:var(--text);margin-left:auto;font-family:var(--mono)}
+svg.donut{transform:rotate(-90deg)}
 
-  /* ── Section: other placeholders ── */
-  .section-header { font-size: 18px; font-weight: 700; margin-bottom: 6px; }
-  .section-sub { font-size: 13px; color: var(--text3); margin-bottom: 24px; }
-  .card { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 16px; }
-  .card h4 { font-size: 14px; font-weight: 600; margin-bottom: 8px; }
-  .card p  { font-size: 13px; color: var(--text2); }
-  table.data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  table.data-table th { text-align: left; padding: 8px 12px; background: var(--surface); border-bottom: 1px solid var(--border); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--text3); }
-  table.data-table td { padding: 10px 12px; border-bottom: 1px solid var(--surface2); }
-  table.data-table tr:last-child td { border-bottom: none; }
-  .table-wrap { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
-  .pill { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 600; background: var(--surface2); color: var(--text2); }
-  .pill.active { background: var(--green-bg); color: var(--green); }
-  .pill.inactive { background: var(--red-bg); color: var(--red); }
+/* ── SOURCE TABLE ── */
+.source-bar-row{display:flex;align-items:center;gap:8px;margin-bottom:7px;font-size:11px}
+.source-bar-label{width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:var(--mono);font-size:10px;color:var(--text2);flex-shrink:0}
+.source-bar-track{flex:1;background:var(--border);border-radius:2px;height:6px;overflow:hidden}
+.source-bar-fill{height:100%;background:var(--accent);border-radius:2px;transition:width .4s ease}
+.source-bar-count{color:var(--text2);font-family:var(--mono);min-width:30px;text-align:right}
+
+/* ── USERS / AUDIT ── */
+.user-row,.audit-row{display:flex;align-items:center;gap:12px;padding:10px 14px;border-bottom:1px solid var(--border);font-size:12px}
+.user-row:last-child,.audit-row:last-child{border-bottom:none}
+.user-avatar{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--cyan));display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0}
+.role-badge{padding:2px 7px;border-radius:3px;font-size:10px;font-weight:700;font-family:var(--mono)}
+.role-admin{background:var(--red-dim);color:var(--red)}.role-manager{background:var(--yellow-dim);color:var(--yellow)}.role-developer{background:var(--green-dim);color:var(--green)}.role-tester{background:var(--purple-dim);color:var(--purple)}
+.audit-action{font-family:var(--mono);font-size:10px;color:var(--cyan)}
+.audit-ts{font-family:var(--mono);font-size:10px;color:var(--text3);margin-left:auto;white-space:nowrap}
+
+/* ── INVITE / ORG FORMS ── */
+.invite-row{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--border);font-size:12px}
+.invite-row:last-child{border-bottom:none}
+.invite-status{padding:2px 7px;border-radius:3px;font-size:10px;font-weight:700;font-family:var(--mono)}
+.status-pending{background:var(--yellow-dim);color:var(--yellow)}.status-accepted{background:var(--green-dim);color:var(--green)}.status-expired{background:rgba(255,255,255,.06);color:var(--text3)}
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.18)}
+
+/* ── INGEST API ── */
+.api-code{background:rgba(0,0,0,.5);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 14px;font-family:var(--mono);font-size:11px;color:#a5d6a7;white-space:pre-wrap;word-break:break-all;position:relative;margin-bottom:12px}
+.api-copy{position:absolute;top:8px;right:8px;background:var(--surface3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:3px 8px;font-size:10px;cursor:pointer;color:var(--text2);font-family:var(--sans);transition:all .15s}
+.api-copy:hover{border-color:var(--accent);color:var(--accent2)}
+.api-key-row{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--border);font-size:12px}
+.api-key-row:last-child{border-bottom:none}
+.api-key-prefix{font-family:var(--mono);font-size:11px;color:var(--cyan)}
+.api-key-name{flex:1}
+.api-key-last{font-family:var(--mono);font-size:10px;color:var(--text3)}
+.btn-danger{padding:5px 10px;border-radius:var(--radius-sm);border:1px solid var(--red);background:transparent;color:var(--red);font-family:var(--sans);font-size:11px;cursor:pointer;transition:all .15s}
+.btn-danger:hover{background:var(--red-dim)}
+
+.hidden{display:none!important}
 </style>
 </head>
 <body>
 
-<!-- ── Sidebar ── -->
+<div class="loading-bar" id="loadingBar"></div>
+
+<!-- SIDEBAR -->
 <nav class="sidebar">
   <div class="sidebar-brand">
-    <div class="brand-label">ObserveX Enterprise</div>
-    <div class="brand-row">
-      <div class="brand-avatar">{{ user.logo_text }}</div>
-      <div>
-        <div class="brand-name">{{ user.org_name }}</div>
-        <div class="brand-sub">{{ user.slug }}</div>
-      </div>
+    <div class="brand-icon">{{ user.logo_text[:2] }}</div>
+    <div>
+      <div class="brand-name">ObserveX</div>
+      <div class="brand-org">{{ user.org_name | lower }}</div>
     </div>
   </div>
 
-  <div class="nav-section">
-    <div class="nav-item {% if active_section == 'overview' %}active{% endif %}" onclick="switchSection('overview')">
-      <span class="nav-icon">⬛</span> Overview
-    </div>
-    <div class="nav-item {% if active_section == 'explorer' %}active{% endif %}" onclick="switchSection('explorer')">
-      <span class="nav-icon">📋</span> Log explorer
-    </div>
-    <div class="nav-item {% if active_section == 'ingest' %}active{% endif %}" onclick="switchSection('ingest')">
-      <span class="nav-icon">⬆</span> Ingest API
-    </div>
-  </div>
+  <div class="nav-section">Workspace</div>
+  <div class="nav-item{% if active_section=='overview' %} active{% endif %}" onclick="showPage('overview')"><span class="nav-icon">◈</span>Overview</div>
+  <div class="nav-item{% if active_section=='explorer' %} active{% endif %}" onclick="showPage('explorer')"><span class="nav-icon">◎</span>Log explorer <span class="nav-badge nb-blue" id="nb-all">—</span></div>
+  <div class="nav-item{% if active_section=='ingest' %} active{% endif %}" onclick="showPage('ingest')"><span class="nav-icon">⇡</span>Ingest API</div>
 
-  <div class="nav-section">
-    <div class="nav-label">Connectors</div>
-    <div class="nav-item {% if active_section == 'integrations' %}active{% endif %}" onclick="switchSection('integrations')">
-      <span class="nav-icon">🔌</span> Integrations
-    </div>
-    <div class="nav-item {% if active_section == 'jobs' %}active{% endif %}" onclick="switchSection('jobs')">
-      <span class="nav-icon">⚙</span> Ingestion jobs
-    </div>
-  </div>
+  <div class="nav-section">Connectors</div>
+  <div class="nav-item{% if active_section=='integrations' %} active{% endif %}" onclick="showPage('integrations')"><span class="nav-icon">⌁</span>Integrations</div>
+  <div class="nav-item{% if active_section=='jobs' %} active{% endif %}" onclick="showPage('jobs')"><span class="nav-icon">↻</span>Ingestion jobs</div>
 
-  <div class="nav-section">
-    <div class="nav-label">Settings</div>
-    <div class="nav-item {% if active_section == 'alerts' %}active{% endif %}" onclick="switchSection('alerts')">
-      <span class="nav-icon">🔔</span> Alert rules
-    </div>
-    <div class="nav-item {% if active_section == 'users' %}active{% endif %}" onclick="switchSection('users')">
-      <span class="nav-icon">👥</span> Users &amp; access
-    </div>
-    <div class="nav-item {% if active_section == 'dashboards' %}active{% endif %}" onclick="switchSection('dashboards')">
-      <span class="nav-icon">📊</span> Saved dashboards
-    </div>
-    <div class="nav-item {% if active_section == 'invites' %}active{% endif %}" onclick="switchSection('invites')">
-      <span class="nav-icon">✉</span> Invites
-    </div>
-    <div class="nav-item {% if active_section == 'organization' %}active{% endif %}" onclick="switchSection('organization')">
-      <span class="nav-icon">🏢</span> Organization
-    </div>
-    <div class="nav-item {% if active_section == 'audit' %}active{% endif %}" onclick="switchSection('audit')">
-      <span class="nav-icon">📜</span> Audit trail
-    </div>
-  </div>
+  <div class="nav-section">Settings</div>
+  <div class="nav-item{% if active_section=='alerts' %} active{% endif %}" onclick="showPage('alerts')"><span class="nav-icon">⚑</span>Alert rules <span class="nav-badge nb-red" id="nb-alerts">—</span></div>
+  <div class="nav-item{% if active_section=='users' %} active{% endif %}" onclick="showPage('users')"><span class="nav-icon">◉</span>Users &amp; access</div>
+  <div class="nav-item{% if active_section=='invites' %} active{% endif %}" onclick="showPage('invites')"><span class="nav-icon">✉</span>Invites</div>
+  <div class="nav-item{% if active_section=='organization' %} active{% endif %}" onclick="showPage('organization')"><span class="nav-icon">⬡</span>Organization</div>
+  <div class="nav-item{% if active_section=='audit' %} active{% endif %}" onclick="showPage('audit')"><span class="nav-icon">◷</span>Audit trail</div>
 
   <div class="sidebar-footer">
-    <div class="footer-label">Signed in as</div>
-    <div class="footer-user">{{ user.name }}</div>
-    <div class="footer-role">{{ user.role|capitalize }}</div>
-    <button class="logout-btn" onclick="doLogout()">Logout</button>
+    <div class="sidebar-user"><strong>{{ user.name }}</strong>{{ user.role }}</div>
+    <button class="btn-logout" onclick="doLogout()">Sign out</button>
   </div>
 </nav>
 
-<!-- ── Main ── -->
+<!-- MAIN -->
 <div class="main">
+
+  <!-- TOPBAR -->
   <div class="topbar">
-    <div class="topbar-left">
-      <div class="workspace-label">ObserveX Workspace</div>
-      <h1 id="pageTitle">Investigate logs, run connectors, and manage your organization.</h1>
-    </div>
-    <div class="topbar-actions">
-      <button class="btn btn-primary" onclick="openUploadModal()">↑ Upload logs</button>
-      <button class="btn btn-outline" onclick="switchSection('explorer')">Open explorer</button>
+    <span class="topbar-title"><span>ObserveX</span> Workspace · {{ user.org_name }}</span>
+    <div class="topbar-right">
+      <button class="btn-primary" onclick="document.getElementById('fileInput').click()">⇡ Upload logs</button>
+      <button class="btn-secondary" onclick="showPage('explorer')">Open explorer</button>
     </div>
   </div>
 
-  <div class="content" id="mainContent">
+  <!-- Hidden file input -->
+  <input type="file" id="fileInput" accept=".log,.txt,.json,.csv,.ndjson,.jsonl" multiple class="hidden"/>
 
-    <!-- ── Overview ── -->
-    <div class="section {% if active_section == 'overview' %}active{% endif %}" id="section-overview">
-      <div class="stat-grid" id="overviewStats">
-        <div class="stat-card"><div class="stat-label">Total Logs</div><div class="stat-value blue" id="ov-total">–</div></div>
-        <div class="stat-card"><div class="stat-label">Errors</div><div class="stat-value red" id="ov-errors">–</div></div>
-        <div class="stat-card"><div class="stat-label">Warnings</div><div class="stat-value" style="color:var(--yellow)" id="ov-warns">–</div></div>
-        <div class="stat-card"><div class="stat-label">Success</div><div class="stat-value green" id="ov-success">–</div></div>
-        <div class="stat-card"><div class="stat-label">Error Rate</div><div class="stat-value red" id="ov-errrate">–</div></div>
-        <div class="stat-card"><div class="stat-label">Uploads</div><div class="stat-value" id="ov-uploads">–</div></div>
+  <!-- ══ OVERVIEW PAGE ══ -->
+  <div class="page{% if active_section=='overview' %} active{% endif %}" id="page-overview">
+    <div style="padding:24px">
+      <div class="page-header">
+        <p style="font-size:11px;font-weight:600;color:var(--text3);letter-spacing:.8px;text-transform:uppercase;margin-bottom:4px">ObserveX Workspace</p>
+        <h1>Investigate logs, run connectors, and manage your organization.</h1>
       </div>
-      <div id="overviewSources"></div>
-    </div>
 
-    <!-- ── Log Explorer ── -->
-    <div class="section {% if active_section == 'explorer' %}active{% endif %}" id="section-explorer">
-      <div class="explorer-toolbar">
-        <div class="search-wrap">
-          <input type="text" id="logSearch" placeholder="Search message, source, or event id…" oninput="onSearchInput()" />
+      <!-- Stats -->
+      <div class="stats-row">
+        <div class="stat-card" onclick="showPage('explorer')"><div class="stat-label">Total logs</div><div class="stat-val" id="st-total">—</div></div>
+        <div class="stat-card" onclick="showExplorerFiltered('error')"><div class="stat-label">Errors</div><div class="stat-val red" id="st-errors">—</div></div>
+        <div class="stat-card" onclick="showExplorerFiltered('warn')"><div class="stat-label">Warnings</div><div class="stat-val yellow" id="st-warnings">—</div></div>
+        <div class="stat-card" onclick="showExplorerFiltered('success')"><div class="stat-label">Success</div><div class="stat-val green" id="st-success">—</div></div>
+        <div class="stat-card"><div class="stat-label">Error rate</div><div class="stat-val red" id="st-errrate">—</div></div>
+        <div class="stat-card" onclick="showPage('ingest')"><div class="stat-label">Uploads</div><div class="stat-val" id="st-uploads">—</div></div>
+      </div>
+
+      <!-- Upload zone -->
+      <div class="upload-zone" id="uploadZone">
+        <span class="upload-zone-icon">📂</span>
+        <h3>Drop log files here to upload</h3>
+        <p>Supports <code>.log</code> <code>.txt</code> <code>.json</code> <code>.ndjson</code> <code>.csv</code> · CloudWatch, MuleSoft, App logs</p>
+        <div class="upload-progress" id="uploadProgress">
+          <div class="progress-bar-wrap"><div class="progress-bar" id="progressBar"></div></div>
         </div>
-        <select class="filter-select" id="levelFilter" onchange="loadLogs(1)">
-          <option value="all">All levels</option>
-          <option value="error">Error</option>
-          <option value="warn">Warn</option>
-          <option value="info">Info</option>
-          <option value="success">Success</option>
-          <option value="debug">Debug</option>
-        </select>
-        <select class="filter-select" id="timeFilter" onchange="onTimeFilterChange()">
-          <option value="0">All time</option>
-          <option value="15">Last 15 min</option>
-          <option value="30">Last 30 min</option>
-          <option value="60">Last 1 hour</option>
-          <option value="360">Last 6 hours</option>
-          <option value="1440">Last 24 hours</option>
-          <option value="10080">Last 7 days</option>
-        </select>
-        <button class="toolbar-btn" onclick="loadLogs(1)">↻ Refresh</button>
-        <button class="toolbar-btn primary" onclick="openUploadModal()">↑ Upload</button>
-        <span class="records-count" id="recordsCount">–</span>
       </div>
-      <div id="logTableArea"><div class="loading">Loading logs…</div></div>
-    </div>
 
-    <!-- ── Ingest API ── -->
-    <div class="section {% if active_section == 'ingest' %}active{% endif %}" id="section-ingest">
-      <div class="section-header">Ingest API</div>
-      <div class="section-sub">Send logs programmatically using your API key.</div>
-      <div class="card">
-        <h4>Endpoint</h4>
-        <pre id="ingestEndpoint">POST {{ request.host_url }}ingest/json
+      <!-- Charts -->
+      <div class="overview-grid">
+        <div class="chart-card">
+          <h3>Activity — last 24h</h3>
+          <div class="bar-chart" id="hourlyChart"><div style="color:var(--text3);font-size:12px;margin:auto">No data yet</div></div>
+        </div>
+        <div class="chart-card">
+          <h3>Level breakdown</h3>
+          <div class="donut-wrap" id="donutWrap"><div style="color:var(--text3);font-size:12px">No data yet</div></div>
+        </div>
+      </div>
+
+      <!-- Source breakdown -->
+      <div class="chart-card" style="margin-bottom:16px">
+        <h3>Top sources</h3>
+        <div id="sourceBars"><p style="font-size:12px;color:var(--text3)">No data yet</p></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══ LOG EXPLORER PAGE ══ -->
+  <div class="page{% if active_section=='explorer' %} active{% endif %}" id="page-explorer">
+    <div style="padding:24px">
+      <div class="page-header">
+        <h1>Log explorer</h1>
+        <p>Search, filter, and inspect log events across all uploads.</p>
+      </div>
+      <!-- Upload zone also in explorer -->
+      <div class="upload-zone" id="uploadZone2" style="padding:20px;margin-bottom:16px">
+        <span class="upload-zone-icon" style="font-size:24px">📂</span>
+        <h3 style="font-size:13px">Drop or click to upload logs</h3>
+        <p style="font-size:11px">Drag files anywhere on this page</p>
+      </div>
+      <div class="table-wrap" id="explorerWrap">
+        <div class="table-toolbar">
+          <div class="search-box"><span class="search-icon">⌕</span><input id="searchInput" placeholder="Search message, source, event ID…" oninput="onSearch()"/></div>
+          <div class="filter-chips" id="filterChips">
+            <button class="chip active" data-lvl="all" onclick="setFilter('all')">All</button>
+            <button class="chip chip-red" data-lvl="error" onclick="setFilter('error')">Error</button>
+            <button class="chip chip-yellow" data-lvl="warn" onclick="setFilter('warn')">Warn</button>
+            <button class="chip chip-green" data-lvl="success" onclick="setFilter('success')">Success</button>
+            <button class="chip" data-lvl="info" onclick="setFilter('info')">Info</button>
+            <button class="chip chip-purple" data-lvl="debug" onclick="setFilter('debug')">Debug</button>
+          </div>
+          <div class="toolbar-right">
+            <select class="rpp-select" id="rppSelect" onchange="onRppChange()">
+              <option value="25">25 / page</option>
+              <option value="50" selected>50 / page</option>
+              <option value="100">100 / page</option>
+              <option value="200">200 / page</option>
+            </select>
+            <button class="export-btn" onclick="exportLogs('csv')">⬇ CSV</button>
+            <button class="export-btn" onclick="exportLogs('json')">⬇ JSON</button>
+          </div>
+        </div>
+        <div id="logTableBody">
+          <div class="empty-state"><div class="empty-icon">◎</div><h3>No logs yet</h3><p>Upload a log file above to start exploring events</p></div>
+        </div>
+        <div class="pagination" id="pagination"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ INGEST API PAGE ══ -->
+  <div class="page{% if active_section=='ingest' %} active{% endif %}" id="page-ingest">
+    <div style="padding:24px">
+      <div class="page-header"><h1>Ingest API</h1><p>Send logs programmatically using your API keys.</p></div>
+      <div class="section-card" style="margin-bottom:16px">
+        <h3>Your API keys</h3>
+        <p>Use these keys with the <code style="font-family:var(--mono);font-size:11px;background:var(--surface2);padding:1px 5px;border-radius:3px">Authorization: Bearer &lt;key&gt;</code> header.</p>
+        <div class="form-row" style="margin-bottom:10px">
+          <input class="form-input" id="newKeyName" placeholder="Key name e.g. production-ingest"/>
+          <button class="btn-primary" onclick="createApiKey()">+ New key</button>
+        </div>
+        <div class="table-wrap" id="apiKeysWrap">
+          <div class="empty-state" style="padding:28px"><div class="empty-icon" style="font-size:28px">🔑</div><h3 style="font-size:13px">No API keys yet</h3><p>Create one above</p></div>
+        </div>
+      </div>
+      <div class="section-card">
+        <h3>Example: POST JSON logs</h3>
+        <div class="api-code" id="code-json">POST {{ request.host_url if request else 'https://yourapp.railway.app/' }}ingest/json
+Authorization: Bearer oxk_your_key_here
 Content-Type: application/json
-X-API-Key: &lt;your-api-key&gt;
 
-{ "logs": [ { "timestamp": "2025-01-01T00:00:00Z", "level": "info", "source": "my-app", "message": "Hello ObserveX" } ] }</pre>
+{"timestamp":"2024-01-01T10:00:00Z","level":"error","source":"api-gateway","message":"Connection timeout","requestId":"abc-123"}<button class="api-copy" onclick="copyCode('code-json')">Copy</button></div>
+        <div class="section-card" style="margin-top:12px">
+          <h3>Example: Upload file</h3>
+          <div class="api-code" id="code-file">curl -X POST {{ request.host_url if request else 'https://yourapp.railway.app/' }}ingest/file \
+  -H "Authorization: Bearer oxk_your_key_here" \
+  -F "file=@myapp.log"<button class="api-copy" onclick="copyCode('code-file')">Copy</button></div>
+        </div>
       </div>
-      <div class="card">
-        <h4>API Keys</h4>
-        <div id="apiKeysList"><div class="loading">Loading…</div></div>
+    </div>
+  </div>
+
+  <!-- ══ INTEGRATIONS PAGE ══ -->
+  <div class="page{% if active_section=='integrations' %} active{% endif %}" id="page-integrations">
+    <div style="padding:24px">
+      <div class="page-header"><h1>Integrations</h1><p>Connect S3 buckets or external APIs as log sources.</p></div>
+      <div class="section-card" style="margin-bottom:14px">
+        <h3>Add integration</h3>
+        <div class="form-row">
+          <select class="form-select" id="intKind"><option value="s3">S3 Bucket</option><option value="api">API Endpoint</option></select>
+          <input class="form-input" id="intName" placeholder="Integration name"/>
+        </div>
+        <div id="intS3Fields">
+          <div class="form-row">
+            <input class="form-input" id="s3Bucket" placeholder="Bucket name"/>
+            <input class="form-input" id="s3Region" placeholder="Region e.g. us-east-1"/>
+            <input class="form-input" id="s3Prefix" placeholder="Key prefix (optional)"/>
+          </div>
+          <div class="form-row">
+            <input class="form-input" id="s3Key" placeholder="Access key ID"/>
+            <input class="form-input" id="s3Secret" type="password" placeholder="Secret access key"/>
+          </div>
+        </div>
+        <div id="intApiFields" class="hidden">
+          <div class="form-row">
+            <input class="form-input" id="apiUrl" placeholder="Endpoint URL"/>
+            <input class="form-input" id="apiToken" placeholder="Bearer token (optional)"/>
+          </div>
+        </div>
+        <button class="btn-primary" onclick="saveIntegration()">Save integration</button>
+      </div>
+      <div class="table-wrap" id="integrationsList"></div>
+    </div>
+  </div>
+
+  <!-- ══ JOBS PAGE ══ -->
+  <div class="page{% if active_section=='jobs' %} active{% endif %}" id="page-jobs">
+    <div style="padding:24px">
+      <div class="page-header"><h1>Ingestion jobs</h1><p>Schedule recurring log pulls from your integrations.</p></div>
+      <div class="section-card" style="margin-bottom:14px">
+        <h3>Create job</h3>
+        <div class="form-row">
+          <input class="form-input" id="jobName" placeholder="Job name"/>
+          <select class="form-select" id="jobSource"><option value="s3">S3</option><option value="api">API</option></select>
+          <input class="form-input" id="jobSchedule" placeholder="Cron e.g. */15 * * * *" value="*/15 * * * *"/>
+        </div>
+        <button class="btn-primary" onclick="createJob()">Create job</button>
+      </div>
+      <div class="table-wrap" id="jobsList"></div>
+    </div>
+  </div>
+
+  <!-- ══ ALERTS PAGE ══ -->
+  <div class="page{% if active_section=='alerts' %} active{% endif %}" id="page-alerts">
+    <div style="padding:24px">
+      <div class="page-header"><h1>Configure alert rules.</h1></div>
+      <div class="section-card" style="margin-bottom:14px">
+        <h3>Alert Rules</h3>
+        <p>Get notified when log patterns match conditions.</p>
+        <div class="form-row">
+          <input class="form-input" id="alertName" placeholder="Alert name"/>
+          <select class="form-select" id="alertSeverity"><option value="sev3">SEV3 – Medium</option><option value="sev2">SEV2 – High</option><option value="sev1">SEV1 – Critical</option></select>
+          <select class="form-select" id="alertType"><option value="error_rate">Error Rate</option><option value="suspicious_ip">Suspicious IP</option></select>
+        </div>
+        <div class="form-row">
+          <input class="form-input" id="alertCondition" placeholder="Condition description"/>
+          <input class="form-input" id="alertEmail" type="email" placeholder="Notify email"/>
+          <input class="form-input" id="alertThreshold" type="number" placeholder="Threshold (default 10)" value="10"/>
+        </div>
+        <button class="btn-primary" onclick="createAlert()">+ Create rule</button>
+      </div>
+      <div id="alertsList">
+        <div class="empty-state"><div class="empty-icon">🔔</div><h3>No alert rules</h3><p>Create alerts to get notified of log patterns.</p></div>
       </div>
     </div>
+  </div>
 
-    <!-- ── Integrations ── -->
-    <div class="section {% if active_section == 'integrations' %}active{% endif %}" id="section-integrations">
-      <div class="section-header">Integrations</div>
-      <div class="section-sub">Connect external log sources.</div>
-      <div id="integrationsList"><div class="loading">Loading…</div></div>
+  <!-- ══ USERS PAGE ══ -->
+  <div class="page{% if active_section=='users' %} active{% endif %}" id="page-users">
+    <div style="padding:24px">
+      <div class="page-header"><h1>Users &amp; access</h1><p>Manage who has access to your workspace.</p></div>
+      <div class="section-card" style="margin-bottom:14px">
+        <h3>Add user</h3>
+        <div class="form-row">
+          <input class="form-input" id="newUserName" placeholder="Full name"/>
+          <input class="form-input" id="newUserEmail" type="email" placeholder="Email"/>
+          <input class="form-input" id="newUserPass" type="password" placeholder="Password"/>
+          <select class="form-select" id="newUserRole"><option value="developer">Developer</option><option value="tester">Tester</option><option value="manager">Manager</option><option value="admin">Admin</option></select>
+        </div>
+        <button class="btn-primary" onclick="createUser()">Add user</button>
+      </div>
+      <div class="table-wrap" id="usersList"></div>
     </div>
+  </div>
 
-    <!-- ── Ingestion Jobs ── -->
-    <div class="section {% if active_section == 'jobs' %}active{% endif %}" id="section-jobs">
-      <div class="section-header">Ingestion Jobs</div>
-      <div class="section-sub">Scheduled jobs that pull logs from integrations.</div>
-      <div id="jobsList"><div class="loading">Loading…</div></div>
+  <!-- ══ INVITES PAGE ══ -->
+  <div class="page{% if active_section=='invites' %} active{% endif %}" id="page-invites">
+    <div style="padding:24px">
+      <div class="page-header"><h1>Invites</h1><p>Invite team members via email.</p></div>
+      <div class="section-card" style="margin-bottom:14px">
+        <h3>Send invite</h3>
+        <div class="form-row">
+          <input class="form-input" id="inviteEmail" type="email" placeholder="Email address"/>
+          <select class="form-select" id="inviteRole"><option value="developer">Developer</option><option value="tester">Tester</option><option value="manager">Manager</option></select>
+        </div>
+        <button class="btn-primary" onclick="sendInvite()">Send invite</button>
+      </div>
+      <div class="table-wrap" id="invitesList"></div>
     </div>
+  </div>
 
-    <!-- ── Alert Rules ── -->
-    <div class="section {% if active_section == 'alerts' %}active{% endif %}" id="section-alerts">
-      <div class="section-header">Alert Rules</div>
-      <div class="section-sub">Get notified when log patterns match conditions.</div>
-      <div id="alertsList"><div class="loading">Loading…</div></div>
+  <!-- ══ ORG PAGE ══ -->
+  <div class="page{% if active_section=='organization' %} active{% endif %}" id="page-organization">
+    <div style="padding:24px">
+      <div class="page-header"><h1>Organization</h1><p>Manage your workspace settings.</p></div>
+      <div class="section-card" style="max-width:520px">
+        <h3>Workspace settings</h3>
+        <div class="form-row" style="margin-top:14px">
+          <input class="form-input" id="orgName" placeholder="Organization name" value="{{ user.org_name }}"/>
+        </div>
+        <div class="form-row">
+          <input class="form-input" id="orgSlug" placeholder="Slug" value="{{ user.slug }}"/>
+          <input class="form-input" id="orgLogo" placeholder="Logo text (2-3 chars)" value="{{ user.logo_text }}"/>
+        </div>
+        <div class="form-row">
+          <label style="display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer">
+            <input type="checkbox" id="orgAdminOnly" {% if user.admin_only %}checked{% endif %}/> Admin-only mode
+          </label>
+        </div>
+        <button class="btn-primary" onclick="saveOrg()">Save changes</button>
+      </div>
     </div>
+  </div>
 
-    <!-- ── Users ── -->
-    <div class="section {% if active_section == 'users' %}active{% endif %}" id="section-users">
-      <div class="section-header">Users &amp; Access</div>
-      <div class="section-sub">Manage team members and their roles.</div>
-      <div id="usersList"><div class="loading">Loading…</div></div>
+  <!-- ══ AUDIT PAGE ══ -->
+  <div class="page{% if active_section=='audit' %} active{% endif %}" id="page-audit">
+    <div style="padding:24px">
+      <div class="page-header"><h1>Audit trail</h1><p>Recent actions in your workspace.</p></div>
+      <div class="table-wrap" id="auditList"></div>
     </div>
+  </div>
 
-    <!-- ── Saved Dashboards ── -->
-    <div class="section {% if active_section == 'dashboards' %}active{% endif %}" id="section-dashboards">
-      <div class="section-header">Saved Dashboards</div>
-      <div class="section-sub">Your custom saved dashboard configurations.</div>
-      <div id="dashboardsList"><div class="loading">Loading…</div></div>
-    </div>
-
-    <!-- ── Invites ── -->
-    <div class="section {% if active_section == 'invites' %}active{% endif %}" id="section-invites">
-      <div class="section-header">Invites</div>
-      <div class="section-sub">Pending and accepted invitations to your workspace.</div>
-      <div id="invitesList"><div class="loading">Loading…</div></div>
-    </div>
-
-    <!-- ── Organization ── -->
-    <div class="section {% if active_section == 'organization' %}active{% endif %}" id="section-organization">
-      <div class="section-header">Organization</div>
-      <div class="section-sub">Workspace settings and configuration.</div>
-      <div id="orgSettings"><div class="loading">Loading…</div></div>
-    </div>
-
-    <!-- ── Audit Trail ── -->
-    <div class="section {% if active_section == 'audit' %}active{% endif %}" id="section-audit">
-      <div class="section-header">Audit Trail</div>
-      <div class="section-sub">Recent actions performed in your workspace.</div>
-      <div id="auditList"><div class="loading">Loading…</div></div>
-    </div>
-
-  </div><!-- /content -->
 </div><!-- /main -->
 
-<!-- ── Upload Modal ── -->
-<div class="modal-overlay hidden" id="uploadModal" onclick="e => { if(e.target===this) closeUploadModal(); }">
-  <div class="modal" onclick="event.stopPropagation()">
-    <div class="modal-header">
-      <h3>Upload Log File</h3>
-      <button class="modal-close" onclick="closeUploadModal()">✕</button>
-    </div>
-    <div class="modal-body">
-      <div class="upload-drop" id="uploadDrop" onclick="document.getElementById('uploadFileInput').click()">
-        <input type="file" id="uploadFileInput" multiple accept=".log,.txt,.json,.csv,.ndjson,.jsonl" onchange="handleUploadFiles(this.files)" />
-        <div class="icon">📂</div>
-        <p><strong>Click to browse</strong> or drag & drop files here</p>
-        <p style="font-size:11px;margin-top:6px">.log · .txt · .json · .csv · .ndjson · .jsonl</p>
-      </div>
-      <div id="uploadStatus" style="margin-top:14px;font-size:13px;color:var(--text2)"></div>
-    </div>
-  </div>
+<!-- DETAIL PANEL -->
+<div class="overlay" id="overlay" onclick="closeDetail()"></div>
+<div class="detail-panel" id="detailPanel">
+  <button class="detail-close" onclick="closeDetail()">✕</button>
+  <div id="detailContent"></div>
 </div>
 
-<!-- ── Log Detail Modal ── -->
-<div class="modal-overlay hidden" id="detailModal" onclick="if(event.target===this)closeDetail()">
-  <div class="modal" onclick="event.stopPropagation()">
-    <div class="modal-header">
-      <h3>Log Detail</h3>
-      <button class="modal-close" onclick="closeDetail()">✕</button>
-    </div>
-    <div class="modal-body" id="detailBody"></div>
-  </div>
-</div>
-
-<!-- ── Toast ── -->
+<!-- TOAST -->
 <div class="toast-wrap" id="toastWrap"></div>
 
 <script>
-// ── State ──────────────────────────────────────────────────────────────────
-const ORG_SLUG   = "{{ org_slug }}";
-const USER_ROLE  = "{{ user.role }}";
-let currentSection = "{{ active_section }}";
-let bsData = null;          // bootstrap data cache
-// Log explorer pagination state
-let logPage    = 1;
-let logPerPage = 50;
-let logSort    = "timestamp";
-let logDir     = "desc";
-let logTotal   = 0;
-let logPages   = 1;
-let logSearchTimer = null;
-let currentLogs = []; // for export / detail
+// ── STATE ──
+const ORG_SLUG = '{{ org_slug }}';
+const USER_ROLE = '{{ user.role }}';
+let bsData = null;   // bootstrap data
+let logPage = 1, logPerPage = 50, logFilter = 'all', logSearch = '', logSort = 'timestamp', logSortDir = 'desc';
+let logTotal = 0, logPages = 1;
+let cachedLogs = [];
 
-// ── Helpers ───────────────────────────────────────────────────────────────
-const escH = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-
-function levelBadge(lvl) {
-  const l = (lvl || '').toLowerCase();
-  const cls = {error:'badge-error', warn:'badge-warn', warning:'badge-warn', info:'badge-info', success:'badge-success', debug:'badge-debug'}[l] || 'badge-debug';
-  return `<span class="badge ${cls}">${escH((lvl||'').toUpperCase())}</span>`;
-}
-
-function fmtTs(ts) {
-  if (!ts) return '–';
-  try { return new Date(ts).toLocaleString(); } catch { return ts; }
-}
-
-function toast(msg, type = 'info') {
-  const w = document.getElementById('toastWrap');
-  const el = document.createElement('div');
-  el.className = `toast ${type}`;
-  el.textContent = msg;
-  w.appendChild(el);
-  setTimeout(() => { el.classList.add('out'); setTimeout(() => el.remove(), 320); }, 3000);
-}
-
-function paginationRange(cur, total) {
-  if (total <= 7) return Array.from({length: total}, (_, i) => i + 1);
-  if (cur <= 4)        return [1,2,3,4,5,'…',total];
-  if (cur >= total-3)  return [1,'…',total-4,total-3,total-2,total-1,total];
-  return [1,'…',cur-1,cur,cur+1,'…',total];
-}
-
-// ── Navigation ────────────────────────────────────────────────────────────
-const SECTION_TITLES = {
-  overview:      'Investigate logs, run connectors, and manage your organization.',
-  explorer:      'Investigate logs, run connectors, and manage your organization.',
-  ingest:        'Ingest logs via API.',
-  integrations:  'Connect your log sources.',
-  jobs:          'Manage ingestion jobs.',
-  alerts:        'Configure alert rules.',
-  users:         'Manage team members.',
-  dashboards:    'Your saved dashboards.',
-  invites:       'Team invitations.',
-  organization:  'Workspace settings.',
-  audit:         'Audit trail.',
-};
-
-function switchSection(s) {
-  document.querySelectorAll('.section').forEach(el => el.classList.remove('active'));
-  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-  const sec = document.getElementById(`section-${s}`);
-  if (sec) sec.classList.add('active');
-  document.querySelectorAll('.nav-item').forEach(el => {
-    if (el.getAttribute('onclick') === `switchSection('${s}')`) el.classList.add('active');
+// ── INIT ──
+document.addEventListener('DOMContentLoaded', () => {
+  loadBootstrap();
+  setupDragDrop();
+  document.getElementById('fileInput').addEventListener('change', e => {
+    uploadFiles(Array.from(e.target.files));
+    e.target.value = '';
   });
-  document.getElementById('pageTitle').textContent = SECTION_TITLES[s] || '';
-  currentSection = s;
-  history.pushState(null, '', `/workspace/${ORG_SLUG}/${s}`);
-  // Lazy-render sections
-  if (s === 'explorer') { logPage = 1; loadLogs(1); }
-  else if (s === 'overview' && bsData) renderOverview(bsData);
-  else if (!bsData) loadBootstrap().then(() => renderSection(s));
-  else renderSection(s);
-}
+  document.getElementById('intKind').addEventListener('change', function() {
+    document.getElementById('intS3Fields').classList.toggle('hidden', this.value !== 's3');
+    document.getElementById('intApiFields').classList.toggle('hidden', this.value !== 'api');
+  });
+  // Show active page
+  const initSection = '{{ active_section }}';
+  showPage(initSection || 'overview');
+});
 
-function renderSection(s) {
-  if (!bsData) return;
-  if (s === 'overview')      renderOverview(bsData);
-  else if (s === 'users')    renderUsers(bsData.users);
-  else if (s === 'audit')    renderAudit(bsData.audit);
-  else if (s === 'alerts')   renderAlerts(bsData.alerts);
-  else if (s === 'jobs')     renderJobs(bsData.jobs);
-  else if (s === 'integrations') renderIntegrations(bsData.integrations);
-  else if (s === 'invites')  renderInvites(bsData.invitations);
-  else if (s === 'dashboards') renderDashboards(bsData.saved_dashboards);
-  else if (s === 'organization') renderOrg(bsData.organization);
-  else if (s === 'ingest')   renderIngest(bsData.api_keys);
-}
-
-// ── Bootstrap ─────────────────────────────────────────────────────────────
+// ── BOOTSTRAP ──
 async function loadBootstrap() {
   try {
-    const res = await fetch('/api/bootstrap');
-    if (!res.ok) { if (res.status === 401) { location.href = '/login'; } return; }
-    bsData = await res.json();
-    renderSection(currentSection);
-    if (currentSection === 'explorer') loadLogs(1);
-  } catch(e) { console.error('Bootstrap failed', e); }
+    const r = await fetch('/api/bootstrap');
+    if (!r.ok) return;
+    bsData = await r.json();
+    applyBootstrap(bsData);
+  } catch(e) { console.error(e); }
 }
 
-// ── Overview ──────────────────────────────────────────────────────────────
-function renderOverview(data) {
-  const s = data.summary || {};
-  const lvl = s.levels || {};
-  const total = s.logs || 0;
-  document.getElementById('ov-total').textContent   = (total).toLocaleString();
-  document.getElementById('ov-errors').textContent  = (lvl.error || 0).toLocaleString();
-  document.getElementById('ov-warns').textContent   = (lvl.warn || 0).toLocaleString();
-  document.getElementById('ov-success').textContent = (lvl.success || 0).toLocaleString();
-  document.getElementById('ov-errrate').textContent = (s.error_rate || 0) + '%';
-  document.getElementById('ov-uploads').textContent = (s.uploads || 0).toLocaleString();
-  const sources = s.top_sources || [];
-  if (sources.length) {
-    document.getElementById('overviewSources').innerHTML = `
-      <div class="section-header" style="font-size:14px;margin-bottom:12px">Top Sources</div>
-      <div class="table-wrap">
-        <table class="data-table">
-          <thead><tr><th>Source</th><th>Events</th></tr></thead>
-          <tbody>${sources.map(r => `<tr><td>${escH(r.source)}</td><td>${r.count.toLocaleString()}</td></tr>`).join('')}</tbody>
-        </table>
-      </div>`;
-  }
+function applyBootstrap(d) {
+  const s = d.summary;
+  setText('st-total', (s.totals.logs || 0).toLocaleString());
+  setText('st-errors', (s.levels.error || 0).toLocaleString());
+  setText('st-warnings', (s.levels.warn || 0).toLocaleString());
+  setText('st-success', (s.levels.success || 0).toLocaleString());
+  setText('st-errrate', s.error_rate + '%');
+  setText('st-uploads', (s.totals.uploads || 0).toLocaleString());
+  setText('nb-all', s.totals.logs || 0);
+  setText('nb-alerts', d.alerts.length || 0);
+  renderHourlyChart(s.time_series);
+  renderDonut(s.levels, s.totals.logs);
+  renderSourceBars(s.source_breakdown);
+  renderAlerts(d.alerts);
+  renderUsers(d.users);
+  renderInvites(d.invitations);
+  renderIntegrations(d.integrations);
+  renderJobs(d.jobs);
+  renderAudit(d.audit);
+  renderApiKeys(d.api_keys);
 }
 
-// ── Log Explorer ──────────────────────────────────────────────────────────
-async function loadLogs(page) {
-  logPage = page || 1;
-  const q       = (document.getElementById('logSearch').value || '').trim();
-  const level   = document.getElementById('levelFilter').value;
-  const minutes = document.getElementById('timeFilter').value;
-  const params  = new URLSearchParams({
-    page: logPage, per_page: logPerPage,
-    sort: logSort, dir: logDir,
-    level, minutes, q,
+function setText(id, val) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = val;
+}
+
+// ── NAVIGATION ──
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const pg = document.getElementById('page-' + name);
+  if (pg) pg.classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => {
+    if (n.getAttribute('onclick') && n.getAttribute('onclick').includes("'" + name + "'")) n.classList.add('active');
   });
-  document.getElementById('logTableArea').innerHTML = '<div class="loading">Loading logs…</div>';
-  document.getElementById('recordsCount').textContent = '…';
+  // Lazy-load logs when explorer opened
+  if (name === 'explorer') loadLogs();
+  history.replaceState(null, '', `/workspace/${ORG_SLUG}/${name}`);
+}
+
+function showExplorerFiltered(lvl) {
+  logFilter = lvl; logPage = 1;
+  showPage('explorer');
+  document.querySelectorAll('.chip').forEach(c => c.classList.toggle('active', c.dataset.lvl === lvl));
+}
+
+// ── DRAG & DROP ──
+function setupDragDrop() {
+  ['uploadZone','uploadZone2'].forEach(id => {
+    const z = document.getElementById(id);
+    if (!z) return;
+    z.addEventListener('click', () => document.getElementById('fileInput').click());
+    z.addEventListener('dragover', e => { e.preventDefault(); z.classList.add('drag-over'); });
+    z.addEventListener('dragleave', () => z.classList.remove('drag-over'));
+    z.addEventListener('drop', e => { e.preventDefault(); z.classList.remove('drag-over'); uploadFiles(Array.from(e.dataTransfer.files)); });
+  });
+  document.addEventListener('dragover', e => e.preventDefault());
+  document.addEventListener('drop', e => {
+    e.preventDefault();
+    if (e.target.closest('.upload-zone')) return;
+    if (e.dataTransfer.files.length) uploadFiles(Array.from(e.dataTransfer.files));
+  });
+}
+
+// ── FILE UPLOAD ──
+async function uploadFiles(files) {
+  if (!files.length) return;
+  showLoader(true);
+  const prog = document.getElementById('uploadProgress');
+  const bar = document.getElementById('progressBar');
+  if (prog) { prog.classList.add('active'); bar.style.width = '30%'; }
+  const fd = new FormData();
+  files.forEach(f => fd.append('files', f));
   try {
-    const res = await fetch(`/api/logs?${params}`);
-    if (!res.ok) { toast('Failed to load logs', 'error'); return; }
-    const data = await res.json();
-    logTotal   = data.total   ?? data.records.length;
-    logPages   = data.pages   ?? 1;
-    logPage    = data.page    ?? logPage;
-    logPerPage = data.per_page ?? logPerPage;
-    currentLogs = data.records || [];
-    document.getElementById('recordsCount').textContent = logTotal.toLocaleString() + ' records';
-    renderLogTable(currentLogs);
-  } catch(e) {
-    document.getElementById('logTableArea').innerHTML = '<div class="empty-state"><div class="icon">⚠️</div><h3>Failed to load logs</h3><p>Check your connection and try again.</p></div>';
+    if (bar) bar.style.width = '70%';
+    const r = await fetch('/api/upload', { method: 'POST', body: fd });
+    const d = await r.json();
+    if (bar) bar.style.width = '100%';
+    if (!r.ok) { toast(d.error || 'Upload failed', 'error'); }
+    else {
+      toast(`✓ Uploaded ${d.files_uploaded} file${d.files_uploaded !== 1 ? 's' : ''} · ${d.summary.total} events`, 'success');
+      if (d.skipped && d.skipped.length) d.skipped.forEach(s => toast(`⚠ Skipped: ${s}`, 'warn'));
+      await loadBootstrap();
+      loadLogs();
+    }
+  } catch(e) { toast('Upload error: ' + e.message, 'error'); }
+  finally {
+    showLoader(false);
+    if (prog) { setTimeout(() => { prog.classList.remove('active'); if(bar) bar.style.width='0%'; }, 600); }
   }
+}
+
+// ── LOGS ──
+async function loadLogs() {
+  showLoader(true);
+  const params = new URLSearchParams({
+    page: logPage, per_page: logPerPage, level: logFilter,
+    sort: logSort, dir: logSortDir,
+    q: logSearch
+  });
+  try {
+    const r = await fetch('/api/logs?' + params);
+    if (!r.ok) return;
+    const d = await r.json();
+    cachedLogs = d.records;
+    logTotal = d.total; logPages = d.pages; logPage = d.page;
+    renderLogTable(d.records);
+    renderPagination();
+  } catch(e) { console.error(e); }
+  finally { showLoader(false); }
+}
+
+function onSearch() {
+  logSearch = document.getElementById('searchInput').value.trim();
+  logPage = 1;
+  loadLogs();
+}
+function setFilter(lvl) {
+  logFilter = lvl; logPage = 1;
+  document.querySelectorAll('.chip').forEach(c => c.classList.toggle('active', c.dataset.lvl === lvl));
+  loadLogs();
+}
+function onRppChange() {
+  logPerPage = parseInt(document.getElementById('rppSelect').value);
+  logPage = 1; loadLogs();
+}
+function toggleSort(col) {
+  if (logSort === col) logSortDir = logSortDir === 'asc' ? 'desc' : 'asc';
+  else { logSort = col; logSortDir = col === 'timestamp' ? 'desc' : 'asc'; }
+  logPage = 1; loadLogs();
 }
 
 function renderLogTable(logs) {
   if (!logs.length) {
-    document.getElementById('logTableArea').innerHTML = `
-      <div class="empty-state"><div class="icon">🔍</div><h3>No matching logs</h3><p>Try adjusting your search or filter criteria.</p></div>`;
+    document.getElementById('logTableBody').innerHTML = `<div class="empty-state"><div class="empty-icon">◎</div><h3>No logs found</h3><p>Try adjusting your filter or search</p></div>`;
     return;
   }
-  const sortArrow = col => logSort === col ? `<span class="sort-ind">${logDir==='asc'?'▲':'▼'}</span>` : '';
-  const rows = logs.map((l, i) => {
-    const safeMsg = escH(l.message).replace(/'/g,"&#39;");
-    return `<tr onclick="openDetail(${i})">
-      <td class="td-ts">${escH(fmtTs(l.timestamp))}</td>
-      <td>${levelBadge(l.level)}</td>
-      <td class="td-source">${escH(l.source || '')}</td>
-      <td class="td-event" title="${escH(l.event_id || '')}">${escH(l.event_id || '–')}</td>
-      <td class="td-msg">
-        <div class="td-msg-wrap">
-          <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:480px" title="${escH(l.message)}">${escH(l.message)}</span>
-          <button class="copy-btn" title="Copy message" onclick="event.stopPropagation();cpMsg(this,'${safeMsg}')">⎘</button>
-        </div>
-      </td>
+  const sa = col => logSort === col ? `<span class="sort-ind">${logSortDir === 'asc' ? '▲' : '▼'}</span>` : '';
+  const rows = logs.map(l => {
+    const msg = esc(l.message || '');
+    const msgShort = l.message.length > 80 ? esc(l.message.slice(0, 80)) + '…' : msg;
+    return `<tr onclick="openDetail(${l.id})">
+      <td style="width:24px"><span class="level-dot dot-${l.level}"></span></td>
+      <td><span class="lvl-badge lvl-${l.level}">${l.level.toUpperCase()}</span></td>
+      <td class="evt-id">${esc(l.event_id||'—')}</td>
+      <td class="ts-cell">${fmtTs(l.timestamp)}</td>
+      <td class="msg-cell" title="${msg}">${msgShort}<button class="copy-msg-btn" onclick="event.stopPropagation();copyText('${msg.replace(/'/g,"&#39;")}')">⎘</button></td>
+      <td><span class="src-tag">${esc(l.source||'—')}</span></td>
     </tr>`;
   }).join('');
-
-  // Toolbar
-  const start = (logPage - 1) * logPerPage + 1;
-  const end   = Math.min(logPage * logPerPage, logTotal);
-  const toolbar = `<div class="table-toolbar">
-    <div class="table-toolbar-left">
-      <span class="rpp-label">Rows per page:</span>
-      <select class="rpp-select" onchange="setPerPage(+this.value)">
-        ${[25,50,100,200].map(n=>`<option value="${n}"${n===logPerPage?' selected':''}>${n}</option>`).join('')}
-      </select>
-      <span class="rpp-label" style="margin-left:6px">Showing ${start}–${end} of ${logTotal.toLocaleString()}</span>
-    </div>
-    <div class="table-toolbar-right">
-      <button class="export-btn" onclick="exportLogs('csv')">⬇ CSV</button>
-      <button class="export-btn" onclick="exportLogs('json')">⬇ JSON</button>
-    </div>
-  </div>`;
-
-  // Pagination bar
-  function pgBar() {
-    const pd = logPage <= 1 ? 'disabled' : '';
-    const nd = logPage >= logPages ? 'disabled' : '';
-    let btns = '';
-    paginationRange(logPage, logPages).forEach(p => {
-      if (p === '…') btns += `<span class="pg-ellipsis">…</span>`;
-      else btns += `<button class="pg-btn${p===logPage?' active':''}" onclick="loadLogs(${p})">${p}</button>`;
-    });
-    return `<div class="pagination-bar">
-      <span class="pg-info">${logTotal.toLocaleString()} records · page ${logPage} of ${logPages}</span>
-      <button class="pg-btn" ${pd} onclick="loadLogs(1)" title="First">«</button>
-      <button class="pg-btn" ${pd} onclick="loadLogs(${logPage-1})" title="Prev">‹</button>
-      ${btns}
-      <button class="pg-btn" ${nd} onclick="loadLogs(${logPage+1})" title="Next">›</button>
-      <button class="pg-btn" ${nd} onclick="loadLogs(${logPages})" title="Last">»</button>
+  document.getElementById('logTableBody').innerHTML = `
+    <div style="overflow:auto">
+      <table class="log-table">
+        <thead><tr>
+          <th></th>
+          <th class="sortable" onclick="toggleSort('level')">Level${sa('level')}</th>
+          <th>Event ID</th>
+          <th class="sortable" onclick="toggleSort('timestamp')">Timestamp${sa('timestamp')}</th>
+          <th class="sortable" onclick="toggleSort('message')">Message${sa('message')}</th>
+          <th class="sortable" onclick="toggleSort('source')">Source${sa('source')}</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
     </div>`;
-  }
+}
 
-  document.getElementById('logTableArea').innerHTML = `
-    ${toolbar}
-    <div class="log-table-outer">
-      <div class="log-table-scroll">
-        <table class="log-table">
-          <thead><tr>
-            <th class="sort-th" onclick="toggleSort('timestamp')">Timestamp${sortArrow('timestamp')}</th>
-            <th class="sort-th" onclick="toggleSort('level')">Level${sortArrow('level')}</th>
-            <th class="sort-th" onclick="toggleSort('source')">Source${sortArrow('source')}</th>
-            <th>Event</th>
-            <th class="sort-th" onclick="toggleSort('message')">Message${sortArrow('message')}</th>
-          </tr></thead>
-          <tbody>${rows}</tbody>
-        </table>
+function renderPagination() {
+  const pg = document.getElementById('pagination');
+  if (logPages <= 1) { pg.innerHTML = ''; return; }
+  const prev = logPage <= 1 ? 'disabled' : '';
+  const next = logPage >= logPages ? 'disabled' : '';
+  let btns = '';
+  pgRange(logPage, logPages).forEach(p => {
+    if (p === '…') btns += `<span style="color:var(--text3);padding:0 4px">…</span>`;
+    else btns += `<button class="pg-btn${p === logPage ? ' active' : ''}" onclick="goPage(${p})">${p}</button>`;
+  });
+  pg.innerHTML = `<span class="pg-info">${logTotal.toLocaleString()} entries · page ${logPage} of ${logPages}</span>
+    <button class="pg-btn" ${prev} onclick="goPage(1)">«</button>
+    <button class="pg-btn" ${prev} onclick="goPage(${logPage - 1})">‹</button>
+    ${btns}
+    <button class="pg-btn" ${next} onclick="goPage(${logPage + 1})">›</button>
+    <button class="pg-btn" ${next} onclick="goPage(${logPages})">»</button>`;
+}
+function goPage(p) { logPage = p; loadLogs(); }
+function pgRange(cur, tot) {
+  if (tot <= 7) return Array.from({length: tot}, (_, i) => i + 1);
+  if (cur <= 4) return [1,2,3,4,5,'…',tot];
+  if (cur >= tot-3) return [1,'…',tot-4,tot-3,tot-2,tot-1,tot];
+  return [1,'…',cur-1,cur,cur+1,'…',tot];
+}
+
+// ── DETAIL PANEL ──
+async function openDetail(id) {
+  try {
+    const r = await fetch(`/api/logs/${id}`);
+    if (!r.ok) return;
+    const l = await r.json();
+    document.getElementById('detailContent').innerHTML = `
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+        <span class="lvl-badge lvl-${l.level}">${l.level.toUpperCase()}</span>
+        <span class="src-tag">${esc(l.source)}</span>
       </div>
-    </div>
-    ${pgBar()}`;
+      <div style="font-size:15px;font-weight:700;margin-bottom:14px;padding-right:32px">${esc(l.message)}</div>
+      <div class="detail-kv"><div class="detail-kv-label">Timestamp</div><div class="detail-kv-val mono">${esc(l.timestamp)}</div></div>
+      <div class="detail-kv"><div class="detail-kv-label">Event ID</div><div class="detail-kv-val mono">${esc(l.event_id||'—')}</div></div>
+      <div class="detail-kv"><div class="detail-kv-label">Source</div><div class="detail-kv-val">${esc(l.source)}</div></div>
+      <div class="detail-kv"><div class="detail-kv-label">Upload ID</div><div class="detail-kv-val mono">#${l.upload_id||'—'}</div></div>
+      <div style="margin-top:10px">
+        <div style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px">Payload</div>
+        <div class="payload-pre">${syntaxHL(JSON.stringify(l.payload, null, 2))}</div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <button onclick="copyText('${esc(JSON.stringify(l.payload)).replace(/'/g,"&#39;")}')" style="flex:1;padding:8px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:var(--sans);font-size:12px;cursor:pointer">⎘ Copy payload</button>
+      </div>`;
+    document.getElementById('overlay').classList.add('open');
+    document.getElementById('detailPanel').classList.add('open');
+  } catch(e) {}
+}
+function closeDetail() {
+  document.getElementById('overlay').classList.remove('open');
+  document.getElementById('detailPanel').classList.remove('open');
 }
 
-// ── Sort / per-page ────────────────────────────────────────────────────────
-function toggleSort(col) {
-  if (logSort === col) logDir = logDir === 'asc' ? 'desc' : 'asc';
-  else { logSort = col; logDir = col === 'timestamp' ? 'desc' : 'asc'; }
-  loadLogs(1);
-}
-function setPerPage(n) { logPerPage = n; loadLogs(1); }
-
-// ── Search ─────────────────────────────────────────────────────────────────
-function onSearchInput() {
-  clearTimeout(logSearchTimer);
-  logSearchTimer = setTimeout(() => loadLogs(1), 350);
-}
-function onTimeFilterChange() { loadLogs(1); }
-
-// ── Log Detail ────────────────────────────────────────────────────────────
-async function openDetail(idx) {
-  const log = currentLogs[idx];
-  if (!log) return;
-  const modal = document.getElementById('detailModal');
-  const body  = document.getElementById('detailBody');
-  modal.classList.remove('hidden');
-  body.innerHTML = `<div class="loading">Loading…</div>`;
-  try {
-    const res = await fetch(`/api/logs/${log.id}`);
-    const d = res.ok ? await res.json() : log;
-    body.innerHTML = `
-      <div class="modal-field"><label>Timestamp</label><pre>${escH(fmtTs(d.timestamp))}</pre></div>
-      <div class="modal-field"><label>Level</label><div style="margin-top:4px">${levelBadge(d.level)}</div></div>
-      <div class="modal-field"><label>Source</label><pre>${escH(d.source||'–')}</pre></div>
-      <div class="modal-field"><label>Event ID</label><pre>${escH(d.event_id||'–')}</pre></div>
-      <div class="modal-field"><label>Message</label><pre>${escH(d.message||'–')}</pre></div>
-      ${d.payload && Object.keys(d.payload).length ? `<div class="modal-field"><label>Payload</label><pre>${escH(JSON.stringify(d.payload, null, 2))}</pre></div>` : ''}`;
-  } catch(e) {
-    body.innerHTML = `<pre>${escH(JSON.stringify(log, null, 2))}</pre>`;
-  }
-}
-function closeDetail() { document.getElementById('detailModal').classList.add('hidden'); }
-
-// ── Copy message ──────────────────────────────────────────────────────────
-function cpMsg(btn, msg) {
-  navigator.clipboard.writeText(msg).then(() => { btn.textContent = '✓'; setTimeout(() => btn.textContent = '⎘', 1400); });
-}
-
-// ── Export ────────────────────────────────────────────────────────────────
-function exportLogs(fmt) {
-  const data = currentLogs;
-  let content, mime, ext;
-  if (fmt === 'json') {
-    content = JSON.stringify(data, null, 2); mime = 'application/json'; ext = 'json';
-  } else {
-    const cols = ['timestamp','level','source','event_id','message'];
-    const e = v => `"${String(v??'').replace(/"/g,'""')}"`;
-    content = [cols.join(','), ...data.map(r => cols.map(c => e(r[c])).join(','))].join('\n');
-    mime = 'text/csv'; ext = 'csv';
-  }
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([content], {type: mime}));
-  a.download = `observex-logs.${ext}`; a.click();
-  toast(`Exported ${data.length} logs as ${ext.toUpperCase()}`, 'success');
-}
-
-// ── Upload ────────────────────────────────────────────────────────────────
-function openUploadModal()  { document.getElementById('uploadModal').classList.remove('hidden'); }
-function closeUploadModal() { document.getElementById('uploadModal').classList.add('hidden'); document.getElementById('uploadStatus').textContent = ''; }
-
-const ud = document.getElementById('uploadDrop');
-ud.addEventListener('dragover', e => { e.preventDefault(); ud.classList.add('drag-over'); });
-ud.addEventListener('dragleave', () => ud.classList.remove('drag-over'));
-ud.addEventListener('drop', e => { e.preventDefault(); ud.classList.remove('drag-over'); handleUploadFiles(e.dataTransfer.files); });
-document.getElementById('uploadModal').addEventListener('click', e => { if (e.target === document.getElementById('uploadModal')) closeUploadModal(); });
-
-async function handleUploadFiles(files) {
-  if (!files || !files.length) return;
-  const statusEl = document.getElementById('uploadStatus');
-  statusEl.textContent = 'Uploading…';
-  const fd = new FormData();
-  Array.from(files).forEach(f => fd.append('files', f));
-  try {
-    const res = await fetch('/api/upload', { method: 'POST', body: fd });
-    const data = await res.json();
-    if (!res.ok) { statusEl.textContent = data.error || 'Upload failed.'; toast(data.error || 'Upload failed', 'error'); return; }
-    statusEl.textContent = `✓ ${data.total_ingested || 0} records ingested.`;
-    toast(`Ingested ${data.total_ingested || 0} log records`, 'success');
-    setTimeout(closeUploadModal, 1200);
-    if (currentSection === 'explorer') loadLogs(1);
-  } catch(e) { statusEl.textContent = 'Upload error.'; toast('Upload failed', 'error'); }
-}
-
-// ── Section renderers ──────────────────────────────────────────────────────
-function renderUsers(users) {
-  if (!users || !users.length) { document.getElementById('usersList').innerHTML = '<div class="empty-state"><div class="icon">👥</div><h3>No users</h3></div>'; return; }
-  document.getElementById('usersList').innerHTML = `
-    <div class="table-wrap">
-      <table class="data-table">
-        <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Joined</th></tr></thead>
-        <tbody>${users.map(u => `<tr><td>${escH(u.name)}</td><td>${escH(u.email)}</td><td><span class="pill">${escH(u.role)}</span></td><td>${escH(fmtTs(u.created_at))}</td></tr>`).join('')}</tbody>
-      </table>
+// ── CHARTS ──
+function renderHourlyChart(ts) {
+  if (!ts || !Object.keys(ts).length) return;
+  const hours = Object.keys(ts).sort().slice(-24);
+  if (!hours.length) return;
+  const maxVal = Math.max(...hours.map(h => Object.values(ts[h]).reduce((a,b)=>a+b,0)), 1);
+  const bars = hours.map(h => {
+    const counts = ts[h] || {};
+    const tot = Object.values(counts).reduce((a,b)=>a+b,0);
+    const eh = Math.round((counts.error||0)/maxVal*70);
+    const wh = Math.round((counts.warn||0)/maxVal*70);
+    const ih = Math.max(1, Math.round((tot-(counts.error||0)-(counts.warn||0))/maxVal*70));
+    const lbl = h.slice(11,16);
+    return `<div class="bar-col" title="${lbl}: ${tot} events">
+      ${eh?`<div class="bar-fill" style="height:${eh}px;background:var(--red)"></div>`:''}
+      ${wh?`<div class="bar-fill" style="height:${wh}px;background:var(--yellow)"></div>`:''}
+      ${ih?`<div class="bar-fill" style="height:${ih}px;background:var(--accent);opacity:.6"></div>`:''}
+      <span class="bar-lbl">${lbl}</span>
     </div>`;
+  }).join('');
+  document.getElementById('hourlyChart').innerHTML = bars;
 }
 
-function renderAudit(events) {
-  if (!events || !events.length) { document.getElementById('auditList').innerHTML = '<div class="empty-state"><div class="icon">📜</div><h3>No audit events</h3></div>'; return; }
-  document.getElementById('auditList').innerHTML = `
-    <div class="table-wrap">
-      <table class="data-table">
-        <thead><tr><th>Time</th><th>Action</th><th>Target</th></tr></thead>
-        <tbody>${events.map(e => `<tr><td class="td-ts">${escH(fmtTs(e.created_at))}</td><td>${escH(e.action)}</td><td>${escH(e.target_type)} #${escH(e.target_id)}</td></tr>`).join('')}</tbody>
-      </table>
-    </div>`;
+function renderDonut(levels, total) {
+  if (!total) return;
+  const colors = {error:'var(--red)',warn:'var(--yellow)',success:'var(--green)',info:'var(--accent2)',debug:'var(--text3)'};
+  const entries = Object.entries(levels).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]);
+  let offset = 0; const r = 36, cx = 44, cy = 44, circ = 2*Math.PI*r;
+  const segments = entries.map(([lvl,cnt]) => {
+    const pct = cnt/total, dashArr = pct*circ, seg = `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${colors[lvl]||'var(--text3)'}" stroke-width="12" stroke-dasharray="${dashArr} ${circ}" stroke-dashoffset="${-offset*circ}" style="transition:all .4s"/>`;
+    offset += pct; return seg;
+  }).join('');
+  const legend = entries.map(([lvl,cnt]) => `<div class="donut-item">
+    <div class="donut-dot" style="background:${colors[lvl]||'var(--text3)'}"></div>
+    <span class="donut-label">${lvl}</span>
+    <span class="donut-count" style="margin-left:8px">${cnt}</span>
+  </div>`).join('');
+  document.getElementById('donutWrap').innerHTML = `
+    <svg class="donut" width="88" height="88" viewBox="0 0 88 88">${segments}</svg>
+    <div class="donut-legend">${legend}</div>`;
 }
 
+function renderSourceBars(sources) {
+  if (!sources || !sources.length) return;
+  const max = sources[0].count || 1;
+  document.getElementById('sourceBars').innerHTML = sources.map(s =>
+    `<div class="source-bar-row">
+      <div class="source-bar-label" title="${esc(s.source)}">${esc(s.source)}</div>
+      <div class="source-bar-track"><div class="source-bar-fill" style="width:${Math.round(s.count/max*100)}%"></div></div>
+      <div class="source-bar-count">${s.count}</div>
+    </div>`).join('');
+}
+
+// ── RENDER SECTIONS ──
 function renderAlerts(alerts) {
   const el = document.getElementById('alertsList');
-  if (!alerts || !alerts.length) { el.innerHTML = '<div class="empty-state"><div class="icon">🔔</div><h3>No alert rules</h3><p>Create alerts to get notified of log patterns.</p></div>'; return; }
-  el.innerHTML = `<div class="table-wrap"><table class="data-table">
-    <thead><tr><th>Name</th><th>Condition</th><th>Status</th></tr></thead>
-    <tbody>${alerts.map(a => `<tr><td>${escH(a.name||'–')}</td><td>${escH(a.condition||'–')}</td><td><span class="pill ${a.active?'active':'inactive'}">${a.active?'Active':'Inactive'}</span></td></tr>`).join('')}</tbody>
-  </table></div>`;
+  if (!alerts || !alerts.length) return;
+  el.innerHTML = alerts.map(a => `
+    <div class="alert-row">
+      <div>
+        <div class="alert-name">${esc(a.name)}</div>
+        <div class="alert-detail">${esc(a.severity)} · ${esc(a.alert_type||'error_rate')} · threshold:${a.threshold||10}</div>
+      </div>
+      <span class="lvl-badge lvl-${a.severity==='sev1'?'error':a.severity==='sev2'?'warn':'info'}">${esc(a.severity).toUpperCase()}</span>
+      <span class="lvl-badge lvl-${a.status==='active'?'success':'debug'}">${esc(a.status).toUpperCase()}</span>
+      ${a.notify_email?`<span class="src-tag">${esc(a.notify_email)}</span>`:''}
+    </div>`).join('');
 }
 
-function renderJobs(jobs) {
-  const el = document.getElementById('jobsList');
-  if (!jobs || !jobs.length) { el.innerHTML = '<div class="empty-state"><div class="icon">⚙</div><h3>No ingestion jobs</h3><p>Create a job to pull logs from an integration.</p></div>'; return; }
-  el.innerHTML = `<div class="table-wrap"><table class="data-table">
-    <thead><tr><th>Name</th><th>Source</th><th>Status</th><th>Last run</th></tr></thead>
-    <tbody>${jobs.map(j => `<tr><td>${escH(j.name||'–')}</td><td>${escH(j.source_type||'–')}</td><td><span class="pill ${j.status==='active'?'active':'inactive'}">${escH(j.status||'–')}</span></td><td>${escH(fmtTs(j.last_run_at)||'Never')}</td></tr>`).join('')}</tbody>
-  </table></div>`;
-}
-
-function renderIntegrations(integrations) {
-  const el = document.getElementById('integrationsList');
-  if (!integrations || !integrations.length) { el.innerHTML = '<div class="empty-state"><div class="icon">🔌</div><h3>No integrations</h3><p>Connect a log source like AWS S3 or a custom API.</p></div>'; return; }
-  el.innerHTML = `<div class="table-wrap"><table class="data-table">
-    <thead><tr><th>Name</th><th>Type</th><th>Status</th><th>Updated</th></tr></thead>
-    <tbody>${integrations.map(i => `<tr><td>${escH(i.name||'–')}</td><td>${escH(i.source_type||'–')}</td><td><span class="pill ${i.status==='active'?'active':'inactive'}">${escH(i.status||'–')}</span></td><td>${escH(fmtTs(i.updated_at))}</td></tr>`).join('')}</tbody>
-  </table></div>`;
+function renderUsers(users) {
+  const el = document.getElementById('usersList');
+  if (!users || !users.length) return;
+  const roleClass = r => ({admin:'role-admin',manager:'role-manager',developer:'role-developer',tester:'role-tester'}[r]||'role-developer');
+  el.innerHTML = `<div>${users.map(u => `
+    <div class="user-row">
+      <div class="user-avatar">${esc(u.name[0]||'?').toUpperCase()}</div>
+      <div><div style="font-size:12px;font-weight:600">${esc(u.name)}</div><div style="font-size:11px;color:var(--text2);font-family:var(--mono)">${esc(u.email)}</div></div>
+      <span class="role-badge ${roleClass(u.role)}" style="margin-left:auto">${esc(u.role).toUpperCase()}</span>
+    </div>`).join('')}</div>`;
 }
 
 function renderInvites(invites) {
   const el = document.getElementById('invitesList');
-  if (!invites || !invites.length) { el.innerHTML = '<div class="empty-state"><div class="icon">✉</div><h3>No invitations</h3></div>'; return; }
-  el.innerHTML = `<div class="table-wrap"><table class="data-table">
-    <thead><tr><th>Email</th><th>Role</th><th>Status</th><th>Sent</th></tr></thead>
-    <tbody>${invites.map(i => `<tr><td>${escH(i.email)}</td><td>${escH(i.role)}</td><td><span class="pill">${escH(i.status)}</span></td><td>${escH(fmtTs(i.created_at))}</td></tr>`).join('')}</tbody>
-  </table></div>`;
+  if (!invites || !invites.length) {
+    el.innerHTML = `<div class="empty-state" style="padding:28px"><div class="empty-icon" style="font-size:28px">✉</div><h3 style="font-size:13px">No invitations yet</h3></div>`;
+    return;
+  }
+  const sc = s => ({pending:'status-pending',accepted:'status-accepted'}[s]||'status-expired');
+  el.innerHTML = `<div>${invites.map(i => `
+    <div class="invite-row">
+      <div style="font-family:var(--mono);font-size:11px">${esc(i.email)}</div>
+      <span class="role-badge role-${i.role}" style="margin-left:auto">${esc(i.role).toUpperCase()}</span>
+      <span class="invite-status ${sc(i.status)}">${esc(i.status).toUpperCase()}</span>
+      <button class="btn-secondary" style="padding:4px 8px;font-size:10px" onclick="copyText('${location.origin}/accept-invite/${esc(i.token)}')">Copy link</button>
+    </div>`).join('')}</div>`;
 }
 
-function renderDashboards(dashboards) {
-  const el = document.getElementById('dashboardsList');
-  if (!dashboards || !dashboards.length) { el.innerHTML = '<div class="empty-state"><div class="icon">📊</div><h3>No saved dashboards</h3></div>'; return; }
-  el.innerHTML = `<div class="table-wrap"><table class="data-table">
-    <thead><tr><th>Name</th><th>Created</th></tr></thead>
-    <tbody>${dashboards.map(d => `<tr><td>${escH(d.name)}</td><td>${escH(fmtTs(d.created_at))}</td></tr>`).join('')}</tbody>
-  </table></div>`;
+function renderIntegrations(integrations) {
+  const el = document.getElementById('integrationsList');
+  if (!integrations || !integrations.length) {
+    el.innerHTML = `<div class="empty-state" style="padding:28px"><div class="empty-icon" style="font-size:28px">⌁</div><h3 style="font-size:13px">No integrations yet</h3></div>`;
+    return;
+  }
+  el.innerHTML = `<div>${integrations.map(i => `
+    <div class="user-row">
+      <div><div style="font-size:12px;font-weight:600">${esc(i.name)}</div><div style="font-size:11px;color:var(--text2);font-family:var(--mono)">${esc(i.kind)} · ${esc(i.status)}</div></div>
+      <span class="lvl-badge lvl-${i.status==='configured'?'success':'debug'}" style="margin-left:auto">${esc(i.status).toUpperCase()}</span>
+    </div>`).join('')}</div>`;
 }
 
-function renderOrg(org) {
-  const el = document.getElementById('orgSettings');
-  el.innerHTML = `<div class="card">
-    <h4>Workspace details</h4>
-    <table class="data-table" style="margin-top:10px">
-      <tbody>
-        <tr><td style="width:160px;color:var(--text3)">Organization</td><td>${escH(org.name)}</td></tr>
-        <tr><td style="color:var(--text3)">Slug</td><td>${escH(org.slug)}</td></tr>
-        <tr><td style="color:var(--text3)">Workspace URL</td><td><a href="${escH(org.workspace_url)}" style="color:var(--accent)">${escH(org.workspace_url)}</a></td></tr>
-      </tbody>
-    </table>
-  </div>`;
+function renderJobs(jobs) {
+  const el = document.getElementById('jobsList');
+  if (!jobs || !jobs.length) {
+    el.innerHTML = `<div class="empty-state" style="padding:28px"><div class="empty-icon" style="font-size:28px">↻</div><h3 style="font-size:13px">No jobs yet</h3></div>`;
+    return;
+  }
+  el.innerHTML = `<div>${jobs.map(j => `
+    <div class="user-row">
+      <div><div style="font-size:12px;font-weight:600">${esc(j.name)}</div><div style="font-size:11px;color:var(--text2);font-family:var(--mono)">${esc(j.source_type)} · ${esc(j.schedule)}</div></div>
+      <span class="lvl-badge lvl-${j.status==='scheduled'?'success':'debug'}" style="margin-left:auto">${esc(j.status).toUpperCase()}</span>
+      <button class="btn-primary" style="padding:5px 10px;font-size:11px" onclick="runJob(${j.id})">▶ Run now</button>
+    </div>`).join('')}</div>`;
 }
 
-function renderIngest(apiKeys) {
-  const el = document.getElementById('apiKeysList');
-  if (!apiKeys || !apiKeys.length) { el.innerHTML = '<p style="color:var(--text3);font-size:13px">No API keys yet. Create one to start ingesting logs.</p>'; return; }
-  el.innerHTML = `<div class="table-wrap"><table class="data-table">
-    <thead><tr><th>Name</th><th>Prefix</th><th>Status</th><th>Last used</th></tr></thead>
-    <tbody>${apiKeys.map(k => `<tr><td>${escH(k.name)}</td><td><code>${escH(k.prefix)}…</code></td><td><span class="pill ${k.status==='active'?'active':'inactive'}">${escH(k.status)}</span></td><td>${escH(fmtTs(k.last_used_at)||'Never')}</td></tr>`).join('')}</tbody>
-  </table></div>`;
+function renderAudit(events) {
+  const el = document.getElementById('auditList');
+  if (!events || !events.length) {
+    el.innerHTML = `<div class="empty-state" style="padding:28px"><div class="empty-icon" style="font-size:28px">◷</div><h3 style="font-size:13px">No audit events</h3></div>`;
+    return;
+  }
+  el.innerHTML = `<div>${events.map(e => `
+    <div class="audit-row">
+      <span class="audit-action">${esc(e.action)}</span>
+      <span style="color:var(--text2);font-size:11px">${esc(e.target_type)}${e.target_id?' #'+esc(e.target_id):''}</span>
+      <span class="audit-ts">${fmtTs(e.created_at)}</span>
+    </div>`).join('')}</div>`;
 }
 
-// ── Logout ─────────────────────────────────────────────────────────────────
+function renderApiKeys(keys) {
+  const el = document.getElementById('apiKeysWrap');
+  if (!keys || !keys.length) return;
+  el.innerHTML = `<div>${keys.map(k => `
+    <div class="api-key-row">
+      <span class="api-key-prefix">${esc(k.prefix)}…</span>
+      <span class="api-key-name">${esc(k.name)}</span>
+      <span class="lvl-badge lvl-${k.status==='active'?'success':'debug'}">${esc(k.status).toUpperCase()}</span>
+      <span class="api-key-last">${k.last_used_at?'Last: '+fmtTs(k.last_used_at):'Never used'}</span>
+      <button class="btn-danger" onclick="revokeKey(${k.id})">Revoke</button>
+    </div>`).join('')}</div>`;
+}
+
+// ── ACTIONS ──
+async function createAlert() {
+  const name = document.getElementById('alertName').value.trim();
+  const severity = document.getElementById('alertSeverity').value;
+  const alertType = document.getElementById('alertType').value;
+  const condition = document.getElementById('alertCondition').value.trim();
+  const email = document.getElementById('alertEmail').value.trim();
+  const threshold = parseInt(document.getElementById('alertThreshold').value)||10;
+  if (!name) { toast('Alert name required', 'error'); return; }
+  const r = await api('/api/alerts', 'POST', {name, severity, alert_type: alertType, condition_text: condition||'condition pending', notify_email: email, threshold, status:'draft', channel:'Email'});
+  if (r.ok) { toast('Alert rule created', 'success'); loadBootstrap(); } 
+  else toast((await r.json()).error||'Error', 'error');
+}
+
+async function createUser() {
+  const name = document.getElementById('newUserName').value.trim();
+  const email = document.getElementById('newUserEmail').value.trim();
+  const password = document.getElementById('newUserPass').value;
+  const role = document.getElementById('newUserRole').value;
+  if (!name||!email||!password) { toast('Name, email and password required', 'error'); return; }
+  const r = await api('/api/users', 'POST', {name, email, password, role});
+  if (r.ok) { toast('User created', 'success'); loadBootstrap(); }
+  else toast((await r.json()).error||'Error', 'error');
+}
+
+async function sendInvite() {
+  const email = document.getElementById('inviteEmail').value.trim();
+  const role = document.getElementById('inviteRole').value;
+  if (!email) { toast('Email required', 'error'); return; }
+  const r = await api('/api/invitations', 'POST', {email, role});
+  const d = await r.json();
+  if (r.ok) {
+    toast(d.email_sent ? `Invite sent to ${email}` : 'Invite created (no SMTP configured)', 'success');
+    if (!d.email_sent && d.invite_url) { copyText(d.invite_url); toast('Invite link copied!', 'success'); }
+    loadBootstrap();
+  } else toast(d.error||'Error', 'error');
+}
+
+async function saveIntegration() {
+  const kind = document.getElementById('intKind').value;
+  const name = document.getElementById('intName').value.trim();
+  let settings = {};
+  if (kind === 's3') {
+    settings = {bucket: document.getElementById('s3Bucket').value.trim(), region: document.getElementById('s3Region').value.trim(), prefix: document.getElementById('s3Prefix').value.trim(), access_key: document.getElementById('s3Key').value.trim(), secret_key: document.getElementById('s3Secret').value.trim()};
+  } else {
+    settings = {url: document.getElementById('apiUrl').value.trim(), token: document.getElementById('apiToken').value.trim()};
+  }
+  const r = await api('/api/integrations', 'POST', {kind, name: name||kind+' integration', settings, status:'configured'});
+  if (r.ok) { toast('Integration saved', 'success'); loadBootstrap(); }
+  else toast((await r.json()).error||'Error', 'error');
+}
+
+async function createJob() {
+  const name = document.getElementById('jobName').value.trim();
+  const source_type = document.getElementById('jobSource').value;
+  const schedule = document.getElementById('jobSchedule').value.trim()||'*/15 * * * *';
+  if (!name) { toast('Job name required', 'error'); return; }
+  const r = await api('/api/jobs', 'POST', {name, source_type, schedule, status:'scheduled'});
+  if (r.ok) { toast('Job created', 'success'); loadBootstrap(); }
+  else toast((await r.json()).error||'Error', 'error');
+}
+
+async function runJob(id) {
+  const r = await api(`/api/jobs/${id}/run`, 'POST', {});
+  const d = await r.json();
+  toast(d.message||'Job queued', r.ok ? 'success' : 'error');
+}
+
+async function saveOrg() {
+  const name = document.getElementById('orgName').value.trim();
+  const slug = document.getElementById('orgSlug').value.trim();
+  const logo_text = document.getElementById('orgLogo').value.trim();
+  const admin_only = document.getElementById('orgAdminOnly').checked;
+  const r = await api('/api/org', 'POST', {name, slug, logo_text, admin_only});
+  if (r.ok) { toast('Settings saved', 'success'); setTimeout(()=>location.reload(), 1000); }
+  else toast((await r.json()).error||'Error', 'error');
+}
+
+async function createApiKey() {
+  const name = document.getElementById('newKeyName').value.trim();
+  if (!name) { toast('Key name required', 'error'); return; }
+  const r = await api('/api/keys', 'POST', {name});
+  const d = await r.json();
+  if (r.ok) {
+    copyText(d.key);
+    toast(`API key created & copied! Starts with: ${d.prefix}…`, 'success');
+    document.getElementById('newKeyName').value = '';
+    loadBootstrap();
+  } else toast(d.error||'Error', 'error');
+}
+
+async function revokeKey(id) {
+  if (!confirm('Revoke this API key?')) return;
+  const r = await fetch(`/api/keys/${id}`, {method:'DELETE'});
+  if (r.ok) { toast('Key revoked', 'success'); loadBootstrap(); }
+}
+
 async function doLogout() {
-  await fetch('/logout', { method: 'POST' }).catch(() => {});
+  await fetch('/logout', {method:'POST'});
   location.href = '/login';
 }
 
-// ── Init ───────────────────────────────────────────────────────────────────
-loadBootstrap();
-if (currentSection === 'explorer') loadLogs(1);
+async function exportLogs(fmt) {
+  const params = new URLSearchParams({page:1, per_page:5000, level:logFilter, q:logSearch});
+  const r = await fetch('/api/logs?' + params);
+  const d = await r.json();
+  const logs = d.records;
+  let content, mime, ext;
+  if (fmt === 'json') {
+    content = JSON.stringify(logs, null, 2); mime = 'application/json'; ext = 'json';
+  } else {
+    const cols = ['timestamp','level','source','event_id','message'];
+    const e2 = v => `"${String(v??'').replace(/"/g,'""')}"`;
+    content = [cols.join(','), ...logs.map(r => cols.map(c=>e2(r[c])).join(','))].join('\n');
+    mime = 'text/csv'; ext = 'csv';
+  }
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([content],{type:mime}));
+  a.download = `observex-logs.${ext}`; a.click();
+  toast(`Exported ${logs.length} logs`, 'success');
+}
+
+// ── HELPERS ──
+function api(url, method, body) {
+  return fetch(url, {method, headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)});
+}
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function fmtTs(s) {
+  if (!s) return '—';
+  const d = new Date(s);
+  if (isNaN(d)) return s;
+  return d.toLocaleDateString('en-US',{month:'short',day:'numeric'}) + ' ' + d.toLocaleTimeString('en-US',{hour12:false,hour:'2-digit',minute:'2-digit',second:'2-digit'});
+}
+function showLoader(v) { document.getElementById('loadingBar').style.display = v ? 'block' : 'none'; if(v) document.getElementById('loadingBar').classList.add('active'); else document.getElementById('loadingBar').classList.remove('active'); }
+function copyText(t) { navigator.clipboard.writeText(t).then(()=>toast('Copied!','success')); }
+function copyCode(id) { copyText(document.getElementById(id).innerText.replace(/Copy$/,'')); }
+function syntaxHL(s) {
+  s = esc(s);
+  return s.replace(/"([^"]+)":/g,'<span class="json-key">"$1"</span>:')
+    .replace(/: "([^"]*)"/g,': <span class="json-str">"$1"</span>')
+    .replace(/: (\d+\.?\d*)/g,': <span class="json-num">$1</span>')
+    .replace(/: (true|false)/g,': <span class="json-bool">$1</span>')
+    .replace(/: null/g,': <span class="json-null">null</span>');
+}
+function toast(msg, type='info') {
+  const wrap = document.getElementById('toastWrap');
+  const el = document.createElement('div'); el.className = 'toast';
+  const c = type==='success'?'var(--green)':type==='error'?'var(--red)':type==='warn'?'var(--yellow)':'var(--accent2)';
+  el.innerHTML = `<span style="color:${c}">${type==='success'?'✓':type==='error'?'✕':type==='warn'?'⚠':'ℹ'}</span> ${msg}`;
+  wrap.appendChild(el);
+  setTimeout(()=>{el.classList.add('out');setTimeout(()=>el.remove(),200)}, 3500);
+}
 </script>
 </body>
 </html>
