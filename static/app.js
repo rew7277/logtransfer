@@ -377,9 +377,19 @@ async function fetchBootstrap() {
 async function fetchLogs() {
   const q       = $('searchInput')?.value?.trim() || '';
   const level   = $('levelFilter')?.value || 'all';
-  const minutes = $('timeFilter')?.value || '0';
+  const timeVal = $('timeFilter')?.value || '0';
   const params  = { q, level };
-  if (minutes && minutes !== '0') params.minutes = minutes;
+
+  if (timeVal === 'custom') {
+    // Use explicit from/to timestamps
+    const from = $('rangeFrom')?.value;
+    const to   = $('rangeTo')?.value;
+    if (from) params.from_ts = new Date(from).toISOString();
+    if (to)   params.to_ts   = new Date(to).toISOString();
+  } else if (timeVal && timeVal !== '0') {
+    params.minutes = timeVal;
+  }
+
   const res  = await fetch(`/api/logs?${new URLSearchParams(params)}`);
   const data = await res.json();
   state.records = data.records || [];
@@ -418,10 +428,17 @@ function updateResultCount(count) {
     el.style.cssText = 'font-size:12px;color:var(--muted);margin-left:auto;white-space:nowrap';
     $('searchBtn')?.parentElement?.appendChild(el);
   }
-  const timeLabel = $('timeFilter')?.selectedOptions[0]?.text || '';
-  const timeVal   = $('timeFilter')?.value || '0';
+  const timeVal = $('timeFilter')?.value || '0';
+  let timeLabel = '';
+  if (timeVal === 'custom') {
+    const from = $('rangeFrom')?.value;
+    const to   = $('rangeTo')?.value;
+    if (from || to) timeLabel = `${from || '…'} → ${to || '…'}`;
+  } else if (timeVal !== '0') {
+    timeLabel = $('timeFilter')?.selectedOptions[0]?.text || '';
+  }
   el.textContent = count
-    ? `${count} record${count !== 1 ? 's' : ''}${timeVal !== '0' ? ` · ${timeLabel}` : ''}`
+    ? `${count} record${count !== 1 ? 's' : ''}${timeLabel ? ` · ${timeLabel}` : ''}`
     : '';
 }
 
@@ -454,7 +471,11 @@ async function uploadFiles(files) {
     if (statusEl) statusEl.textContent = data.error || 'Upload failed.';
     return toast(data.error || 'Upload failed', true);
   }
-  if (statusEl) statusEl.textContent = `✓ ${data.files_uploaded} file(s) — ${formatNumber(data.summary.total)} records indexed.`;
+  const skippedNote = data.skipped?.length ? ` (${data.skipped.length} file(s) skipped — binary/unsupported)` : '';
+  if (statusEl) statusEl.textContent = `✓ ${data.files_uploaded} file(s) — ${formatNumber(data.summary.total)} records indexed.${skippedNote}`;
+  if (data.skipped?.length) {
+    data.skipped.forEach(s => toast(`⚠ Skipped: ${s}`, true));
+  }
   await fetchBootstrap();
   await fetchLogs();
   toast(`✓ ${formatNumber(data.summary.total)} records indexed`);
@@ -585,8 +606,30 @@ function bindEvents() {
   $('searchBtn').addEventListener('click', fetchLogs);
   $('levelFilter').addEventListener('change', fetchLogs);
   $('timeFilter').addEventListener('change', () => {
-    const tf = $('timeFilter');
-    tf.classList.toggle('active', tf.value !== '0');
+    const tf  = $('timeFilter');
+    const isCustom = tf.value === 'custom';
+    const isActive = tf.value !== '0';
+    tf.classList.toggle('active', isActive);
+    const row = $('customRangeRow');
+    if (row) row.style.display = isCustom ? 'block' : 'none';
+    if (!isCustom) fetchLogs();   // immediate for preset; custom waits for Apply
+  });
+
+  // Custom range Apply / Clear buttons
+  $('applyRangeBtn')?.addEventListener('click', () => {
+    const from = $('rangeFrom')?.value;
+    const to   = $('rangeTo')?.value;
+    if (!from && !to) return toast('Please set at least one date/time', true);
+    fetchLogs();
+  });
+
+  $('clearRangeBtn')?.addEventListener('click', () => {
+    if ($('rangeFrom')) $('rangeFrom').value = '';
+    if ($('rangeTo'))   $('rangeTo').value   = '';
+    $('timeFilter').value = '0';
+    $('timeFilter').classList.remove('active');
+    const row = $('customRangeRow');
+    if (row) row.style.display = 'none';
     fetchLogs();
   });
   $('searchInput').addEventListener('keydown', e => { if (e.key === 'Enter') fetchLogs(); });
@@ -684,8 +727,22 @@ function bindEvents() {
       e.preventDefault();
       const payload = Object.fromEntries(new FormData(inviteForm).entries());
       const { res, data } = await postJson('/api/invitations', payload);
-      $('inviteResult').textContent = data.invite_url ? `Invite: ${data.invite_url}` : (data.message || data.error || 'Done');
-      if (res.ok) await fetchBootstrap();
+      const resultEl = $('inviteResult');
+      if (!res.ok) {
+        if (resultEl) resultEl.textContent = data.error || 'Failed to create invite.';
+        return toast(data.error || 'Invite failed', true);
+      }
+      // Show invite link
+      if (resultEl) resultEl.textContent = data.invite_url ? `Invite: ${data.invite_url}` : (data.message || 'Done');
+      // Show email delivery status
+      if (data.email_sent) {
+        toast('✓ Invite created & email sent');
+      } else if (!data.smtp_configured) {
+        toast('⚠ Invite created — no SMTP configured, email NOT sent. Share the link above manually.', true);
+      } else if (data.email_error) {
+        toast(`⚠ Invite created but email failed: ${data.email_error}`, true);
+      }
+      await fetchBootstrap();
     });
   }
 

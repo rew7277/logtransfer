@@ -1188,7 +1188,7 @@ def get_logs():
         sql += " AND (lower(message) LIKE ? OR lower(source) LIKE ? OR lower(coalesce(event_id,'')) LIKE ?)"
         pattern = f"%{q.lower()}%"
         params.extend([pattern, pattern, pattern])
-    # Time-based filter: filter logs from the last N minutes
+    # Time-based filter: relative (last N minutes) or absolute custom range
     try:
         mins = int(minutes)
         if mins > 0:
@@ -1196,6 +1196,15 @@ def get_logs():
             params.append(f"-{mins}")
     except (ValueError, TypeError):
         pass
+
+    from_ts = (request.args.get("from_ts") or "").strip()
+    to_ts   = (request.args.get("to_ts") or "").strip()
+    if from_ts:
+        sql += " AND timestamp >= ?"
+        params.append(from_ts)
+    if to_ts:
+        sql += " AND timestamp <= ?"
+        params.append(to_ts)
     sql += " ORDER BY timestamp DESC LIMIT 500"
     rows = [dict(row) for row in db.execute(sql, params).fetchall()]
     return jsonify({"records": rows})
@@ -1227,24 +1236,65 @@ def upload_logs():
     if not files:
         return jsonify({"error": "No file uploaded."}), 400
 
+    ALLOWED_EXTENSIONS = {".log", ".txt", ".json", ".csv", ".ndjson", ".jsonl", ".xml", ".tsv", ""}
+    BINARY_SIGNATURES = [
+        (b"PK\x03\x04", "ZIP archive"),
+        (b"PK\x05\x06", "ZIP archive"),
+        (b"%PDF",        "PDF file"),
+        (b"\x89PNG",     "PNG image"),
+        (b"\xff\xd8\xff","JPEG image"),
+        (b"GIF8",        "GIF image"),
+        (b"\x1f\x8b",    "GZIP archive"),
+        (b"BZh",         "BZIP2 archive"),
+        (b"\x7fELF",     "ELF binary"),
+        (b"Rar!",        "RAR archive"),
+    ]
+
     all_records: list[dict[str, Any]] = []
     filenames: list[str] = []
+    skipped: list[str] = []
     db = get_db()
     now = iso_now()
 
     for file in files:
-        if not file or not (file.filename or '').strip():
+        if not file or not (file.filename or "").strip():
             continue
         filename = safe_filename(file.filename or "upload.log")
-        filenames.append(filename)
+        ext = Path(filename).suffix.lower()
+
+        if ext and ext not in ALLOWED_EXTENSIONS:
+            skipped.append(f"{filename} (unsupported type '{ext}' — upload .log/.txt/.json/.csv)")
+            continue
+
         raw = file.read()
+
+        rejected_label = None
+        for magic, label in BINARY_SIGNATURES:
+            if raw[:len(magic)] == magic:
+                rejected_label = label
+                break
+        if rejected_label:
+            skipped.append(f"{filename} (binary file: {rejected_label} — only text log files are supported)")
+            continue
+
+        sample = raw[:512]
+        if sample:
+            non_printable = sum(1 for b in sample if b < 9 or (13 < b < 32) or b == 127)
+            if non_printable / len(sample) > 0.30:
+                skipped.append(f"{filename} (binary content — only text log files are supported)")
+                continue
+
+        filenames.append(filename)
         try:
             text = raw.decode("utf-8")
         except UnicodeDecodeError:
             text = raw.decode("latin-1", errors="ignore")
+
         records = parse_text_by_extension(filename, text)
         if not records:
+            skipped.append(f"{filename} (no parseable log records found)")
             continue
+
         cur = db.execute(
             "INSERT INTO uploads (org_id, user_id, filename, total_records, created_at) VALUES (?, ?, ?, ?, ?)",
             (user["org_id"], user["id"], filename, len(records), now),
@@ -1262,10 +1312,12 @@ def upload_logs():
 
     db.commit()
     if not all_records:
-        return jsonify({"error": "No log records could be parsed from the uploaded files."}), 400
+        detail = (" Rejected: " + "; ".join(skipped)) if skipped else ""
+        return jsonify({"error": f"No log records could be parsed.{detail}"}), 400
     return jsonify({
         "filename": ", ".join(filenames),
         "files_uploaded": len(filenames),
+        "skipped": skipped,
         "summary": summarize(all_records),
         "dashboard": dashboard_summary(user["org_id"]),
     })
@@ -1496,12 +1548,27 @@ def create_invitation():
     cur = db.execute("INSERT INTO invitations (org_id, email, role, token, status, created_at, expires_at, created_by) VALUES (?, ?, ?, ?, 'pending', ?, ?, ?)", (user["org_id"], email, role, token, now, expires_at, user["id"]))
     db.commit()
     invite_url = f"{public_base_url()}/accept-invite/{token}"
-    try:
-        send_email_message("You have been invited to ObserveX", email, f"Join the workspace using this link: {invite_url}")
-    except Exception:
-        pass
-    audit(user["org_id"], user["id"], "created_invitation", "invitation", str(cur.lastrowid), {"email": email, "role": role})
-    return jsonify({"message": "Invitation created.", "invite_url": invite_url})
+    smtp_configured = bool(os.environ.get("SMTP_HOST"))
+    email_sent = False
+    email_error = None
+    if smtp_configured:
+        try:
+            send_email_message(
+                "You have been invited to ObserveX",
+                email,
+                f"Hi,\n\nYou've been invited to join an ObserveX workspace as {role}.\n\nAccept your invite here:\n{invite_url}\n\nThis link expires in 7 days.",
+            )
+            email_sent = True
+        except Exception as exc:
+            email_error = str(exc)
+    audit(user["org_id"], user["id"], "created_invitation", "invitation", str(cur.lastrowid), {"email": email, "role": role, "email_sent": email_sent})
+    return jsonify({
+        "message": "Invitation created.",
+        "invite_url": invite_url,
+        "email_sent": email_sent,
+        "smtp_configured": smtp_configured,
+        "email_error": email_error,
+    })
 
 @app.post("/api/invitations/accept")
 def accept_invitation():
