@@ -4,411 +4,449 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ObserveX Workspace</title>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
 </head>
-<body class="theme-dark">
-  <div class="app-shell">
-    <aside class="sidebar">
-      <div>
-        <div class="brand-lockup">
-          <div class="brand-badge" id="orgLogo">VX</div>
-          <div>
-            <div class="eyebrow">ObserveX Enterprise</div>
-            <h1 id="orgName">Vewit</h1>
-            <p id="orgSlug">vewit</p>
-          </div>
-        </div>
+<body class="theme-white">
 
-        <nav class="nav-stack">
-          <button class="nav-link active" data-section="overviewSection">Overview</button>
-          <button class="nav-link" data-section="logsSection">Log explorer</button>
-          <button class="nav-link" data-section="ingestSection">Ingest API</button>
-          <button class="nav-link" data-section="integrationsSection">Integrations</button>
-          <button class="nav-link" data-section="jobsSection">Ingestion jobs</button>
-          <button class="nav-link" data-section="alertsSection">Alert rules</button>
-          <button class="nav-link" data-section="usersSection">Users & access</button>
-          <button class="nav-link" data-section="dashboardsSection">Saved dashboards</button>
-          <button class="nav-link" data-section="invitesSection">Invites</button>
-          <button class="nav-link" data-section="orgSection">Organization</button>
-          <button class="nav-link" data-section="auditSection">Audit trail</button>
-        </nav>
-      </div>
+<div class="app-shell">
 
-      <div class="side-footer">
-        <div class="user-box">
-          <div class="small-label">Signed in as</div>
-          <strong id="currentUserName">{{ user.name }}</strong>
-          <span id="currentUserRole">{{ user.role }}</span>
-        </div>
-        <button class="ghost-btn wide" id="logoutBtn">Logout</button>
-      </div>
-    </aside>
-
-    <main class="main-content">
-      <header class="page-header">
+  <!-- ===== SIDEBAR ===== -->
+  <aside class="sidebar">
+    <div>
+      <div class="brand-lockup">
+        <div class="brand-badge" id="orgLogo">VX</div>
         <div>
-          <div class="eyebrow">ObserveX workspace</div>
-          <h2>Investigate logs, run connectors, save dashboards, and manage the organization from one premium control plane.</h2>
+          <div class="eyebrow">ObserveX Enterprise</div>
+          <h1 id="orgName">Workspace</h1>
+          <p id="orgSlug">loading…</p>
         </div>
-        <div class="header-badges"><label class="primary-btn upload-header-btn" for="logFileInput">Upload logs</label><button class="secondary-btn" data-jump="logsSection">Open explorer</button></div>
-      </header>
+      </div>
 
-      <section id="overviewSection" class="content-section active">
-        <div class="metric-grid">
-          <article class="metric-card"><span>Total logs</span><strong id="metricLogs">0</strong></article>
-          <article class="metric-card"><span>Users</span><strong id="metricUsers">0</strong></article>
-          <article class="metric-card"><span>Integrations</span><strong id="metricIntegrations">0</strong></article>
-          <article class="metric-card"><span>Error rate</span><strong id="heroErrorRate">0%</strong></article>
-        </div>
+      <nav class="nav-stack">
+        <button class="nav-link active" data-section="overviewSection">Overview</button>
+        <button class="nav-link" data-section="logsSection">Log explorer</button>
+        <button class="nav-link" data-section="ingestSection">Ingest API</button>
+        <button class="nav-link" data-section="integrationsSection">Integrations</button>
+        <button class="nav-link" data-section="jobsSection">Ingestion jobs</button>
+        <button class="nav-link" data-section="alertsSection">Alert rules</button>
+        <button class="nav-link" data-section="usersSection">Users &amp; access</button>
+        <button class="nav-link" data-section="dashboardsSection">Saved dashboards</button>
+        <button class="nav-link" data-section="invitesSection">Invites</button>
+        <button class="nav-link" data-section="orgSection">Organization</button>
+        <button class="nav-link" data-section="auditSection">Audit trail</button>
+      </nav>
+    </div>
 
-        <div class="panel-grid two-up">
-          <section class="panel">
-            <div class="panel-head"><h3>Log level mix</h3><span class="muted">Live from stored records</span></div>
-            <canvas id="levelChart" height="180"></canvas>
-          </section>
-          <section class="panel">
-            <div class="panel-head"><h3>Top sources</h3><span class="muted">Most active systems</span></div>
-            <canvas id="sourceChart" height="180"></canvas>
-          </section>
-        </div>
+    <div class="side-footer">
+      <div class="user-box">
+        <div class="small-label">Signed in as</div>
+        <strong id="currentUserName">{{ user.name }}</strong>
+        <span id="currentUserRole">{{ user.role }}</span>
+      </div>
+      <button class="ghost-btn wide" id="logoutBtn">Logout</button>
+    </div>
+  </aside>
+
+  <!-- ===== MAIN ===== -->
+  <main class="main-content">
+
+    <header class="page-header">
+      <div>
+        <div class="eyebrow">ObserveX workspace</div>
+        <h2>Investigate logs, run connectors, and manage your organization.</h2>
+      </div>
+      <div class="header-badges">
+        <!-- Single file input shared across the page -->
+        <input type="file" id="logFileInput" hidden multiple accept=".log,.txt,.json,.csv,.ndjson" />
+        <label class="primary-btn upload-header-btn" for="logFileInput">↑ Upload logs</label>
+        <button class="secondary-btn" data-jump="logsSection">Open explorer</button>
+      </div>
+    </header>
+
+    <!-- ===================== OVERVIEW ===================== -->
+    <section id="overviewSection" class="content-section active">
+
+      <!-- Metric cards -->
+      <div class="metric-grid">
+        <article class="metric-card"><span>Total logs</span><strong id="metricLogs">0</strong></article>
+        <article class="metric-card"><span>Users</span><strong id="metricUsers">0</strong></article>
+        <article class="metric-card"><span>Integrations</span><strong id="metricIntegrations">0</strong></article>
+        <article class="metric-card"><span>Error rate</span><strong id="heroErrorRate">0%</strong></article>
+      </div>
+
+      <!-- Charts row -->
+      <div class="panel-grid two-up">
+        <section class="panel">
+          <div class="panel-head">
+            <h3>Log level mix</h3>
+            <span class="muted">Live from stored records</span>
+          </div>
+          <div class="chart-wrap">
+            <canvas id="levelChart"></canvas>
+          </div>
+          <div id="levelChartEmpty" class="chart-empty" style="display:none">
+            <span class="chart-empty-icon">📊</span>
+            <span>No log data yet — upload a file or use the Ingest API</span>
+          </div>
+        </section>
 
         <section class="panel">
           <div class="panel-head">
-            <h3>Log volume — last 24 hours</h3>
-            <div style="display:flex;gap:8px;align-items:center;">
-              <select id="timeseriesRange" style="font-size:12px;padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text);">
-                <option value="24">Last 24 hours</option>
-                <option value="48">Last 48 hours</option>
-                <option value="168">Last 7 days</option>
-              </select>
-              <span class="muted">Hourly breakdown</span>
-            </div>
+            <h3>Top sources</h3>
+            <span class="muted">Most active systems</span>
           </div>
-          <canvas id="timeseriesChart" height="120"></canvas>
+          <div class="chart-wrap">
+            <canvas id="sourceChart"></canvas>
+          </div>
+          <div id="sourceChartEmpty" class="chart-empty" style="display:none">
+            <span class="chart-empty-icon">🔍</span>
+            <span>No source data yet</span>
+          </div>
         </section>
+      </div>
 
-        <div class="panel-grid two-up">
-          <section class="panel">
-            <div class="panel-head"><h3>Fast actions</h3></div>
-            <div class="action-grid single-col">
-              <div class="dnd-upload-zone" id="dndUploadZone" role="button" tabindex="0" aria-label="Upload log files">
-                <input type="file" id="logFileInput" hidden multiple accept=".log,.txt,.json,.csv,.ndjson" />
-                <div class="dnd-upload-icon">⬆</div>
-                <div class="dnd-upload-title">Drag and drop log files here</div>
-                <div class="dnd-upload-sub">or <span class="dnd-browse-link">click to browse</span></div>
-                <div class="dnd-upload-formats"><span>.log</span><span>.json</span><span>.ndjson</span><span>.csv</span><span>.txt</span></div>
-              </div>
-              <div class="action-grid compact-actions">
-                <button class="secondary-btn" data-jump="logsSection">Open explorer</button>
-                <button class="secondary-btn" data-jump="usersSection">Manage users</button>
-                <button class="secondary-btn" data-jump="orgSection">Brand workspace</button>
-              </div>
-            </div>
-            <div id="uploadStatus" class="result-box">No upload started yet.</div>
-          </section>
-          <section class="panel">
-            <div class="panel-head"><h3>Platform signals</h3></div>
-            <div class="signal-list" id="sourceList"></div>
-          </section>
-        </div>
-      </section>
-
-      <section id="logsSection" class="content-section">
-        <div class="panel">
-          <div class="toolbar"><label class="secondary-btn toolbar-upload" for="logFileInput">Upload logs</label>
-            <input id="searchInput" type="search" placeholder="Search message, source, or event id" />
-            <select id="levelFilter">
-              <option value="all">All levels</option>
-              <option value="error">Error</option>
-              <option value="warn">Warn</option>
-              <option value="info">Info</option>
-              <option value="success">Success</option>
-              <option value="debug">Debug</option>
+      <!-- Time-series -->
+      <section class="panel top-gap">
+        <div class="panel-head">
+          <h3>Log volume over time</h3>
+          <div style="display:flex;gap:8px;align-items:center">
+            <select id="timeseriesRange" style="width:auto;padding:6px 10px;font-size:12px;border-radius:9px">
+              <option value="24">Last 24 h</option>
+              <option value="48">Last 48 h</option>
+              <option value="168">Last 7 days</option>
             </select>
-            <button class="primary-btn" id="searchBtn">Refresh</button>
-          </div>
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Timestamp</th>
-                  <th>Level</th>
-                  <th>Source</th>
-                  <th>Event</th>
-                  <th>Message</th>
-                </tr>
-              </thead>
-              <tbody id="recordsBody"></tbody>
-            </table>
+            <span class="muted">Hourly</span>
           </div>
         </div>
-      </section>
-
-      <section id="integrationsSection" class="content-section">
-        <div class="panel-grid two-up">
-          <section class="panel">
-            <div class="panel-head"><h3>AWS S3 integration</h3><span class="muted">Test a bucket, save the connector, and attach it to ingestion jobs.</span></div>
-            <form id="s3Form" class="form-grid">
-              <input name="name" placeholder="Archive Bucket" value="Archive Bucket" />
-              <input name="region" placeholder="ap-south-1" value="ap-south-1" />
-              <input name="bucket" placeholder="Bucket name" />
-              <input name="prefix" placeholder="Prefix" />
-              <input name="access_key" placeholder="Access key" />
-              <input name="secret_key" placeholder="Secret key" type="password" />
-            </form>
-            <div class="button-row"><button class="secondary-btn" id="testS3Btn">Test S3</button><button class="primary-btn" id="saveS3Btn">Save integration</button></div>
-            <div id="s3Result" class="result-box">No S3 test run yet.</div>
-          </section>
-          <section class="panel">
-            <div class="panel-head"><h3>API integration</h3><span class="muted">Connect any log-producing endpoint with optional token and custom headers.</span></div>
-            <form id="apiForm" class="form-grid">
-              <input name="name" placeholder="Remote Log API" value="Remote Log API" />
-              <input name="url" placeholder="https://api.example.com/logs" value="https://api.example.com/logs" />
-              <input name="token" placeholder="Bearer token (optional)" />
-              <textarea name="headers" placeholder='Optional JSON headers, e.g. {"x-api-key":"..."}'></textarea>
-            </form>
-            <div class="button-row"><button class="secondary-btn" id="testApiBtn">Test API</button><button class="primary-btn" id="saveApiBtn">Save integration</button></div>
-            <div id="apiResult" class="result-box">No API test run yet.</div>
-          </section>
+        <div class="ts-chart-wrap">
+          <canvas id="timeseriesChart"></canvas>
         </div>
-        <section class="panel top-gap">
-          <div class="panel-head"><h3>Saved integrations</h3><span class="muted">Configured connectors available to this organization.</span></div>
-          <div id="integrationList" class="list-box"></div>
-        </section>
-      </section>
-
-      <section id="jobsSection" class="content-section">
-        <div class="panel-grid two-up">
-          <section class="panel">
-            <div class="panel-head"><h3>Ingestion jobs</h3><span class="muted">Define schedule-driven ingestion workflows for S3 and API sources.</span></div>
-            <form id="jobForm" class="form-grid">
-              <input name="name" placeholder="Hourly API poller" value="Hourly API poller" />
-              <select name="source_type"><option value="api">API</option><option value="s3">S3</option></select>
-              <select name="status"><option value="scheduled">Scheduled</option><option value="paused">Paused</option></select>
-              <input name="schedule" placeholder="0 * * * *" value="0 * * * *" />
-              <textarea name="details" placeholder='Optional JSON details, e.g. {"batch_size":500}'></textarea>
-            </form>
-            <div class="button-row"><button class="primary-btn" id="createJobBtn">Create job</button></div>
-            <div id="jobResult" class="result-box">No jobs created in this session.</div>
-          </section>
-          <section class="panel">
-            <div class="panel-head"><h3>Configured jobs</h3></div>
-            <div id="jobsList" class="list-box"></div>
-          </section>
+        <div id="tsEmpty" class="ts-empty" style="display:none">
+          Upload logs or send to <code>/ingest/json</code> to see volume over time.
         </div>
       </section>
 
-      <section id="alertsSection" class="content-section">
-        <div class="panel-grid two-up">
-          <section class="panel">
-            <div class="panel-head"><h3>Alert rules</h3><span class="muted">Codify platform thresholds and escalation channels.</span></div>
-            <form id="alertForm" class="form-grid">
-              <input name="name" placeholder="Error spike" value="Error spike" />
-              <select name="severity"><option value="sev1">SEV-1</option><option value="sev2" selected>SEV-2</option><option value="sev3">SEV-3</option></select>
-              <select name="channel"><option>Slack</option><option>Email</option><option>PagerDuty</option></select>
-              <select name="status"><option value="active">Active</option><option value="draft">Draft</option></select>
-              <input name="condition_text" placeholder="error rate > 5% over 5m" value="error rate > 5% over 5m" />
-            </form>
-            <div class="button-row"><button class="primary-btn" id="createAlertBtn">Create alert</button></div>
-            <div id="alertResult" class="result-box">No alert created in this session.</div>
-          </section>
-          <section class="panel">
-            <div class="panel-head"><h3>Current rules</h3></div>
-            <div id="alertsList" class="list-box"></div>
-          </section>
-        </div>
-      </section>
-
-      <section id="usersSection" class="content-section">
-        <div class="panel-grid two-up">
-          <section class="panel">
-            <div class="panel-head"><h3>Create account inside this organization</h3><span class="muted">Admins can add users for shared workspace login.</span></div>
-            <form id="userForm" class="form-grid">
-              <input name="organization_name" id="userOrgName" placeholder="Organization" readonly />
-              <input name="name" placeholder="Full name" />
-              <input name="email" placeholder="user@company.com" />
-              <input name="password" placeholder="Temporary password" type="password" />
-              <select name="role" id="userRoleSelect">
-                <option value="developer">Developer</option>
-                <option value="tester">Tester</option>
-                <option value="manager">Manager</option>
-                <option value="admin">Admin</option>
-              </select>
-            </form>
-            <div class="button-row"><button class="primary-btn" id="createUserBtn">Create user</button></div>
-            <div id="userResult" class="result-box">Only admins can create users. Others can still explore their allowed views.</div>
-          </section>
-          <section class="panel">
-            <div class="panel-head"><h3>Current users</h3></div>
-            <div id="userList" class="list-box"></div>
-          </section>
-        </div>
-      </section>
-
-      <section id="dashboardsSection" class="content-section">
-        <div class="panel-grid two-up">
-          <section class="panel">
-            <div class="panel-head"><h3>Saved dashboards</h3><span class="muted">Store important operational views for your team.</span></div>
-            <form id="dashboardForm" class="form-grid">
-              <input id="dashboardName" name="name" placeholder="Operations overview" />
-            </form>
-            <div class="button-row"><button class="primary-btn" id="saveDashboardBtn">Save dashboard</button></div>
-            <div id="dashboardResult" class="result-box">Save common views for incidents, latency, or ingestion health.</div>
-          </section>
-          <section class="panel"><div class="panel-head"><h3>Existing dashboards</h3></div><div id="dashboardList" class="list-box"></div></section>
-        </div>
-        <section class="panel top-gap"><div class="panel-head"><h3>Background ingestion runs</h3></div><div id="runList" class="list-box"></div></section>
-      </section>
-
-      <section id="orgSection" class="content-section">
-        <div class="panel-grid two-up">
-          <section class="panel">
-            <div class="panel-head"><h3>Organization settings</h3><span class="muted">Keep org basics clean and subdomain-ready.</span></div>
-            <form id="orgForm" class="form-grid">
-              <input name="name" placeholder="Vewit" />
-              <input name="slug" placeholder="vewit" />
-              <input name="logo_text" placeholder="VX" maxlength="3" />
-              <select name="theme_mode" id="themeModeSelect"><option value="white">White theme</option></select>
-              <input name="theme_color" type="color" value="#5b8cff" />
-              <label class="checkbox-row"><input type="checkbox" name="admin_only" /> Keep everything admin only</label>
-            </form>
-            <div class="button-row"><button class="primary-btn" id="saveOrgBtn">Save branding</button></div>
-            <div id="orgResult" class="result-box">Current organization settings loaded from the database.</div>
-          </section>
-          <section class="panel">
-            <div class="panel-head"><h3>How access works</h3></div>
-            <div class="copy-block">
-              <p><strong>Admin:</strong> full control, branding, users, integrations, alerts, jobs.</p>
-              <p><strong>Manager / Developer / Tester:</strong> can sign in with their own account and use the shared workspace within the same organization.</p>
-                            <p><strong>Subdomain-ready:</strong> slug is stored now so you can later route workspaces like <code>fsbl.observex.in</code>.</p>
+      <!-- DnD upload + Platform signals -->
+      <div class="panel-grid two-up">
+        <section class="panel">
+          <div class="panel-head"><h3>Quick upload</h3></div>
+          <!-- DnD zone — no nested <input>, uses shared #logFileInput -->
+          <div class="dnd-upload-zone" id="dndUploadZone" role="button" tabindex="0" aria-label="Drop log files here or click to browse">
+            <div class="dnd-upload-icon">⬆</div>
+            <div class="dnd-upload-title">Drop log files here</div>
+            <div class="dnd-upload-sub">or <span class="dnd-browse-link">click to browse</span></div>
+            <div class="dnd-upload-formats">
+              <span>.log</span><span>.json</span><span>.ndjson</span><span>.csv</span><span>.txt</span>
             </div>
-          </section>
+          </div>
+          <div id="uploadStatus" class="result-box" style="margin-top:10px">No upload started yet.</div>
+          <div class="action-grid compact-actions" style="margin-top:10px">
+            <button class="secondary-btn" data-jump="logsSection">Open explorer</button>
+            <button class="secondary-btn" data-jump="usersSection">Manage users</button>
+            <button class="secondary-btn" data-jump="orgSection">Brand workspace</button>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-head"><h3>Platform signals</h3><span class="muted">By source</span></div>
+          <div class="signal-list" id="sourceList">
+            <div class="chart-empty" style="height:120px"><span class="chart-empty-icon">📡</span><span>Upload logs to see signals</span></div>
+          </div>
+        </section>
+      </div>
+
+    </section>
+
+    <!-- ===================== LOG EXPLORER ===================== -->
+    <section id="logsSection" class="content-section">
+      <div class="panel">
+        <div class="toolbar">
+          <input id="searchInput" type="search" placeholder="Search message, source, or event id…" />
+          <select id="levelFilter">
+            <option value="all">All levels</option>
+            <option value="error">Error</option>
+            <option value="warn">Warn</option>
+            <option value="info">Info</option>
+            <option value="success">Success</option>
+            <option value="debug">Debug</option>
+          </select>
+          <button class="primary-btn" id="searchBtn">Refresh</button>
+          <label class="secondary-btn" for="logFileInput">↑ Upload</label>
         </div>
-      </section>
-
-
-      <section id="invitesSection" class="content-section">
-        <div class="panel-grid two-up">
-          <section class="panel">
-            <div class="panel-head"><h3>Invite users</h3><span class="muted">Send invite links into your organization</span></div>
-            <form class="stack-form" id="inviteForm">
-              <input name="email" type="email" placeholder="new.user@company.com" />
-              <select name="role"><option value="manager">Manager</option><option value="developer">Developer</option><option value="tester">Tester</option><option value="admin">Admin</option></select>
-              <button class="primary-btn" type="submit">Create invite link</button>
-            </form>
-            <div id="inviteResult" class="result-box">Create an invite link and share it manually or through email.</div>
-          </section>
-          <section class="panel">
-            <div class="panel-head"><h3>Recent invites</h3></div>
-            <div id="invitationList" class="list-box empty-state">No invites sent yet.</div>
-          </section>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Timestamp</th><th>Level</th><th>Source</th><th>Event</th><th>Message</th>
+              </tr>
+            </thead>
+            <tbody id="recordsBody"></tbody>
+          </table>
         </div>
-      </section>
+      </div>
+    </section>
 
-      <section id="ingestSection" class="content-section">
-        <div class="panel-grid two-up">
-          <section class="panel">
-            <div class="panel-head"><h3>API Keys</h3><span class="muted">Authenticate programmatic log ingestion.</span></div>
-            <form id="apiKeyForm" class="form-grid">
-              <input name="name" placeholder="My CI pipeline key" required />
-            </form>
-            <div class="button-row"><button class="primary-btn" id="createApiKeyBtn">Generate key</button></div>
-            <div id="apiKeyResult" class="result-box">Generate an API key to authenticate POST /ingest/json and POST /ingest/file calls.</div>
-            <div id="newKeyBox" style="display:none;margin-top:12px;" class="result-box" style="word-break:break-all;"></div>
-          </section>
-          <section class="panel">
-            <div class="panel-head"><h3>Active API keys</h3></div>
-            <div id="apiKeyList" class="list-box empty-state">No API keys yet.</div>
-          </section>
-        </div>
+    <!-- ===================== INGEST API ===================== -->
+    <section id="ingestSection" class="content-section">
+      <div class="panel-grid two-up">
+        <section class="panel">
+          <div class="panel-head"><h3>API Keys</h3><span class="muted">Authenticate programmatic ingestion.</span></div>
+          <div class="form-grid" style="grid-template-columns:1fr">
+            <input id="apiKeyName" placeholder="e.g. CI pipeline key" />
+          </div>
+          <div class="button-row"><button class="primary-btn" id="createApiKeyBtn">Generate key</button></div>
+          <div id="apiKeyResult" class="result-box" style="margin-top:10px">Generate an API key to use with POST /ingest/json and POST /ingest/file.</div>
+          <div id="newKeyBox" style="display:none" class="new-key-reveal"></div>
+        </section>
+        <section class="panel">
+          <div class="panel-head"><h3>Active keys</h3></div>
+          <div id="apiKeyList" class="list-box empty-state">No API keys yet.</div>
+        </section>
+      </div>
 
-        <section class="panel top-gap">
-          <div class="panel-head"><h3>POST /ingest/json</h3><span class="muted">Send JSON logs over HTTP — no file needed.</span></div>
-          <div class="copy-block">
-            <p><strong>Single event:</strong></p>
-            <pre class="code-block">curl -X POST https://your-domain/ingest/json \
+      <section class="panel top-gap">
+        <div class="panel-head"><h3>POST /ingest/json</h3><span class="muted">Send JSON logs over HTTP — single, array, or NDJSON.</span></div>
+        <div class="copy-block">
+          <p><strong>Single event</strong></p>
+          <pre class="code-block">curl -X POST https://your-domain/ingest/json \
   -H "Authorization: Bearer oxk_..." \
   -H "Content-Type: application/json" \
-  -d '{"timestamp":"2024-01-15T10:30:00Z","level":"error","source":"payment-service","message":"Timeout connecting to gateway","requestId":"req-abc123"}'</pre>
-            <p><strong>Batch (array):</strong></p>
-            <pre class="code-block">curl -X POST https://your-domain/ingest/json \
+  -d '{"timestamp":"2024-01-15T10:30:00Z","level":"error","source":"payment-service","message":"Timeout"}'</pre>
+          <p><strong>Array (batch)</strong></p>
+          <pre class="code-block">curl -X POST https://your-domain/ingest/json \
   -H "Authorization: Bearer oxk_..." \
   -H "Content-Type: application/json" \
-  -d '[{"message":"Started"},{"message":"Completed","level":"success"}]'</pre>
-            <p><strong>NDJSON (newline-delimited):</strong></p>
-            <pre class="code-block">{"message":"line 1","level":"info"}
+  -d '[{"message":"Started"},{"message":"Done","level":"success"}]'</pre>
+          <p><strong>NDJSON</strong></p>
+          <pre class="code-block">{"message":"line 1","level":"info"}
 {"message":"line 2","level":"warn"}
 {"message":"line 3","level":"error"}</pre>
-          </div>
-        </section>
+        </div>
+      </section>
 
-        <section class="panel top-gap">
-          <div class="panel-head"><h3>POST /ingest/file</h3><span class="muted">Upload log files — .log, .txt, .json, .ndjson, .csv</span></div>
-          <div class="copy-block">
-            <p><strong>Single file:</strong></p>
-            <pre class="code-block">curl -X POST https://your-domain/ingest/file \
+      <section class="panel top-gap">
+        <div class="panel-head"><h3>POST /ingest/file</h3><span class="muted">Upload .log .txt .json .ndjson .csv files.</span></div>
+        <div class="copy-block">
+          <p><strong>Single file</strong></p>
+          <pre class="code-block">curl -X POST https://your-domain/ingest/file \
   -H "Authorization: Bearer oxk_..." \
   -F "file=@/path/to/app.log"</pre>
-            <p><strong>Multiple files:</strong></p>
-            <pre class="code-block">curl -X POST https://your-domain/ingest/file \
+          <p><strong>Multiple files</strong></p>
+          <pre class="code-block">curl -X POST https://your-domain/ingest/file \
   -H "Authorization: Bearer oxk_..." \
-  -F "files=@app.log" \
-  -F "files=@error.log" \
-  -F "files=@access.json"</pre>
-            <p><strong>Python SDK example:</strong></p>
-            <pre class="code-block">import requests
-
-API_KEY = "oxk_..."
-with open("app.log", "rb") as f:
-    resp = requests.post(
-        "https://your-domain/ingest/file",
-        headers={"Authorization": f"Bearer {API_KEY}"},
-        files={"file": ("app.log", f, "text/plain")},
-    )
+  -F "files=@app.log" -F "files=@error.log"</pre>
+          <p><strong>Python</strong></p>
+          <pre class="code-block">import requests
+resp = requests.post(
+    "https://your-domain/ingest/file",
+    headers={"Authorization": "Bearer oxk_..."},
+    files={"file": ("app.log", open("app.log","rb"), "text/plain")},
+)
 print(resp.json())</pre>
-          </div>
-        </section>
-
-        <section class="panel top-gap">
-          <div class="panel-head"><h3>Response format</h3></div>
-          <div class="copy-block">
-            <pre class="code-block">{
-  "ok": true,
-  "ingested": 142,
-  "upload_id": 7,
-  "summary": {
-    "total": 142,
-    "levels": {"error": 12, "warn": 28, "info": 95, "debug": 7},
-    "sources": [["payment-service", 80], ["auth", 42]],
-    "top_terms": [["timeout", 8], ["gateway", 6]],
-    "recent": [...]
-  }
-}</pre>
-          </div>
-        </section>
+        </div>
       </section>
+    </section>
 
-      <section id="auditSection" class="content-section">
+    <!-- ===================== INTEGRATIONS ===================== -->
+    <section id="integrationsSection" class="content-section">
+      <div class="panel-grid two-up">
         <section class="panel">
-          <div class="panel-head"><h3>Audit trail</h3><span class="muted">Recent administrative and operational activity.</span></div>
-          <div id="auditList" class="list-box"></div>
+          <div class="panel-head"><h3>AWS S3 integration</h3><span class="muted">Connect a bucket to auto-ingest logs.</span></div>
+          <form id="s3Form" class="form-grid">
+            <input name="name" placeholder="Archive Bucket" value="Archive Bucket" />
+            <input name="region" placeholder="ap-south-1" value="ap-south-1" />
+            <input name="bucket" placeholder="Bucket name" />
+            <input name="prefix" placeholder="Prefix (optional)" />
+            <input name="access_key" placeholder="Access key" />
+            <input name="secret_key" placeholder="Secret key" type="password" />
+          </form>
+          <div class="button-row"><button class="secondary-btn" id="testS3Btn">Test S3</button><button class="primary-btn" id="saveS3Btn">Save</button></div>
+          <div id="s3Result" class="result-box" style="margin-top:10px">No S3 test run yet.</div>
         </section>
+        <section class="panel">
+          <div class="panel-head"><h3>API integration</h3><span class="muted">Pull logs from any HTTP endpoint.</span></div>
+          <form id="apiForm" class="form-grid">
+            <input name="name" placeholder="Remote Log API" value="Remote Log API" />
+            <input name="url" placeholder="https://api.example.com/logs" value="https://api.example.com/logs" />
+            <input name="token" placeholder="Bearer token (optional)" />
+            <textarea name="headers" placeholder='Optional JSON headers: {"x-key":"…"}'></textarea>
+          </form>
+          <div class="button-row"><button class="secondary-btn" id="testApiBtn">Test API</button><button class="primary-btn" id="saveApiBtn">Save</button></div>
+          <div id="apiResult" class="result-box" style="margin-top:10px">No API test run yet.</div>
+        </section>
+      </div>
+      <section class="panel top-gap">
+        <div class="panel-head"><h3>Saved integrations</h3></div>
+        <div id="integrationList" class="list-box empty-state">No integrations saved yet.</div>
       </section>
-    </main>
+    </section>
+
+    <!-- ===================== JOBS ===================== -->
+    <section id="jobsSection" class="content-section">
+      <div class="panel-grid two-up">
+        <section class="panel">
+          <div class="panel-head"><h3>Ingestion jobs</h3><span class="muted">Schedule-driven ingestion from S3 and API sources.</span></div>
+          <form id="jobForm" class="form-grid">
+            <input name="name" placeholder="Hourly API poller" value="Hourly API poller" />
+            <select name="source_type"><option value="api">API</option><option value="s3">S3</option></select>
+            <select name="status"><option value="scheduled">Scheduled</option><option value="paused">Paused</option></select>
+            <input name="schedule" placeholder="0 * * * *" value="0 * * * *" />
+            <textarea name="details" placeholder='Optional JSON: {"batch_size":500}'></textarea>
+          </form>
+          <div class="button-row"><button class="primary-btn" id="createJobBtn">Create job</button></div>
+          <div id="jobResult" class="result-box" style="margin-top:10px">No jobs created in this session.</div>
+        </section>
+        <section class="panel">
+          <div class="panel-head"><h3>Configured jobs</h3></div>
+          <div id="jobsList" class="list-box empty-state">No jobs yet.</div>
+        </section>
+      </div>
+    </section>
+
+    <!-- ===================== ALERTS ===================== -->
+    <section id="alertsSection" class="content-section">
+      <div class="panel-grid two-up">
+        <section class="panel">
+          <div class="panel-head"><h3>Alert rules</h3></div>
+          <form id="alertForm" class="form-grid">
+            <input name="name" placeholder="Error spike" value="Error spike" />
+            <select name="severity"><option value="sev1">SEV-1</option><option value="sev2" selected>SEV-2</option><option value="sev3">SEV-3</option></select>
+            <select name="channel"><option>Slack</option><option>Email</option><option>PagerDuty</option></select>
+            <select name="status"><option value="active">Active</option><option value="draft">Draft</option></select>
+            <input name="condition_text" placeholder="error rate > 5% over 5m" value="error rate > 5% over 5m" />
+          </form>
+          <div class="button-row"><button class="primary-btn" id="createAlertBtn">Create alert</button></div>
+          <div id="alertResult" class="result-box" style="margin-top:10px">No alert created in this session.</div>
+        </section>
+        <section class="panel">
+          <div class="panel-head"><h3>Current rules</h3></div>
+          <div id="alertsList" class="list-box empty-state">No alert rules yet.</div>
+        </section>
+      </div>
+    </section>
+
+    <!-- ===================== USERS ===================== -->
+    <section id="usersSection" class="content-section">
+      <div class="panel-grid two-up">
+        <section class="panel">
+          <div class="panel-head"><h3>Create user</h3><span class="muted">Admins can add accounts to this organization.</span></div>
+          <form id="userForm" class="form-grid">
+            <input name="organization_name" id="userOrgName" placeholder="Organization" readonly />
+            <input name="name" placeholder="Full name" />
+            <input name="email" placeholder="user@company.com" />
+            <input name="password" placeholder="Temporary password" type="password" />
+            <select name="role" id="userRoleSelect">
+              <option value="developer">Developer</option>
+              <option value="tester">Tester</option>
+              <option value="manager">Manager</option>
+              <option value="admin">Admin</option>
+            </select>
+          </form>
+          <div class="button-row"><button class="primary-btn" id="createUserBtn">Create user</button></div>
+          <div id="userResult" class="result-box" style="margin-top:10px">Only admins can create users.</div>
+        </section>
+        <section class="panel">
+          <div class="panel-head"><h3>Current users</h3></div>
+          <div id="userList" class="list-box empty-state">Loading…</div>
+        </section>
+      </div>
+    </section>
+
+    <!-- ===================== DASHBOARDS ===================== -->
+    <section id="dashboardsSection" class="content-section">
+      <div class="panel-grid two-up">
+        <section class="panel">
+          <div class="panel-head"><h3>Saved dashboards</h3></div>
+          <div class="form-grid" style="grid-template-columns:1fr">
+            <input id="dashboardName" name="name" placeholder="Operations overview" />
+          </div>
+          <div class="button-row"><button class="primary-btn" id="saveDashboardBtn">Save dashboard</button></div>
+          <div id="dashboardResult" class="result-box" style="margin-top:10px">Save common views for incidents, latency, or ingestion health.</div>
+        </section>
+        <section class="panel">
+          <div class="panel-head"><h3>Existing dashboards</h3></div>
+          <div id="dashboardList" class="list-box empty-state">No dashboards saved yet.</div>
+        </section>
+      </div>
+      <section class="panel top-gap">
+        <div class="panel-head"><h3>Background ingestion runs</h3></div>
+        <div id="runList" class="list-box empty-state">No runs yet.</div>
+      </section>
+    </section>
+
+    <!-- ===================== ORG ===================== -->
+    <section id="orgSection" class="content-section">
+      <div class="panel-grid two-up">
+        <section class="panel">
+          <div class="panel-head"><h3>Organization settings</h3></div>
+          <form id="orgForm" class="form-grid">
+            <input name="name" placeholder="Vewit" />
+            <input name="slug" placeholder="vewit" />
+            <input name="logo_text" placeholder="VX" maxlength="3" />
+            <select name="theme_mode" id="themeModeSelect"><option value="white">White theme</option></select>
+            <input name="theme_color" type="color" value="#4f7cff" />
+            <label class="checkbox-row"><input type="checkbox" name="admin_only" /> Admin-only mode</label>
+          </form>
+          <div class="button-row"><button class="primary-btn" id="saveOrgBtn">Save branding</button></div>
+          <div id="orgResult" class="result-box" style="margin-top:10px">Organization settings loaded from database.</div>
+        </section>
+        <section class="panel">
+          <div class="panel-head"><h3>How access works</h3></div>
+          <div class="copy-block">
+            <p><strong>Admin</strong> — full control: branding, users, integrations, alerts, jobs.</p>
+            <p><strong>Manager / Developer / Tester</strong> — can sign in and use the shared workspace.</p>
+            <p><strong>Subdomain-ready</strong> — slug powers routing like <code>acme.observex.in</code>.</p>
+          </div>
+        </section>
+      </div>
+    </section>
+
+    <!-- ===================== INVITES ===================== -->
+    <section id="invitesSection" class="content-section">
+      <div class="panel-grid two-up">
+        <section class="panel">
+          <div class="panel-head"><h3>Invite users</h3></div>
+          <form class="stack-form" id="inviteForm">
+            <input name="email" type="email" placeholder="new.user@company.com" />
+            <select name="role">
+              <option value="manager">Manager</option><option value="developer">Developer</option>
+              <option value="tester">Tester</option><option value="admin">Admin</option>
+            </select>
+            <button class="primary-btn" type="submit">Create invite link</button>
+          </form>
+          <div id="inviteResult" class="result-box" style="margin-top:10px">Create an invite link and share it manually.</div>
+        </section>
+        <section class="panel">
+          <div class="panel-head"><h3>Recent invites</h3></div>
+          <div id="invitationList" class="list-box empty-state">No invites sent yet.</div>
+        </section>
+      </div>
+    </section>
+
+    <!-- ===================== AUDIT ===================== -->
+    <section id="auditSection" class="content-section">
+      <section class="panel">
+        <div class="panel-head"><h3>Audit trail</h3><span class="muted">Recent administrative and operational activity.</span></div>
+        <div id="auditList" class="list-box empty-state">No audit events yet.</div>
+      </section>
+    </section>
+
+  </main>
+</div>
+
+<!-- ===== LOG DETAIL MODAL ===== -->
+<dialog id="logModal" class="log-modal">
+  <div class="modal-head">
+    <h3>Log detail</h3>
+    <button class="ghost-btn" onclick="document.getElementById('logModal').close()">✕ Close</button>
   </div>
+  <div class="modal-body">
+    <div class="meta-grid" id="logMeta"></div>
+    <pre id="logPayload"></pre>
+  </div>
+</dialog>
 
-  <dialog id="logModal" class="log-modal">
-    <div class="modal-head">
-      <h3>Log detail</h3>
-      <button class="ghost-btn" onclick="document.getElementById('logModal').close()">Close</button>
-    </div>
-    <div class="modal-body">
-      <div class="meta-grid" id="logMeta"></div>
-      <pre id="logPayload"></pre>
-    </div>
-  </dialog>
-
-  <script src="{{ url_for('static', filename='app.js') }}"></script>
+<script src="{{ url_for('static', filename='app.js') }}"></script>
 </body>
 </html>
