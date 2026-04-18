@@ -38,7 +38,9 @@ except Exception:  # pragma: no cover
     BackgroundScheduler = None
 
 BASE_DIR = Path(__file__).resolve().parent
-DATA_DIR = BASE_DIR / "data"
+# Use Railway persistent volume at /data if mounted, otherwise local ./data
+_volume = Path("/data")
+DATA_DIR = _volume if _volume.exists() and os.access(_volume, os.W_OK) else BASE_DIR / "data"
 DATA_DIR.mkdir(exist_ok=True)
 DB_PATH = DATA_DIR / "observex.db"
 
@@ -82,8 +84,11 @@ worker_thread: threading.Thread | None = None
 
 def get_db() -> sqlite3.Connection:
     if "db" not in g:
-        conn = sqlite3.connect(DB_PATH)
+        conn = sqlite3.connect(DB_PATH, timeout=30)
         conn.row_factory = sqlite3.Row
+        conn.execute("PRAGMA journal_mode=WAL")   # allow concurrent reads during writes
+        conn.execute("PRAGMA synchronous=NORMAL") # safe + faster than FULL
+        conn.execute("PRAGMA busy_timeout=5000")  # wait up to 5s if DB is locked
         g.db = conn
     return g.db
 
@@ -167,7 +172,9 @@ def create_verification_token(user_id: int) -> str:
 
 
 def init_db() -> None:
-    db = sqlite3.connect(DB_PATH)
+    db = sqlite3.connect(DB_PATH, timeout=30)
+    db.execute("PRAGMA journal_mode=WAL")
+    db.execute("PRAGMA synchronous=NORMAL")
     db.executescript(
         """
         CREATE TABLE IF NOT EXISTS organizations (
@@ -1229,9 +1236,9 @@ def get_logs():
         sql += " AND level = ?"
         params.append(level)
     if q:
-        sql += " AND (lower(message) LIKE ? OR lower(source) LIKE ? OR lower(coalesce(event_id,'')) LIKE ? OR lower(coalesce(payload_json,'')) LIKE ?)"
+        sql += " AND (lower(message) LIKE ? OR lower(source) LIKE ? OR lower(coalesce(event_id,'')) LIKE ?)"
         pattern = f"%{q.lower()}%"
-        params.extend([pattern, pattern, pattern, pattern])
+        params.extend([pattern, pattern, pattern])
     # Time-based filter: relative (last N minutes) or absolute custom range
     try:
         mins = int(minutes)
