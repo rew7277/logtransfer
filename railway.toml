@@ -2,6 +2,20 @@
 builder = "NIXPACKS"
 
 [deploy]
-startCommand = "gunicorn -w 1 -b 0.0.0.0:$PORT app:app"
+# gunicorn.conf.py controls worker count, timeout, logging automatically
+startCommand = "gunicorn -c gunicorn.conf.py app:app"
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 10
+
+# ── Required environment variables (set in Railway dashboard) ─────────────────
+# SECRET_KEY          = <32+ char random string>          (REQUIRED)
+# SEED_ADMIN_PASSWORD = <strong password>                 (optional, random if not set)
+# SMTP_HOST           = smtp.yourprovider.com             (optional, for email)
+# SMTP_PORT           = 587
+# SMTP_USER           = your@email.com
+# SMTP_PASSWORD       = <smtp password>
+# PUBLIC_BASE_URL     = https://observex.in
+# REDIS_URL           = redis://...                       (optional, for distributed rate limiting)
+# INGESTION_WORKERS   = 4                                 (thread pool size)
+# WEB_CONCURRENCY     = 5                                 (overrides auto CPU detection)
+# FLASK_ENV           = production                        (set to "development" locally only)
