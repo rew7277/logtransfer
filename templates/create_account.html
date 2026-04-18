@@ -1,41 +1,193 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>Create Workspace – ObserveX</title>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Create Workspace · ObserveX</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Syne:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
 <style>
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f6f8fa;display:flex;align-items:center;justify-content:center;min-height:100vh;color:#1f2328;padding:20px}
-.card{background:#fff;border:1px solid #d0d7de;border-radius:12px;padding:32px;width:100%;max-width:420px}
-h1{font-size:20px;font-weight:700;margin-bottom:6px;text-align:center}
-.sub{font-size:13px;color:#57606a;text-align:center;margin-bottom:24px}
-label{display:block;font-size:12px;font-weight:600;margin-bottom:4px;color:#57606a}
-input,select{width:100%;padding:8px 12px;border:1px solid #d0d7de;border-radius:8px;font-size:14px;margin-bottom:14px;outline:none;background:#fff}
-input:focus,select:focus{border-color:#2563eb;box-shadow:0 0 0 3px rgba(37,99,235,.1)}
-.btn{width:100%;padding:9px;background:#2563eb;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer}
-.btn:hover{background:#1d4ed8}
-.err{color:#cf222e;font-size:12px;margin-bottom:12px;display:none}
-.footer{text-align:center;margin-top:16px;font-size:12px;color:#57606a}
-.footer a{color:#2563eb;text-decoration:none}
-</style></head><body>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Syne',sans-serif;background:#f0f2f5;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;-webkit-font-smoothing:antialiased}
+.card{background:#fff;border-radius:12px;box-shadow:0 4px 24px rgba(0,0,0,.08),0 1px 4px rgba(0,0,0,.04);width:100%;max-width:440px;padding:36px 40px}
+.logo{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:24px}
+.logo-icon{width:36px;height:36px;border-radius:8px;background:linear-gradient(135deg,#1f6feb,#39c5cf);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:14px}
+h1{font-size:20px;font-weight:700;text-align:center;margin-bottom:6px;color:#0d1117}
+.subtitle{font-size:13px;color:#656d76;text-align:center;margin-bottom:24px}
+.field{margin-bottom:14px}
+label{display:block;font-size:12px;font-weight:600;color:#424a53;margin-bottom:5px}
+input,select{width:100%;padding:9px 12px;background:#f6f8fa;border:1px solid #d0d7de;border-radius:7px;font-family:'Syne',sans-serif;font-size:13px;color:#0d1117;outline:none;transition:border-color .15s,box-shadow .15s}
+input:focus,select:focus{border-color:#1f6feb;box-shadow:0 0 0 3px rgba(31,111,235,.12);background:#fff}
+input::placeholder{color:#adb5bd}
+.btn{width:100%;padding:10px;background:#1f6feb;border:none;border-radius:7px;color:#fff;font-family:'Syne',sans-serif;font-size:14px;font-weight:700;cursor:pointer;transition:all .15s;margin-top:6px}
+.btn:hover{background:#388bfd;transform:translateY(-1px);box-shadow:0 4px 12px rgba(31,111,235,.3)}
+.btn:active{transform:none}
+.btn:disabled{opacity:.6;cursor:not-allowed;transform:none;box-shadow:none}
+.msg{padding:10px 14px;border-radius:7px;font-size:12px;font-weight:500;margin-bottom:16px;display:none}
+.msg.error{background:#fff0f0;border:1px solid #ffcdd2;color:#c62828;display:block}
+.msg.success{background:#f0fff4;border:1px solid #c8e6c9;color:#2e7d32;display:block}
+.msg.warn{background:#fffde7;border:1px solid #fff59d;color:#f57f17;display:block}
+.link-row{text-align:center;margin-top:18px;font-size:12px;color:#656d76}
+.link-row a{color:#1f6feb;text-decoration:none;font-weight:600}
+.link-row a:hover{text-decoration:underline}
+.divider{height:1px;background:#d0d7de;margin:20px 0}
+.info-box{background:#f6f8fa;border:1px solid #d0d7de;border-radius:7px;padding:12px;font-size:12px;color:#656d76;margin-top:14px;line-height:1.6}
+.info-box strong{color:#0d1117}
+.verify-box{background:#e8f4fd;border:1px solid #b3d4f5;border-radius:7px;padding:14px;font-size:12px;color:#1565c0;margin-top:14px;line-height:1.6;display:none}
+.verify-box.show{display:block}
+.verify-link{font-family:'IBM Plex Mono',monospace;font-size:11px;background:#fff;border:1px solid #b3d4f5;border-radius:5px;padding:6px 10px;margin-top:8px;word-break:break-all;display:block}
+.copy-btn{display:inline-block;margin-top:8px;padding:5px 12px;background:#1f6feb;color:#fff;border:none;border-radius:5px;font-size:11px;cursor:pointer;font-family:'Syne',sans-serif;font-weight:600}
+.copy-btn:hover{background:#388bfd}
+</style>
+</head>
+<body>
 <div class="card">
+  <div class="logo">
+    <div class="logo-icon">OX</div>
+  </div>
   <h1>Create Workspace</h1>
-  <div class="sub">Start managing your logs with ObserveX</div>
-  <div class="err" id="errMsg"></div>
-  <label>Organization name</label><input type="text" id="orgName" placeholder="Acme Corp" />
-  <label>Your name</label><input type="text" id="adminName" placeholder="Jane Smith" />
-  <label>Email</label><input type="email" id="email" placeholder="you@company.com" />
-  <label>Password</label><input type="password" id="pw" placeholder="Min. 8 characters" />
-  <label>Theme</label>
-  <select id="theme"><option value="dark">Dark</option><option value="white">Light</option></select>
-  <button class="btn" onclick="doRegister()">Create workspace</button>
-  <div class="footer"><a href="/login">Already have a workspace? Sign in</a></div>
+  <p class="subtitle">Start managing your logs with ObserveX</p>
+
+  <div class="msg" id="msg"></div>
+
+  <!-- Organization name — field name MUST be "organization_name" -->
+  <div class="field">
+    <label for="organization_name">Organization name</label>
+    <input type="text" id="organization_name" name="organization_name" placeholder="e.g. FSBL" autocomplete="organization" required/>
+  </div>
+
+  <!-- Your name — field name MUST be "name" -->
+  <div class="field">
+    <label for="name">Your name</label>
+    <input type="text" id="name" name="name" placeholder="Full name" autocomplete="name" required/>
+  </div>
+
+  <!-- Email — field name MUST be "email" -->
+  <div class="field">
+    <label for="email">Email</label>
+    <input type="email" id="email" name="email" placeholder="you@company.com" autocomplete="email" required/>
+  </div>
+
+  <!-- Password — field name MUST be "password" -->
+  <div class="field">
+    <label for="password">Password</label>
+    <input type="password" id="password" name="password" placeholder="Min 6 characters" autocomplete="new-password" required/>
+  </div>
+
+  <!-- theme_mode MUST be "white" — the only valid value in app.py -->
+  <input type="hidden" name="theme_mode" value="white"/>
+  <!-- role MUST be "admin" for workspace creator -->
+  <input type="hidden" name="role" value="admin"/>
+
+  <button class="btn" id="submitBtn" onclick="createWorkspace()">Create workspace</button>
+
+  <!-- Shown after success when SMTP not configured — shows manual verify link -->
+  <div class="verify-box" id="verifyBox">
+    <strong>⚠ Email verification required</strong><br/>
+    SMTP is not configured on this server, so the verification email was not sent automatically.<br/>
+    Copy this link and open it in your browser to verify your account:
+    <span class="verify-link" id="verifyLink">—</span>
+    <button class="copy-btn" onclick="copyVerify()">Copy link</button>
+  </div>
+
+  <div class="link-row">Already have a workspace? <a href="/login">Sign in</a></div>
+
+  <div class="info-box">
+    <strong>Default demo account:</strong><br/>
+    Email: <code style="font-family:'IBM Plex Mono',monospace">admin@vewit.local</code><br/>
+    Password: <code style="font-family:'IBM Plex Mono',monospace">admin123</code><br/>
+    (pre-seeded, already verified — use this to sign in immediately)
+  </div>
 </div>
+
 <script>
-async function doRegister(){
-  const err=document.getElementById('errMsg');
-  err.style.display='none';
-  const body={org_name:document.getElementById('orgName').value.trim(),name:document.getElementById('adminName').value.trim(),email:document.getElementById('email').value.trim(),password:document.getElementById('pw').value,role:'admin',theme_mode:document.getElementById('theme').value};
-  const res=await fetch('/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
-  const d=await res.json();
-  if(!res.ok){err.textContent=d.error||'Registration failed';err.style.display='block';return;}
-  location.href=d.workspace_url||'/workspace';
+async function createWorkspace() {
+  const btn = document.getElementById('submitBtn');
+  const msgEl = document.getElementById('msg');
+  msgEl.className = 'msg';
+  msgEl.textContent = '';
+
+  // Read values
+  const org_name = document.getElementById('organization_name').value.trim();
+  const name = document.getElementById('name').value.trim();
+  const email = document.getElementById('email').value.trim();
+  const password = document.getElementById('password').value;
+
+  // Client-side validation
+  if (!org_name) { showMsg('Organization name is required.', 'error'); return; }
+  if (!name)     { showMsg('Your name is required.', 'error'); return; }
+  if (!email || !email.includes('@')) { showMsg('A valid email is required.', 'error'); return; }
+  if (!password || password.length < 6) { showMsg('Password must be at least 6 characters.', 'error'); return; }
+
+  btn.disabled = true;
+  btn.textContent = 'Creating…';
+
+  try {
+    const res = await fetch('/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        organization_name: org_name,   // exact key Flask expects
+        name: name,                    // exact key Flask expects
+        email: email,
+        password: password,
+        theme_mode: 'white',           // only valid value in VALID_THEMES
+        role: 'admin'                  // workspace creator must be admin
+      })
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      showMsg(data.error || 'Registration failed. Please try again.', 'error');
+      btn.disabled = false;
+      btn.textContent = 'Create workspace';
+      return;
+    }
+
+    // Success!
+    showMsg('Workspace created! ' + (data.verify_url ? 'Check below for your verification link.' : 'Redirecting…'), 'success');
+
+    // If verify_url returned (no SMTP), show the manual verify box
+    if (data.verify_url) {
+      document.getElementById('verifyLink').textContent = data.verify_url;
+      document.getElementById('verifyBox').classList.add('show');
+      btn.textContent = 'Open verify link to sign in';
+      btn.disabled = false;
+      btn.onclick = () => window.location.href = data.verify_url;
+    } else {
+      // Redirect to workspace
+      setTimeout(() => {
+        window.location.href = '/workspace/' + (data.slug || '');
+      }, 1200);
+    }
+
+  } catch(e) {
+    showMsg('Network error: ' + e.message, 'error');
+    btn.disabled = false;
+    btn.textContent = 'Create workspace';
+  }
 }
-</script></body></html>
+
+function showMsg(text, type) {
+  const el = document.getElementById('msg');
+  el.textContent = text;
+  el.className = 'msg ' + type;
+}
+
+function copyVerify() {
+  const link = document.getElementById('verifyLink').textContent;
+  navigator.clipboard.writeText(link).then(() => {
+    const btn = document.querySelector('.copy-btn');
+    btn.textContent = 'Copied!';
+    setTimeout(() => btn.textContent = 'Copy link', 2000);
+  });
+}
+
+// Allow Enter key to submit
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter') createWorkspace();
+});
+</script>
+</body>
+</html>
