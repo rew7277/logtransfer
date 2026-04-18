@@ -1260,7 +1260,13 @@ def upload_logs():
         if not file or not (file.filename or "").strip():
             continue
         filename = safe_filename(file.filename or "upload.log")
-        ext = Path(filename).suffix.lower()
+        # Strip trailing date/number rotation suffixes before checking extension
+        # e.g. "mule-app.log.2026-03-11" → check ".log", not ".2026-03-11"
+        # Also handles: app.log.1, app.log.gz.1, etc.
+        import re as _re
+        clean_name = _re.sub(r'(\.\d{4}-\d{2}-\d{2})+$', '', filename)  # strip .YYYY-MM-DD
+        clean_name = _re.sub(r'\.\d+$', '', clean_name)                  # strip .N rotation number
+        ext = Path(clean_name).suffix.lower()
 
         if ext and ext not in ALLOWED_EXTENSIONS:
             skipped.append(f"{filename} (unsupported type '{ext}' — upload .log/.txt/.json/.csv)")
