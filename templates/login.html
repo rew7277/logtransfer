@@ -1,22 +1,40 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Sign in — ObserveX</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <style>
-    :root{--bg:#04091a;--panel:#080f20;--panel2:#0c152a;--text:#e8eeff;--muted:#8a9bc3;--primary:#4f7cff;--border:rgba(255,255,255,.08);--error:#f87171;--success:#34d399}*{box-sizing:border-box;margin:0;padding:0}body{font-family:'Plus Jakarta Sans',sans-serif;background:radial-gradient(circle at left bottom, rgba(79,124,255,.25), transparent 30%),var(--bg);color:var(--text);min-height:100vh;display:grid;grid-template-columns:1fr 1fr}a{text-decoration:none;color:inherit}h1,h2,h3{font-family:'Sora',sans-serif}.left{padding:48px;border-right:1px solid var(--border);background:linear-gradient(160deg,#060e24,#08122b);position:relative;overflow:hidden}.left:before{content:'';position:absolute;inset:0;background-image:radial-gradient(circle, rgba(79,124,255,.11) 1px, transparent 1px);background-size:24px 24px}.left>*{position:relative;z-index:1}.brand{display:flex;gap:12px;align-items:center}.mark{width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,#5b88ff,#3155da);display:grid;place-items:center;color:#fff;font-family:'Sora';font-weight:800}.brand strong{display:block;font-size:18px}.brand small{display:block;color:var(--muted);font-size:12px}.left-copy{display:flex;flex-direction:column;justify-content:center;height:calc(100vh - 120px);max-width:540px}.eyebrow{color:#9cb1e6;text-transform:uppercase;letter-spacing:.16em;font-size:11px;font-weight:700;margin-bottom:16px}.left h1{font-size:clamp(34px,4vw,54px);line-height:1.08;letter-spacing:-.04em;margin-bottom:18px}.left p{color:var(--muted);line-height:1.8;font-size:16px;margin-bottom:24px}.bullets{display:grid;gap:16px}.bullet{padding:16px 18px;border-radius:18px;background:rgba(255,255,255,.03);border:1px solid var(--border)}.bullet strong{display:block;font-size:15px;margin-bottom:6px}.bullet span{font-size:14px;line-height:1.7;color:var(--muted)}.right{display:flex;align-items:center;justify-content:center;padding:32px}.card{width:min(500px,100%);padding:30px;border-radius:24px;background:rgba(8,15,32,.95);border:1px solid var(--border);box-shadow:0 18px 48px rgba(0,0,0,.32)}.card .eyebrow{margin-bottom:12px}.card h2{font-size:34px;letter-spacing:-.04em;margin-bottom:10px}.sub{color:var(--muted);line-height:1.8;font-size:15px;margin-bottom:24px}.grid{display:grid;gap:14px}.grid input{width:100%;padding:15px 16px;border-radius:14px;border:1px solid var(--border);background:var(--panel2);color:var(--text);font:inherit}.btn{width:100%;padding:15px 16px;border-radius:14px;border:0;background:linear-gradient(135deg,#5b88ff,#3155da);color:#fff;font-weight:700;font-size:15px;cursor:pointer}.result{margin-top:14px;padding:14px 16px;border-radius:14px;background:rgba(255,255,255,.03);border:1px solid var(--border);color:var(--muted);font-size:14px;line-height:1.6}.links{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px;color:var(--muted);font-size:14px}.links a{color:#a9b9e7}.demo{margin-top:10px;padding:12px 14px;border-radius:14px;background:rgba(79,124,255,.08);border:1px solid rgba(79,124,255,.18);font-size:13px;color:#bfd0ff}@media(max-width:980px){body{grid-template-columns:1fr}.left{display:none}}
-  </style>
-</head>
-<body>
-  <section class="left"><a class="brand" href="/"><div class="mark">OX</div><div><strong>ObserveX</strong><small>Enterprise observability</small></div></a><div class="left-copy"><div class="eyebrow">Workspace sign in</div><h1>Access uploads, dashboards, connectors, alerts, and your shared team workspace.</h1><p>Use your organization account to enter the operational workspace and continue from where your team left off.</p><div class="bullets"><div class="bullet"><strong>Upload-first workspace</strong><span>Visible local file upload plus drag-and-drop flow inside the workspace.</span></div><div class="bullet"><strong>Role-aware access</strong><span>Admins, managers, developers, and testers can work in the same organization.</span></div><div class="bullet"><strong>Operational control</strong><span>S3, APIs, jobs, dashboards, alerts, invites, and audit trail are all part of the same product.</span></div></div></div></section>
-  <section class="right"><main class="card"><div class="eyebrow">Sign in</div><h2>Welcome back</h2><p class="sub">Enter your workspace credentials to continue. Existing demo credentials are prefilled below for quick access.</p><form class="grid" id="loginForm"><input type="email" name="email" value="admin@vewit.local" required><input type="password" name="password" value="admin123" required><button class="btn" type="submit">Sign in</button></form><div class="demo">Demo login: admin@vewit.local / admin123</div><div id="loginResult" class="result">Sign in to open the protected workspace.</div><div class="links"><a href="/forgot-password">Forgot password?</a><span>•</span><a href="/create-account">Create workspace</a><span>•</span><a href="/">Back to website</a></div></main></section>
-  <script>
-    const f=document.getElementById('loginForm');const box=document.getElementById('loginResult');
-    f.addEventListener('submit',async(e)=>{e.preventDefault();box.textContent='Signing in...';const payload=Object.fromEntries(new FormData(f).entries());try{const r=await fetch('/login',{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify(payload)});const d=await r.json();if(!r.ok)throw new Error(d.error||'Unable to sign in.');window.location.href='/workspace';}catch(err){box.textContent=err.message;}});
-  </script>
-</body>
-</html>
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Sign in – ObserveX</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f6f8fa;display:flex;align-items:center;justify-content:center;min-height:100vh;color:#1f2328}
+.card{background:#fff;border:1px solid #d0d7de;border-radius:12px;padding:32px;width:100%;max-width:380px}
+h1{font-size:20px;font-weight:700;margin-bottom:6px;text-align:center}
+.sub{font-size:13px;color:#57606a;text-align:center;margin-bottom:24px}
+label{display:block;font-size:12px;font-weight:600;margin-bottom:4px;color:#57606a}
+input{width:100%;padding:8px 12px;border:1px solid #d0d7de;border-radius:8px;font-size:14px;margin-bottom:14px;outline:none}
+input:focus{border-color:#2563eb;box-shadow:0 0 0 3px rgba(37,99,235,.1)}
+.btn{width:100%;padding:9px;background:#2563eb;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;transition:.15s}
+.btn:hover{background:#1d4ed8}
+.err{color:#cf222e;font-size:12px;margin-bottom:12px;display:none}
+.footer{text-align:center;margin-top:16px;font-size:12px;color:#57606a}
+.footer a{color:#2563eb;text-decoration:none}
+</style></head><body>
+<div class="card">
+  <h1>ObserveX</h1>
+  <div class="sub">Sign in to your workspace</div>
+  <div class="err" id="errMsg"></div>
+  <label>Email</label>
+  <input type="email" id="email" placeholder="you@company.com" />
+  <label>Password</label>
+  <input type="password" id="pw" placeholder="Password" onkeydown="if(event.key==='Enter')doLogin()" />
+  <button class="btn" onclick="doLogin()">Sign in</button>
+  <div class="footer"><a href="/create-account">Create a workspace</a> · <a href="/forgot-password">Forgot password?</a></div>
+</div>
+<script>
+async function doLogin(){
+  const email=document.getElementById('email').value.trim();
+  const pw=document.getElementById('pw').value;
+  const err=document.getElementById('errMsg');
+  err.style.display='none';
+  const res=await fetch('/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password:pw})});
+  const d=await res.json();
+  if(!res.ok){err.textContent=d.error||'Login failed';err.style.display='block';return;}
+  location.href=d.workspace_url||'/workspace';
+}
+</script></body></html>

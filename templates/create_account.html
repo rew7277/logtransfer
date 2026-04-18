@@ -1,27 +1,41 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Create workspace — ObserveX</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <style>
-    :root{--bg:#04091a;--panel:#080f20;--panel2:#0d1830;--text:#e8eeff;--muted:#8a9bc3;--primary:#4f7cff;--border:rgba(255,255,255,.08);--success:#34d399}*{box-sizing:border-box;margin:0;padding:0}body{font-family:'Plus Jakarta Sans',sans-serif;background:radial-gradient(circle at right top, rgba(79,124,255,.22), transparent 28%),var(--bg);color:var(--text);min-height:100vh;display:grid;grid-template-columns:340px 1fr}a{text-decoration:none;color:inherit}h1,h2,h3{font-family:'Sora',sans-serif}.left{padding:42px 34px;border-right:1px solid var(--border);background:linear-gradient(160deg,#060e24,#08122b);position:relative;overflow:hidden}.left:before{content:'';position:absolute;inset:0;background-image:radial-gradient(circle, rgba(79,124,255,.11) 1px, transparent 1px);background-size:24px 24px}.left>*{position:relative;z-index:1}.brand{display:flex;gap:12px;align-items:center;margin-bottom:42px}.mark{width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,#5b88ff,#3155da);display:grid;place-items:center;color:#fff;font-family:'Sora';font-weight:800}.brand strong{display:block;font-size:17px}.brand small{display:block;color:var(--muted);font-size:11px}.eyebrow{color:#9cb1e6;text-transform:uppercase;letter-spacing:.16em;font-size:11px;font-weight:700;margin-bottom:16px}.step{display:flex;gap:14px;padding:16px 0;border-bottom:1px solid var(--border)}.step:last-child{border-bottom:0}.dot{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;background:rgba(79,124,255,.12);border:1px solid rgba(79,124,255,.25);color:#bdd0ff;font-weight:700;flex-shrink:0}.dot.active{background:linear-gradient(135deg,#5b88ff,#3155da);color:#fff}.step strong{display:block;font-size:14px;margin-bottom:4px}.step span{display:block;color:var(--muted);font-size:13px;line-height:1.6}.right{display:flex;align-items:center;justify-content:center;padding:34px}.card{width:min(760px,100%);padding:30px;border-radius:24px;background:rgba(8,15,32,.96);border:1px solid var(--border);box-shadow:0 18px 48px rgba(0,0,0,.32)}.topline{display:flex;justify-content:space-between;gap:20px;align-items:end;margin-bottom:20px}.topline h2{font-size:36px;letter-spacing:-.04em}.sub{color:var(--muted);line-height:1.8;max-width:560px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.field{display:grid;gap:8px}.field.full{grid-column:1 / -1}.field label{font-size:12px;color:#b8c6ea;font-weight:600}.field input,.field select{width:100%;padding:15px 16px;border-radius:14px;border:1px solid var(--border);background:var(--panel2);color:var(--text);font:inherit}.slug-preview{font-size:12px;color:var(--muted);margin-top:-4px}.actions{display:flex;gap:12px;align-items:center;margin-top:16px}.btn{display:inline-flex;align-items:center;justify-content:center;padding:15px 18px;border-radius:14px;font-weight:700;border:0;cursor:pointer}.btn.primary{background:linear-gradient(135deg,#5b88ff,#3155da);color:#fff;min-width:220px}.btn.secondary{background:rgba(255,255,255,.03);color:var(--text);border:1px solid var(--border)}.result{margin-top:16px;padding:14px 16px;border-radius:14px;background:rgba(255,255,255,.03);border:1px solid var(--border);color:var(--muted);line-height:1.6}.links{margin-top:16px;font-size:14px;color:var(--muted)}.links a{color:#b8c6ea}.tips{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:18px}.tip{padding:14px 16px;border-radius:16px;background:rgba(255,255,255,.03);border:1px solid var(--border)}.tip strong{display:block;font-size:14px;margin-bottom:6px}.tip span{display:block;font-size:13px;color:var(--muted);line-height:1.6}@media(max-width:980px){body{grid-template-columns:1fr}.left{display:none}.grid,.tips{grid-template-columns:1fr}.actions{flex-direction:column;align-items:stretch}}
-  </style>
-</head>
-<body>
-  <aside class="left"><a class="brand" href="/"><div class="mark">OX</div><div><strong>ObserveX</strong><small>Enterprise observability</small></div></a><div class="eyebrow">Create workspace</div><div class="step"><div class="dot active">1</div><div><strong>Organization</strong><span>Set the organization name and slug so the workspace is tenant-ready from the start.</span></div></div><div class="step"><div class="dot">2</div><div><strong>First admin</strong><span>Create the first administrator who can invite managers, developers, and testers.</span></div></div><div class="step"><div class="dot">3</div><div><strong>Operate</strong><span>Upload logs, connect S3 and APIs, create jobs, alerts, and dashboards in one workspace.</span></div></div></aside>
-  <main class="right"><section class="card"><div class="topline"><div><div class="eyebrow">Create account</div><h2>Start your workspace</h2></div><div class="sub">Create the organization, become the first admin, and invite the rest of the team later. Your first role stays admin.</div></div><form id="registerForm" class="grid"><div class="field"><label>Organization name</label><input type="text" id="orgNameInput" name="organization_name" placeholder="Marq Systems" required></div><div class="field"><label>Organization slug</label><input type="text" id="orgSlugInput" name="organization_slug" placeholder="marq" required><div class="slug-preview" id="slugPreview">Workspace URL later: marq.observex.in</div></div><div class="field"><label>Your name</label><input type="text" name="name" value="Marq" required></div><div class="field"><label>Your email</label><input type="email" name="email" placeholder="admin@yourorg.com" required></div><div class="field"><label>Password</label><input type="password" name="password" placeholder="Create password" required></div><div class="field"><label>Role</label><select name="role"><option value="admin">Admin</option></select></div><input type="hidden" name="theme_mode" value="white"></form><div class="tips"><div class="tip"><strong>Upload-ready</strong><span>Local drag and drop upload is available immediately after sign in.</span></div><div class="tip"><strong>Connector-ready</strong><span>Save AWS S3 and API inputs, then turn them into ingestion jobs.</span></div><div class="tip"><strong>Team-ready</strong><span>Invite admins, managers, developers, and testers later inside the workspace.</span></div></div><div class="actions"><button class="btn primary" id="registerBtn">Create workspace</button><a class="btn secondary" href="/login">Already have an account?</a></div><div id="registerResult" class="result">Create a new organization here. Existing users should use Sign in.</div><div class="links"><a href="/login">Sign in</a> • <a href="/">Back to website</a></div></section></main>
-  <script>
-    const orgName = document.getElementById('orgNameInput');
-    const orgSlug = document.getElementById('orgSlugInput');
-    const slugPreview = document.getElementById('slugPreview');
-    function syncSlug(){const v=(orgSlug.value||orgName.value||'workspace').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,''); if(!orgSlug.value&&orgName.value){orgSlug.placeholder=v||'marq';} slugPreview.textContent=`Workspace URL later: ${(orgSlug.value||v||'marq')}.observex.in`;}
-    orgName.addEventListener('input', syncSlug); orgSlug.addEventListener('input', syncSlug); syncSlug();
-    const btn=document.getElementById('registerBtn'); const form=document.getElementById('registerForm'); const result=document.getElementById('registerResult');
-    btn.addEventListener('click', async ()=>{result.textContent='Creating workspace...';const payload=Object.fromEntries(new FormData(form).entries());try{const r=await fetch('/register',{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify(payload)});const d=await r.json();if(!r.ok) throw new Error(d.error || 'Unable to create workspace.'); result.innerHTML=`Workspace created successfully. <a href="/login">Sign in</a>${d.verify_url ? ` or verify email here: <a href="${d.verify_url}">Verify email</a>` : ''}`;}catch(err){result.textContent=err.message;}});
-  </script>
-</body>
-</html>
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Create Workspace – ObserveX</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f6f8fa;display:flex;align-items:center;justify-content:center;min-height:100vh;color:#1f2328;padding:20px}
+.card{background:#fff;border:1px solid #d0d7de;border-radius:12px;padding:32px;width:100%;max-width:420px}
+h1{font-size:20px;font-weight:700;margin-bottom:6px;text-align:center}
+.sub{font-size:13px;color:#57606a;text-align:center;margin-bottom:24px}
+label{display:block;font-size:12px;font-weight:600;margin-bottom:4px;color:#57606a}
+input,select{width:100%;padding:8px 12px;border:1px solid #d0d7de;border-radius:8px;font-size:14px;margin-bottom:14px;outline:none;background:#fff}
+input:focus,select:focus{border-color:#2563eb;box-shadow:0 0 0 3px rgba(37,99,235,.1)}
+.btn{width:100%;padding:9px;background:#2563eb;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer}
+.btn:hover{background:#1d4ed8}
+.err{color:#cf222e;font-size:12px;margin-bottom:12px;display:none}
+.footer{text-align:center;margin-top:16px;font-size:12px;color:#57606a}
+.footer a{color:#2563eb;text-decoration:none}
+</style></head><body>
+<div class="card">
+  <h1>Create Workspace</h1>
+  <div class="sub">Start managing your logs with ObserveX</div>
+  <div class="err" id="errMsg"></div>
+  <label>Organization name</label><input type="text" id="orgName" placeholder="Acme Corp" />
+  <label>Your name</label><input type="text" id="adminName" placeholder="Jane Smith" />
+  <label>Email</label><input type="email" id="email" placeholder="you@company.com" />
+  <label>Password</label><input type="password" id="pw" placeholder="Min. 8 characters" />
+  <label>Theme</label>
+  <select id="theme"><option value="dark">Dark</option><option value="white">Light</option></select>
+  <button class="btn" onclick="doRegister()">Create workspace</button>
+  <div class="footer"><a href="/login">Already have a workspace? Sign in</a></div>
+</div>
+<script>
+async function doRegister(){
+  const err=document.getElementById('errMsg');
+  err.style.display='none';
+  const body={org_name:document.getElementById('orgName').value.trim(),name:document.getElementById('adminName').value.trim(),email:document.getElementById('email').value.trim(),password:document.getElementById('pw').value,role:'admin',theme_mode:document.getElementById('theme').value};
+  const res=await fetch('/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  const d=await res.json();
+  if(!res.ok){err.textContent=d.error||'Registration failed';err.style.display='block';return;}
+  location.href=d.workspace_url||'/workspace';
+}
+</script></body></html>

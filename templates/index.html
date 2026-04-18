@@ -1,475 +1,860 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ObserveX Workspace</title>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ObserveX – {{ user.org_name }}</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --sidebar-w: 210px;
+    --sidebar-bg: #0d1117;
+    --sidebar-text: #8b949e;
+    --sidebar-active-bg: #161b22;
+    --sidebar-active-text: #f0f6fc;
+    --sidebar-hover-bg: #161b22;
+    --accent: #2563eb;
+    --accent-hover: #1d4ed8;
+    --bg: #ffffff;
+    --surface: #f6f8fa;
+    --surface2: #eaeef2;
+    --border: #d0d7de;
+    --text: #1f2328;
+    --text2: #57606a;
+    --text3: #8c959f;
+    --red: #cf222e;
+    --red-bg: #ffebe9;
+    --yellow: #9a6700;
+    --yellow-bg: #fff8c5;
+    --green: #1a7f37;
+    --green-bg: #dafbe1;
+    --blue: #0550ae;
+    --blue-bg: #ddf4ff;
+    --radius: 8px;
+    --shadow: 0 1px 3px rgba(0,0,0,.1);
+  }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); display: flex; height: 100vh; overflow: hidden; font-size: 14px; }
+
+  /* ── Sidebar ── */
+  .sidebar { width: var(--sidebar-w); background: var(--sidebar-bg); display: flex; flex-direction: column; flex-shrink: 0; overflow-y: auto; }
+  .sidebar-brand { padding: 16px 14px 10px; border-bottom: 1px solid #21262d; }
+  .brand-label { font-size: 9px; font-weight: 700; letter-spacing: .12em; color: #484f58; text-transform: uppercase; margin-bottom: 10px; }
+  .brand-row { display: flex; align-items: center; gap: 10px; }
+  .brand-avatar { width: 32px; height: 32px; border-radius: 8px; background: var(--accent); color: #fff; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .brand-name { font-size: 13px; font-weight: 600; color: #f0f6fc; }
+  .brand-sub  { font-size: 11px; color: #484f58; }
+  .nav-section { padding: 8px 0; border-bottom: 1px solid #21262d; }
+  .nav-label { font-size: 9px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: #484f58; padding: 6px 14px 4px; }
+  .nav-item { display: flex; align-items: center; gap: 8px; padding: 7px 14px; font-size: 12.5px; color: var(--sidebar-text); cursor: pointer; border-radius: 0; transition: background .12s, color .12s; user-select: none; }
+  .nav-item:hover { background: var(--sidebar-hover-bg); color: #c9d1d9; }
+  .nav-item.active { background: var(--sidebar-active-bg); color: var(--sidebar-active-text); border-left: 2px solid var(--accent); padding-left: 12px; }
+  .nav-icon { font-size: 14px; width: 18px; text-align: center; flex-shrink: 0; }
+  .nav-badge { margin-left: auto; background: #21262d; color: #8b949e; font-size: 10px; font-weight: 600; padding: 1px 6px; border-radius: 10px; }
+  .nav-badge.red { background: #3d1a1c; color: #f85149; }
+  .sidebar-footer { margin-top: auto; padding: 12px 14px; border-top: 1px solid #21262d; }
+  .footer-label { font-size: 9px; color: #484f58; text-transform: uppercase; letter-spacing: .1em; margin-bottom: 6px; }
+  .footer-user { font-size: 12px; font-weight: 600; color: #c9d1d9; }
+  .footer-role { font-size: 11px; color: #484f58; margin-bottom: 10px; }
+  .logout-btn { width: 100%; padding: 6px; background: none; border: 1px solid #21262d; border-radius: 6px; color: #8b949e; font-size: 12px; cursor: pointer; transition: all .15s; }
+  .logout-btn:hover { border-color: var(--red); color: #f85149; }
+
+  /* ── Main ── */
+  .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+  .topbar { padding: 18px 28px 14px; border-bottom: 1px solid var(--border); background: var(--bg); display: flex; align-items: flex-start; justify-content: space-between; flex-shrink: 0; }
+  .topbar-left .workspace-label { font-size: 10px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); margin-bottom: 4px; }
+  .topbar-left h1 { font-size: 20px; font-weight: 700; color: var(--text); line-height: 1.3; max-width: 520px; }
+  .topbar-actions { display: flex; gap: 10px; align-items: center; flex-shrink: 0; margin-top: 4px; }
+  .btn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 16px; border-radius: var(--radius); font-size: 13px; font-weight: 500; cursor: pointer; transition: all .15s; border: 1px solid transparent; }
+  .btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .btn-primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+  .btn-outline { background: var(--bg); color: var(--text); border-color: var(--border); }
+  .btn-outline:hover { background: var(--surface); }
+  .content { flex: 1; overflow-y: auto; padding: 24px 28px; }
+
+  /* ── Section visibility ── */
+  .section { display: none; }
+  .section.active { display: block; }
+
+  /* ── Log explorer ── */
+  .explorer-toolbar { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+  .search-wrap { flex: 1; min-width: 260px; position: relative; }
+  .search-wrap input { width: 100%; padding: 8px 14px; border: 1px solid var(--border); border-radius: var(--radius); font-size: 13px; background: var(--bg); color: var(--text); outline: none; }
+  .search-wrap input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(37,99,235,.1); }
+  .filter-select { padding: 7px 12px; border: 1px solid var(--border); border-radius: var(--radius); font-size: 13px; background: var(--bg); color: var(--text); cursor: pointer; outline: none; }
+  .filter-select:focus { border-color: var(--accent); }
+  .toolbar-btn { padding: 7px 14px; border: 1px solid var(--border); border-radius: var(--radius); font-size: 13px; background: var(--bg); color: var(--text); cursor: pointer; transition: all .15s; white-space: nowrap; }
+  .toolbar-btn:hover { background: var(--surface); }
+  .toolbar-btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .toolbar-btn.primary:hover { background: var(--accent-hover); }
+  .records-count { font-size: 12px; color: var(--text3); white-space: nowrap; padding: 7px 4px; }
+
+  /* ── Table toolbar ── */
+  .table-toolbar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; padding: 10px 16px; border: 1px solid var(--border); border-bottom: none; border-radius: var(--radius) var(--radius) 0 0; background: var(--surface); }
+  .table-toolbar-left { display: flex; align-items: center; gap: 10px; }
+  .table-toolbar-right { display: flex; align-items: center; gap: 8px; }
+  .rpp-label { font-size: 12px; color: var(--text3); }
+  .rpp-select { padding: 4px 8px; border: 1px solid var(--border); border-radius: 6px; font-size: 12px; background: var(--bg); color: var(--text); cursor: pointer; }
+  .export-btn { display: inline-flex; align-items: center; gap: 4px; padding: 5px 10px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); font-size: 12px; color: var(--text2); cursor: pointer; transition: all .15s; }
+  .export-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* ── Log table ── */
+  .log-table-outer { border: 1px solid var(--border); border-radius: 0 0 var(--radius) var(--radius); overflow: hidden; }
+  .log-table-scroll { overflow-x: auto; }
+  .log-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  .log-table thead { position: sticky; top: 0; z-index: 5; }
+  .log-table thead th { background: var(--surface); padding: 9px 12px; text-align: left; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--text3); border-bottom: 1px solid var(--border); white-space: nowrap; user-select: none; }
+  .log-table thead th.sort-th { cursor: pointer; }
+  .log-table thead th.sort-th:hover { color: var(--accent); }
+  .sort-ind { margin-left: 4px; color: var(--accent); font-size: 10px; }
+  .log-table tbody tr { border-bottom: 1px solid var(--surface2); transition: background .1s; cursor: pointer; }
+  .log-table tbody tr:hover { background: var(--surface); }
+  .log-table tbody tr:last-child { border-bottom: none; }
+  .log-table tbody td { padding: 9px 12px; vertical-align: top; }
+  .td-ts { font-size: 12px; color: var(--text2); white-space: nowrap; font-family: 'SF Mono', 'Courier New', monospace; }
+  .td-source { color: var(--text2); white-space: nowrap; }
+  .td-event { color: var(--text3); font-family: monospace; font-size: 11px; max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .td-msg { max-width: 500px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text); }
+  .td-msg-wrap { display: flex; align-items: center; gap: 6px; }
+  .copy-btn { visibility: hidden; background: none; border: none; color: var(--text3); cursor: pointer; font-size: 13px; padding: 1px 4px; border-radius: 4px; }
+  .copy-btn:hover { color: var(--accent); }
+  .log-table tbody tr:hover .copy-btn { visibility: visible; }
+
+  /* Level badges */
+  .badge { display: inline-flex; align-items: center; justify-content: center; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; white-space: nowrap; }
+  .badge-error   { background: var(--red-bg);    color: var(--red);    }
+  .badge-warn    { background: var(--yellow-bg);  color: var(--yellow); }
+  .badge-info    { background: var(--blue-bg);    color: var(--blue);   }
+  .badge-success { background: var(--green-bg);   color: var(--green);  }
+  .badge-debug   { background: var(--surface2);   color: var(--text3);  }
+
+  /* ── Pagination ── */
+  .pagination-bar { display: flex; align-items: center; justify-content: center; gap: 4px; padding: 12px 16px; border: 1px solid var(--border); border-top: none; border-radius: 0 0 var(--radius) var(--radius); background: var(--surface); flex-wrap: wrap; margin-bottom: 16px; }
+  .pg-info { font-size: 12px; color: var(--text3); margin-right: 8px; }
+  .pg-btn { min-width: 30px; height: 30px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-size: 13px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; transition: all .15s; padding: 0 6px; }
+  .pg-btn:hover:not(:disabled):not(.active) { border-color: var(--accent); color: var(--accent); }
+  .pg-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); font-weight: 600; }
+  .pg-btn:disabled { opacity: .4; cursor: default; }
+  .pg-ellipsis { color: var(--text3); font-size: 13px; padding: 0 4px; }
+
+  /* ── Overview cards ── */
+  .stat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 16px; margin-bottom: 24px; }
+  .stat-card { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 20px; }
+  .stat-label { font-size: 11px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 8px; }
+  .stat-value { font-size: 28px; font-weight: 700; color: var(--text); }
+  .stat-value.red    { color: var(--red); }
+  .stat-value.green  { color: var(--green); }
+  .stat-value.blue   { color: var(--accent); }
+
+  /* ── Empty / loading ── */
+  .empty-state { text-align: center; padding: 60px 20px; color: var(--text3); }
+  .empty-state .icon { font-size: 40px; margin-bottom: 14px; }
+  .empty-state h3 { font-size: 16px; font-weight: 600; color: var(--text2); margin-bottom: 6px; }
+  .empty-state p  { font-size: 13px; }
+  .loading { text-align: center; padding: 40px; color: var(--text3); font-size: 13px; }
+
+  /* ── Detail modal ── */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 100; display: flex; align-items: center; justify-content: center; }
+  .modal-overlay.hidden { display: none; }
+  .modal { background: var(--bg); border-radius: var(--radius); border: 1px solid var(--border); width: 700px; max-width: 96vw; max-height: 85vh; overflow-y: auto; box-shadow: 0 8px 32px rgba(0,0,0,.15); }
+  .modal-header { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid var(--border); }
+  .modal-header h3 { font-size: 14px; font-weight: 600; }
+  .modal-close { background: none; border: none; font-size: 20px; cursor: pointer; color: var(--text3); line-height: 1; padding: 2px 6px; border-radius: 4px; }
+  .modal-close:hover { background: var(--surface2); color: var(--text); }
+  .modal-body { padding: 20px; }
+  .modal-field { margin-bottom: 14px; }
+  .modal-field label { display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--text3); margin-bottom: 4px; }
+  .modal-field pre { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 12px; font-size: 12px; overflow-x: auto; white-space: pre-wrap; word-break: break-all; color: var(--text); font-family: 'SF Mono', Consolas, monospace; }
+
+  /* ── Upload modal ── */
+  .upload-drop { border: 2px dashed var(--border); border-radius: var(--radius); padding: 32px; text-align: center; color: var(--text3); cursor: pointer; transition: all .15s; }
+  .upload-drop:hover, .upload-drop.drag-over { border-color: var(--accent); background: rgba(37,99,235,.04); color: var(--accent); }
+  .upload-drop .icon { font-size: 32px; margin-bottom: 10px; }
+  .upload-drop p { font-size: 13px; }
+  .upload-drop input { display: none; }
+
+  /* ── Toast ── */
+  .toast-wrap { position: fixed; bottom: 20px; right: 20px; z-index: 200; display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
+  .toast { padding: 10px 16px; border-radius: var(--radius); font-size: 13px; font-weight: 500; box-shadow: var(--shadow); pointer-events: auto; transition: opacity .3s, transform .3s; background: var(--text); color: var(--bg); max-width: 340px; }
+  .toast.out { opacity: 0; transform: translateX(20px); }
+  .toast.success { background: var(--green); color: #fff; }
+  .toast.error   { background: var(--red);   color: #fff; }
+  .toast.info    { background: var(--accent); color: #fff; }
+
+  /* ── Section: other placeholders ── */
+  .section-header { font-size: 18px; font-weight: 700; margin-bottom: 6px; }
+  .section-sub { font-size: 13px; color: var(--text3); margin-bottom: 24px; }
+  .card { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 16px; }
+  .card h4 { font-size: 14px; font-weight: 600; margin-bottom: 8px; }
+  .card p  { font-size: 13px; color: var(--text2); }
+  table.data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  table.data-table th { text-align: left; padding: 8px 12px; background: var(--surface); border-bottom: 1px solid var(--border); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--text3); }
+  table.data-table td { padding: 10px 12px; border-bottom: 1px solid var(--surface2); }
+  table.data-table tr:last-child td { border-bottom: none; }
+  .table-wrap { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  .pill { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 600; background: var(--surface2); color: var(--text2); }
+  .pill.active { background: var(--green-bg); color: var(--green); }
+  .pill.inactive { background: var(--red-bg); color: var(--red); }
+</style>
 </head>
-<body class="theme-white">
+<body>
 
-<div class="app-shell">
-
-  <!-- ===== SIDEBAR ===== -->
-  <aside class="sidebar">
-    <div>
-      <div class="brand-lockup">
-        <div class="brand-badge" id="orgLogo">VX</div>
-        <div>
-          <div class="eyebrow">ObserveX Enterprise</div>
-          <h1 id="orgName">Workspace</h1>
-          <p id="orgSlug">loading…</p>
-        </div>
-      </div>
-
-      <nav class="nav-stack">
-        <button class="nav-link active" data-section="overviewSection">Overview</button>
-        <button class="nav-link" data-section="logsSection">Log explorer</button>
-        <button class="nav-link" data-section="ingestSection">Ingest API</button>
-        <button class="nav-link" data-section="integrationsSection">Integrations</button>
-        <button class="nav-link" data-section="jobsSection">Ingestion jobs</button>
-        <button class="nav-link" data-section="alertsSection">Alert rules</button>
-        <button class="nav-link" data-section="usersSection">Users &amp; access</button>
-        <button class="nav-link" data-section="dashboardsSection">Saved dashboards</button>
-        <button class="nav-link" data-section="invitesSection">Invites</button>
-        <button class="nav-link" data-section="orgSection">Organization</button>
-        <button class="nav-link" data-section="auditSection">Audit trail</button>
-      </nav>
-    </div>
-
-    <div class="side-footer">
-      <div class="user-box">
-        <div class="small-label">Signed in as</div>
-        <strong id="currentUserName">{{ user.name }}</strong>
-        <span id="currentUserRole">{{ user.role }}</span>
-      </div>
-      <button class="ghost-btn wide" id="logoutBtn">Logout</button>
-    </div>
-  </aside>
-
-  <!-- ===== MAIN ===== -->
-  <main class="main-content">
-
-    <header class="page-header">
+<!-- ── Sidebar ── -->
+<nav class="sidebar">
+  <div class="sidebar-brand">
+    <div class="brand-label">ObserveX Enterprise</div>
+    <div class="brand-row">
+      <div class="brand-avatar">{{ user.logo_text }}</div>
       <div>
-        <div class="eyebrow">ObserveX workspace</div>
-        <h2>Investigate logs, run connectors, and manage your organization.</h2>
+        <div class="brand-name">{{ user.org_name }}</div>
+        <div class="brand-sub">{{ user.slug }}</div>
       </div>
-      <div class="header-badges">
-        <!-- Single file input shared across the page -->
-        <input type="file" id="logFileInput" hidden multiple accept=".log,.txt,.json,.csv,.ndjson" />
-        <label class="primary-btn upload-header-btn" for="logFileInput">↑ Upload logs</label>
-        <button class="secondary-btn" data-jump="logsSection">Open explorer</button>
+    </div>
+  </div>
+
+  <div class="nav-section">
+    <div class="nav-item {% if active_section == 'overview' %}active{% endif %}" onclick="switchSection('overview')">
+      <span class="nav-icon">⬛</span> Overview
+    </div>
+    <div class="nav-item {% if active_section == 'explorer' %}active{% endif %}" onclick="switchSection('explorer')">
+      <span class="nav-icon">📋</span> Log explorer
+    </div>
+    <div class="nav-item {% if active_section == 'ingest' %}active{% endif %}" onclick="switchSection('ingest')">
+      <span class="nav-icon">⬆</span> Ingest API
+    </div>
+  </div>
+
+  <div class="nav-section">
+    <div class="nav-label">Connectors</div>
+    <div class="nav-item {% if active_section == 'integrations' %}active{% endif %}" onclick="switchSection('integrations')">
+      <span class="nav-icon">🔌</span> Integrations
+    </div>
+    <div class="nav-item {% if active_section == 'jobs' %}active{% endif %}" onclick="switchSection('jobs')">
+      <span class="nav-icon">⚙</span> Ingestion jobs
+    </div>
+  </div>
+
+  <div class="nav-section">
+    <div class="nav-label">Settings</div>
+    <div class="nav-item {% if active_section == 'alerts' %}active{% endif %}" onclick="switchSection('alerts')">
+      <span class="nav-icon">🔔</span> Alert rules
+    </div>
+    <div class="nav-item {% if active_section == 'users' %}active{% endif %}" onclick="switchSection('users')">
+      <span class="nav-icon">👥</span> Users &amp; access
+    </div>
+    <div class="nav-item {% if active_section == 'dashboards' %}active{% endif %}" onclick="switchSection('dashboards')">
+      <span class="nav-icon">📊</span> Saved dashboards
+    </div>
+    <div class="nav-item {% if active_section == 'invites' %}active{% endif %}" onclick="switchSection('invites')">
+      <span class="nav-icon">✉</span> Invites
+    </div>
+    <div class="nav-item {% if active_section == 'organization' %}active{% endif %}" onclick="switchSection('organization')">
+      <span class="nav-icon">🏢</span> Organization
+    </div>
+    <div class="nav-item {% if active_section == 'audit' %}active{% endif %}" onclick="switchSection('audit')">
+      <span class="nav-icon">📜</span> Audit trail
+    </div>
+  </div>
+
+  <div class="sidebar-footer">
+    <div class="footer-label">Signed in as</div>
+    <div class="footer-user">{{ user.name }}</div>
+    <div class="footer-role">{{ user.role|capitalize }}</div>
+    <button class="logout-btn" onclick="doLogout()">Logout</button>
+  </div>
+</nav>
+
+<!-- ── Main ── -->
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="workspace-label">ObserveX Workspace</div>
+      <h1 id="pageTitle">Investigate logs, run connectors, and manage your organization.</h1>
+    </div>
+    <div class="topbar-actions">
+      <button class="btn btn-primary" onclick="openUploadModal()">↑ Upload logs</button>
+      <button class="btn btn-outline" onclick="switchSection('explorer')">Open explorer</button>
+    </div>
+  </div>
+
+  <div class="content" id="mainContent">
+
+    <!-- ── Overview ── -->
+    <div class="section {% if active_section == 'overview' %}active{% endif %}" id="section-overview">
+      <div class="stat-grid" id="overviewStats">
+        <div class="stat-card"><div class="stat-label">Total Logs</div><div class="stat-value blue" id="ov-total">–</div></div>
+        <div class="stat-card"><div class="stat-label">Errors</div><div class="stat-value red" id="ov-errors">–</div></div>
+        <div class="stat-card"><div class="stat-label">Warnings</div><div class="stat-value" style="color:var(--yellow)" id="ov-warns">–</div></div>
+        <div class="stat-card"><div class="stat-label">Success</div><div class="stat-value green" id="ov-success">–</div></div>
+        <div class="stat-card"><div class="stat-label">Error Rate</div><div class="stat-value red" id="ov-errrate">–</div></div>
+        <div class="stat-card"><div class="stat-label">Uploads</div><div class="stat-value" id="ov-uploads">–</div></div>
       </div>
-    </header>
+      <div id="overviewSources"></div>
+    </div>
 
-    <!-- ===================== OVERVIEW ===================== -->
-    <section id="overviewSection" class="content-section active">
-
-      <!-- Metric cards -->
-      <div class="metric-grid">
-        <article class="metric-card"><span>Total logs</span><strong id="metricLogs">0</strong></article>
-        <article class="metric-card"><span>Users</span><strong id="metricUsers">0</strong></article>
-        <article class="metric-card"><span>Integrations</span><strong id="metricIntegrations">0</strong></article>
-        <article class="metric-card"><span>Error rate</span><strong id="heroErrorRate">0%</strong></article>
-      </div>
-
-      <!-- Charts row -->
-      <div class="panel-grid two-up">
-        <section class="panel">
-          <div class="panel-head">
-            <h3>Log level mix</h3>
-            <span class="muted">Live from stored records</span>
-          </div>
-          <div class="chart-wrap">
-            <canvas id="levelChart"></canvas>
-          </div>
-          <div id="levelChartEmpty" class="chart-empty" style="display:none">
-            <span class="chart-empty-icon">📊</span>
-            <span>No log data yet — upload a file or use the Ingest API</span>
-          </div>
-        </section>
-
-        <section class="panel">
-          <div class="panel-head">
-            <h3>Top sources</h3>
-            <span class="muted">Most active systems</span>
-          </div>
-          <div class="chart-wrap">
-            <canvas id="sourceChart"></canvas>
-          </div>
-          <div id="sourceChartEmpty" class="chart-empty" style="display:none">
-            <span class="chart-empty-icon">🔍</span>
-            <span>No source data yet</span>
-          </div>
-        </section>
-      </div>
-
-      <!-- Time-series -->
-      <section class="panel top-gap">
-        <div class="panel-head">
-          <h3>Log volume over time</h3>
-          <div style="display:flex;gap:8px;align-items:center">
-            <select id="timeseriesRange" style="width:auto;padding:6px 10px;font-size:12px;border-radius:9px">
-              <option value="24">Last 24 h</option>
-              <option value="48">Last 48 h</option>
-              <option value="168">Last 7 days</option>
-            </select>
-            <span class="muted">Hourly</span>
-          </div>
+    <!-- ── Log Explorer ── -->
+    <div class="section {% if active_section == 'explorer' %}active{% endif %}" id="section-explorer">
+      <div class="explorer-toolbar">
+        <div class="search-wrap">
+          <input type="text" id="logSearch" placeholder="Search message, source, or event id…" oninput="onSearchInput()" />
         </div>
-        <div class="ts-chart-wrap">
-          <canvas id="timeseriesChart"></canvas>
-        </div>
-        <div id="tsEmpty" class="ts-empty" style="display:none">
-          Upload logs or send to <code>/ingest/json</code> to see volume over time.
-        </div>
-      </section>
-
-      <!-- DnD upload + Platform signals -->
-      <div class="panel-grid two-up">
-        <section class="panel">
-          <div class="panel-head"><h3>Quick upload</h3></div>
-          <!-- DnD zone — no nested <input>, uses shared #logFileInput -->
-          <div class="dnd-upload-zone" id="dndUploadZone" role="button" tabindex="0" aria-label="Drop log files here or click to browse">
-            <div class="dnd-upload-icon">⬆</div>
-            <div class="dnd-upload-title">Drop log files here</div>
-            <div class="dnd-upload-sub">or <span class="dnd-browse-link">click to browse</span></div>
-            <div class="dnd-upload-formats">
-              <span>.log</span><span>.json</span><span>.ndjson</span><span>.csv</span><span>.txt</span>
-            </div>
-          </div>
-          <div id="uploadStatus" class="result-box" style="margin-top:10px">No upload started yet.</div>
-          <div class="action-grid compact-actions" style="margin-top:10px">
-            <button class="secondary-btn" data-jump="logsSection">Open explorer</button>
-            <button class="secondary-btn" data-jump="usersSection">Manage users</button>
-            <button class="secondary-btn" data-jump="orgSection">Brand workspace</button>
-          </div>
-        </section>
-
-        <section class="panel">
-          <div class="panel-head"><h3>Platform signals</h3><span class="muted">By source</span></div>
-          <div class="signal-list" id="sourceList">
-            <div class="chart-empty" style="height:120px"><span class="chart-empty-icon">📡</span><span>Upload logs to see signals</span></div>
-          </div>
-        </section>
+        <select class="filter-select" id="levelFilter" onchange="loadLogs(1)">
+          <option value="all">All levels</option>
+          <option value="error">Error</option>
+          <option value="warn">Warn</option>
+          <option value="info">Info</option>
+          <option value="success">Success</option>
+          <option value="debug">Debug</option>
+        </select>
+        <select class="filter-select" id="timeFilter" onchange="onTimeFilterChange()">
+          <option value="0">All time</option>
+          <option value="15">Last 15 min</option>
+          <option value="30">Last 30 min</option>
+          <option value="60">Last 1 hour</option>
+          <option value="360">Last 6 hours</option>
+          <option value="1440">Last 24 hours</option>
+          <option value="10080">Last 7 days</option>
+        </select>
+        <button class="toolbar-btn" onclick="loadLogs(1)">↻ Refresh</button>
+        <button class="toolbar-btn primary" onclick="openUploadModal()">↑ Upload</button>
+        <span class="records-count" id="recordsCount">–</span>
       </div>
+      <div id="logTableArea"><div class="loading">Loading logs…</div></div>
+    </div>
 
-    </section>
+    <!-- ── Ingest API ── -->
+    <div class="section {% if active_section == 'ingest' %}active{% endif %}" id="section-ingest">
+      <div class="section-header">Ingest API</div>
+      <div class="section-sub">Send logs programmatically using your API key.</div>
+      <div class="card">
+        <h4>Endpoint</h4>
+        <pre id="ingestEndpoint">POST {{ request.host_url }}ingest/json
+Content-Type: application/json
+X-API-Key: &lt;your-api-key&gt;
 
-    <!-- ===================== LOG EXPLORER ===================== -->
-    <section id="logsSection" class="content-section">
-      <div class="panel">
-        <div class="toolbar">
-          <input id="searchInput" type="search" placeholder="Search message, source, or event id…" />
-          <select id="levelFilter">
-            <option value="all">All levels</option>
-            <option value="error">Error</option>
-            <option value="warn">Warn</option>
-            <option value="info">Info</option>
-            <option value="success">Success</option>
-            <option value="debug">Debug</option>
-          </select>
-          <select id="timeFilter">
-            <option value="0">All time</option>
-            <option value="15">Last 15 min</option>
-            <option value="30">Last 30 min</option>
-            <option value="60">Last 1 hour</option>
-            <option value="360">Last 6 hours</option>
-            <option value="1440">Last 24 hours</option>
-            <option value="10080">Last 7 days</option>
-            <option value="custom">Custom range…</option>
-          </select>
-          <button class="primary-btn" id="searchBtn">Refresh</button>
-          <label class="secondary-btn" for="logFileInput">↑ Upload</label>
-        </div>
-
-        <!-- Custom date/time range — shown only when "Custom range…" is selected -->
-        <div class="custom-range-row" id="customRangeRow" style="display:none">
-          <div class="custom-range-inner">
-            <span class="range-label">From</span>
-            <input type="datetime-local" id="rangeFrom" />
-            <span class="range-label">To</span>
-            <input type="datetime-local" id="rangeTo" />
-            <button class="primary-btn" id="applyRangeBtn">Apply</button>
-            <button class="ghost-btn" id="clearRangeBtn">Clear</button>
-          </div>
-        </div>
-
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Timestamp</th><th>Level</th><th>Source</th><th>Event</th><th>Message</th>
-              </tr>
-            </thead>
-            <tbody id="recordsBody"></tbody>
-          </table>
-        </div>
+{ "logs": [ { "timestamp": "2025-01-01T00:00:00Z", "level": "info", "source": "my-app", "message": "Hello ObserveX" } ] }</pre>
       </div>
-    </section>
-
-    <!-- ===================== INGEST API ===================== -->
-    <section id="ingestSection" class="content-section">
-      <div class="panel-grid two-up">
-        <section class="panel">
-          <div class="panel-head"><h3>API Keys</h3><span class="muted">Authenticate programmatic ingestion.</span></div>
-          <div class="form-grid" style="grid-template-columns:1fr">
-            <input id="apiKeyName" placeholder="e.g. CI pipeline key" />
-          </div>
-          <div class="button-row"><button class="primary-btn" id="createApiKeyBtn">Generate key</button></div>
-          <div id="apiKeyResult" class="result-box" style="margin-top:10px">Generate an API key to use with POST /ingest/json and POST /ingest/file.</div>
-          <div id="newKeyBox" style="display:none" class="new-key-reveal"></div>
-        </section>
-        <section class="panel">
-          <div class="panel-head"><h3>Active keys</h3></div>
-          <div id="apiKeyList" class="list-box empty-state">No API keys yet.</div>
-        </section>
+      <div class="card">
+        <h4>API Keys</h4>
+        <div id="apiKeysList"><div class="loading">Loading…</div></div>
       </div>
+    </div>
 
-      <section class="panel top-gap">
-        <div class="panel-head"><h3>POST /ingest/json</h3><span class="muted">Send JSON logs over HTTP — single, array, or NDJSON.</span></div>
-        <div class="copy-block">
-          <p><strong>Single event</strong></p>
-          <pre class="code-block">curl -X POST https://your-domain/ingest/json \
-  -H "Authorization: Bearer oxk_..." \
-  -H "Content-Type: application/json" \
-  -d '{"timestamp":"2024-01-15T10:30:00Z","level":"error","source":"payment-service","message":"Timeout"}'</pre>
-          <p><strong>Array (batch)</strong></p>
-          <pre class="code-block">curl -X POST https://your-domain/ingest/json \
-  -H "Authorization: Bearer oxk_..." \
-  -H "Content-Type: application/json" \
-  -d '[{"message":"Started"},{"message":"Done","level":"success"}]'</pre>
-          <p><strong>NDJSON</strong></p>
-          <pre class="code-block">{"message":"line 1","level":"info"}
-{"message":"line 2","level":"warn"}
-{"message":"line 3","level":"error"}</pre>
-        </div>
-      </section>
+    <!-- ── Integrations ── -->
+    <div class="section {% if active_section == 'integrations' %}active{% endif %}" id="section-integrations">
+      <div class="section-header">Integrations</div>
+      <div class="section-sub">Connect external log sources.</div>
+      <div id="integrationsList"><div class="loading">Loading…</div></div>
+    </div>
 
-      <section class="panel top-gap">
-        <div class="panel-head"><h3>POST /ingest/file</h3><span class="muted">Upload .log .txt .json .ndjson .csv files.</span></div>
-        <div class="copy-block">
-          <p><strong>Single file</strong></p>
-          <pre class="code-block">curl -X POST https://your-domain/ingest/file \
-  -H "Authorization: Bearer oxk_..." \
-  -F "file=@/path/to/app.log"</pre>
-          <p><strong>Multiple files</strong></p>
-          <pre class="code-block">curl -X POST https://your-domain/ingest/file \
-  -H "Authorization: Bearer oxk_..." \
-  -F "files=@app.log" -F "files=@error.log"</pre>
-          <p><strong>Python</strong></p>
-          <pre class="code-block">import requests
-resp = requests.post(
-    "https://your-domain/ingest/file",
-    headers={"Authorization": "Bearer oxk_..."},
-    files={"file": ("app.log", open("app.log","rb"), "text/plain")},
-)
-print(resp.json())</pre>
-        </div>
-      </section>
-    </section>
+    <!-- ── Ingestion Jobs ── -->
+    <div class="section {% if active_section == 'jobs' %}active{% endif %}" id="section-jobs">
+      <div class="section-header">Ingestion Jobs</div>
+      <div class="section-sub">Scheduled jobs that pull logs from integrations.</div>
+      <div id="jobsList"><div class="loading">Loading…</div></div>
+    </div>
 
-    <!-- ===================== INTEGRATIONS ===================== -->
-    <section id="integrationsSection" class="content-section">
-      <div class="panel-grid two-up">
-        <section class="panel">
-          <div class="panel-head"><h3>AWS S3 integration</h3><span class="muted">Connect a bucket to auto-ingest logs.</span></div>
-          <form id="s3Form" class="form-grid">
-            <input name="name" placeholder="Archive Bucket" value="Archive Bucket" />
-            <input name="region" placeholder="ap-south-1" value="ap-south-1" />
-            <input name="bucket" placeholder="Bucket name" />
-            <input name="prefix" placeholder="Prefix (optional)" />
-            <input name="access_key" placeholder="Access key" />
-            <input name="secret_key" placeholder="Secret key" type="password" />
-          </form>
-          <div class="button-row"><button class="secondary-btn" id="testS3Btn">Test S3</button><button class="primary-btn" id="saveS3Btn">Save</button></div>
-          <div id="s3Result" class="result-box" style="margin-top:10px">No S3 test run yet.</div>
-        </section>
-        <section class="panel">
-          <div class="panel-head"><h3>API integration</h3><span class="muted">Pull logs from any HTTP endpoint.</span></div>
-          <form id="apiForm" class="form-grid">
-            <input name="name" placeholder="Remote Log API" value="Remote Log API" />
-            <input name="url" placeholder="https://api.example.com/logs" value="https://api.example.com/logs" />
-            <input name="token" placeholder="Bearer token (optional)" />
-            <textarea name="headers" placeholder='Optional JSON headers: {"x-key":"…"}'></textarea>
-          </form>
-          <div class="button-row"><button class="secondary-btn" id="testApiBtn">Test API</button><button class="primary-btn" id="saveApiBtn">Save</button></div>
-          <div id="apiResult" class="result-box" style="margin-top:10px">No API test run yet.</div>
-        </section>
+    <!-- ── Alert Rules ── -->
+    <div class="section {% if active_section == 'alerts' %}active{% endif %}" id="section-alerts">
+      <div class="section-header">Alert Rules</div>
+      <div class="section-sub">Get notified when log patterns match conditions.</div>
+      <div id="alertsList"><div class="loading">Loading…</div></div>
+    </div>
+
+    <!-- ── Users ── -->
+    <div class="section {% if active_section == 'users' %}active{% endif %}" id="section-users">
+      <div class="section-header">Users &amp; Access</div>
+      <div class="section-sub">Manage team members and their roles.</div>
+      <div id="usersList"><div class="loading">Loading…</div></div>
+    </div>
+
+    <!-- ── Saved Dashboards ── -->
+    <div class="section {% if active_section == 'dashboards' %}active{% endif %}" id="section-dashboards">
+      <div class="section-header">Saved Dashboards</div>
+      <div class="section-sub">Your custom saved dashboard configurations.</div>
+      <div id="dashboardsList"><div class="loading">Loading…</div></div>
+    </div>
+
+    <!-- ── Invites ── -->
+    <div class="section {% if active_section == 'invites' %}active{% endif %}" id="section-invites">
+      <div class="section-header">Invites</div>
+      <div class="section-sub">Pending and accepted invitations to your workspace.</div>
+      <div id="invitesList"><div class="loading">Loading…</div></div>
+    </div>
+
+    <!-- ── Organization ── -->
+    <div class="section {% if active_section == 'organization' %}active{% endif %}" id="section-organization">
+      <div class="section-header">Organization</div>
+      <div class="section-sub">Workspace settings and configuration.</div>
+      <div id="orgSettings"><div class="loading">Loading…</div></div>
+    </div>
+
+    <!-- ── Audit Trail ── -->
+    <div class="section {% if active_section == 'audit' %}active{% endif %}" id="section-audit">
+      <div class="section-header">Audit Trail</div>
+      <div class="section-sub">Recent actions performed in your workspace.</div>
+      <div id="auditList"><div class="loading">Loading…</div></div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+
+<!-- ── Upload Modal ── -->
+<div class="modal-overlay hidden" id="uploadModal" onclick="e => { if(e.target===this) closeUploadModal(); }">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <h3>Upload Log File</h3>
+      <button class="modal-close" onclick="closeUploadModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="upload-drop" id="uploadDrop" onclick="document.getElementById('uploadFileInput').click()">
+        <input type="file" id="uploadFileInput" multiple accept=".log,.txt,.json,.csv,.ndjson,.jsonl" onchange="handleUploadFiles(this.files)" />
+        <div class="icon">📂</div>
+        <p><strong>Click to browse</strong> or drag & drop files here</p>
+        <p style="font-size:11px;margin-top:6px">.log · .txt · .json · .csv · .ndjson · .jsonl</p>
       </div>
-      <section class="panel top-gap">
-        <div class="panel-head"><h3>Saved integrations</h3></div>
-        <div id="integrationList" class="list-box empty-state">No integrations saved yet.</div>
-      </section>
-    </section>
-
-    <!-- ===================== JOBS ===================== -->
-    <section id="jobsSection" class="content-section">
-      <div class="panel-grid two-up">
-        <section class="panel">
-          <div class="panel-head"><h3>Ingestion jobs</h3><span class="muted">Schedule-driven ingestion from S3 and API sources.</span></div>
-          <form id="jobForm" class="form-grid">
-            <input name="name" placeholder="Hourly API poller" value="Hourly API poller" />
-            <select name="source_type"><option value="api">API</option><option value="s3">S3</option></select>
-            <select name="status"><option value="scheduled">Scheduled</option><option value="paused">Paused</option></select>
-            <input name="schedule" placeholder="0 * * * *" value="0 * * * *" />
-            <textarea name="details" placeholder='Optional JSON: {"batch_size":500}'></textarea>
-          </form>
-          <div class="button-row"><button class="primary-btn" id="createJobBtn">Create job</button></div>
-          <div id="jobResult" class="result-box" style="margin-top:10px">No jobs created in this session.</div>
-        </section>
-        <section class="panel">
-          <div class="panel-head"><h3>Configured jobs</h3></div>
-          <div id="jobsList" class="list-box empty-state">No jobs yet.</div>
-        </section>
-      </div>
-    </section>
-
-    <!-- ===================== ALERTS ===================== -->
-    <section id="alertsSection" class="content-section">
-      <div class="panel-grid two-up">
-        <section class="panel">
-          <div class="panel-head"><h3>Alert rules</h3></div>
-          <form id="alertForm" class="form-grid">
-            <input name="name" placeholder="Error spike" value="Error spike" />
-            <select name="severity"><option value="sev1">SEV-1</option><option value="sev2" selected>SEV-2</option><option value="sev3">SEV-3</option></select>
-            <select name="channel"><option>Slack</option><option>Email</option><option>PagerDuty</option></select>
-            <select name="status"><option value="active">Active</option><option value="draft">Draft</option></select>
-            <input name="condition_text" placeholder="error rate > 5% over 5m" value="error rate > 5% over 5m" />
-          </form>
-          <div class="button-row"><button class="primary-btn" id="createAlertBtn">Create alert</button></div>
-          <div id="alertResult" class="result-box" style="margin-top:10px">No alert created in this session.</div>
-        </section>
-        <section class="panel">
-          <div class="panel-head"><h3>Current rules</h3></div>
-          <div id="alertsList" class="list-box empty-state">No alert rules yet.</div>
-        </section>
-      </div>
-    </section>
-
-    <!-- ===================== USERS ===================== -->
-    <section id="usersSection" class="content-section">
-      <div class="panel-grid two-up">
-        <section class="panel">
-          <div class="panel-head"><h3>Create user</h3><span class="muted">Admins can add accounts to this organization.</span></div>
-          <form id="userForm" class="form-grid">
-            <input name="organization_name" id="userOrgName" placeholder="Organization" readonly />
-            <input name="name" placeholder="Full name" />
-            <input name="email" placeholder="user@company.com" />
-            <input name="password" placeholder="Temporary password" type="password" />
-            <select name="role" id="userRoleSelect">
-              <option value="developer">Developer</option>
-              <option value="tester">Tester</option>
-              <option value="manager">Manager</option>
-              <option value="admin">Admin</option>
-            </select>
-          </form>
-          <div class="button-row"><button class="primary-btn" id="createUserBtn">Create user</button></div>
-          <div id="userResult" class="result-box" style="margin-top:10px">Only admins can create users.</div>
-        </section>
-        <section class="panel">
-          <div class="panel-head"><h3>Current users</h3></div>
-          <div id="userList" class="list-box empty-state">Loading…</div>
-        </section>
-      </div>
-    </section>
-
-    <!-- ===================== DASHBOARDS ===================== -->
-    <section id="dashboardsSection" class="content-section">
-      <div class="panel-grid two-up">
-        <section class="panel">
-          <div class="panel-head"><h3>Saved dashboards</h3></div>
-          <div class="form-grid" style="grid-template-columns:1fr">
-            <input id="dashboardName" name="name" placeholder="Operations overview" />
-          </div>
-          <div class="button-row"><button class="primary-btn" id="saveDashboardBtn">Save dashboard</button></div>
-          <div id="dashboardResult" class="result-box" style="margin-top:10px">Save common views for incidents, latency, or ingestion health.</div>
-        </section>
-        <section class="panel">
-          <div class="panel-head"><h3>Existing dashboards</h3></div>
-          <div id="dashboardList" class="list-box empty-state">No dashboards saved yet.</div>
-        </section>
-      </div>
-      <section class="panel top-gap">
-        <div class="panel-head"><h3>Background ingestion runs</h3></div>
-        <div id="runList" class="list-box empty-state">No runs yet.</div>
-      </section>
-    </section>
-
-    <!-- ===================== ORG ===================== -->
-    <section id="orgSection" class="content-section">
-      <div class="panel-grid two-up">
-        <section class="panel">
-          <div class="panel-head"><h3>Organization settings</h3></div>
-          <form id="orgForm" class="form-grid">
-            <input name="name" placeholder="Vewit" />
-            <input name="slug" placeholder="vewit" />
-            <input name="logo_text" placeholder="VX" maxlength="3" />
-            <select name="theme_mode" id="themeModeSelect"><option value="white">White theme</option></select>
-            <input name="theme_color" type="color" value="#4f7cff" />
-            <label class="checkbox-row"><input type="checkbox" name="admin_only" /> Admin-only mode</label>
-          </form>
-          <div class="button-row"><button class="primary-btn" id="saveOrgBtn">Save branding</button></div>
-          <div id="orgResult" class="result-box" style="margin-top:10px">Organization settings loaded from database.</div>
-        </section>
-        <section class="panel">
-          <div class="panel-head"><h3>How access works</h3></div>
-          <div class="copy-block">
-            <p><strong>Admin</strong> — full control: branding, users, integrations, alerts, jobs.</p>
-            <p><strong>Manager / Developer / Tester</strong> — can sign in and use the shared workspace.</p>
-            <p><strong>Subdomain-ready</strong> — slug powers routing like <code>acme.observex.in</code>.</p>
-          </div>
-        </section>
-      </div>
-    </section>
-
-    <!-- ===================== INVITES ===================== -->
-    <section id="invitesSection" class="content-section">
-      <div class="panel-grid two-up">
-        <section class="panel">
-          <div class="panel-head"><h3>Invite users</h3></div>
-          <form class="stack-form" id="inviteForm">
-            <input name="email" type="email" placeholder="new.user@company.com" />
-            <select name="role">
-              <option value="manager">Manager</option><option value="developer">Developer</option>
-              <option value="tester">Tester</option><option value="admin">Admin</option>
-            </select>
-            <button class="primary-btn" type="submit">Create invite link</button>
-          </form>
-          <div id="inviteResult" class="result-box" style="margin-top:10px">Create an invite link and share it manually.</div>
-        </section>
-        <section class="panel">
-          <div class="panel-head"><h3>Recent invites</h3></div>
-          <div id="invitationList" class="list-box empty-state">No invites sent yet.</div>
-        </section>
-      </div>
-    </section>
-
-    <!-- ===================== AUDIT ===================== -->
-    <section id="auditSection" class="content-section">
-      <section class="panel">
-        <div class="panel-head"><h3>Audit trail</h3><span class="muted">Recent administrative and operational activity.</span></div>
-        <div id="auditList" class="list-box empty-state">No audit events yet.</div>
-      </section>
-    </section>
-
-  </main>
+      <div id="uploadStatus" style="margin-top:14px;font-size:13px;color:var(--text2)"></div>
+    </div>
+  </div>
 </div>
 
-<!-- ===== LOG DETAIL MODAL ===== -->
-<dialog id="logModal" class="log-modal">
-  <div class="modal-head">
-    <h3>Log detail</h3>
-    <button class="modal-close-btn" onclick="document.getElementById('logModal').close()" aria-label="Close">✕</button>
+<!-- ── Log Detail Modal ── -->
+<div class="modal-overlay hidden" id="detailModal" onclick="if(event.target===this)closeDetail()">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <h3>Log Detail</h3>
+      <button class="modal-close" onclick="closeDetail()">✕</button>
+    </div>
+    <div class="modal-body" id="detailBody"></div>
   </div>
-  <div class="modal-body">
-    <div class="meta-grid" id="logMeta"></div>
-    <pre id="logPayload"></pre>
-  </div>
-</dialog>
+</div>
 
-<script src="{{ url_for('static', filename='app.js') }}"></script>
+<!-- ── Toast ── -->
+<div class="toast-wrap" id="toastWrap"></div>
+
+<script>
+// ── State ──────────────────────────────────────────────────────────────────
+const ORG_SLUG   = "{{ org_slug }}";
+const USER_ROLE  = "{{ user.role }}";
+let currentSection = "{{ active_section }}";
+let bsData = null;          // bootstrap data cache
+// Log explorer pagination state
+let logPage    = 1;
+let logPerPage = 50;
+let logSort    = "timestamp";
+let logDir     = "desc";
+let logTotal   = 0;
+let logPages   = 1;
+let logSearchTimer = null;
+let currentLogs = []; // for export / detail
+
+// ── Helpers ───────────────────────────────────────────────────────────────
+const escH = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+
+function levelBadge(lvl) {
+  const l = (lvl || '').toLowerCase();
+  const cls = {error:'badge-error', warn:'badge-warn', warning:'badge-warn', info:'badge-info', success:'badge-success', debug:'badge-debug'}[l] || 'badge-debug';
+  return `<span class="badge ${cls}">${escH((lvl||'').toUpperCase())}</span>`;
+}
+
+function fmtTs(ts) {
+  if (!ts) return '–';
+  try { return new Date(ts).toLocaleString(); } catch { return ts; }
+}
+
+function toast(msg, type = 'info') {
+  const w = document.getElementById('toastWrap');
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.textContent = msg;
+  w.appendChild(el);
+  setTimeout(() => { el.classList.add('out'); setTimeout(() => el.remove(), 320); }, 3000);
+}
+
+function paginationRange(cur, total) {
+  if (total <= 7) return Array.from({length: total}, (_, i) => i + 1);
+  if (cur <= 4)        return [1,2,3,4,5,'…',total];
+  if (cur >= total-3)  return [1,'…',total-4,total-3,total-2,total-1,total];
+  return [1,'…',cur-1,cur,cur+1,'…',total];
+}
+
+// ── Navigation ────────────────────────────────────────────────────────────
+const SECTION_TITLES = {
+  overview:      'Investigate logs, run connectors, and manage your organization.',
+  explorer:      'Investigate logs, run connectors, and manage your organization.',
+  ingest:        'Ingest logs via API.',
+  integrations:  'Connect your log sources.',
+  jobs:          'Manage ingestion jobs.',
+  alerts:        'Configure alert rules.',
+  users:         'Manage team members.',
+  dashboards:    'Your saved dashboards.',
+  invites:       'Team invitations.',
+  organization:  'Workspace settings.',
+  audit:         'Audit trail.',
+};
+
+function switchSection(s) {
+  document.querySelectorAll('.section').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  const sec = document.getElementById(`section-${s}`);
+  if (sec) sec.classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(el => {
+    if (el.getAttribute('onclick') === `switchSection('${s}')`) el.classList.add('active');
+  });
+  document.getElementById('pageTitle').textContent = SECTION_TITLES[s] || '';
+  currentSection = s;
+  history.pushState(null, '', `/workspace/${ORG_SLUG}/${s}`);
+  // Lazy-render sections
+  if (s === 'explorer') { logPage = 1; loadLogs(1); }
+  else if (s === 'overview' && bsData) renderOverview(bsData);
+  else if (!bsData) loadBootstrap().then(() => renderSection(s));
+  else renderSection(s);
+}
+
+function renderSection(s) {
+  if (!bsData) return;
+  if (s === 'overview')      renderOverview(bsData);
+  else if (s === 'users')    renderUsers(bsData.users);
+  else if (s === 'audit')    renderAudit(bsData.audit);
+  else if (s === 'alerts')   renderAlerts(bsData.alerts);
+  else if (s === 'jobs')     renderJobs(bsData.jobs);
+  else if (s === 'integrations') renderIntegrations(bsData.integrations);
+  else if (s === 'invites')  renderInvites(bsData.invitations);
+  else if (s === 'dashboards') renderDashboards(bsData.saved_dashboards);
+  else if (s === 'organization') renderOrg(bsData.organization);
+  else if (s === 'ingest')   renderIngest(bsData.api_keys);
+}
+
+// ── Bootstrap ─────────────────────────────────────────────────────────────
+async function loadBootstrap() {
+  try {
+    const res = await fetch('/api/bootstrap');
+    if (!res.ok) { if (res.status === 401) { location.href = '/login'; } return; }
+    bsData = await res.json();
+    renderSection(currentSection);
+    if (currentSection === 'explorer') loadLogs(1);
+  } catch(e) { console.error('Bootstrap failed', e); }
+}
+
+// ── Overview ──────────────────────────────────────────────────────────────
+function renderOverview(data) {
+  const s = data.summary || {};
+  const lvl = s.levels || {};
+  const total = s.logs || 0;
+  document.getElementById('ov-total').textContent   = (total).toLocaleString();
+  document.getElementById('ov-errors').textContent  = (lvl.error || 0).toLocaleString();
+  document.getElementById('ov-warns').textContent   = (lvl.warn || 0).toLocaleString();
+  document.getElementById('ov-success').textContent = (lvl.success || 0).toLocaleString();
+  document.getElementById('ov-errrate').textContent = (s.error_rate || 0) + '%';
+  document.getElementById('ov-uploads').textContent = (s.uploads || 0).toLocaleString();
+  const sources = s.top_sources || [];
+  if (sources.length) {
+    document.getElementById('overviewSources').innerHTML = `
+      <div class="section-header" style="font-size:14px;margin-bottom:12px">Top Sources</div>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead><tr><th>Source</th><th>Events</th></tr></thead>
+          <tbody>${sources.map(r => `<tr><td>${escH(r.source)}</td><td>${r.count.toLocaleString()}</td></tr>`).join('')}</tbody>
+        </table>
+      </div>`;
+  }
+}
+
+// ── Log Explorer ──────────────────────────────────────────────────────────
+async function loadLogs(page) {
+  logPage = page || 1;
+  const q       = (document.getElementById('logSearch').value || '').trim();
+  const level   = document.getElementById('levelFilter').value;
+  const minutes = document.getElementById('timeFilter').value;
+  const params  = new URLSearchParams({
+    page: logPage, per_page: logPerPage,
+    sort: logSort, dir: logDir,
+    level, minutes, q,
+  });
+  document.getElementById('logTableArea').innerHTML = '<div class="loading">Loading logs…</div>';
+  document.getElementById('recordsCount').textContent = '…';
+  try {
+    const res = await fetch(`/api/logs?${params}`);
+    if (!res.ok) { toast('Failed to load logs', 'error'); return; }
+    const data = await res.json();
+    logTotal   = data.total   ?? data.records.length;
+    logPages   = data.pages   ?? 1;
+    logPage    = data.page    ?? logPage;
+    logPerPage = data.per_page ?? logPerPage;
+    currentLogs = data.records || [];
+    document.getElementById('recordsCount').textContent = logTotal.toLocaleString() + ' records';
+    renderLogTable(currentLogs);
+  } catch(e) {
+    document.getElementById('logTableArea').innerHTML = '<div class="empty-state"><div class="icon">⚠️</div><h3>Failed to load logs</h3><p>Check your connection and try again.</p></div>';
+  }
+}
+
+function renderLogTable(logs) {
+  if (!logs.length) {
+    document.getElementById('logTableArea').innerHTML = `
+      <div class="empty-state"><div class="icon">🔍</div><h3>No matching logs</h3><p>Try adjusting your search or filter criteria.</p></div>`;
+    return;
+  }
+  const sortArrow = col => logSort === col ? `<span class="sort-ind">${logDir==='asc'?'▲':'▼'}</span>` : '';
+  const rows = logs.map((l, i) => {
+    const safeMsg = escH(l.message).replace(/'/g,"&#39;");
+    return `<tr onclick="openDetail(${i})">
+      <td class="td-ts">${escH(fmtTs(l.timestamp))}</td>
+      <td>${levelBadge(l.level)}</td>
+      <td class="td-source">${escH(l.source || '')}</td>
+      <td class="td-event" title="${escH(l.event_id || '')}">${escH(l.event_id || '–')}</td>
+      <td class="td-msg">
+        <div class="td-msg-wrap">
+          <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:480px" title="${escH(l.message)}">${escH(l.message)}</span>
+          <button class="copy-btn" title="Copy message" onclick="event.stopPropagation();cpMsg(this,'${safeMsg}')">⎘</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+
+  // Toolbar
+  const start = (logPage - 1) * logPerPage + 1;
+  const end   = Math.min(logPage * logPerPage, logTotal);
+  const toolbar = `<div class="table-toolbar">
+    <div class="table-toolbar-left">
+      <span class="rpp-label">Rows per page:</span>
+      <select class="rpp-select" onchange="setPerPage(+this.value)">
+        ${[25,50,100,200].map(n=>`<option value="${n}"${n===logPerPage?' selected':''}>${n}</option>`).join('')}
+      </select>
+      <span class="rpp-label" style="margin-left:6px">Showing ${start}–${end} of ${logTotal.toLocaleString()}</span>
+    </div>
+    <div class="table-toolbar-right">
+      <button class="export-btn" onclick="exportLogs('csv')">⬇ CSV</button>
+      <button class="export-btn" onclick="exportLogs('json')">⬇ JSON</button>
+    </div>
+  </div>`;
+
+  // Pagination bar
+  function pgBar() {
+    const pd = logPage <= 1 ? 'disabled' : '';
+    const nd = logPage >= logPages ? 'disabled' : '';
+    let btns = '';
+    paginationRange(logPage, logPages).forEach(p => {
+      if (p === '…') btns += `<span class="pg-ellipsis">…</span>`;
+      else btns += `<button class="pg-btn${p===logPage?' active':''}" onclick="loadLogs(${p})">${p}</button>`;
+    });
+    return `<div class="pagination-bar">
+      <span class="pg-info">${logTotal.toLocaleString()} records · page ${logPage} of ${logPages}</span>
+      <button class="pg-btn" ${pd} onclick="loadLogs(1)" title="First">«</button>
+      <button class="pg-btn" ${pd} onclick="loadLogs(${logPage-1})" title="Prev">‹</button>
+      ${btns}
+      <button class="pg-btn" ${nd} onclick="loadLogs(${logPage+1})" title="Next">›</button>
+      <button class="pg-btn" ${nd} onclick="loadLogs(${logPages})" title="Last">»</button>
+    </div>`;
+  }
+
+  document.getElementById('logTableArea').innerHTML = `
+    ${toolbar}
+    <div class="log-table-outer">
+      <div class="log-table-scroll">
+        <table class="log-table">
+          <thead><tr>
+            <th class="sort-th" onclick="toggleSort('timestamp')">Timestamp${sortArrow('timestamp')}</th>
+            <th class="sort-th" onclick="toggleSort('level')">Level${sortArrow('level')}</th>
+            <th class="sort-th" onclick="toggleSort('source')">Source${sortArrow('source')}</th>
+            <th>Event</th>
+            <th class="sort-th" onclick="toggleSort('message')">Message${sortArrow('message')}</th>
+          </tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+    </div>
+    ${pgBar()}`;
+}
+
+// ── Sort / per-page ────────────────────────────────────────────────────────
+function toggleSort(col) {
+  if (logSort === col) logDir = logDir === 'asc' ? 'desc' : 'asc';
+  else { logSort = col; logDir = col === 'timestamp' ? 'desc' : 'asc'; }
+  loadLogs(1);
+}
+function setPerPage(n) { logPerPage = n; loadLogs(1); }
+
+// ── Search ─────────────────────────────────────────────────────────────────
+function onSearchInput() {
+  clearTimeout(logSearchTimer);
+  logSearchTimer = setTimeout(() => loadLogs(1), 350);
+}
+function onTimeFilterChange() { loadLogs(1); }
+
+// ── Log Detail ────────────────────────────────────────────────────────────
+async function openDetail(idx) {
+  const log = currentLogs[idx];
+  if (!log) return;
+  const modal = document.getElementById('detailModal');
+  const body  = document.getElementById('detailBody');
+  modal.classList.remove('hidden');
+  body.innerHTML = `<div class="loading">Loading…</div>`;
+  try {
+    const res = await fetch(`/api/logs/${log.id}`);
+    const d = res.ok ? await res.json() : log;
+    body.innerHTML = `
+      <div class="modal-field"><label>Timestamp</label><pre>${escH(fmtTs(d.timestamp))}</pre></div>
+      <div class="modal-field"><label>Level</label><div style="margin-top:4px">${levelBadge(d.level)}</div></div>
+      <div class="modal-field"><label>Source</label><pre>${escH(d.source||'–')}</pre></div>
+      <div class="modal-field"><label>Event ID</label><pre>${escH(d.event_id||'–')}</pre></div>
+      <div class="modal-field"><label>Message</label><pre>${escH(d.message||'–')}</pre></div>
+      ${d.payload && Object.keys(d.payload).length ? `<div class="modal-field"><label>Payload</label><pre>${escH(JSON.stringify(d.payload, null, 2))}</pre></div>` : ''}`;
+  } catch(e) {
+    body.innerHTML = `<pre>${escH(JSON.stringify(log, null, 2))}</pre>`;
+  }
+}
+function closeDetail() { document.getElementById('detailModal').classList.add('hidden'); }
+
+// ── Copy message ──────────────────────────────────────────────────────────
+function cpMsg(btn, msg) {
+  navigator.clipboard.writeText(msg).then(() => { btn.textContent = '✓'; setTimeout(() => btn.textContent = '⎘', 1400); });
+}
+
+// ── Export ────────────────────────────────────────────────────────────────
+function exportLogs(fmt) {
+  const data = currentLogs;
+  let content, mime, ext;
+  if (fmt === 'json') {
+    content = JSON.stringify(data, null, 2); mime = 'application/json'; ext = 'json';
+  } else {
+    const cols = ['timestamp','level','source','event_id','message'];
+    const e = v => `"${String(v??'').replace(/"/g,'""')}"`;
+    content = [cols.join(','), ...data.map(r => cols.map(c => e(r[c])).join(','))].join('\n');
+    mime = 'text/csv'; ext = 'csv';
+  }
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([content], {type: mime}));
+  a.download = `observex-logs.${ext}`; a.click();
+  toast(`Exported ${data.length} logs as ${ext.toUpperCase()}`, 'success');
+}
+
+// ── Upload ────────────────────────────────────────────────────────────────
+function openUploadModal()  { document.getElementById('uploadModal').classList.remove('hidden'); }
+function closeUploadModal() { document.getElementById('uploadModal').classList.add('hidden'); document.getElementById('uploadStatus').textContent = ''; }
+
+const ud = document.getElementById('uploadDrop');
+ud.addEventListener('dragover', e => { e.preventDefault(); ud.classList.add('drag-over'); });
+ud.addEventListener('dragleave', () => ud.classList.remove('drag-over'));
+ud.addEventListener('drop', e => { e.preventDefault(); ud.classList.remove('drag-over'); handleUploadFiles(e.dataTransfer.files); });
+document.getElementById('uploadModal').addEventListener('click', e => { if (e.target === document.getElementById('uploadModal')) closeUploadModal(); });
+
+async function handleUploadFiles(files) {
+  if (!files || !files.length) return;
+  const statusEl = document.getElementById('uploadStatus');
+  statusEl.textContent = 'Uploading…';
+  const fd = new FormData();
+  Array.from(files).forEach(f => fd.append('files', f));
+  try {
+    const res = await fetch('/api/upload', { method: 'POST', body: fd });
+    const data = await res.json();
+    if (!res.ok) { statusEl.textContent = data.error || 'Upload failed.'; toast(data.error || 'Upload failed', 'error'); return; }
+    statusEl.textContent = `✓ ${data.total_ingested || 0} records ingested.`;
+    toast(`Ingested ${data.total_ingested || 0} log records`, 'success');
+    setTimeout(closeUploadModal, 1200);
+    if (currentSection === 'explorer') loadLogs(1);
+  } catch(e) { statusEl.textContent = 'Upload error.'; toast('Upload failed', 'error'); }
+}
+
+// ── Section renderers ──────────────────────────────────────────────────────
+function renderUsers(users) {
+  if (!users || !users.length) { document.getElementById('usersList').innerHTML = '<div class="empty-state"><div class="icon">👥</div><h3>No users</h3></div>'; return; }
+  document.getElementById('usersList').innerHTML = `
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Joined</th></tr></thead>
+        <tbody>${users.map(u => `<tr><td>${escH(u.name)}</td><td>${escH(u.email)}</td><td><span class="pill">${escH(u.role)}</span></td><td>${escH(fmtTs(u.created_at))}</td></tr>`).join('')}</tbody>
+      </table>
+    </div>`;
+}
+
+function renderAudit(events) {
+  if (!events || !events.length) { document.getElementById('auditList').innerHTML = '<div class="empty-state"><div class="icon">📜</div><h3>No audit events</h3></div>'; return; }
+  document.getElementById('auditList').innerHTML = `
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead><tr><th>Time</th><th>Action</th><th>Target</th></tr></thead>
+        <tbody>${events.map(e => `<tr><td class="td-ts">${escH(fmtTs(e.created_at))}</td><td>${escH(e.action)}</td><td>${escH(e.target_type)} #${escH(e.target_id)}</td></tr>`).join('')}</tbody>
+      </table>
+    </div>`;
+}
+
+function renderAlerts(alerts) {
+  const el = document.getElementById('alertsList');
+  if (!alerts || !alerts.length) { el.innerHTML = '<div class="empty-state"><div class="icon">🔔</div><h3>No alert rules</h3><p>Create alerts to get notified of log patterns.</p></div>'; return; }
+  el.innerHTML = `<div class="table-wrap"><table class="data-table">
+    <thead><tr><th>Name</th><th>Condition</th><th>Status</th></tr></thead>
+    <tbody>${alerts.map(a => `<tr><td>${escH(a.name||'–')}</td><td>${escH(a.condition||'–')}</td><td><span class="pill ${a.active?'active':'inactive'}">${a.active?'Active':'Inactive'}</span></td></tr>`).join('')}</tbody>
+  </table></div>`;
+}
+
+function renderJobs(jobs) {
+  const el = document.getElementById('jobsList');
+  if (!jobs || !jobs.length) { el.innerHTML = '<div class="empty-state"><div class="icon">⚙</div><h3>No ingestion jobs</h3><p>Create a job to pull logs from an integration.</p></div>'; return; }
+  el.innerHTML = `<div class="table-wrap"><table class="data-table">
+    <thead><tr><th>Name</th><th>Source</th><th>Status</th><th>Last run</th></tr></thead>
+    <tbody>${jobs.map(j => `<tr><td>${escH(j.name||'–')}</td><td>${escH(j.source_type||'–')}</td><td><span class="pill ${j.status==='active'?'active':'inactive'}">${escH(j.status||'–')}</span></td><td>${escH(fmtTs(j.last_run_at)||'Never')}</td></tr>`).join('')}</tbody>
+  </table></div>`;
+}
+
+function renderIntegrations(integrations) {
+  const el = document.getElementById('integrationsList');
+  if (!integrations || !integrations.length) { el.innerHTML = '<div class="empty-state"><div class="icon">🔌</div><h3>No integrations</h3><p>Connect a log source like AWS S3 or a custom API.</p></div>'; return; }
+  el.innerHTML = `<div class="table-wrap"><table class="data-table">
+    <thead><tr><th>Name</th><th>Type</th><th>Status</th><th>Updated</th></tr></thead>
+    <tbody>${integrations.map(i => `<tr><td>${escH(i.name||'–')}</td><td>${escH(i.source_type||'–')}</td><td><span class="pill ${i.status==='active'?'active':'inactive'}">${escH(i.status||'–')}</span></td><td>${escH(fmtTs(i.updated_at))}</td></tr>`).join('')}</tbody>
+  </table></div>`;
+}
+
+function renderInvites(invites) {
+  const el = document.getElementById('invitesList');
+  if (!invites || !invites.length) { el.innerHTML = '<div class="empty-state"><div class="icon">✉</div><h3>No invitations</h3></div>'; return; }
+  el.innerHTML = `<div class="table-wrap"><table class="data-table">
+    <thead><tr><th>Email</th><th>Role</th><th>Status</th><th>Sent</th></tr></thead>
+    <tbody>${invites.map(i => `<tr><td>${escH(i.email)}</td><td>${escH(i.role)}</td><td><span class="pill">${escH(i.status)}</span></td><td>${escH(fmtTs(i.created_at))}</td></tr>`).join('')}</tbody>
+  </table></div>`;
+}
+
+function renderDashboards(dashboards) {
+  const el = document.getElementById('dashboardsList');
+  if (!dashboards || !dashboards.length) { el.innerHTML = '<div class="empty-state"><div class="icon">📊</div><h3>No saved dashboards</h3></div>'; return; }
+  el.innerHTML = `<div class="table-wrap"><table class="data-table">
+    <thead><tr><th>Name</th><th>Created</th></tr></thead>
+    <tbody>${dashboards.map(d => `<tr><td>${escH(d.name)}</td><td>${escH(fmtTs(d.created_at))}</td></tr>`).join('')}</tbody>
+  </table></div>`;
+}
+
+function renderOrg(org) {
+  const el = document.getElementById('orgSettings');
+  el.innerHTML = `<div class="card">
+    <h4>Workspace details</h4>
+    <table class="data-table" style="margin-top:10px">
+      <tbody>
+        <tr><td style="width:160px;color:var(--text3)">Organization</td><td>${escH(org.name)}</td></tr>
+        <tr><td style="color:var(--text3)">Slug</td><td>${escH(org.slug)}</td></tr>
+        <tr><td style="color:var(--text3)">Workspace URL</td><td><a href="${escH(org.workspace_url)}" style="color:var(--accent)">${escH(org.workspace_url)}</a></td></tr>
+      </tbody>
+    </table>
+  </div>`;
+}
+
+function renderIngest(apiKeys) {
+  const el = document.getElementById('apiKeysList');
+  if (!apiKeys || !apiKeys.length) { el.innerHTML = '<p style="color:var(--text3);font-size:13px">No API keys yet. Create one to start ingesting logs.</p>'; return; }
+  el.innerHTML = `<div class="table-wrap"><table class="data-table">
+    <thead><tr><th>Name</th><th>Prefix</th><th>Status</th><th>Last used</th></tr></thead>
+    <tbody>${apiKeys.map(k => `<tr><td>${escH(k.name)}</td><td><code>${escH(k.prefix)}…</code></td><td><span class="pill ${k.status==='active'?'active':'inactive'}">${escH(k.status)}</span></td><td>${escH(fmtTs(k.last_used_at)||'Never')}</td></tr>`).join('')}</tbody>
+  </table></div>`;
+}
+
+// ── Logout ─────────────────────────────────────────────────────────────────
+async function doLogout() {
+  await fetch('/logout', { method: 'POST' }).catch(() => {});
+  location.href = '/login';
+}
+
+// ── Init ───────────────────────────────────────────────────────────────────
+loadBootstrap();
+if (currentSection === 'explorer') loadLogs(1);
+</script>
 </body>
 </html>
