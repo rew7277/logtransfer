@@ -171,6 +171,15 @@
             <option value="success">Success</option>
             <option value="debug">Debug</option>
           </select>
+          <select id="timeFilter">
+            <option value="0">All time</option>
+            <option value="15">Last 15 min</option>
+            <option value="30">Last 30 min</option>
+            <option value="60">Last 1 hour</option>
+            <option value="360">Last 6 hours</option>
+            <option value="1440">Last 24 hours</option>
+            <option value="10080">Last 7 days</option>
+          </select>
           <button class="primary-btn" id="searchBtn">Refresh</button>
           <label class="secondary-btn" for="logFileInput">↑ Upload</label>
         </div>
@@ -439,7 +448,7 @@ print(resp.json())</pre>
 <dialog id="logModal" class="log-modal">
   <div class="modal-head">
     <h3>Log detail</h3>
-    <button class="ghost-btn" onclick="document.getElementById('logModal').close()">✕ Close</button>
+    <button class="modal-close-btn" onclick="document.getElementById('logModal').close()" aria-label="Close">✕</button>
   </div>
   <div class="modal-body">
     <div class="meta-grid" id="logMeta"></div>

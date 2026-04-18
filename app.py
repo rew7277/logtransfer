@@ -1176,8 +1176,9 @@ def get_logs():
     if error:
         return error
     db = get_db()
-    q = (request.args.get("q") or "").strip()
-    level = (request.args.get("level") or "all").strip().lower()
+    q       = (request.args.get("q") or "").strip()
+    level   = (request.args.get("level") or "all").strip().lower()
+    minutes = request.args.get("minutes", "0").strip()
     params: list[Any] = [user["org_id"]]
     sql = "SELECT id, timestamp, level, source, event_id, message FROM log_events WHERE org_id = ?"
     if level != "all":
@@ -1187,7 +1188,15 @@ def get_logs():
         sql += " AND (lower(message) LIKE ? OR lower(source) LIKE ? OR lower(coalesce(event_id,'')) LIKE ?)"
         pattern = f"%{q.lower()}%"
         params.extend([pattern, pattern, pattern])
-    sql += " ORDER BY timestamp DESC LIMIT 300"
+    # Time-based filter: filter logs from the last N minutes
+    try:
+        mins = int(minutes)
+        if mins > 0:
+            sql += " AND timestamp >= datetime('now', ? || ' minutes')"
+            params.append(f"-{mins}")
+    except (ValueError, TypeError):
+        pass
+    sql += " ORDER BY timestamp DESC LIMIT 500"
     rows = [dict(row) for row in db.execute(sql, params).fetchall()]
     return jsonify({"records": rows})
 

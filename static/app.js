@@ -375,10 +375,13 @@ async function fetchBootstrap() {
 
 // ===== LOGS =====
 async function fetchLogs() {
-  const q     = $('searchInput')?.value?.trim() || '';
-  const level = $('levelFilter')?.value || 'all';
-  const res   = await fetch(`/api/logs?${new URLSearchParams({ q, level })}`);
-  const data  = await res.json();
+  const q       = $('searchInput')?.value?.trim() || '';
+  const level   = $('levelFilter')?.value || 'all';
+  const minutes = $('timeFilter')?.value || '0';
+  const params  = { q, level };
+  if (minutes && minutes !== '0') params.minutes = minutes;
+  const res  = await fetch(`/api/logs?${new URLSearchParams(params)}`);
+  const data = await res.json();
   state.records = data.records || [];
   renderRecords();
 }
@@ -386,7 +389,14 @@ async function fetchLogs() {
 function renderRecords() {
   const el = $('recordsBody');
   if (!state.records.length) {
-    el.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:28px;color:var(--muted)">No matching records. Upload logs or use the Ingest API.</td></tr>';
+    const timeVal   = $('timeFilter')?.value || '0';
+    const timeLabel = $('timeFilter')?.selectedOptions[0]?.text || '';
+    const hasFilter = $('searchInput')?.value || $('levelFilter')?.value !== 'all' || timeVal !== '0';
+    const hint = hasFilter
+      ? `No records match your filters${timeVal !== '0' ? ` for <strong>${timeLabel}</strong>` : ''}.`
+      : 'No matching records. Upload logs or use the Ingest API.';
+    el.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:28px;color:var(--muted)">${hint}</td></tr>`;
+    updateResultCount(0);
     return;
   }
   el.innerHTML = state.records.map(r => `
@@ -397,6 +407,22 @@ function renderRecords() {
       <td style="font-family:monospace;font-size:11px">${escapeHtml(r.event_id || '—')}</td>
       <td>${escapeHtml(r.message || '')}</td>
     </tr>`).join('');
+  updateResultCount(state.records.length);
+}
+
+function updateResultCount(count) {
+  let el = $('resultCount');
+  if (!el) {
+    el = document.createElement('span');
+    el.id = 'resultCount';
+    el.style.cssText = 'font-size:12px;color:var(--muted);margin-left:auto;white-space:nowrap';
+    $('searchBtn')?.parentElement?.appendChild(el);
+  }
+  const timeLabel = $('timeFilter')?.selectedOptions[0]?.text || '';
+  const timeVal   = $('timeFilter')?.value || '0';
+  el.textContent = count
+    ? `${count} record${count !== 1 ? 's' : ''}${timeVal !== '0' ? ` · ${timeLabel}` : ''}`
+    : '';
 }
 
 async function showLogDetail(id) {
@@ -558,7 +584,16 @@ function bindEvents() {
   // Log explorer
   $('searchBtn').addEventListener('click', fetchLogs);
   $('levelFilter').addEventListener('change', fetchLogs);
+  $('timeFilter').addEventListener('change', () => {
+    const tf = $('timeFilter');
+    tf.classList.toggle('active', tf.value !== '0');
+    fetchLogs();
+  });
   $('searchInput').addEventListener('keydown', e => { if (e.key === 'Enter') fetchLogs(); });
+  // Auto-refresh when search box is cleared (native ✕ or backspace to empty)
+  $('searchInput').addEventListener('input', e => { if (!e.target.value) fetchLogs(); });
+  // Close modal when clicking backdrop (outside the dialog box)
+  $('logModal').addEventListener('click', e => { if (e.target === $('logModal')) $('logModal').close(); });
   $('recordsBody').addEventListener('click', e => {
     const row = e.target.closest('.log-row');
     if (row) showLogDetail(row.dataset.id);
