@@ -292,8 +292,9 @@
   @keyframes pulse-dot { 0%,100%{opacity:0;transform:scale(1);} 50%{opacity:1;transform:scale(1.5);} }
 
   .level-badge {
-    display: inline-flex; align-items: center; gap: 5px;
+    display: inline-flex; align-items: center; justify-content: center; gap: 5px;
     padding: 3px 9px; border-radius: 6px; font-size: 11px; font-weight: 600; letter-spacing: .3px;
+    min-width: 88px; text-align: center; white-space: nowrap;
   }
   .badge-error-full { background: var(--red-bg); color: var(--red); }
   .badge-success-full { background: var(--green-bg); color: var(--green); }
@@ -468,6 +469,43 @@
   .ei-code { font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 600; color: var(--red); min-width: 48px; }
   .ei-msg { font-size: 13px; flex: 1; }
   .ei-count { font-size: 12px; color: var(--muted); background: rgba(255,69,58,.12); border-radius: 20px; padding: 2px 10px; font-weight: 600; color: var(--red); }
+
+  /* ─── OBSERVABILITY ─── */
+  .obs-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(170px,1fr)); gap: 16px; margin-bottom: 28px; }
+  .obs-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 20px; }
+  .obs-card-label { font-size: 11px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 8px; }
+  .obs-card-value { font-size: 28px; font-weight: 700; line-height: 1; }
+  .obs-card-sub { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .obs-card.red { border-color: var(--red); }
+  .obs-card.red .obs-card-value { color: var(--red); }
+  .obs-card.yellow { border-color: var(--yellow); }
+  .obs-card.yellow .obs-card-value { color: var(--yellow); }
+  .obs-card.green .obs-card-value { color: var(--green); }
+  .obs-section-title { font-size: 13px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin: 24px 0 12px; }
+  .obs-bar-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+  .obs-bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; font-size: 12px; }
+  .obs-bar-label { width: 130px; color: var(--muted); flex-shrink: 0; font-family: 'JetBrains Mono', monospace; font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .obs-bar-track { flex: 1; background: var(--border); border-radius: 4px; height: 8px; overflow: hidden; }
+  .obs-bar-fill { height: 100%; border-radius: 4px; transition: width .4s ease; }
+  .obs-bar-val { width: 50px; text-align: right; font-weight: 600; font-size: 12px; }
+  .obs-ip-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .obs-ip-table th { text-align: left; padding: 8px 12px; font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; border-bottom: 1px solid var(--border); }
+  .obs-ip-table td { padding: 10px 12px; border-bottom: 1px solid var(--border); }
+  .obs-ip-table tr:last-child td { border-bottom: none; }
+  .obs-ip-table tr.suspicious td { background: rgba(255,69,58,.04); }
+  .obs-ip-table tr:hover td { background: var(--surface-hover); }
+  .suspicious-badge { background: var(--red-bg); color: var(--red); padding: 2px 8px; border-radius: 5px; font-size: 11px; font-weight: 600; }
+  .ok-badge { background: var(--green-bg); color: var(--green); padding: 2px 8px; border-radius: 5px; font-size: 11px; font-weight: 600; }
+  .obs-alert-form { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-top: 24px; }
+  .obs-alert-form h3 { font-size: 14px; font-weight: 600; margin-bottom: 14px; }
+  .obs-form-row { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+  .obs-form-row input, .obs-form-row select { flex: 1; min-width: 180px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; color: var(--text); font-size: 13px; }
+  .obs-form-row input:focus, .obs-form-row select:focus { outline: none; border-color: var(--accent); }
+  .hourly-chart { display: flex; align-items: flex-end; gap: 3px; height: 80px; margin-top: 8px; }
+  .hourly-bar-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; height: 100%; justify-content: flex-end; }
+  .hourly-bar { width: 100%; border-radius: 3px 3px 0 0; transition: height .3s ease; cursor: pointer; }
+  .hourly-bar:hover { opacity: .8; }
+  .hourly-lbl { font-size: 9px; color: var(--muted); }
 </style>
 </head>
 <body>
@@ -502,6 +540,9 @@
     <div class="nav-item" data-view="debug"><span class="nav-icon">🐛</span>Debug <span class="nav-badge" style="background:rgba(110,110,128,.2);color:var(--muted)" id="nb-debug">0</span></div>
     <div class="nav-item" data-view="flows"><span class="nav-icon">🔀</span>Flow Analytics</div>
     <div class="nav-item" data-view="errorinsights"><span class="nav-icon">🩺</span>Error Insights</div>
+
+    <div class="nav-section">Observability</div>
+    <div class="nav-item" data-view="observability"><span class="nav-icon">📡</span>Observability <span class="nav-badge badge-red" id="nb-suspicious" style="display:none">!</span></div>
 
     <div class="sidebar-footer">
       <button class="upload-btn" onclick="document.getElementById('fileInput').click()">
@@ -1121,9 +1162,11 @@ function highlight(text, query) {
 
 function render() {
   const logs = filteredLogs();
-  const titles = { overview:'Overview', all:'All Logs', timeline:'Timeline', error:'Errors', success:'Successes', warn:'Warnings', info:'Info', cloudwatch:'CloudWatch', debug:'Debug' };
+  const titles = { overview:'Overview', all:'All Logs', timeline:'Timeline', error:'Errors', success:'Successes', warn:'Warnings', info:'Info', cloudwatch:'CloudWatch', debug:'Debug', observability:'Observability' };
   document.getElementById('sectionTitle').textContent = titles[currentView] || 'Logs';
   document.getElementById('sectionCount').textContent = `${logs.length} entries`;
+
+  if (currentView === 'observability') { fetchObsAlertRulesFromApi().then(() => renderObservability()); return; }
 
   if (!allLogs.length) {
     document.getElementById('logContent').innerHTML = `
@@ -1525,6 +1568,254 @@ document.addEventListener('drop', e => {
 // ─── INITIAL RENDER ───
 updateBadges();
 render();
+
+// ─── OBSERVABILITY ───
+let obsData = null;
+let obsAlertRules = [];
+
+async function fetchObservabilityData(minutes = 60) {
+  // Build observability from local logs since this is a standalone tool
+  const since = Date.now() - minutes * 60 * 1000;
+  const windowLogs = allLogs.filter(l => {
+    const t = l.timestamp instanceof Date ? l.timestamp : new Date(l.timestamp);
+    return !isNaN(t) && t.getTime() >= since;
+  });
+
+  const total = windowLogs.length;
+  const levelCounts = {};
+  windowLogs.forEach(l => { levelCounts[l.level] = (levelCounts[l.level] || 0) + 1; });
+  const errorCount = levelCounts['error'] || 0;
+  const warnCount = levelCounts['warn'] || 0;
+  const errorRate = total ? +(errorCount / total * 100).toFixed(1) : 0;
+
+  // Hourly buckets
+  const hourly = {};
+  windowLogs.forEach(l => {
+    const t = l.timestamp instanceof Date ? l.timestamp : new Date(l.timestamp);
+    if (isNaN(t)) return;
+    const h = t.toISOString().slice(0, 13) + ':00:00';
+    if (!hourly[h]) hourly[h] = {};
+    hourly[h][l.level] = (hourly[h][l.level] || 0) + 1;
+  });
+
+  // IP extraction
+  const IP_RX = /\b(\d{1,3}(?:\.\d{1,3}){3})\b/g;
+  const ipHits = {}, ipErrors = {};
+  windowLogs.forEach(l => {
+    const text = (l.message || '') + ' ' + JSON.stringify(l.raw || '');
+    const matches = [...new Set((text.match(IP_RX) || []))];
+    matches.forEach(ip => {
+      ipHits[ip] = (ipHits[ip] || 0) + 1;
+      if (l.level === 'error') ipErrors[ip] = (ipErrors[ip] || 0) + 1;
+    });
+  });
+
+  const rateThreshold = 50 * minutes;
+  const topIps = Object.entries(ipHits)
+    .sort((a, b) => b[1] - a[1]).slice(0, 20)
+    .map(([ip, hits]) => {
+      const errors = ipErrors[ip] || 0;
+      const errPct = hits ? +(errors / hits * 100).toFixed(1) : 0;
+      const suspicious = hits > rateThreshold || (hits >= 5 && errPct > 20);
+      return { ip, hits, errors, error_pct: errPct, suspicious, hits_per_min: +(hits / Math.max(minutes, 1)).toFixed(2) };
+    });
+
+  obsData = { window_minutes: minutes, total, error_count: errorCount, warn_count: warnCount,
+               error_rate: errorRate, level_counts: levelCounts, hourly, top_ips: topIps };
+
+  const suspiciousCount = topIps.filter(x => x.suspicious).length;
+  const badge = document.getElementById('nb-suspicious');
+  if (badge) {
+    badge.style.display = suspiciousCount ? '' : 'none';
+    badge.textContent = suspiciousCount;
+  }
+  return obsData;
+}
+
+function buildHourlyChart(hourly) {
+  const hours = Object.keys(hourly).sort().slice(-24);
+  if (!hours.length) return '<p style="color:var(--muted);font-size:13px">No hourly data yet</p>';
+  const maxVal = Math.max(...hours.map(h => Object.values(hourly[h] || {}).reduce((a, b) => a + b, 0)), 1);
+  return `<div class="hourly-chart">${hours.map(h => {
+    const counts = hourly[h] || {};
+    const total = Object.values(counts).reduce((a, b) => a + b, 0);
+    const errH = Math.round((counts.error || 0) / maxVal * 70);
+    const warnH = Math.round((counts.warn || 0) / maxVal * 70);
+    const infoH = Math.round((total - (counts.error || 0) - (counts.warn || 0)) / maxVal * 70);
+    const lbl = h.slice(11, 16);
+    return `<div class="hourly-bar-wrap" title="${lbl}: ${total} events (${counts.error || 0} errors)">
+      ${errH ? `<div class="hourly-bar" style="height:${errH}px;background:var(--red)"></div>` : ''}
+      ${warnH ? `<div class="hourly-bar" style="height:${warnH}px;background:var(--yellow)"></div>` : ''}
+      ${infoH ? `<div class="hourly-bar" style="height:${infoH}px;background:var(--accent);opacity:.5"></div>` : ''}
+      <span class="hourly-lbl">${lbl}</span>
+    </div>`;
+  }).join('')}</div>`;
+}
+
+async function renderObservability() {
+  document.getElementById('logContent').innerHTML =
+    `<div style="padding:24px;color:var(--muted);font-size:13px">⏳ Analyzing logs…</div>`;
+
+  if (!allLogs.length) {
+    document.getElementById('logContent').innerHTML =
+      `<div class="empty-state"><div class="empty-icon">📡</div><h3>No logs loaded</h3><p>Upload a log file to see observability metrics</p></div>`;
+    return;
+  }
+
+  const minutes = parseInt(document.getElementById('obsWindow')?.value || '60');
+  const d = await fetchObservabilityData(minutes);
+
+  const rateClass = d.error_rate > 10 ? 'red' : d.error_rate > 5 ? 'yellow' : 'green';
+  const topIpRows = d.top_ips.length ? d.top_ips.map(ip =>
+    `<tr class="${ip.suspicious ? 'suspicious' : ''}">
+      <td style="font-family:'JetBrains Mono',monospace">${escH(ip.ip)}</td>
+      <td style="font-weight:600">${ip.hits}</td>
+      <td>${ip.hits_per_min}/min</td>
+      <td style="color:var(--red)">${ip.errors}</td>
+      <td>${ip.error_pct}%</td>
+      <td>${ip.suspicious
+        ? '<span class="suspicious-badge">⚠ SUSPICIOUS</span>'
+        : '<span class="ok-badge">✓ Normal</span>'}</td>
+    </tr>`
+  ).join('') : `<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px">No IP addresses found in logs</td></tr>`;
+
+  const levelColors = { error:'var(--red)', warn:'var(--yellow)', info:'var(--accent)', success:'var(--green)', debug:'var(--muted)', cloudwatch:'var(--purple)' };
+  const maxLevel = Math.max(...Object.values(d.level_counts), 1);
+  const levelBarsHtml = Object.entries(d.level_counts)
+    .sort((a, b) => b[1] - a[1])
+    .map(([lvl, cnt]) => `
+      <div class="obs-bar-row">
+        <div class="obs-bar-label">${lvl.toUpperCase()}</div>
+        <div class="obs-bar-track"><div class="obs-bar-fill" style="width:${Math.round(cnt/maxLevel*100)}%;background:${levelColors[lvl]||'var(--accent)'}"></div></div>
+        <div class="obs-bar-val" style="color:${levelColors[lvl]||'var(--accent)'}">${cnt}</div>
+      </div>`).join('');
+
+  const suspiciousIps = d.top_ips.filter(x => x.suspicious);
+
+  document.getElementById('logContent').innerHTML = `
+  <div style="padding:8px 0">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap">
+      <h2 style="font-size:16px;font-weight:700;margin:0">📡 Log Observability</h2>
+      <select id="obsWindow" onchange="renderObservability()" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:6px 12px;color:var(--text);font-size:13px">
+        <option value="15">Last 15 min</option>
+        <option value="60" selected>Last 1 hour</option>
+        <option value="360">Last 6 hours</option>
+        <option value="1440">Last 24 hours</option>
+        <option value="10080">Last 7 days</option>
+      </select>
+      <button onclick="renderObservability()" style="background:var(--accent);color:#fff;border:none;border-radius:8px;padding:6px 14px;font-size:13px;cursor:pointer">↻ Refresh</button>
+      ${suspiciousIps.length ? `<span style="background:var(--red-bg);color:var(--red);padding:4px 12px;border-radius:6px;font-size:12px;font-weight:600">⚠ ${suspiciousIps.length} suspicious IP${suspiciousIps.length>1?'s':''} detected</span>` : ''}
+    </div>
+
+    <div class="obs-grid">
+      <div class="obs-card"><div class="obs-card-label">Total Events</div><div class="obs-card-value">${d.total.toLocaleString()}</div><div class="obs-card-sub">in last ${d.window_minutes} min</div></div>
+      <div class="obs-card ${rateClass}"><div class="obs-card-label">Error Rate</div><div class="obs-card-value">${d.error_rate}%</div><div class="obs-card-sub">${d.error_count} errors</div></div>
+      <div class="obs-card yellow"><div class="obs-card-label">Warnings</div><div class="obs-card-value">${d.warn_count.toLocaleString()}</div><div class="obs-card-sub">${d.total ? (d.warn_count/d.total*100).toFixed(1) : 0}% of total</div></div>
+      <div class="obs-card ${suspiciousIps.length?'red':''}"><div class="obs-card-label">Suspicious IPs</div><div class="obs-card-value">${suspiciousIps.length}</div><div class="obs-card-sub">${d.top_ips.length} unique IPs seen</div></div>
+    </div>
+
+    <div class="obs-section-title">Hourly Error Distribution (last 24h)</div>
+    <div class="obs-bar-wrap">${buildHourlyChart(d.hourly)}</div>
+
+    <div class="obs-section-title">Events by Level</div>
+    <div class="obs-bar-wrap">${levelBarsHtml || '<p style="color:var(--muted);font-size:13px">No data</p>'}</div>
+
+    <div class="obs-section-title">IP Activity ${d.top_ips.length ? `(${d.top_ips.length} IPs in window)` : ''}</div>
+    <div class="obs-bar-wrap" style="padding:0;overflow:auto">
+      <table class="obs-ip-table">
+        <thead><tr>
+          <th>IP Address</th><th>Total Hits</th><th>Rate</th><th>Errors</th><th>Error%</th><th>Status</th>
+        </tr></thead>
+        <tbody>${topIpRows}</tbody>
+      </table>
+    </div>
+
+    <div class="obs-alert-form">
+      <h3>🔔 Suspicious IP Alert Rule</h3>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:14px">Configure an email alert for when a suspicious IP is detected. Alerts fire with a 30-minute cooldown per IP.</p>
+      <div class="obs-form-row">
+        <input id="obs-alert-name" placeholder="Alert name e.g. High-volume IP alert" />
+        <input id="obs-alert-email" type="email" placeholder="Notify email e.g. security@yourco.com" />
+      </div>
+      <div class="obs-form-row">
+        <input id="obs-alert-threshold" type="number" placeholder="Hits/min threshold (default 50)" value="50" min="1" />
+        <select id="obs-alert-severity">
+          <option value="sev1">SEV1 – Critical</option>
+          <option value="sev2">SEV2 – High</option>
+          <option value="sev3" selected>SEV3 – Medium</option>
+        </select>
+      </div>
+      <button onclick="saveObsAlertRule()" style="background:var(--accent);color:#fff;border:none;border-radius:8px;padding:8px 20px;font-size:13px;cursor:pointer;margin-top:4px">
+        + Save Alert Rule
+      </button>
+      <div id="obs-alert-saved" style="margin-top:10px;font-size:13px;color:var(--green);display:none">✓ Alert rule saved locally</div>
+    </div>
+
+    ${obsAlertRules.length ? `
+    <div class="obs-section-title">Saved Alert Rules</div>
+    <div class="obs-bar-wrap" style="padding:0">
+      <table class="obs-ip-table">
+        <thead><tr><th>Name</th><th>Email</th><th>Threshold</th><th>Severity</th></tr></thead>
+        <tbody>${obsAlertRules.map(r => `<tr>
+          <td>${escH(r.name)}</td>
+          <td style="font-family:'JetBrains Mono',monospace;font-size:12px">${escH(r.notify_email||'—')}</td>
+          <td>${r.threshold || 50}/min</td>
+          <td><span class="level-badge badge-${r.severity==='sev1'?'error':'warn'}-full">${escH(r.severity||'sev3').toUpperCase()}</span></td>
+        </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>` : ''}
+  </div>`;
+}
+
+async function fetchObsAlertRulesFromApi() {
+  try {
+    const r = await fetch('/api/observability/alert-rules');
+    if (!r.ok) return; // standalone mode — no backend
+    const data = await r.json();
+    if (Array.isArray(data)) obsAlertRules = data;
+  } catch (_) { /* standalone */ }
+}
+
+function saveObsAlertRule() {
+  const name = document.getElementById('obs-alert-name')?.value?.trim();
+  const email = document.getElementById('obs-alert-email')?.value?.trim();
+  const threshold = parseInt(document.getElementById('obs-alert-threshold')?.value || '50');
+  const severity = document.getElementById('obs-alert-severity')?.value || 'sev3';
+  if (!name) { toast('Enter an alert name', 'warn'); return; }
+  if (!email || !email.includes('@')) { toast('Enter a valid email address', 'warn'); return; }
+
+  // Try to persist to backend (Flask context). Falls back gracefully if standalone.
+  fetch('/api/alerts', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      name, notify_email: email, threshold, severity,
+      alert_type: 'suspicious_ip',
+      condition_text: `suspicious_ip:threshold=${threshold}`,
+      status: 'active', channel: 'Email'
+    })
+  }).then(r => {
+    if (r.ok) {
+      return r.json().then(d => {
+        obsAlertRules.push({ id: d.id, name, notify_email: email, threshold, severity, alert_type: 'suspicious_ip', status: 'active' });
+        const el = document.getElementById('obs-alert-saved');
+        if (el) { el.textContent = '✓ Alert rule saved'; el.style.display = ''; setTimeout(() => el.style.display = 'none', 3000); }
+        toast(`Alert rule "${name}" saved`, 'success');
+        renderObservability();
+      });
+    } else {
+      throw new Error('API unavailable');
+    }
+  }).catch(() => {
+    // Standalone / no-auth mode — keep in memory only
+    obsAlertRules.push({ name, notify_email: email, threshold, severity, alert_type: 'suspicious_ip' });
+    const el = document.getElementById('obs-alert-saved');
+    if (el) { el.textContent = '✓ Alert rule saved (local session only — log in to persist)'; el.style.display = ''; setTimeout(() => el.style.display = 'none', 4000); }
+    toast(`Alert rule "${name}" saved`, 'success');
+    renderObservability();
+  });
+}
 
 
 </script>

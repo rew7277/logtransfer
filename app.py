@@ -367,6 +367,20 @@ def init_db() -> None:
     ensure_column(db, "organizations", "admin_only", "admin_only INTEGER NOT NULL DEFAULT 0")
     ensure_column(db, "ingestion_jobs", "integration_id", "integration_id INTEGER")
     ensure_column(db, "users", "email_verified", "email_verified INTEGER NOT NULL DEFAULT 0")
+    ensure_column(db, "alert_rules", "notify_email", "notify_email TEXT")
+    ensure_column(db, "alert_rules", "threshold", "threshold INTEGER NOT NULL DEFAULT 10")
+    ensure_column(db, "alert_rules", "alert_type", "alert_type TEXT NOT NULL DEFAULT 'error_rate'")
+
+    db.execute("""
+        CREATE TABLE IF NOT EXISTS observability_fired (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            org_id INTEGER NOT NULL,
+            alert_rule_id INTEGER,
+            trigger_key TEXT NOT NULL,
+            fired_at TEXT NOT NULL
+        )
+    """)
+    db.execute("CREATE INDEX IF NOT EXISTS idx_obs_fired ON observability_fired(org_id, trigger_key, fired_at)")
 
     db.execute("""
         CREATE TABLE IF NOT EXISTS api_keys (
@@ -1013,7 +1027,37 @@ def workspace():
     user, error = require_auth()
     if error:
         return redirect("/login")
-    return render_template("index.html", user=user)
+    db = get_db()
+    org = db.execute("SELECT slug FROM organizations WHERE id = ?", (user["org_id"],)).fetchone()
+    slug = org["slug"] if org else "workspace"
+    return redirect(f"/workspace/{slug}")
+
+
+@app.get("/workspace/<slug>")
+def workspace_slug(slug: str):
+    user, error = require_auth()
+    if error:
+        return redirect("/login")
+    db = get_db()
+    org = db.execute("SELECT id FROM organizations WHERE slug = ? AND id = ?", (slug, user["org_id"])).fetchone()
+    if not org:
+        return redirect("/workspace")
+    return render_template("index.html", user=user, active_section="overview", org_slug=slug)
+
+
+@app.get("/workspace/<slug>/<section>")
+def workspace_section(slug: str, section: str):
+    user, error = require_auth()
+    if error:
+        return redirect("/login")
+    db = get_db()
+    org = db.execute("SELECT id FROM organizations WHERE slug = ? AND id = ?", (slug, user["org_id"])).fetchone()
+    if not org:
+        return redirect("/workspace")
+    valid_sections = {"overview", "explorer", "ingest", "integrations", "jobs", "alerts", "users",
+                      "dashboards", "invites", "organization", "audit", "observability"}
+    safe_section = section if section in valid_sections else "overview"
+    return render_template("index.html", user=user, active_section=safe_section, org_slug=slug)
 
 
 @app.post("/login")
@@ -1385,8 +1429,11 @@ def add_alert():
     now = iso_now()
     db = get_db()
     cur = db.execute(
-        "INSERT INTO alert_rules (org_id, name, severity, condition_text, status, channel, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
-        (user["org_id"], payload.get("name") or "New alert", payload.get("severity") or "sev3", payload.get("condition_text") or "condition pending", payload.get("status") or "draft", payload.get("channel") or "Slack", now),
+        "INSERT INTO alert_rules (org_id, name, severity, condition_text, status, channel, notify_email, threshold, alert_type, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        (user["org_id"], payload.get("name") or "New alert", payload.get("severity") or "sev3",
+         payload.get("condition_text") or "condition pending", payload.get("status") or "draft",
+         payload.get("channel") or "Email", payload.get("notify_email") or "",
+         int(payload.get("threshold") or 10), payload.get("alert_type") or "error_rate", now),
     )
     db.commit()
     audit(user["org_id"], user["id"], "created_alert", "alert", str(cur.lastrowid), {"name": payload.get("name")})
@@ -1859,6 +1906,141 @@ def demo_request():
     db.execute("INSERT INTO demo_requests (name, company, email, message, created_at) VALUES (?, ?, ?, ?, ?)", (name, company, email, message, iso_now()))
     db.commit()
     return jsonify({"message": "Demo request submitted successfully."})
+
+@app.get("/api/observability")
+def get_observability():
+    user, error = require_auth()
+    if error:
+        return error
+    org_id = user["org_id"]
+    db = get_db()
+    window_minutes = int(request.args.get("minutes", 60))
+    since = (datetime.now(timezone.utc) - timedelta(minutes=window_minutes)).strftime("%Y-%m-%dT%H:%M:%S")
+
+    # ── Total counts by level ──
+    level_rows = db.execute(
+        "SELECT level, COUNT(*) as cnt FROM log_events WHERE org_id=? AND timestamp>=? GROUP BY level",
+        (org_id, since)
+    ).fetchall()
+    level_counts = {r["level"]: r["cnt"] for r in level_rows}
+    total = sum(level_counts.values())
+    error_count = level_counts.get("error", 0)
+    warn_count = level_counts.get("warn", 0)
+    error_rate = round((error_count / total * 100), 1) if total else 0.0
+
+    # ── Hourly error buckets (last 24 h) ──
+    since_24h = (datetime.now(timezone.utc) - timedelta(hours=24)).strftime("%Y-%m-%dT%H:%M:%S")
+    hour_rows = db.execute(
+        """SELECT strftime('%Y-%m-%dT%H:00:00', timestamp) as hour, level, COUNT(*) as cnt
+           FROM log_events WHERE org_id=? AND timestamp>=?
+           GROUP BY hour, level ORDER BY hour""",
+        (org_id, since_24h)
+    ).fetchall()
+    hourly: dict[str, dict[str, int]] = {}
+    for r in hour_rows:
+        h = r["hour"] or ""
+        if h not in hourly:
+            hourly[h] = {}
+        hourly[h][r["level"]] = r["cnt"]
+
+    # ── IP analysis from message/payload ──
+    ip_rx = re.compile(r'\b(\d{1,3}(?:\.\d{1,3}){3})\b')
+    ip_rows = db.execute(
+        "SELECT message, payload_json FROM log_events WHERE org_id=? AND timestamp>=? ORDER BY timestamp DESC LIMIT 5000",
+        (org_id, since)
+    ).fetchall()
+    ip_hits: Counter = Counter()
+    ip_errors: Counter = Counter()
+    ip_level_map: dict[str, dict[str, int]] = {}
+    for row in ip_rows:
+        text = (row["message"] or "") + " " + (row["payload_json"] or "")
+        for ip in set(ip_rx.findall(text)):
+            ip_hits[ip] += 1
+            try:
+                payload = json.loads(row["payload_json"] or "{}")
+                lvl = payload.get("level", "info").lower()
+            except Exception:
+                lvl = "info"
+            if ip not in ip_level_map:
+                ip_level_map[ip] = {}
+            ip_level_map[ip][lvl] = ip_level_map[ip].get(lvl, 0) + 1
+            if lvl == "error":
+                ip_errors[ip] += 1
+
+    # ── Suspicious IPs: >50 hits/min OR >20% error rate ──
+    rate_threshold = 50 * window_minutes
+    suspicious: list[dict[str, Any]] = []
+    for ip, hits in ip_hits.most_common(50):
+        err = ip_errors.get(ip, 0)
+        err_pct = round(err / hits * 100, 1) if hits else 0
+        is_suspicious = hits > rate_threshold or (hits >= 10 and err_pct > 20)
+        entry = {"ip": ip, "hits": hits, "errors": err, "error_pct": err_pct, "suspicious": is_suspicious,
+                 "hits_per_min": round(hits / max(window_minutes, 1), 2)}
+        suspicious.append(entry)
+
+    # ── Fire email alerts for suspicious IPs (cooldown: 30 min per IP) ──
+    alerts_fired: list[str] = []
+    alert_rules = db.execute(
+        "SELECT * FROM alert_rules WHERE org_id=? AND status='active' AND alert_type='suspicious_ip'",
+        (org_id,)
+    ).fetchall()
+    cooldown_cutoff = (datetime.now(timezone.utc) - timedelta(minutes=30)).strftime("%Y-%m-%dT%H:%M:%S")
+    for entry in suspicious:
+        if not entry["suspicious"]:
+            continue
+        for rule in alert_rules:
+            notify_email = (rule["notify_email"] or "").strip()
+            if not notify_email:
+                continue
+            trigger_key = f"ip:{entry['ip']}:rule:{rule['id']}"
+            already_fired = db.execute(
+                "SELECT id FROM observability_fired WHERE org_id=? AND trigger_key=? AND fired_at>=?",
+                (org_id, trigger_key, cooldown_cutoff)
+            ).fetchone()
+            if already_fired:
+                continue
+            subject = f"[ObserveX Alert] Suspicious IP detected: {entry['ip']}"
+            body = (f"Alert rule: {rule['name']}\n"
+                    f"IP: {entry['ip']}\n"
+                    f"Hits in last {window_minutes} min: {entry['hits']} ({entry['hits_per_min']}/min)\n"
+                    f"Error rate: {entry['error_pct']}%\n"
+                    f"Threshold: {rule['threshold']} hits/min or >20% errors\n")
+            try:
+                send_email_message(subject, notify_email, body)
+                alerts_fired.append(f"Alerted {notify_email} for IP {entry['ip']}")
+            except Exception as exc:
+                alerts_fired.append(f"Email failed for {entry['ip']}: {exc}")
+            db.execute(
+                "INSERT INTO observability_fired (org_id, alert_rule_id, trigger_key, fired_at) VALUES (?,?,?,?)",
+                (org_id, rule["id"], trigger_key, iso_now())
+            )
+    db.commit()
+
+    return jsonify({
+        "window_minutes": window_minutes,
+        "total": total,
+        "error_count": error_count,
+        "warn_count": warn_count,
+        "error_rate": error_rate,
+        "level_counts": level_counts,
+        "hourly": hourly,
+        "top_ips": suspicious,
+        "alerts_fired": alerts_fired,
+    })
+
+
+@app.get("/api/observability/alert-rules")
+def get_obs_alert_rules():
+    user, error = require_auth()
+    if error:
+        return error
+    db = get_db()
+    rows = db.execute(
+        "SELECT * FROM alert_rules WHERE org_id=? AND alert_type='suspicious_ip' ORDER BY created_at DESC",
+        (user["org_id"],)
+    ).fetchall()
+    return jsonify([dict(r) for r in rows])
+
 
 if __name__ == "__main__":
     init_db()
