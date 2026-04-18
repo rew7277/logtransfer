@@ -506,6 +506,33 @@
   .hourly-bar { width: 100%; border-radius: 3px 3px 0 0; transition: height .3s ease; cursor: pointer; }
   .hourly-bar:hover { opacity: .8; }
   .hourly-lbl { font-size: 9px; color: var(--muted); }
+
+  /* ── Pagination & table enhancements ── */
+  .table-toolbar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; padding: 10px 16px; border-bottom: 1px solid var(--border); background: var(--surface); border-radius: var(--radius) var(--radius) 0 0; }
+  .table-toolbar-left  { display: flex; align-items: center; gap: 10px; }
+  .table-toolbar-right { display: flex; align-items: center; gap: 8px; }
+  .rpp-label { font-size: 12px; color: var(--muted); }
+  .rpp-select { background: var(--bg); border: 1px solid var(--border); border-radius: 7px; color: var(--text); font-size: 12px; padding: 4px 8px; cursor: pointer; }
+  .rpp-select:focus { outline: none; border-color: var(--accent); }
+  .export-btn { display: inline-flex; align-items: center; gap: 5px; padding: 5px 11px; border-radius: 7px; border: 1px solid var(--border); background: var(--bg); color: var(--muted); font-size: 12px; font-weight: 500; cursor: pointer; transition: all .15s; }
+  .export-btn:hover { border-color: var(--accent); color: var(--accent); background: rgba(41,151,255,.06); }
+  .log-table thead { position: sticky; top: 0; z-index: 5; }
+  .log-table thead th { background: var(--surface); user-select: none; white-space: nowrap; }
+  .sort-th { cursor: pointer; }
+  .sort-th:hover { color: var(--accent); }
+  .sort-indicator { margin-left: 4px; font-size: 10px; color: var(--accent); }
+  .copy-btn { visibility: hidden; border: none; background: none; color: var(--muted); cursor: pointer; padding: 0 4px; font-size: 13px; border-radius: 4px; transition: color .15s; }
+  .copy-btn:hover { color: var(--accent); }
+  .log-table tbody tr:hover .copy-btn { visibility: visible; }
+  .pagination-bar { display: flex; align-items: center; justify-content: center; gap: 4px; padding: 12px 16px; background: var(--surface); border-top: 1px solid var(--border); flex-wrap: wrap; border-radius: 0 0 var(--radius) var(--radius); }
+  .pg-info { font-size: 12px; color: var(--muted); margin-right: 8px; }
+  .pg-btn { min-width: 30px; height: 30px; border-radius: 7px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-size: 13px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; transition: all .15s; padding: 0 6px; }
+  .pg-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+  .pg-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); font-weight: 600; }
+  .pg-btn:disabled { opacity: .35; cursor: default; }
+  .pg-ellipsis { color: var(--muted); font-size: 13px; padding: 0 4px; }
+  .log-table-wrap { display: flex; flex-direction: column; overflow: hidden; }
+  .log-table-scroll { overflow: auto; flex: 1; }
 </style>
 </head>
 <body>
@@ -666,6 +693,11 @@ let currentView = 'overview';
 let currentFilter = 'all';
 let searchQuery = '';
 let searchMode = 'smart'; // 'smart' | 'eventid' | 'fulltext'
+// ── Pagination & sort state ──
+let currentPage  = 1;
+let rowsPerPage  = 50;
+let sortCol      = 'timestamp';
+let sortDir      = 'desc'; // 'asc' | 'desc'
 let fileCount = 0;
 
 // ─── LEVEL UTILS ───
@@ -1019,6 +1051,7 @@ async function handleFiles(files) {
   // Always switch to All Logs after upload so every level is visible regardless of prior filter
   currentView = 'all';
   currentFilter = 'all';
+  currentPage = 1;
   document.querySelectorAll('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.view === 'all'));
   document.querySelectorAll('.filter-chip').forEach(c => c.classList.toggle('active', c.dataset.level === 'all'));
   render();
@@ -1127,12 +1160,14 @@ function filteredLogs() {
 // ─── SEARCH HELPERS ───
 function setSearchMode(mode) {
   searchMode = mode;
+  currentPage = 1;
   document.querySelectorAll('.mode-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
   render();
 }
 
 function clearSearch() {
   searchQuery = '';
+  currentPage = 1;
   document.getElementById('searchInput').value = '';
   document.getElementById('searchClear').classList.remove('visible');
   render();
@@ -1145,6 +1180,7 @@ function searchById(id) {
   document.getElementById('searchInput').value = id;
   document.getElementById('searchClear').classList.add('visible');
   document.querySelectorAll('.mode-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === 'eventid'));
+  currentPage = 1;
   render();
   const count = filteredLogs().length;
   toast(`🎯 ${count} log${count!==1?'s':''} for Event ID: ${id.slice(0,20)}${id.length>20?'…':''}`, 'info');
@@ -1187,31 +1223,120 @@ function render() {
 }
 
 function renderTable(logs) {
+  // Sort
+  const sorted = [...logs].sort((a, b) => {
+    let va = a[sortCol] ?? '', vb = b[sortCol] ?? '';
+    const cmp = String(va).localeCompare(String(vb), undefined, { numeric: sortCol !== 'timestamp' });
+    return sortDir === 'asc' ? cmp : -cmp;
+  });
+  // Paginate
+  const total = sorted.length;
+  const pages = Math.max(1, Math.ceil(total / rowsPerPage));
+  currentPage = Math.min(currentPage, pages);
+  const start = (currentPage - 1) * rowsPerPage;
+  const slice = sorted.slice(start, start + rowsPerPage);
+  // Helpers
   const isSearching = searchQuery.trim().length > 0;
-  const rows = logs.slice(0, 1000).map((l, i) => {
-    const idHighlight = isSearching ? highlight(l.id, searchQuery) : escH(l.id);
+  const sortArrow = col => sortCol === col ? `<span class="sort-indicator">${sortDir === 'asc' ? '▲' : '▼'}</span>` : '';
+  // Rows
+  const rows = slice.map(l => {
+    const globalIdx  = allLogs.indexOf(l);
+    const idHighlight  = isSearching ? highlight(l.id, searchQuery) : escH(l.id);
     const msgHighlight = isSearching ? highlight(l.message, searchQuery) : escH(l.message);
-    const isExactIdMatch = isSearching && l.id.toLowerCase() === searchQuery.trim().toLowerCase();
-    return `
-    <tr style="animation-delay:${Math.min(i * 0.02, 0.5)}s${isExactIdMatch ? ';background:rgba(41,151,255,.06);' : ''}" onclick="openDetail(${allLogs.indexOf(l)})">
+    const isExact = isSearching && l.id.toLowerCase() === searchQuery.trim().toLowerCase();
+    const safeMsg = escH(l.message).replace(/'/g, '&#39;');
+    return `<tr style="${isExact ? 'background:rgba(41,151,255,.06);' : ''}" onclick="openDetail(${globalIdx})">
       <td>${levelDot(l.level)}</td>
       <td>${levelBadge(l.level)}</td>
       <td class="event-id" onclick="event.stopPropagation();searchById('${escH(l.id)}')" title="Click to filter by this Event ID" style="cursor:pointer">${idHighlight}</td>
       <td class="ts">${fmtTs(l.timestamp)}</td>
-      <td class="msg-cell" title="${escH(l.message)}">${msgHighlight}</td>
+      <td class="msg-cell" title="${escH(l.message)}">${msgHighlight}<button class="copy-btn" title="Copy message" onclick="event.stopPropagation();copyMsg(this,'${safeMsg}')">⎘</button></td>
       <td><span class="source-tag">${escH(l.source)}</span></td>
     </tr>`;
   }).join('');
-
+  // Pagination bar
+  function pgBar() {
+    const pd = currentPage <= 1 ? 'disabled' : '';
+    const nd = currentPage >= pages ? 'disabled' : '';
+    let btns = '';
+    paginationRange(currentPage, pages).forEach(p => {
+      if (p === '…') btns += `<span class="pg-ellipsis">…</span>`;
+      else btns += `<button class="pg-btn${p === currentPage ? ' active' : ''}" onclick="goPage(${p})">${p}</button>`;
+    });
+    return `<div class="pagination-bar">
+      <span class="pg-info">${total.toLocaleString()} entries · page ${currentPage} of ${pages}</span>
+      <button class="pg-btn" ${pd} onclick="goPage(1)" title="First">«</button>
+      <button class="pg-btn" ${pd} onclick="goPage(${currentPage - 1})" title="Prev">‹</button>
+      ${btns}
+      <button class="pg-btn" ${nd} onclick="goPage(${currentPage + 1})" title="Next">›</button>
+      <button class="pg-btn" ${nd} onclick="goPage(${pages})" title="Last">»</button>
+    </div>`;
+  }
+  // Toolbar
+  const toolbar = `<div class="table-toolbar">
+    <div class="table-toolbar-left">
+      <span class="rpp-label">Rows per page:</span>
+      <select class="rpp-select" onchange="setRowsPerPage(+this.value)">
+        ${[25,50,100,200].map(n => `<option value="${n}"${n===rowsPerPage?' selected':''}>${n}</option>`).join('')}
+      </select>
+      <span class="rpp-label" style="margin-left:6px">Showing ${start+1}–${Math.min(start+rowsPerPage,total)} of ${total.toLocaleString()}</span>
+    </div>
+    <div class="table-toolbar-right">
+      <button class="export-btn" onclick="exportLogs('csv')">⬇ CSV</button>
+      <button class="export-btn" onclick="exportLogs('json')">⬇ JSON</button>
+    </div>
+  </div>`;
   document.getElementById('logContent').innerHTML = `
     <div class="log-table-wrap">
-      <table class="log-table">
-        <thead><tr>
-          <th></th><th>Level</th><th>Event ID <span style="font-weight:400;color:var(--muted);font-size:10px">(click to filter)</span></th><th>Timestamp</th><th>Message</th><th>Source</th>
-        </tr></thead>
-        <tbody>${rows}</tbody>
-      </table>
+      ${toolbar}
+      ${pgBar()}
+      <div class="log-table-scroll">
+        <table class="log-table">
+          <thead><tr>
+            <th></th>
+            <th class="sort-th" onclick="toggleSort('level')">Level${sortArrow('level')}</th>
+            <th>Event ID <span style="font-weight:400;color:var(--muted);font-size:10px">(click to filter)</span></th>
+            <th class="sort-th" onclick="toggleSort('timestamp')">Timestamp${sortArrow('timestamp')}</th>
+            <th class="sort-th" onclick="toggleSort('message')">Message${sortArrow('message')}</th>
+            <th class="sort-th" onclick="toggleSort('source')">Source${sortArrow('source')}</th>
+          </tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+      ${pgBar()}
     </div>`;
+}
+
+function paginationRange(cur, total) {
+  if (total <= 7) return Array.from({length: total}, (_, i) => i + 1);
+  if (cur <= 4)       return [1, 2, 3, 4, 5, '…', total];
+  if (cur >= total-3) return [1, '…', total-4, total-3, total-2, total-1, total];
+  return [1, '…', cur-1, cur, cur+1, '…', total];
+}
+function goPage(p) { currentPage = p; renderTable(filteredLogs()); }
+function setRowsPerPage(n) { rowsPerPage = n; currentPage = 1; renderTable(filteredLogs()); }
+function toggleSort(col) {
+  if (sortCol === col) sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+  else { sortCol = col; sortDir = col === 'timestamp' ? 'desc' : 'asc'; }
+  currentPage = 1; renderTable(filteredLogs());
+}
+function copyMsg(btn, msg) {
+  navigator.clipboard.writeText(msg).then(() => { btn.textContent = '✓'; setTimeout(() => btn.textContent = '⎘', 1500); });
+}
+function exportLogs(fmt) {
+  const data = filteredLogs();
+  let content, mime, ext;
+  if (fmt === 'json') {
+    content = JSON.stringify(data, null, 2); mime = 'application/json'; ext = 'json';
+  } else {
+    const cols = ['timestamp','level','source','id','message'];
+    const esc = v => `"${String(v ?? '').replace(/"/g,'""')}"`;
+    content = [cols.join(','), ...data.map(r => cols.map(c => esc(r[c])).join(','))].join('\n');
+    mime = 'text/csv'; ext = 'csv';
+  }
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([content], {type: mime}));
+  a.download = `observex-logs.${ext}`; a.click();
+  toast(`✓ Exported ${data.length} logs as ${ext.toUpperCase()}`, 'success');
 }
 
 function renderTimeline(logs) {
@@ -1516,6 +1641,7 @@ function switchView(v) {
   // Update section title for new views
   const titles = { overview:'Overview', all:'All Logs', timeline:'Timeline', error:'Errors', success:'Successes', warn:'Warnings', info:'Info', cloudwatch:'CloudWatch', debug:'Debug', flows:'Flow Analytics', errorinsights:'Error Insights' };
   document.getElementById('sectionTitle').textContent = titles[v] || v;
+  currentPage = 1;
   render();
 }
 
@@ -1529,12 +1655,14 @@ document.querySelectorAll('.filter-chip').forEach(chip => {
     currentFilter = chip.dataset.level;
     document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
     chip.classList.add('active');
+    currentPage = 1;
     render();
   });
 });
 
 document.getElementById('searchInput').addEventListener('input', e => {
   searchQuery = e.target.value.trim();
+  currentPage = 1;
   document.getElementById('searchClear').classList.toggle('visible', searchQuery.length > 0);
   render();
 });

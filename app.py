@@ -1249,9 +1249,38 @@ def get_logs():
     if to_ts:
         sql += " AND timestamp <= ?"
         params.append(to_ts)
-    sql += " ORDER BY timestamp DESC LIMIT 500"
+
+    # ── Server-side pagination & sorting ──────────────────────────────────────
+    ALLOWED_SORT_COLS = {"timestamp", "level", "source", "message", "event_id"}
+    sort_col = request.args.get("sort", "timestamp").strip().lower()
+    sort_dir = request.args.get("dir", "desc").strip().lower()
+    if sort_col not in ALLOWED_SORT_COLS:
+        sort_col = "timestamp"
+    if sort_dir not in ("asc", "desc"):
+        sort_dir = "desc"
+
+    try:
+        per_page = max(10, min(500, int(request.args.get("per_page", 50))))
+    except (ValueError, TypeError):
+        per_page = 50
+    try:
+        page = max(1, int(request.args.get("page", 1)))
+    except (ValueError, TypeError):
+        page = 1
+
+    # COUNT total matching rows (reuse same WHERE clause)
+    count_sql = sql.replace(
+        "SELECT id, timestamp, level, source, event_id, message FROM log_events",
+        "SELECT COUNT(*) FROM log_events",
+    )
+    total = db.execute(count_sql, params).fetchone()[0]
+    pages = max(1, (total + per_page - 1) // per_page)
+    page  = min(page, pages)
+
+    sql += f" ORDER BY {sort_col} {sort_dir.upper()} LIMIT ? OFFSET ?"
+    params.extend([per_page, (page - 1) * per_page])
     rows = [dict(row) for row in db.execute(sql, params).fetchall()]
-    return jsonify({"records": rows})
+    return jsonify({"records": rows, "total": total, "page": page, "pages": pages, "per_page": per_page})
 
 
 @app.get("/api/logs/<int:log_id>")
