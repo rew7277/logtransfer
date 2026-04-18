@@ -151,8 +151,15 @@ def public_base_url() -> str:
     return os.environ.get('PUBLIC_BASE_URL', 'https://observex.in').rstrip('/')
 
 
+def public_base_url() -> str:
+    # Prefer env var; fall back to the actual request host so local dev works too
+    base = os.environ.get('PUBLIC_BASE_URL', '').rstrip('/')
+    if not base:
+        base = request.host_url.rstrip('/')
+    return base
+
 def org_public_url(slug: str) -> str:
-    return f"https://{slug}.observex.in"
+    return f"{public_base_url()}/workspace/{slug}"
 
 
 def create_verification_token(user_id: int) -> str:
