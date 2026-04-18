@@ -97,6 +97,14 @@ function renderSummary() {
   renderCharts(summary);
 }
 
+const LEVEL_COLORS = {
+  error: 'rgba(248,113,113,0.85)',
+  warn: 'rgba(251,191,36,0.85)',
+  info: 'rgba(79,124,255,0.85)',
+  success: 'rgba(52,211,153,0.85)',
+  debug: 'rgba(148,163,184,0.7)',
+};
+
 function renderCharts(summary) {
   const levelData = summary.levels || {};
   const sourceData = summary.source_breakdown || [];
@@ -106,20 +114,105 @@ function renderCharts(summary) {
   if (state.charts.levelChart) state.charts.levelChart.destroy();
   if (state.charts.sourceChart) state.charts.sourceChart.destroy();
 
+  const levelKeys = Object.keys(levelData);
+  const levelColors = levelKeys.map(l => LEVEL_COLORS[l] || 'rgba(99,102,241,0.8)');
+
   state.charts.levelChart = new Chart(levelCtx, {
     type: 'bar',
     data: {
-      labels: Object.keys(levelData),
-      datasets: [{ label: 'Logs', data: Object.values(levelData), borderRadius: 12 }],
+      labels: levelKeys,
+      datasets: [{
+        label: 'Logs',
+        data: Object.values(levelData),
+        backgroundColor: levelColors,
+        borderRadius: 10,
+        borderSkipped: false,
+      }],
     },
-    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#8da1c8' } },
+        y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#8da1c8', precision: 0 } },
+      },
+    },
   });
 
+  const doughnutColors = sourceData.map((_, i) => `hsl(${(i * 47 + 210) % 360}, 70%, 65%)`);
   state.charts.sourceChart = new Chart(sourceCtx, {
     type: 'doughnut',
-    data: { labels: sourceData.map(x => x.source), datasets: [{ data: sourceData.map(x => x.count) }] },
-    options: { responsive: true, maintainAspectRatio: false }
+    data: {
+      labels: sourceData.map(x => x.source),
+      datasets: [{
+        data: sourceData.map(x => x.count),
+        backgroundColor: doughnutColors,
+        borderWidth: 0,
+        hoverOffset: 8,
+      }],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position: 'right', labels: { color: '#8da1c8', boxWidth: 14, padding: 10 } } },
+    },
   });
+
+  renderTimeseriesChart(summary.time_series || {});
+}
+
+function renderTimeseriesChart(buckets) {
+  const ctx = $('timeseriesChart');
+  if (!ctx) return;
+  if (state.charts.timeseriesChart) state.charts.timeseriesChart.destroy();
+
+  const hours = Object.keys(buckets).sort();
+  if (!hours.length) {
+    ctx.style.display = 'none';
+    let placeholder = ctx.nextElementSibling;
+    if (!placeholder || !placeholder.classList.contains('ts-empty')) {
+      placeholder = document.createElement('div');
+      placeholder.className = 'ts-empty';
+      placeholder.textContent = 'No log data in this time window — upload logs or use the ingest API.';
+      ctx.parentNode.insertBefore(placeholder, ctx.nextSibling);
+    }
+    return;
+  }
+  ctx.style.display = '';
+  const sibling = ctx.nextElementSibling;
+  if (sibling && sibling.classList.contains('ts-empty')) sibling.remove();
+
+  const levels = ['error', 'warn', 'info', 'success', 'debug'];
+  const datasets = levels.map(level => ({
+    label: level,
+    data: hours.map(h => (buckets[h] || {})[level] || 0),
+    backgroundColor: LEVEL_COLORS[level] || 'rgba(99,102,241,0.5)',
+    borderColor: (LEVEL_COLORS[level] || 'rgba(99,102,241,0.5)').replace('0.85', '1'),
+    borderWidth: 1.5,
+    borderRadius: 4,
+    stack: 'logs',
+  }));
+
+  state.charts.timeseriesChart = new Chart(ctx, {
+    type: 'bar',
+    data: { labels: hours.map(h => h.replace('T', ' ').replace(':00:00Z', ':00')), datasets },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position: 'bottom', labels: { color: '#8da1c8', boxWidth: 12, padding: 12 } } },
+      scales: {
+        x: { stacked: true, grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#8da1c8', maxTicksLimit: 12, maxRotation: 0 } },
+        y: { stacked: true, grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#8da1c8', precision: 0 } },
+      },
+    },
+  });
+}
+
+async function refreshTimeseries() {
+  const sel = $('timeseriesRange');
+  const hours = sel ? parseInt(sel.value, 10) : 24;
+  const res = await fetch(`/api/logs/timeseries?hours=${hours}`);
+  if (!res.ok) return;
+  const data = await res.json();
+  renderTimeseriesChart(data.buckets || {});
 }
 
 function renderIntegrations() {
@@ -224,6 +317,28 @@ function renderAudit() {
   `).join('');
 }
 
+function renderApiKeys() {
+  const list = $('apiKeyList');
+  if (!list) return;
+  const items = state.bootstrap?.api_keys || [];
+  if (!items.length) {
+    list.className = 'list-box empty-state';
+    list.textContent = 'No API keys yet. Generate one above.';
+    return;
+  }
+  list.className = 'list-box';
+  list.innerHTML = items.map(item => `
+    <div class="key-row">
+      <div class="key-row-meta">
+        <span class="key-name">${escapeHtml(item.name)}</span>
+        <span class="key-prefix">${escapeHtml(item.prefix)}••••••••  ·  ${escapeHtml(item.status)}  ·  by ${escapeHtml(item.created_by)}</span>
+        <span class="key-prefix muted">${item.last_used_at ? 'Last used: ' + escapeHtml(item.last_used_at) : 'Never used'}</span>
+      </div>
+      ${item.status === 'active' ? `<button class="key-revoke" data-key-id="${item.id}">Revoke</button>` : '<span class="muted" style="font-size:12px">revoked</span>'}
+    </div>
+  `).join('');
+}
+
 async function fetchBootstrap() {
   const res = await fetch('/api/bootstrap');
   if (!res.ok) {
@@ -241,6 +356,7 @@ async function fetchBootstrap() {
   renderInvitations();
   renderDashboards();
   renderRuns();
+  renderApiKeys();
 }
 
 function renderInvitations() {
@@ -444,6 +560,24 @@ async function handleCreateAlert() {
   toast('Alert created');
 }
 
+async function handleCreateApiKey() {
+  const form = $('apiKeyForm');
+  const name = (form?.name?.value || '').trim();
+  if (!name) return toast('Key name is required', true);
+  const { res, data } = await postJson('/api/keys', { name });
+  $('apiKeyResult').textContent = data.message || data.error || 'Done';
+  if (!res.ok) return toast(data.error || 'Failed to create API key', true);
+  form.reset();
+  const box = $('newKeyBox');
+  if (box && data.key) {
+    box.style.display = 'block';
+    box.className = 'new-key-reveal';
+    box.innerHTML = `<strong>Copy now — shown once only:</strong><br><br>${escapeHtml(data.key)}`;
+  }
+  await fetchBootstrap();
+  toast('API key created — copy it now!');
+}
+
 async function logout() {
   await fetch('/logout', { method: 'POST' });
   window.location.href = '/';
@@ -495,6 +629,28 @@ function bindEvents() {
     const btn = e.target.closest('.run-job-btn');
     if (btn) handleRunJob(btn.dataset.jobId);
   });
+
+  // API Keys
+  const createApiKeyBtn = $('createApiKeyBtn');
+  if (createApiKeyBtn) createApiKeyBtn.addEventListener('click', handleCreateApiKey);
+
+  const apiKeyList = $('apiKeyList');
+  if (apiKeyList) {
+    apiKeyList.addEventListener('click', async (e) => {
+      const btn = e.target.closest('.key-revoke');
+      if (!btn) return;
+      if (!confirm('Revoke this API key? This cannot be undone.')) return;
+      const keyId = btn.dataset.keyId;
+      const res = await fetch(`/api/keys/${keyId}`, { method: 'DELETE' });
+      const data = await res.json();
+      toast(data.message || data.error || 'Done', !res.ok);
+      if (res.ok) await fetchBootstrap();
+    });
+  }
+
+  // Time-series range selector
+  const tsRange = $('timeseriesRange');
+  if (tsRange) tsRange.addEventListener('change', refreshTimeseries);
 }
 
 (async function init() {

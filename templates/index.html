@@ -23,6 +23,7 @@
         <nav class="nav-stack">
           <button class="nav-link active" data-section="overviewSection">Overview</button>
           <button class="nav-link" data-section="logsSection">Log explorer</button>
+          <button class="nav-link" data-section="ingestSection">Ingest API</button>
           <button class="nav-link" data-section="integrationsSection">Integrations</button>
           <button class="nav-link" data-section="jobsSection">Ingestion jobs</button>
           <button class="nav-link" data-section="alertsSection">Alert rules</button>
@@ -71,6 +72,21 @@
             <canvas id="sourceChart" height="180"></canvas>
           </section>
         </div>
+
+        <section class="panel">
+          <div class="panel-head">
+            <h3>Log volume — last 24 hours</h3>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <select id="timeseriesRange" style="font-size:12px;padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text);">
+                <option value="24">Last 24 hours</option>
+                <option value="48">Last 48 hours</option>
+                <option value="168">Last 7 days</option>
+              </select>
+              <span class="muted">Hourly breakdown</span>
+            </div>
+          </div>
+          <canvas id="timeseriesChart" height="120"></canvas>
+        </section>
 
         <div class="panel-grid two-up">
           <section class="panel">
@@ -288,6 +304,89 @@
             <div id="invitationList" class="list-box empty-state">No invites sent yet.</div>
           </section>
         </div>
+      </section>
+
+      <section id="ingestSection" class="content-section">
+        <div class="panel-grid two-up">
+          <section class="panel">
+            <div class="panel-head"><h3>API Keys</h3><span class="muted">Authenticate programmatic log ingestion.</span></div>
+            <form id="apiKeyForm" class="form-grid">
+              <input name="name" placeholder="My CI pipeline key" required />
+            </form>
+            <div class="button-row"><button class="primary-btn" id="createApiKeyBtn">Generate key</button></div>
+            <div id="apiKeyResult" class="result-box">Generate an API key to authenticate POST /ingest/json and POST /ingest/file calls.</div>
+            <div id="newKeyBox" style="display:none;margin-top:12px;" class="result-box" style="word-break:break-all;"></div>
+          </section>
+          <section class="panel">
+            <div class="panel-head"><h3>Active API keys</h3></div>
+            <div id="apiKeyList" class="list-box empty-state">No API keys yet.</div>
+          </section>
+        </div>
+
+        <section class="panel top-gap">
+          <div class="panel-head"><h3>POST /ingest/json</h3><span class="muted">Send JSON logs over HTTP — no file needed.</span></div>
+          <div class="copy-block">
+            <p><strong>Single event:</strong></p>
+            <pre class="code-block">curl -X POST https://your-domain/ingest/json \
+  -H "Authorization: Bearer oxk_..." \
+  -H "Content-Type: application/json" \
+  -d '{"timestamp":"2024-01-15T10:30:00Z","level":"error","source":"payment-service","message":"Timeout connecting to gateway","requestId":"req-abc123"}'</pre>
+            <p><strong>Batch (array):</strong></p>
+            <pre class="code-block">curl -X POST https://your-domain/ingest/json \
+  -H "Authorization: Bearer oxk_..." \
+  -H "Content-Type: application/json" \
+  -d '[{"message":"Started"},{"message":"Completed","level":"success"}]'</pre>
+            <p><strong>NDJSON (newline-delimited):</strong></p>
+            <pre class="code-block">{"message":"line 1","level":"info"}
+{"message":"line 2","level":"warn"}
+{"message":"line 3","level":"error"}</pre>
+          </div>
+        </section>
+
+        <section class="panel top-gap">
+          <div class="panel-head"><h3>POST /ingest/file</h3><span class="muted">Upload log files — .log, .txt, .json, .ndjson, .csv</span></div>
+          <div class="copy-block">
+            <p><strong>Single file:</strong></p>
+            <pre class="code-block">curl -X POST https://your-domain/ingest/file \
+  -H "Authorization: Bearer oxk_..." \
+  -F "file=@/path/to/app.log"</pre>
+            <p><strong>Multiple files:</strong></p>
+            <pre class="code-block">curl -X POST https://your-domain/ingest/file \
+  -H "Authorization: Bearer oxk_..." \
+  -F "files=@app.log" \
+  -F "files=@error.log" \
+  -F "files=@access.json"</pre>
+            <p><strong>Python SDK example:</strong></p>
+            <pre class="code-block">import requests
+
+API_KEY = "oxk_..."
+with open("app.log", "rb") as f:
+    resp = requests.post(
+        "https://your-domain/ingest/file",
+        headers={"Authorization": f"Bearer {API_KEY}"},
+        files={"file": ("app.log", f, "text/plain")},
+    )
+print(resp.json())</pre>
+          </div>
+        </section>
+
+        <section class="panel top-gap">
+          <div class="panel-head"><h3>Response format</h3></div>
+          <div class="copy-block">
+            <pre class="code-block">{
+  "ok": true,
+  "ingested": 142,
+  "upload_id": 7,
+  "summary": {
+    "total": 142,
+    "levels": {"error": 12, "warn": 28, "info": 95, "debug": 7},
+    "sources": [["payment-service", 80], ["auth", 42]],
+    "top_terms": [["timeout", 8], ["gateway", 6]],
+    "recent": [...]
+  }
+}</pre>
+          </div>
+        </section>
       </section>
 
       <section id="auditSection" class="content-section">

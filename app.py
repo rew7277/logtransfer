@@ -316,6 +316,22 @@ def init_db() -> None:
             FOREIGN KEY(user_id) REFERENCES users(id)
         );
 
+        CREATE TABLE IF NOT EXISTS api_keys (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            org_id INTEGER NOT NULL,
+            user_id INTEGER NOT NULL,
+            name TEXT NOT NULL,
+            key_hash TEXT NOT NULL UNIQUE,
+            prefix TEXT NOT NULL,
+            status TEXT NOT NULL DEFAULT 'active',
+            created_at TEXT NOT NULL,
+            last_used_at TEXT,
+            FOREIGN KEY(org_id) REFERENCES organizations(id),
+            FOREIGN KEY(user_id) REFERENCES users(id)
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_api_keys_hash ON api_keys(key_hash);
+
         CREATE TABLE IF NOT EXISTS demo_requests (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL,
@@ -351,6 +367,21 @@ def init_db() -> None:
     ensure_column(db, "organizations", "admin_only", "admin_only INTEGER NOT NULL DEFAULT 0")
     ensure_column(db, "ingestion_jobs", "integration_id", "integration_id INTEGER")
     ensure_column(db, "users", "email_verified", "email_verified INTEGER NOT NULL DEFAULT 0")
+
+    db.execute("""
+        CREATE TABLE IF NOT EXISTS api_keys (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            org_id INTEGER NOT NULL,
+            user_id INTEGER NOT NULL,
+            name TEXT NOT NULL,
+            key_hash TEXT NOT NULL UNIQUE,
+            prefix TEXT NOT NULL,
+            status TEXT NOT NULL DEFAULT 'active',
+            created_at TEXT NOT NULL,
+            last_used_at TEXT
+        )
+    """)
+    db.execute("CREATE INDEX IF NOT EXISTS idx_api_keys_hash ON api_keys(key_hash)")
 
     row = db.execute("SELECT id FROM organizations WHERE slug = ?", ("vewit",)).fetchone()
     if row is None:
@@ -403,6 +434,31 @@ def require_admin() -> tuple[dict[str, Any] | None, tuple[Any, int] | None]:
     if user["role"] != "admin":
         return None, (jsonify({"error": "Admin access required."}), 403)
     return user, None
+
+
+def require_api_key() -> tuple[dict[str, Any] | None, tuple[Any, int] | None]:
+    """Authenticate via Bearer token (API key) in Authorization header."""
+    auth_header = request.headers.get("Authorization", "")
+    if auth_header.startswith("Bearer "):
+        raw_key = auth_header[7:].strip()
+    else:
+        raw_key = request.headers.get("X-API-Key", "").strip()
+    if not raw_key:
+        return None, (jsonify({"error": "API key required. Pass Authorization: Bearer <key> or X-API-Key header."}), 401)
+    from werkzeug.security import check_password_hash
+    db = get_db()
+    # Look up by prefix for efficiency
+    prefix = raw_key[:8]
+    rows = db.execute(
+        "SELECT ak.*, u.role, u.name AS user_name, o.slug FROM api_keys ak JOIN users u ON u.id = ak.user_id JOIN organizations o ON o.id = ak.org_id WHERE ak.prefix = ? AND ak.status = 'active'",
+        (prefix,),
+    ).fetchall()
+    for row in rows:
+        if check_password_hash(row["key_hash"], raw_key):
+            db.execute("UPDATE api_keys SET last_used_at = ? WHERE id = ?", (iso_now(), row["id"]))
+            db.commit()
+            return dict(row), None
+    return None, (jsonify({"error": "Invalid or revoked API key."}), 401)
 
 
 def audit(org_id: int, user_id: int | None, action: str, target_type: str, target_id: str | None = None, detail: dict[str, Any] | None = None) -> None:
@@ -706,6 +762,25 @@ def dashboard_summary(org_id: int) -> dict[str, Any]:
         "SELECT COUNT(*) FROM uploads WHERE org_id = ? AND created_at >= ?",
         (org_id, (datetime.now(timezone.utc) - timedelta(days=7)).isoformat()),
     ).fetchone()[0]
+    # Time-series: logs per hour for the last 24h
+    since_24h = (datetime.now(timezone.utc) - timedelta(hours=24)).isoformat()
+    ts_rows = db.execute(
+        "SELECT strftime('%Y-%m-%dT%H:00:00Z', timestamp) AS hour, level, COUNT(*) AS count FROM log_events WHERE org_id = ? AND timestamp >= ? GROUP BY hour, level ORDER BY hour",
+        (org_id, since_24h),
+    ).fetchall()
+    time_series: dict[str, dict[str, int]] = {}
+    for row in ts_rows:
+        hour = row["hour"] or ""
+        if hour not in time_series:
+            time_series[hour] = {}
+        time_series[hour][row["level"]] = row["count"]
+    # Time-series: logs per day for the last 30 days
+    since_30d = (datetime.now(timezone.utc) - timedelta(days=30)).isoformat()
+    daily_rows = db.execute(
+        "SELECT strftime('%Y-%m-%d', timestamp) AS day, COUNT(*) AS count FROM log_events WHERE org_id = ? AND timestamp >= ? GROUP BY day ORDER BY day",
+        (org_id, since_30d),
+    ).fetchall()
+    daily_series = [{"day": row["day"], "count": row["count"]} for row in daily_rows]
     return {
         "totals": {
             "logs": total_logs,
@@ -720,6 +795,8 @@ def dashboard_summary(org_id: int) -> dict[str, Any]:
         "source_breakdown": recent_sources,
         "latest_log": latest_log,
         "uploads_week": uploads_week,
+        "time_series": time_series,
+        "daily_series": daily_series,
     }
 
 
@@ -1086,6 +1163,10 @@ def bootstrap():
         "saved_dashboards": [{**item, "config": json.loads(item.pop("config_json"))} for item in dashboards],
         "role_options": sorted(VALID_ROLES),
         "theme_options": sorted(VALID_THEMES),
+        "api_keys": [dict(r) for r in db.execute(
+            "SELECT ak.id, ak.name, ak.prefix, ak.status, ak.created_at, ak.last_used_at, u.name AS created_by FROM api_keys ak JOIN users u ON u.id = ak.user_id WHERE ak.org_id = ? ORDER BY ak.id DESC LIMIT 20",
+            (user["org_id"],),
+        ).fetchall()],
     })
 
 
@@ -1482,6 +1563,207 @@ def save_dashboard():
     audit(user["org_id"], user["id"], "saved_dashboard", "dashboard", str(cur.lastrowid), {"name": name})
     return jsonify({"message": "Dashboard saved."})
 
+    return jsonify({"message": "Dashboard saved."})
+
+
+# ----------------------------- Data Ingestion API (Step 1) -----------------------------
+
+@app.post("/ingest/json")
+def ingest_json():
+    """
+    Public REST endpoint to ingest JSON logs.
+    Accepts:
+      - Single JSON object: {"timestamp": "...", "message": "...", ...}
+      - JSON array: [{"message": "..."}, ...]
+      - NDJSON (newline-delimited JSON): one object per line
+    Auth: Authorization: Bearer <api_key>  OR  X-API-Key: <api_key>
+    """
+    key_row, error = require_api_key()
+    if error:
+        return error
+    org_id = key_row["org_id"]
+    user_id = key_row["user_id"]
+
+    content_type = request.content_type or ""
+    if "application/json" in content_type or "text/plain" in content_type or not content_type:
+        raw = request.get_data(as_text=True)
+    else:
+        return jsonify({"error": "Content-Type must be application/json or text/plain."}), 415
+
+    if not raw.strip():
+        return jsonify({"error": "Request body is empty."}), 400
+
+    records = parse_json_text(raw)
+    if not records:
+        # Fallback: treat as plain text
+        records = parse_plain_text(raw)
+    if not records:
+        return jsonify({"error": "Could not parse any log records from the request body."}), 422
+
+    db = get_db()
+    now = iso_now()
+    cur = db.execute(
+        "INSERT INTO uploads (org_id, user_id, filename, total_records, created_at) VALUES (?, ?, ?, ?, ?)",
+        (org_id, user_id, "api-ingest.json", len(records), now),
+    )
+    upload_id = cur.lastrowid
+    db.executemany(
+        "INSERT INTO log_events (org_id, upload_id, timestamp, level, source, event_id, message, payload_json, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        [(org_id, upload_id, r["timestamp"], r["level"], r["source"], r.get("event_id") or "", r["message"], json.dumps(r.get("payload", {})), now) for r in records],
+    )
+    db.commit()
+    audit(org_id, user_id, "api_ingest_json", "upload", str(upload_id), {"records": len(records)})
+    return jsonify({
+        "ok": True,
+        "ingested": len(records),
+        "upload_id": upload_id,
+        "summary": summarize(records),
+    }), 201
+
+
+@app.post("/ingest/file")
+def ingest_file():
+    """
+    Public REST endpoint for file upload ingestion.
+    Accepts multipart/form-data with one or more files under the key 'file' or 'files'.
+    Supports: .log, .txt, .json, .ndjson, .csv
+    Auth: Authorization: Bearer <api_key>  OR  X-API-Key: <api_key>
+    """
+    key_row, error = require_api_key()
+    if error:
+        return error
+    org_id = key_row["org_id"]
+    user_id = key_row["user_id"]
+
+    files = request.files.getlist("files") or request.files.getlist("file")
+    if not files or not any(f.filename for f in files):
+        return jsonify({"error": "No file(s) uploaded. Use multipart/form-data with field name 'file' or 'files'."}), 400
+
+    db = get_db()
+    now = iso_now()
+    all_records: list[dict[str, Any]] = []
+    file_results: list[dict[str, Any]] = []
+
+    for f in files:
+        if not f or not (f.filename or "").strip():
+            continue
+        filename = safe_filename(f.filename or "upload.log")
+        raw = f.read()
+        try:
+            text = raw.decode("utf-8")
+        except UnicodeDecodeError:
+            text = raw.decode("latin-1", errors="ignore")
+        records = parse_text_by_extension(filename, text)
+        if not records:
+            file_results.append({"filename": filename, "ingested": 0, "error": "No records parsed"})
+            continue
+        cur = db.execute(
+            "INSERT INTO uploads (org_id, user_id, filename, total_records, created_at) VALUES (?, ?, ?, ?, ?)",
+            (org_id, user_id, filename, len(records), now),
+        )
+        upload_id = cur.lastrowid
+        db.executemany(
+            "INSERT INTO log_events (org_id, upload_id, timestamp, level, source, event_id, message, payload_json, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            [(org_id, upload_id, r["timestamp"], r["level"], r["source"], r.get("event_id") or "", r["message"], json.dumps(r.get("payload", {})), now) for r in records],
+        )
+        audit(org_id, user_id, "api_ingest_file", "upload", str(upload_id), {"filename": filename, "records": len(records)})
+        all_records.extend(records)
+        file_results.append({"filename": filename, "ingested": len(records), "upload_id": upload_id})
+
+    db.commit()
+    if not all_records:
+        return jsonify({"error": "No log records could be parsed from uploaded files.", "files": file_results}), 422
+
+    return jsonify({
+        "ok": True,
+        "total_ingested": len(all_records),
+        "files": file_results,
+        "summary": summarize(all_records),
+    }), 201
+
+
+# ----------------------------- API Key Management -----------------------------
+
+@app.post("/api/keys")
+def create_api_key():
+    """Create a new API key for programmatic ingest access."""
+    user, error = require_auth()
+    if error:
+        return error
+    payload = request_payload()
+    name = (payload.get("name") or "").strip()
+    if not name:
+        return jsonify({"error": "Key name is required."}), 400
+    raw_key = "oxk_" + secrets.token_urlsafe(32)
+    prefix = raw_key[:8]
+    key_hash = generate_password_hash(raw_key)
+    db = get_db()
+    cur = db.execute(
+        "INSERT INTO api_keys (org_id, user_id, name, key_hash, prefix, status, created_at) VALUES (?, ?, ?, ?, ?, 'active', ?)",
+        (user["org_id"], user["id"], name, key_hash, prefix, iso_now()),
+    )
+    db.commit()
+    audit(user["org_id"], user["id"], "created_api_key", "api_key", str(cur.lastrowid), {"name": name})
+    return jsonify({
+        "message": "API key created. Copy it now — it will not be shown again.",
+        "id": cur.lastrowid,
+        "name": name,
+        "key": raw_key,
+        "prefix": prefix,
+    }), 201
+
+
+@app.get("/api/keys")
+def list_api_keys():
+    """List API keys for the current org (hashes not returned)."""
+    user, error = require_auth()
+    if error:
+        return error
+    db = get_db()
+    rows = db.execute(
+        "SELECT ak.id, ak.name, ak.prefix, ak.status, ak.created_at, ak.last_used_at, u.name AS created_by FROM api_keys ak JOIN users u ON u.id = ak.user_id WHERE ak.org_id = ? ORDER BY ak.id DESC",
+        (user["org_id"],),
+    ).fetchall()
+    return jsonify({"keys": [dict(r) for r in rows]})
+
+
+@app.delete("/api/keys/<int:key_id>")
+def revoke_api_key(key_id: int):
+    """Revoke an API key."""
+    user, error = require_auth()
+    if error:
+        return error
+    db = get_db()
+    row = db.execute("SELECT id FROM api_keys WHERE id = ? AND org_id = ?", (key_id, user["org_id"])).fetchone()
+    if not row:
+        return jsonify({"error": "Key not found."}), 404
+    db.execute("UPDATE api_keys SET status = 'revoked' WHERE id = ?", (key_id,))
+    db.commit()
+    audit(user["org_id"], user["id"], "revoked_api_key", "api_key", str(key_id), {})
+    return jsonify({"message": "API key revoked."})
+
+
+@app.get("/api/logs/timeseries")
+def logs_timeseries():
+    """Return hourly log counts for the past N hours, broken down by level."""
+    user, error = require_auth()
+    if error:
+        return error
+    hours = min(int(request.args.get("hours", 24)), 168)
+    db = get_db()
+    since = (datetime.now(timezone.utc) - timedelta(hours=hours)).isoformat()
+    rows = db.execute(
+        "SELECT strftime('%Y-%m-%dT%H:00:00Z', timestamp) AS hour, level, COUNT(*) AS count FROM log_events WHERE org_id = ? AND timestamp >= ? GROUP BY hour, level ORDER BY hour",
+        (user["org_id"], since),
+    ).fetchall()
+    buckets: dict[str, dict[str, int]] = {}
+    for row in rows:
+        h = row["hour"] or ""
+        if h not in buckets:
+            buckets[h] = {}
+        buckets[h][row["level"]] = row["count"]
+    return jsonify({"hours": hours, "since": since, "buckets": buckets})
+
 @app.post("/api/demo-request")
 def demo_request():
     payload = request_payload()
@@ -1506,3 +1788,4 @@ if __name__ == "__main__":
 else:
     init_db()
     start_scheduler()
+    start_worker()
