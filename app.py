@@ -1445,6 +1445,10 @@ def get_logs():
     if to_ts:
         sql += " AND timestamp <= ?"
         params.append(to_ts)
+    source_filter = sanitize_input(request.args.get("source") or "", 100)
+    if source_filter:
+        sql += " AND source = ?"
+        params.append(source_filter)
     ALLOWED_SORT_COLS = {"timestamp", "level", "source", "message", "event_id"}
     sort_col = sanitize_input(request.args.get("sort", "timestamp"), 20).lower()
     sort_dir = sanitize_input(request.args.get("dir", "desc"), 5).lower()
@@ -1471,6 +1475,18 @@ def get_logs():
     params.extend([per_page, (page - 1) * per_page])
     rows = [dict(row) for row in db.execute(sql, params).fetchall()]
     return jsonify({"records": rows, "total": total, "page": page, "pages": pages, "per_page": per_page})
+
+@app.get("/api/logs/sources")
+def get_log_sources():
+    user, error = require_auth()
+    if error:
+        return error
+    db = get_db()
+    rows = db.execute(
+        "SELECT DISTINCT source FROM log_events WHERE org_id = ? AND source IS NOT NULL AND source != '' ORDER BY source LIMIT 200",
+        (user["org_id"],)
+    ).fetchall()
+    return jsonify({"sources": [r["source"] for r in rows]})
 
 @app.get("/api/logs/<int:log_id>")
 def get_log_detail(log_id: int):

@@ -157,6 +157,29 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
 .rpp-select:focus{outline:none;border-color:var(--accent)}
 .export-btn{padding:5px 10px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text2);font-size:11px;cursor:pointer;font-family:var(--sans);transition:all .15s}
 .export-btn:hover{border-color:var(--accent2);color:var(--accent2)}
+.toolbar-row2{display:flex;align-items:center;gap:10px;padding:8px 14px;border-bottom:1px solid var(--border);flex-wrap:wrap;background:var(--surface)}
+.preset-group{display:flex;gap:3px;flex-shrink:0}
+.preset-btn{padding:3px 9px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text3);font-size:11px;cursor:pointer;font-family:var(--sans);transition:all .15s}
+.preset-btn:hover{border-color:var(--accent);color:var(--accent)}
+.preset-btn.active{background:var(--accent);border-color:var(--accent);color:#fff}
+.date-range-group{display:flex;align-items:center;gap:6px;flex:1;min-width:260px}
+.dt-label{font-size:10px;color:var(--text3);font-weight:600;letter-spacing:.5px;text-transform:uppercase;white-space:nowrap}
+.dt-input{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text1);font-size:11px;padding:4px 8px;font-family:var(--sans);cursor:pointer;flex:1;min-width:130px}
+.dt-input:focus{outline:none;border-color:var(--accent)}
+.dt-clear-btn{padding:3px 7px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text3);font-size:11px;cursor:pointer;transition:all .15s}
+.dt-clear-btn:hover{color:var(--red);border-color:var(--red)}
+.source-select{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text2);font-size:11px;padding:4px 8px;cursor:pointer;font-family:var(--sans);max-width:160px}
+.source-select:focus{outline:none;border-color:var(--accent)}
+.live-tail-group{display:flex;align-items:center;margin-left:auto;flex-shrink:0}
+.live-tail-label{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text2);cursor:pointer;user-select:none}
+.live-tail-label input{width:13px;height:13px;accent-color:var(--green);cursor:pointer}
+.live-dot{width:7px;height:7px;border-radius:50%;background:var(--text3);transition:background .2s}
+.live-dot.on{background:var(--green);box-shadow:0 0 6px var(--green);animation:pulse-dot 1.4s ease-in-out infinite}
+@keyframes pulse-dot{0%,100%{opacity:1}50%{opacity:.4}}
+.filter-summary{padding:7px 14px;background:color-mix(in srgb,var(--accent) 8%,transparent);border-bottom:1px solid var(--border);font-size:11px;color:var(--text2);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.filter-summary strong{color:var(--text1)}
+.filter-summary .fs-clear{margin-left:auto;padding:2px 8px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text3);font-size:10px;cursor:pointer;font-family:var(--sans)}
+.filter-summary .fs-clear:hover{color:var(--red);border-color:var(--red)}
 .log-table{width:100%;border-collapse:collapse;font-size:12px}
 .log-table thead th{background:var(--surface2);padding:9px 12px;text-align:left;font-size:10px;font-weight:600;color:var(--text3);letter-spacing:.6px;text-transform:uppercase;border-bottom:1px solid var(--border);white-space:nowrap;user-select:none}
 .log-table thead th.sortable{cursor:pointer}
@@ -470,6 +493,39 @@ html:not(.dark) .toast{box-shadow:0 8px 24px rgba(0,0,0,.15)}
             <button class="export-btn" onclick="exportLogs('json')">⬇ JSON</button>
           </div>
         </div>
+        <!-- Row 2: Date range + Source + Live tail -->
+        <div class="toolbar-row2">
+          <div class="preset-group">
+            <button class="preset-btn active" data-preset="all" onclick="setPreset('all')">All</button>
+            <button class="preset-btn" data-preset="15m" onclick="setPreset('15m')">15m</button>
+            <button class="preset-btn" data-preset="1h" onclick="setPreset('1h')">1h</button>
+            <button class="preset-btn" data-preset="6h" onclick="setPreset('6h')">6h</button>
+            <button class="preset-btn" data-preset="24h" onclick="setPreset('24h')">24h</button>
+            <button class="preset-btn" data-preset="7d" onclick="setPreset('7d')">7d</button>
+            <button class="preset-btn" data-preset="30d" onclick="setPreset('30d')">30d</button>
+          </div>
+          <div class="date-range-group">
+            <label class="dt-label">From</label>
+            <input type="datetime-local" id="dtFrom" class="dt-input" onchange="onDateChange()" style="color-scheme:dark"/>
+            <label class="dt-label">To</label>
+            <input type="datetime-local" id="dtTo" class="dt-input" onchange="onDateChange()" style="color-scheme:dark"/>
+            <button class="dt-clear-btn" onclick="clearDateRange()" title="Clear date range">✕</button>
+          </div>
+          <div class="source-filter-group">
+            <select id="sourceSelect" class="source-select" onchange="onSourceChange()">
+              <option value="">All sources</option>
+            </select>
+          </div>
+          <div class="live-tail-group">
+            <label class="live-tail-label">
+              <input type="checkbox" id="liveTailToggle" onchange="toggleLiveTail()"/>
+              <span class="live-dot" id="liveDot"></span>
+              Live tail
+            </label>
+          </div>
+        </div>
+        <!-- Row 3: Active filter summary -->
+        <div class="filter-summary" id="filterSummary" style="display:none"></div>
         <div id="logTableBody">
           <div class="empty-state"><div class="empty-icon">◎</div><h3>No logs yet</h3><p>Upload a log file above to start exploring events</p></div>
         </div>
@@ -701,6 +757,8 @@ let bsData = null;   // bootstrap data
 let logPage = 1, logPerPage = 50, logFilter = 'all', logSearch = '', logSort = 'timestamp', logSortDir = 'desc';
 let logTotal = 0, logPages = 1;
 let cachedLogs = [];
+let logFromTs = '', logToTs = '', logSource = '', logActivePreset = 'all';
+let liveTailInterval = null;
 
 // ── INIT ──
 document.addEventListener('DOMContentLoaded', () => {
@@ -803,7 +861,7 @@ function showPage(name) {
     if (n.getAttribute('onclick') && n.getAttribute('onclick').includes("'" + name + "'")) n.classList.add('active');
   });
   // Lazy-load logs when explorer opened
-  if (name === 'explorer') loadLogs();
+  if (name === 'explorer') { loadLogs(); loadSources(); }
   history.replaceState(null, '', `/workspace/${ORG_SLUG}/${name}`);
 }
 
@@ -867,6 +925,9 @@ async function loadLogs() {
     sort: logSort, dir: logSortDir,
     q: logSearch
   });
+  if (logFromTs) params.set('from_ts', logFromTs);
+  if (logToTs)   params.set('to_ts',   logToTs);
+  if (logSource) params.set('source',  logSource);
   try {
     const r = await fetch('/api/logs?' + params);
     if (!r.ok) return;
@@ -875,6 +936,7 @@ async function loadLogs() {
     logTotal = d.total; logPages = d.pages; logPage = d.page;
     renderLogTable(d.records);
     renderPagination();
+    updateFilterSummary();
   } catch(e) { console.error(e); }
   finally { showLoader(false); }
 }
@@ -956,6 +1018,114 @@ function pgRange(cur, tot) {
   if (cur <= 4) return [1,2,3,4,5,'…',tot];
   if (cur >= tot-3) return [1,'…',tot-4,tot-3,tot-2,tot-1,tot];
   return [1,'…',cur-1,cur,cur+1,'…',tot];
+}
+
+// ── DATE / TIME RANGE ──
+function setPreset(p) {
+  logActivePreset = p;
+  document.querySelectorAll('.preset-btn').forEach(b => b.classList.toggle('active', b.dataset.preset === p));
+  document.getElementById('dtFrom').value = '';
+  document.getElementById('dtTo').value = '';
+  logToTs = '';
+  if (p === 'all') { logFromTs = ''; }
+  else {
+    const mins = {
+      '15m': 15, '1h': 60, '6h': 360, '24h': 1440, '7d': 10080, '30d': 43200
+    }[p] || 0;
+    const d = new Date(Date.now() - mins * 60000);
+    logFromTs = d.toISOString().slice(0, 19).replace('T', ' ');
+  }
+  logPage = 1;
+  loadLogs();
+}
+
+function onDateChange() {
+  const from = document.getElementById('dtFrom').value;
+  const to   = document.getElementById('dtTo').value;
+  logFromTs = from ? from.replace('T', ' ') : '';
+  logToTs   = to   ? to.replace('T', ' ')   : '';
+  // clear preset highlight if user typed custom range
+  logActivePreset = '';
+  document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+  logPage = 1;
+  loadLogs();
+}
+
+function clearDateRange() {
+  logFromTs = ''; logToTs = '';
+  document.getElementById('dtFrom').value = '';
+  document.getElementById('dtTo').value = '';
+  logActivePreset = 'all';
+  document.querySelectorAll('.preset-btn').forEach(b => b.classList.toggle('active', b.dataset.preset === 'all'));
+  logPage = 1;
+  loadLogs();
+}
+
+// ── SOURCE FILTER ──
+async function loadSources() {
+  try {
+    const r = await fetch('/api/logs/sources');
+    if (!r.ok) return;
+    const d = await r.json();
+    const sel = document.getElementById('sourceSelect');
+    sel.innerHTML = '<option value="">All sources</option>';
+    d.sources.forEach(s => {
+      const o = document.createElement('option'); o.value = s; o.textContent = s; sel.appendChild(o);
+    });
+  } catch(e) { /* silent */ }
+}
+
+function onSourceChange() {
+  logSource = document.getElementById('sourceSelect').value;
+  logPage = 1;
+  loadLogs();
+}
+
+// ── LIVE TAIL ──
+function toggleLiveTail() {
+  const on = document.getElementById('liveTailToggle').checked;
+  const dot = document.getElementById('liveDot');
+  if (on) {
+    dot.classList.add('on');
+    // live tail: newest first, clear date range
+    clearDateRange();
+    logSort = 'timestamp'; logSortDir = 'desc';
+    loadLogs();
+    liveTailInterval = setInterval(loadLogs, 5000);
+    toast('Live tail started — refreshing every 5s', 'info');
+  } else {
+    dot.classList.remove('on');
+    clearInterval(liveTailInterval); liveTailInterval = null;
+    toast('Live tail stopped', 'info');
+  }
+}
+
+// ── FILTER SUMMARY BAR ──
+function updateFilterSummary() {
+  const bar = document.getElementById('filterSummary');
+  const parts = [];
+  if (logFromTs || logToTs) {
+    const f = logFromTs ? logFromTs.replace('T',' ') : '∞';
+    const t = logToTs   ? logToTs.replace('T',' ')   : 'now';
+    parts.push(`<strong>Range:</strong> ${f} → ${t}`);
+  } else if (logActivePreset && logActivePreset !== 'all') {
+    parts.push(`<strong>Preset:</strong> Last ${logActivePreset}`);
+  }
+  if (logFilter !== 'all') parts.push(`<strong>Level:</strong> ${logFilter}`);
+  if (logSearch)           parts.push(`<strong>Search:</strong> "${logSearch}"`);
+  if (logSource)           parts.push(`<strong>Source:</strong> ${logSource}`);
+  if (!parts.length) { bar.style.display = 'none'; return; }
+  parts.push(`<strong>${logTotal.toLocaleString()}</strong> result${logTotal !== 1 ? 's' : ''}`);
+  bar.style.display = 'flex';
+  bar.innerHTML = parts.join('<span style="color:var(--border)">|</span>') +
+    `<button class="fs-clear" onclick="clearAllFilters()">Clear all</button>`;
+}
+
+function clearAllFilters() {
+  logSearch = ''; document.getElementById('searchInput').value = '';
+  logFilter = 'all'; document.querySelectorAll('.chip').forEach(c => c.classList.toggle('active', c.dataset.lvl === 'all'));
+  logSource = ''; document.getElementById('sourceSelect').value = '';
+  clearDateRange();
 }
 
 // ── DETAIL PANEL ──
@@ -1245,6 +1415,9 @@ async function doLogout() {
 
 async function exportLogs(fmt) {
   const params = new URLSearchParams({page:1, per_page:5000, level:logFilter, q:logSearch});
+  if (logFromTs) params.set('from_ts', logFromTs);
+  if (logToTs)   params.set('to_ts',   logToTs);
+  if (logSource) params.set('source',  logSource);
   const r = await fetch('/api/logs?' + params);
   const d = await r.json();
   const logs = d.records;
