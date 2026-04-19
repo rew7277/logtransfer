@@ -232,7 +232,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
 .lvl-badge{display:inline-flex;align-items:center;justify-content:center;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:700;letter-spacing:.4px;min-width:70px;font-family:var(--mono)}
 .lvl-error{background:var(--red-dim);color:var(--red)}.lvl-warn{background:var(--yellow-dim);color:var(--yellow)}.lvl-success{background:var(--green-dim);color:var(--green)}.lvl-info{background:var(--accent-glow);color:var(--accent2)}.lvl-debug{background:rgba(255,255,255,.05);color:var(--text3)}
 .ts-cell{font-family:var(--mono);font-size:10.5px;color:var(--text2);white-space:nowrap}
-.msg-cell{max-width:380px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px}
+.msg-cell{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px}
 .src-tag{font-family:var(--mono);font-size:10px;background:var(--surface2);border:1px solid var(--border);padding:1px 6px;border-radius:3px;color:var(--text2);white-space:nowrap}
 .evt-id{font-family:var(--mono);font-size:10.5px;color:var(--cyan)}
 .copy-msg-btn{visibility:hidden;border:none;background:none;color:var(--text3);cursor:pointer;padding:0 3px;font-size:11px;border-radius:3px;margin-left:4px;transition:color .1s}
@@ -347,7 +347,24 @@ html.dark ::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1)}
 html.dark ::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.18)}
 
 /* ── SIDEBAR COLLAPSE ── */
+.sidebar{transition:width .22s cubic-bezier(.4,0,.2,1)}
+.main{transition:margin-left .22s cubic-bezier(.4,0,.2,1)}
 body.sidebar-collapsed .sidebar{width:52px;overflow:hidden}
+body.sidebar-collapsed .sidebar-footer{padding:8px;display:flex;justify-content:center}
+body.sidebar-collapsed .sidebar-footer .btn-logout-icon{display:flex}
+.btn-logout-icon{display:none;width:32px;height:32px;align-items:center;justify-content:center;border:1px solid var(--border);border-radius:var(--radius-sm);background:transparent;cursor:pointer;color:var(--text2);font-size:14px;transition:all .15s}
+.btn-logout-icon:hover{border-color:var(--red);color:var(--red);background:var(--red-dim)}
+
+/* ── STICKY LOG TABLE HEADER ── */
+.log-table thead th{position:sticky;top:0;z-index:2}
+#logTableBody > div{max-height:calc(100vh - 260px);overflow-y:auto;overflow-x:auto}
+
+/* ── SEARCH FOCUS RING ── */
+.search-box input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-glow)}
+
+/* ── KEYBOARD SHORTCUT HINT ── */
+.search-shortcut{position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:10px;color:var(--text3);font-family:var(--mono);background:var(--surface2);border:1px solid var(--border);border-radius:3px;padding:1px 4px;pointer-events:none;transition:opacity .15s}
+.search-box input:focus ~ .search-shortcut{opacity:0}
 body.sidebar-collapsed .sidebar .brand-name,
 body.sidebar-collapsed .sidebar .brand-org,
 body.sidebar-collapsed .sidebar .nav-section,
@@ -445,6 +462,9 @@ html:not(.dark) .toast{box-shadow:0 8px 24px rgba(0,0,0,.15)}
   <div class="sidebar-footer">
     <div class="sidebar-user"><strong>{{ user.name }}</strong>{{ user.role }}</div>
     <button class="btn-logout" onclick="doLogout()">Sign out</button>
+    <button class="btn-logout-icon" onclick="doLogout()" title="Sign out">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M6 2H3a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3M10 11l3-3-3-3M13 8H6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
   </div>
 </nav>
 
@@ -574,7 +594,7 @@ html:not(.dark) .toast{box-shadow:0 8px 24px rgba(0,0,0,.15)}
     </div>
     <div class="table-wrap" id="explorerWrap" style="margin:0 24px 24px;border-radius:var(--radius)">
         <div class="table-toolbar">
-          <div class="search-box"><span class="search-icon">⌕</span><input id="searchInput" placeholder="Search message, source, event ID…" oninput="onSearch()"/></div>
+          <div class="search-box"><span class="search-icon">⌕</span><input id="searchInput" placeholder="Search message, source, event ID…" oninput="onSearch()"/><span class="search-shortcut">⌘K</span></div>
           <div class="filter-chips" id="filterChips">
             <button class="chip active" data-lvl="all" onclick="setFilter('all')">All</button>
             <button class="chip chip-red" data-lvl="error" onclick="setFilter('error')">Error</button>
@@ -922,6 +942,21 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('intS3Fields').classList.toggle('hidden', this.value !== 's3');
     document.getElementById('intApiFields').classList.toggle('hidden', this.value !== 'api');
   });
+  // ── Keyboard shortcuts ──
+  document.addEventListener('keydown', e => {
+    // Ctrl+K or Cmd+K → focus search in explorer
+    if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+      e.preventDefault();
+      showPage('explorer');
+      const si = document.getElementById('searchInput');
+      if (si) { si.focus(); si.select(); }
+    }
+    // Escape → close any open modal/overlay
+    if (e.key === 'Escape') {
+      closeDetail();
+      closeErrModal();
+    }
+  });
   // Show active page
   const initSection = '{{ active_section }}';
   showPage(initSection || 'overview');
@@ -1094,10 +1129,13 @@ async function loadLogs() {
   finally { showLoader(false); }
 }
 
+// ── Debounce helper ──
+let _searchDebounceTimer = null;
 function onSearch() {
   logSearch = document.getElementById('searchInput').value.trim();
   logPage = 1;
-  loadLogs();
+  clearTimeout(_searchDebounceTimer);
+  _searchDebounceTimer = setTimeout(loadLogs, 300);
 }
 function setFilter(lvl) {
   logFilter = lvl; logPage = 1;
@@ -1133,15 +1171,15 @@ function renderLogTable(logs) {
     </tr>`;
   }).join('');
   document.getElementById('logTableBody').innerHTML = `
-    <div style="overflow:auto">
-      <table class="log-table">
+    <div style="overflow-x:auto;width:100%">
+      <table class="log-table" style="width:100%;min-width:680px">
         <thead><tr>
-          <th></th>
-          <th class="sortable" onclick="toggleSort('level')">Level${sa('level')}</th>
-          <th>Event ID</th>
-          <th class="sortable" onclick="toggleSort('timestamp')">Timestamp${sa('timestamp')}</th>
+          <th style="width:18px"></th>
+          <th class="sortable" style="width:82px" onclick="toggleSort('level')">Level${sa('level')}</th>
+          <th style="width:140px">Event ID</th>
+          <th class="sortable" style="width:140px" onclick="toggleSort('timestamp')">Timestamp${sa('timestamp')}</th>
           <th class="sortable" onclick="toggleSort('message')">Message${sa('message')}</th>
-          <th class="sortable" onclick="toggleSort('source')">Source${sa('source')}</th>
+          <th class="sortable" style="width:110px" onclick="toggleSort('source')">Source${sa('source')}</th>
         </tr></thead>
         <tbody>${rows}</tbody>
       </table>
@@ -1315,7 +1353,11 @@ function closeDetail() {
   document.getElementById('overlay').classList.remove('open');
   document.getElementById('detailPanel').classList.remove('open');
 }
+// Store current error pattern safely (avoids JSON-in-onclick escaping bugs)
+let _currentErrPattern = '';
+
 function openErrModal(pattern, count, level, sources, lastSeen) {
+  _currentErrPattern = pattern;   // safe reference — no inline embedding
   const srcTags = (sources||[]).slice(0,5).map(s => `<span class="src-tag">${esc(s)}</span>`).join(' ');
   const dotColor = level === 'error' ? 'var(--red)' : 'var(--yellow)';
   document.getElementById('errModalBody').innerHTML = `
@@ -1328,9 +1370,17 @@ function openErrModal(pattern, count, level, sources, lastSeen) {
     <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:14px;font-size:12px;font-family:var(--mono);line-height:1.7;word-break:break-word;white-space:pre-wrap;color:var(--text);margin-bottom:16px">${esc(pattern)}</div>
     <div style="display:flex;gap:8px;align-items:center">
       <span style="font-size:12px;color:var(--text2)"><strong>${count}</strong> occurrences</span>
-      <button onclick="drillError(${JSON.stringify(pattern).replace(/'/g,'&#39;')});closeErrModal();" style="margin-left:auto;padding:8px 16px;background:var(--accent);border:none;border-radius:var(--radius-sm);color:#fff;font-family:var(--sans);font-size:12px;cursor:pointer;font-weight:600">View in Explorer →</button>
-      <button onclick="copyText(${JSON.stringify(pattern).replace(/'/g,'&#39;')})" style="padding:8px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text2);font-family:var(--sans);font-size:12px;cursor:pointer">⎘ Copy</button>
+      <button id="errViewExplorerBtn" style="margin-left:auto;padding:8px 16px;background:var(--accent);border:none;border-radius:var(--radius-sm);color:#fff;font-family:var(--sans);font-size:12px;cursor:pointer;font-weight:600">View in Explorer →</button>
+      <button id="errCopyBtn" style="padding:8px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text2);font-family:var(--sans);font-size:12px;cursor:pointer">⎘ Copy</button>
     </div>`;
+  // Wire up buttons after injecting HTML (no inline onclick escaping needed)
+  document.getElementById('errViewExplorerBtn').onclick = function() {
+    drillError(_currentErrPattern);
+    closeErrModal();
+  };
+  document.getElementById('errCopyBtn').onclick = function() {
+    copyText(_currentErrPattern);
+  };
   document.getElementById('errOverlay').classList.add('open');
   document.getElementById('errModal').classList.add('open');
 }
