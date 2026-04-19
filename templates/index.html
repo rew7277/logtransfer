@@ -180,7 +180,54 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
 .filter-summary strong{color:var(--text1)}
 .filter-summary .fs-clear{margin-left:auto;padding:2px 8px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text3);font-size:10px;cursor:pointer;font-family:var(--sans)}
 .filter-summary .fs-clear:hover{color:var(--red);border-color:var(--red)}
-.log-table{width:100%;border-collapse:collapse;font-size:12px}
+.error-card{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border-radius:var(--radius-sm);border:1px solid var(--border);margin-bottom:8px;cursor:pointer;transition:border-color .15s,background .15s}
+.error-card:hover{border-color:var(--border2);background:var(--surface2)}
+.error-card-left{padding-top:2px;flex-shrink:0}
+.error-card-body{flex:1;min-width:0}
+.error-card-msg{font-size:12px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:4px}
+.error-card-meta{display:flex;align-items:center;flex-wrap:wrap;gap:4px}
+.error-card-right{flex-shrink:0;text-align:right}
+.error-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px;margin-bottom:16px}
+.error-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;cursor:pointer;transition:border-color .15s,transform .1s}
+.error-card:hover{border-color:var(--red);transform:translateY(-1px)}
+.error-card.warn-card:hover{border-color:var(--yellow)}
+.error-card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:6px}
+.error-card-pattern{font-size:12px;font-weight:600;color:var(--text1);line-height:1.4;flex:1;word-break:break-word}
+.error-card-count{background:var(--red);color:#fff;font-size:11px;font-weight:700;padding:2px 7px;border-radius:10px;flex-shrink:0}
+.error-card-count.warn-count{background:var(--yellow);color:#000}
+.error-card-meta{font-size:10px;color:var(--text3);display:flex;gap:10px;flex-wrap:wrap}
+.error-card-src{display:inline-block;background:var(--surface2);padding:1px 6px;border-radius:3px;font-size:10px;color:var(--text2);margin-right:3px}
+.ai-explain-btn{display:flex;align-items:center;gap:6px;width:100%;padding:9px 12px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text2);font-size:12px;cursor:pointer;font-family:var(--sans);transition:all .15s;margin-top:6px}
+.ai-explain-btn:hover{border-color:var(--accent2);color:var(--accent2)}
+.ai-explain-btn.loading{opacity:.6;cursor:wait}
+.ai-result{margin-top:10px;padding:12px;background:color-mix(in srgb,var(--accent2) 8%,transparent);border-radius:var(--radius-sm);border:1px solid color-mix(in srgb,var(--accent2) 25%,transparent);font-size:12px;line-height:1.7;color:var(--text1)}
+.ai-result h4{font-size:11px;font-weight:700;color:var(--accent2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;margin-top:10px}
+.ai-result h4:first-child{margin-top:0}
+.ai-result ul{padding-left:14px}
+.ai-result li{margin-bottom:3px}
+.saved-searches-row{display:flex;align-items:center;gap:6px;padding:6px 14px;border-bottom:1px solid var(--border);background:var(--surface);flex-wrap:wrap}
+.saved-search-pill{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:12px;border:1px solid var(--border);background:var(--surface2);font-size:11px;color:var(--text2);cursor:pointer;transition:all .15s}
+.saved-search-pill:hover{border-color:var(--accent);color:var(--accent)}
+.saved-search-del{color:var(--text3);font-size:10px;margin-left:2px;line-height:1}
+.saved-search-del:hover{color:var(--red)}
+.save-search-btn{padding:3px 10px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text3);font-size:11px;cursor:pointer;font-family:var(--sans);margin-left:auto;white-space:nowrap}
+.save-search-btn:hover{border-color:var(--accent2);color:var(--accent2)}
+.upload-hist-table{width:100%;border-collapse:collapse;font-size:12px}
+.upload-hist-table th{font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;padding:7px 12px;border-bottom:1px solid var(--border);text-align:left}
+.upload-hist-table td{padding:7px 12px;border-bottom:1px solid var(--border);color:var(--text2)}
+.upload-hist-table tr:hover td{background:var(--surface2)}
+.run-row{display:flex;align-items:center;gap:10px;padding:7px 12px;border-bottom:1px solid var(--border);font-size:12px}
+.run-row:last-child{border-bottom:none}
+.run-status{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.obs-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:16px}
+.obs-stat{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;text-align:center}
+.obs-stat-num{font-size:28px;font-weight:700}
+.obs-stat-lbl{font-size:11px;color:var(--text3);margin-top:4px}
+.ip-row{display:flex;align-items:center;gap:10px;padding:7px 12px;border-bottom:1px solid var(--border);font-size:12px}
+.ip-badge{padding:1px 7px;border-radius:10px;font-size:10px;font-weight:600}
+.daily-bars{display:flex;align-items:flex-end;gap:2px;height:60px;padding:6px 0}
+.daily-bar{flex:1;background:var(--accent);opacity:.5;border-radius:2px 2px 0 0;min-height:2px;cursor:pointer;transition:opacity .1s}
+.daily-bar:hover{opacity:1}
 .log-table thead th{background:var(--surface2);padding:9px 12px;text-align:left;font-size:10px;font-weight:600;color:var(--text3);letter-spacing:.6px;text-transform:uppercase;border-bottom:1px solid var(--border);white-space:nowrap;user-select:none}
 .log-table thead th.sortable{cursor:pointer}
 .log-table thead th.sortable:hover{color:var(--text)}
@@ -449,10 +496,42 @@ html:not(.dark) .toast{box-shadow:0 8px 24px rgba(0,0,0,.15)}
         </div>
       </div>
 
+      <!-- 30-day trend -->
+      <div class="chart-card" style="margin-bottom:16px">
+        <h3>30-day log volume</h3>
+        <div id="dailyTrend" style="color:var(--text3);font-size:12px">No data yet</div>
+      </div>
+
       <!-- Source breakdown -->
       <div class="chart-card" style="margin-bottom:16px">
         <h3>Top sources</h3>
         <div id="sourceBars"><p style="font-size:12px;color:var(--text3)">No data yet</p></div>
+      </div>
+
+      <!-- Error intelligence cards -->
+      <div class="chart-card" style="margin-bottom:16px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+          <h3 style="margin:0">Top error patterns</h3>
+          <button onclick="loadErrorGroups()" style="padding:3px 10px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text2);font-size:11px;cursor:pointer;font-family:var(--sans)">↻ Refresh</button>
+        </div>
+        <div id="errorCards"><p style="font-size:12px;color:var(--text3)">Loading…</p></div>
+      </div>
+
+      <!-- Upload history -->
+      <div class="chart-card" style="margin-bottom:16px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+          <h3 style="margin:0">Upload history</h3>
+        </div>
+        <div id="uploadHistWrap"><p style="font-size:12px;color:var(--text3)">Loading…</p></div>
+      </div>
+
+      <!-- Observability overview -->
+      <div class="chart-card" style="margin-bottom:16px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+          <h3 style="margin:0">Observability — last hour</h3>
+          <button onclick="loadObservability()" style="padding:3px 10px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text2);font-size:11px;cursor:pointer;font-family:var(--sans)">↻ Refresh</button>
+        </div>
+        <div id="obsWrap"><p style="font-size:12px;color:var(--text3)">Loading…</p></div>
       </div>
 
     </div>
@@ -483,6 +562,10 @@ html:not(.dark) .toast{box-shadow:0 8px 24px rgba(0,0,0,.15)}
             <button class="chip chip-purple" data-lvl="debug" onclick="setFilter('debug')">Debug</button>
           </div>
           <div class="toolbar-right">
+            <select class="rpp-select" id="savedSearchSelect" onchange="applySearch(this.value)" style="max-width:140px">
+              <option value="">Saved searches…</option>
+            </select>
+            <button class="export-btn" onclick="saveCurrentSearch()" title="Save current filters as a search">☆ Save</button>
             <select class="rpp-select" id="rppSelect" onchange="onRppChange()">
               <option value="25">25 / page</option>
               <option value="50" selected>50 / page</option>
@@ -613,6 +696,11 @@ Content-Type: application/json
         <button class="btn-primary" onclick="createJob()">Create job</button>
       </div>
       <div class="table-wrap" id="jobsList"></div>
+      <div class="section-card" style="margin-top:14px">
+        <h3>Recent run history</h3>
+        <p>Last 20 ingestion job runs across all jobs.</p>
+        <div id="runHistList"><p style="font-size:12px;color:var(--text3)">No runs yet</p></div>
+      </div>
     </div>
   </div>
 
@@ -764,6 +852,10 @@ let liveTailInterval = null;
 document.addEventListener('DOMContentLoaded', () => {
   applyThemeIcon();
   loadBootstrap();
+  loadErrorGroups();
+  loadUploadHistory();
+  loadObservability();
+  loadSavedSearches();
   setupDragDrop();
   document.getElementById('fileInput').addEventListener('change', e => {
     uploadFiles(Array.from(e.target.files));
@@ -829,11 +921,13 @@ function applyBootstrap(d) {
   renderHourlyChart(s.time_series);
   renderDonut(s.levels, s.totals.logs);
   renderSourceBars(s.source_breakdown);
+  renderDailyTrend(s.daily_series);
   renderAlerts(d.alerts);
   renderUsers(d.users);
   renderInvites(d.invitations);
   renderIntegrations(d.integrations);
   renderJobs(d.jobs);
+  renderRuns(d.ingestion_runs);
   renderAudit(d.audit);
   renderApiKeys(d.api_keys);
 }
@@ -909,6 +1003,8 @@ async function uploadFiles(files) {
       if (d.skipped && d.skipped.length) d.skipped.forEach(s => toast(`⚠ Skipped: ${s}`, 'warn'));
       await loadBootstrap();
       loadLogs();
+      loadErrorGroups();
+      loadUploadHistory();
     }
   } catch(e) { toast('Upload error: ' + e.message, 'error'); }
   finally {
@@ -1134,6 +1230,7 @@ async function openDetail(id) {
     const r = await fetch(`/api/logs/${id}`);
     if (!r.ok) return;
     const l = await r.json();
+    const isError = l.level === 'error' || l.level === 'warn';
     document.getElementById('detailContent').innerHTML = `
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
         <span class="lvl-badge lvl-${l.level}">${l.level.toUpperCase()}</span>
@@ -1150,7 +1247,9 @@ async function openDetail(id) {
       </div>
       <div style="display:flex;gap:8px;margin-top:12px">
         <button onclick="copyText('${esc(JSON.stringify(l.payload)).replace(/'/g,"&#39;")}')" style="flex:1;padding:8px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:var(--sans);font-size:12px;cursor:pointer">⎘ Copy payload</button>
-      </div>`;
+        ${isError ? `<button onclick="explainLog(${l.id})" style="flex:1;padding:8px;background:var(--accent);border:1px solid var(--accent);border-radius:var(--radius-sm);color:#fff;font-family:var(--sans);font-size:12px;cursor:pointer;font-weight:600">✦ AI Explain</button>` : ''}
+      </div>
+      <div id="aiExplainBox" style="display:none;margin-top:12px;padding:12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);border-left:3px solid var(--accent)"></div>`;
     document.getElementById('overlay').classList.add('open');
     document.getElementById('detailPanel').classList.add('open');
   } catch(e) {}
@@ -1281,6 +1380,25 @@ function renderJobs(jobs) {
       <div><div style="font-size:12px;font-weight:600">${esc(j.name)}</div><div style="font-size:11px;color:var(--text2);font-family:var(--mono)">${esc(j.source_type)} · ${esc(j.schedule)}</div></div>
       <span class="lvl-badge lvl-${j.status==='scheduled'?'success':'debug'}" style="margin-left:auto">${esc(j.status).toUpperCase()}</span>
       <button class="btn-primary" style="padding:5px 10px;font-size:11px" onclick="runJob(${j.id})">▶ Run now</button>
+    </div>`).join('')}</div>`;
+}
+
+function renderRuns(runs) {
+  const el = document.getElementById('runHistList');
+  if (!el) return;
+  if (!runs || !runs.length) {
+    el.innerHTML = '<p style="font-size:12px;color:var(--text3)">No runs yet</p>';
+    return;
+  }
+  const statusColor = s => s === 'success' ? 'success' : s === 'running' ? 'info' : 'error';
+  el.innerHTML = `<div>${runs.map(r => `
+    <div class="user-row">
+      <div>
+        <div style="font-size:12px;font-weight:600">Job #${r.job_id}</div>
+        <div style="font-size:11px;color:var(--text2)">${fmtTs(r.created_at)}${r.message ? ' · ' + esc(r.message.slice(0,60)) : ''}</div>
+      </div>
+      <span class="lvl-badge lvl-${statusColor(r.status)}" style="margin-left:auto;font-size:10px">${esc(r.status).toUpperCase()}</span>
+      <span style="font-size:11px;color:var(--text3);margin-left:8px">${(r.record_count||0).toLocaleString()} logs</span>
     </div>`).join('')}</div>`;
 }
 
@@ -1433,6 +1551,217 @@ async function exportLogs(fmt) {
   const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([content],{type:mime}));
   a.download = `observex-logs.${ext}`; a.click();
   toast(`Exported ${logs.length} logs`, 'success');
+}
+
+// ── ERROR INTELLIGENCE CARDS ──
+async function loadErrorGroups() {
+  const el = document.getElementById('errorCards');
+  el.innerHTML = '<p style="font-size:12px;color:var(--text3)">Loading…</p>';
+  try {
+    const r = await fetch('/api/logs/errors/grouped');
+    if (!r.ok) { el.innerHTML = '<p style="font-size:12px;color:var(--red)">Failed to load</p>'; return; }
+    const d = await r.json();
+    renderErrorCards(d.groups);
+  } catch(e) { el.innerHTML = '<p style="font-size:12px;color:var(--red)">Error loading data</p>'; }
+}
+
+function renderErrorCards(groups) {
+  const el = document.getElementById('errorCards');
+  if (!groups || !groups.length) {
+    el.innerHTML = '<div class="empty-state" style="padding:20px"><div class="empty-icon" style="font-size:24px">✓</div><h3 style="font-size:13px">No errors found</h3><p>Your logs look clean!</p></div>';
+    return;
+  }
+  el.innerHTML = groups.map(g => {
+    const isErr = g.level === 'error';
+    const dotColor = isErr ? 'var(--red)' : 'var(--yellow)';
+    const badgeCls = isErr ? 'lvl-error' : 'lvl-warn';
+    const srcTags = (g.sources||[]).slice(0,3).map(s => `<span class="src-tag" style="font-size:10px">${esc(s)}</span>`).join('');
+    const age = g.last_seen ? `Last: ${fmtTs(g.last_seen)}` : '';
+    return `<div class="error-card" onclick="drillError(${JSON.stringify(g.pattern).replace(/'/g,'&#39;')})">
+      <div class="error-card-left"><span style="width:8px;height:8px;border-radius:50%;background:${dotColor};display:inline-block;flex-shrink:0;margin-top:3px"></span></div>
+      <div class="error-card-body">
+        <div class="error-card-msg">${esc(g.pattern)}</div>
+        <div class="error-card-meta">${srcTags}<span style="color:var(--text3);font-size:10px;margin-left:4px">${age}</span></div>
+      </div>
+      <div class="error-card-right">
+        <span class="lvl-badge ${badgeCls}" style="font-size:10px">${g.count.toLocaleString()}</span>
+        <div style="font-size:10px;color:var(--text3);margin-top:3px;text-align:right">${g.level}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function drillError(pattern) {
+  logSearch = pattern.slice(0,60);
+  logFilter = 'all';
+  logPage = 1;
+  document.getElementById('searchInput').value = logSearch;
+  document.querySelectorAll('.chip').forEach(c => c.classList.toggle('active', c.dataset.lvl === 'all'));
+  showPage('explorer');
+  loadLogs();
+}
+
+// ── 30-DAY TREND ──
+function renderDailyTrend(daily) {
+  const el = document.getElementById('dailyTrend');
+  if (!daily || !daily.length) { el.innerHTML = '<p style="font-size:12px;color:var(--text3)">No data yet</p>'; return; }
+  const maxVal = Math.max(...daily.map(d => d.count), 1);
+  const bars = daily.map(d => {
+    const h = Math.max(2, Math.round((d.count / maxVal) * 56));
+    const lbl = d.day ? d.day.slice(5) : '';
+    return `<div class="bar-col" title="${lbl}: ${d.count} events" style="min-width:14px">
+      <div class="bar-fill" style="height:${h}px;background:var(--accent);opacity:.7"></div>
+      <span class="bar-lbl" style="font-size:8px">${lbl.slice(3)}</span>
+    </div>`;
+  }).join('');
+  el.innerHTML = `<div class="bar-chart" style="height:72px;overflow:hidden">${bars}</div>`;
+}
+
+// ── UPLOAD HISTORY ──
+async function loadUploadHistory() {
+  const el = document.getElementById('uploadHistWrap');
+  try {
+    const r = await fetch('/api/uploads');
+    if (!r.ok) return;
+    const d = await r.json();
+    if (!d.uploads || !d.uploads.length) {
+      el.innerHTML = '<div class="empty-state" style="padding:20px"><div class="empty-icon" style="font-size:24px">📂</div><h3 style="font-size:13px">No uploads yet</h3></div>';
+      return;
+    }
+    el.innerHTML = `<div>${d.uploads.map(u => `
+      <div class="user-row" style="cursor:pointer" onclick="filterByUpload(${u.id})">
+        <div>
+          <div style="font-size:12px;font-weight:600">${esc(u.filename||'upload-'+u.id)}</div>
+          <div style="font-size:11px;color:var(--text2)">${fmtTs(u.created_at)} · ${esc(u.source_type||'file')}</div>
+        </div>
+        <span class="lvl-badge lvl-info" style="margin-left:auto;font-size:10px">${(u.record_count||0).toLocaleString()} logs</span>
+        <span style="font-size:11px;color:var(--text3);margin-left:8px">→</span>
+      </div>`).join('')}</div>`;
+  } catch(e) { el.innerHTML = '<p style="font-size:12px;color:var(--red)">Failed to load</p>'; }
+}
+
+function filterByUpload(uploadId) {
+  logSearch = '';
+  document.getElementById('searchInput').value = '';
+  logFilter = 'all';
+  logPage = 1;
+  showPage('explorer');
+  // filter by appending upload_id via URL hack — pass as search term for now
+  logSearch = `upload:${uploadId}`;
+  document.getElementById('searchInput').value = logSearch;
+  loadLogs();
+}
+
+// ── OBSERVABILITY PANEL ──
+async function loadObservability() {
+  const el = document.getElementById('obsWrap');
+  el.innerHTML = '<p style="font-size:12px;color:var(--text3)">Loading…</p>';
+  try {
+    const r = await fetch('/api/observability?minutes=60');
+    if (!r.ok) { el.innerHTML = '<p style="font-size:12px;color:var(--red)">Failed to load</p>'; return; }
+    const d = await r.json();
+    const errPct = d.error_rate || 0;
+    const healthColor = errPct === 0 ? 'var(--green)' : errPct < 5 ? 'var(--green)' : errPct < 20 ? 'var(--yellow)' : 'var(--red)';
+    const suspIps = (d.top_ips||[]).filter(ip => ip.suspicious).slice(0,5);
+    const ipRows = suspIps.length ? suspIps.map(ip =>
+      `<div class="user-row">
+        <div><div style="font-size:12px;font-weight:600;font-family:var(--mono)">${esc(ip.ip)}</div>
+        <div style="font-size:11px;color:var(--text2)">${ip.hits} hits · ${ip.hits_per_min}/min</div></div>
+        <span class="lvl-badge lvl-error" style="margin-left:auto;font-size:10px">${ip.error_pct}% err</span>
+      </div>`
+    ).join('') : '<p style="font-size:12px;color:var(--text3);padding:8px 0">No suspicious IPs detected</p>';
+
+    el.innerHTML = `
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px">
+        <div style="background:var(--surface2);border-radius:var(--radius-sm);padding:10px;text-align:center">
+          <div style="font-size:20px;font-weight:700;color:${healthColor}">${errPct}%</div>
+          <div style="font-size:10px;color:var(--text3);margin-top:2px">Error rate</div>
+        </div>
+        <div style="background:var(--surface2);border-radius:var(--radius-sm);padding:10px;text-align:center">
+          <div style="font-size:20px;font-weight:700">${(d.total||0).toLocaleString()}</div>
+          <div style="font-size:10px;color:var(--text3);margin-top:2px">Total logs / hr</div>
+        </div>
+        <div style="background:var(--surface2);border-radius:var(--radius-sm);padding:10px;text-align:center">
+          <div style="font-size:20px;font-weight:700;color:${suspIps.length?'var(--red)':'var(--green)'}">${suspIps.length}</div>
+          <div style="font-size:10px;color:var(--text3);margin-top:2px">Suspicious IPs</div>
+        </div>
+      </div>
+      <div style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Suspicious IPs</div>
+      ${ipRows}`;
+  } catch(e) { el.innerHTML = '<p style="font-size:12px;color:var(--red)">Error loading observability data</p>'; }
+}
+
+// ── AI EXPLAIN in detail panel ──
+async function explainLog(id, level, source, message) {
+  const box = document.getElementById('aiExplainBox');
+  box.style.display = 'block';
+  box.innerHTML = '<div style="font-size:12px;color:var(--text3);padding:8px 0">Analyzing with AI…</div>';
+  try {
+    const r = await fetch(`/api/logs/${id}/explain`, {method:'POST'});
+    if (!r.ok) { box.innerHTML = '<div style="font-size:12px;color:var(--red)">AI explain failed</div>'; return; }
+    const d = await r.json();
+    if (d.error) { box.innerHTML = `<div style="font-size:12px;color:var(--red)">${esc(d.error)}</div>`; return; }
+    // Render markdown-ish: bold **text** and bullet points
+    let html = esc(d.explanation)
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      .replace(/^• /gm, '<br>• ')
+      .replace(/\n\n/g, '<br><br>')
+      .replace(/\n/g, '<br>');
+    box.innerHTML = `<div style="font-size:12px;line-height:1.7;color:var(--text)">${html}</div>
+      <button onclick="copyText(${JSON.stringify(d.explanation).replace(/'/g,'&#39;')})" style="margin-top:8px;padding:4px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);background:transparent;color:var(--text2);font-size:11px;cursor:pointer;font-family:var(--sans)">⎘ Copy</button>`;
+  } catch(e) { box.innerHTML = '<div style="font-size:12px;color:var(--red)">Request failed</div>'; }
+}
+
+// ── SAVED SEARCHES ──
+let savedSearches = [];
+
+async function loadSavedSearches() {
+  try {
+    const r = await fetch('/api/searches');
+    if (!r.ok) return;
+    const d = await r.json();
+    savedSearches = d.searches || [];
+    renderSavedSearchDropdown();
+  } catch(e) {}
+}
+
+function renderSavedSearchDropdown() {
+  const sel = document.getElementById('savedSearchSelect');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">Saved searches…</option>' +
+    savedSearches.map(s => `<option value="${s.id}">${esc(s.name)}</option>`).join('');
+}
+
+function applySearch(id) {
+  const s = savedSearches.find(x => x.id == id);
+  if (!s) return;
+  const f = s.filters || {};
+  if (f.q !== undefined)      { logSearch = f.q; document.getElementById('searchInput').value = f.q; }
+  if (f.level !== undefined)  { logFilter = f.level; document.querySelectorAll('.chip').forEach(c => c.classList.toggle('active', c.dataset.lvl === logFilter)); }
+  if (f.source !== undefined) { logSource = f.source; document.getElementById('sourceSelect').value = f.source; }
+  if (f.from_ts !== undefined){ logFromTs = f.from_ts; document.getElementById('dtFrom').value = f.from_ts.replace(' ','T'); }
+  if (f.to_ts !== undefined)  { logToTs = f.to_ts; document.getElementById('dtTo').value = f.to_ts.replace(' ','T'); }
+  logPage = 1;
+  loadLogs();
+  toast(`Applied: ${s.name}`, 'success');
+  document.getElementById('savedSearchSelect').value = '';
+}
+
+async function saveCurrentSearch() {
+  const name = prompt('Name this search:');
+  if (!name) return;
+  const filters = { q: logSearch, level: logFilter };
+  if (logSource) filters.source = logSource;
+  if (logFromTs) filters.from_ts = logFromTs;
+  if (logToTs)   filters.to_ts   = logToTs;
+  const r = await fetch('/api/searches', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({name, filters})});
+  if (r.ok) { toast('Search saved!', 'success'); loadSavedSearches(); }
+  else toast('Failed to save search', 'error');
+}
+
+async function deleteSavedSearch(id) {
+  const r = await fetch(`/api/searches/${id}`, {method:'DELETE'});
+  if (r.ok) { toast('Search deleted', 'success'); loadSavedSearches(); }
 }
 
 // ── HELPERS ──

@@ -547,6 +547,28 @@ def init_db() -> None:
             fired_at TEXT NOT NULL
         );
 
+        CREATE TABLE IF NOT EXISTS saved_searches (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            org_id INTEGER NOT NULL,
+            user_id INTEGER NOT NULL,
+            name TEXT NOT NULL,
+            filters_json TEXT NOT NULL DEFAULT '{}',
+            created_at TEXT NOT NULL,
+            FOREIGN KEY(org_id) REFERENCES organizations(id)
+        );
+
+        CREATE TABLE IF NOT EXISTS log_annotations (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            org_id INTEGER NOT NULL,
+            log_id INTEGER NOT NULL,
+            user_id INTEGER NOT NULL,
+            tag TEXT NOT NULL DEFAULT 'note',
+            note TEXT NOT NULL DEFAULT '',
+            created_at TEXT NOT NULL,
+            FOREIGN KEY(org_id) REFERENCES organizations(id),
+            FOREIGN KEY(log_id) REFERENCES log_events(id)
+        );
+
         -- Indexes for common query patterns
         CREATE INDEX IF NOT EXISTS idx_logs_org_ts     ON log_events(org_id, timestamp DESC);
         CREATE INDEX IF NOT EXISTS idx_logs_org_level  ON log_events(org_id, level);
@@ -1410,6 +1432,7 @@ def bootstrap():
         "role_options":     sorted(VALID_ROLES),
         "theme_options":    sorted(VALID_THEMES),
         "api_keys":         api_keys_list,
+        "saved_searches":   [{"id": r["id"], "name": r["name"], "filters": json.loads(r["filters_json"]), "created_at": r["created_at"]} for r in db.execute("SELECT id, name, filters_json, created_at FROM saved_searches WHERE org_id = ? ORDER BY id DESC LIMIT 50", (user["org_id"],)).fetchall()],
     })
 
 @app.get("/api/logs")
@@ -1487,6 +1510,141 @@ def get_log_sources():
         (user["org_id"],)
     ).fetchall()
     return jsonify({"sources": [r["source"] for r in rows]})
+
+@app.get("/api/logs/errors/grouped")
+def get_grouped_errors():
+    user, error = require_auth()
+    if error:
+        return error
+    db = get_db()
+    # Group errors by truncated message pattern (first 120 chars) with counts
+    rows = db.execute(
+        """SELECT substr(message,1,120) AS pattern,
+                  COUNT(*) AS count,
+                  MIN(timestamp) AS first_seen,
+                  MAX(timestamp) AS last_seen,
+                  GROUP_CONCAT(DISTINCT source) AS sources,
+                  level
+           FROM log_events
+           WHERE org_id = ? AND level IN ('error','warn')
+           GROUP BY substr(message,1,120), level
+           ORDER BY count DESC LIMIT 20""",
+        (user["org_id"],)
+    ).fetchall()
+    result = []
+    for r in rows:
+        result.append({
+            "pattern":    r["pattern"],
+            "count":      r["count"],
+            "first_seen": r["first_seen"],
+            "last_seen":  r["last_seen"],
+            "sources":    r["sources"].split(",")[:4] if r["sources"] else [],
+            "level":      r["level"],
+        })
+    return jsonify({"groups": result})
+
+@app.post("/api/logs/<int:log_id>/explain")
+def explain_log(log_id: int):
+    user, error = require_auth()
+    if error:
+        return error
+    db  = get_db()
+    row = db.execute(
+        "SELECT id, timestamp, level, source, event_id, message, payload_json FROM log_events WHERE id = ? AND org_id = ?",
+        (log_id, user["org_id"])
+    ).fetchone()
+    if not row:
+        return jsonify({"error": "Not found"}), 404
+    log = dict(row)
+    try:
+        payload = json.loads(log.get("payload_json") or "{}")
+    except Exception:
+        payload = {}
+    prompt = (
+        f"You are a senior software engineer analyzing a log entry. "
+        f"Be concise and practical. Respond in 3 short sections:\n"
+        f"1. **What happened** (1-2 sentences)\n"
+        f"2. **Likely cause** (1-2 sentences)\n"
+        f"3. **Fix / next steps** (2-3 bullet points)\n\n"
+        f"Log entry:\n"
+        f"- Level: {log['level']}\n"
+        f"- Source: {log['source']}\n"
+        f"- Timestamp: {log['timestamp']}\n"
+        f"- Message: {log['message']}\n"
+        f"- Payload: {json.dumps(payload, indent=2)[:800]}"
+    )
+    import urllib.request as _ur
+    req_body = json.dumps({
+        "model": "claude-sonnet-4-20250514",
+        "max_tokens": 600,
+        "messages": [{"role": "user", "content": prompt}]
+    }).encode()
+    req = _ur.Request(
+        "https://api.anthropic.com/v1/messages",
+        data=req_body,
+        headers={"Content-Type": "application/json", "anthropic-version": "2023-06-01"},
+        method="POST",
+    )
+    try:
+        with _ur.urlopen(req, timeout=20) as resp:
+            data = json.loads(resp.read())
+        explanation = data["content"][0]["text"]
+    except Exception as exc:
+        return jsonify({"error": f"AI explain failed: {exc}"}), 500
+    return jsonify({"explanation": explanation})
+
+@app.get("/api/searches")
+def get_searches():
+    user, error = require_auth()
+    if error:
+        return error
+    db = get_db()
+    rows = db.execute(
+        "SELECT id, name, filters_json, created_at FROM saved_searches WHERE org_id = ? ORDER BY id DESC LIMIT 50",
+        (user["org_id"],)
+    ).fetchall()
+    items = []
+    for r in rows:
+        items.append({"id": r["id"], "name": r["name"], "filters": json.loads(r["filters_json"]), "created_at": r["created_at"]})
+    return jsonify({"searches": items})
+
+@app.post("/api/searches")
+def save_search():
+    user, error = require_auth()
+    if error:
+        return error
+    payload = request.get_json(silent=True) or {}
+    name = sanitize_input(payload.get("name") or "Untitled search", 80)
+    filters = payload.get("filters") or {}
+    db = get_db()
+    cur = db.execute(
+        "INSERT INTO saved_searches (org_id, user_id, name, filters_json, created_at) VALUES (?,?,?,?,?)",
+        (user["org_id"], user["id"], name, json.dumps(filters), iso_now())
+    )
+    db.commit()
+    return jsonify({"id": cur.lastrowid, "name": name, "filters": filters}), 201
+
+@app.delete("/api/searches/<int:search_id>")
+def delete_search(search_id: int):
+    user, error = require_auth()
+    if error:
+        return error
+    db = get_db()
+    db.execute("DELETE FROM saved_searches WHERE id = ? AND org_id = ?", (search_id, user["org_id"]))
+    db.commit()
+    return jsonify({"ok": True})
+
+@app.get("/api/uploads")
+def get_uploads():
+    user, error = require_auth()
+    if error:
+        return error
+    db = get_db()
+    rows = db.execute(
+        "SELECT id, filename, record_count, source_type, created_at FROM uploads WHERE org_id = ? ORDER BY id DESC LIMIT 100",
+        (user["org_id"],)
+    ).fetchall()
+    return jsonify({"uploads": [dict(r) for r in rows]})
 
 @app.get("/api/logs/<int:log_id>")
 def get_log_detail(log_id: int):
