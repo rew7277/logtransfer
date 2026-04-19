@@ -354,6 +354,12 @@ body.sidebar-collapsed .sidebar-footer{padding:8px;display:flex;justify-content:
 body.sidebar-collapsed .sidebar-footer .btn-logout-icon{display:flex}
 .btn-logout-icon{display:none;width:32px;height:32px;align-items:center;justify-content:center;border:1px solid var(--border);border-radius:var(--radius-sm);background:transparent;cursor:pointer;color:var(--text2);font-size:14px;transition:all .15s}
 .btn-logout-icon:hover{border-color:var(--red);color:var(--red);background:var(--red-dim)}
+/* Brand content: hide when collapsed, reveal toggle only */
+.sidebar-brand{display:flex;align-items:center;justify-content:space-between}
+.sidebar-brand-content{display:flex;align-items:center;gap:10px;min-width:0;flex:1}
+body.sidebar-collapsed .sidebar-brand-content{display:none}
+body.sidebar-collapsed .sidebar-brand{justify-content:center;padding:10px 8px}
+body.sidebar-collapsed #sidebarToggleBtn{margin-left:0}
 
 /* ── STICKY LOG TABLE HEADER ── */
 .log-table thead th{position:sticky;top:0;z-index:2}
@@ -404,6 +410,79 @@ html:not(.dark) .toast{box-shadow:0 8px 24px rgba(0,0,0,.15)}
 .btn-danger:hover{background:var(--red-dim)}
 
 .hidden{display:none!important}
+
+/* ── DOCS DROPDOWN ── */
+.docs-dropdown{position:relative}
+.docs-menu{position:absolute;top:calc(100% + 8px);right:0;width:240px;background:var(--surface);border:1px solid var(--border2);border-radius:10px;box-shadow:0 16px 40px rgba(0,0,0,.3);z-index:300;padding:6px;display:none;animation:dropIn .15s ease}
+.docs-menu.open{display:block}
+@keyframes dropIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+.docs-menu-header{font-size:10px;font-weight:700;color:var(--text3);letter-spacing:1px;text-transform:uppercase;padding:6px 10px 4px}
+.docs-menu-item{display:flex;align-items:flex-start;gap:10px;padding:8px 10px;border-radius:var(--radius-sm);cursor:pointer;transition:background .12s;font-size:12px;color:var(--text)}
+.docs-menu-item:hover{background:var(--surface2)}
+.docs-menu-icon{font-size:16px;flex-shrink:0;margin-top:1px}
+.docs-menu-divider{height:1px;background:var(--border);margin:4px 6px}
+.docs-download-all{color:var(--accent2)}
+
+/* ── DOCUMENTATION MODAL ── */
+.doc-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:500;display:none;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
+.doc-modal-overlay.open{display:flex}
+.doc-modal{background:var(--surface);border:1px solid var(--border);border-radius:14px;width:90vw;max-width:720px;max-height:85vh;display:flex;flex-direction:column;box-shadow:0 32px 80px rgba(0,0,0,.4);overflow:hidden}
+.doc-modal-header{display:flex;align-items:center;justify-content:space-between;padding:18px 24px 0;flex-shrink:0}
+.doc-modal-tabs{display:flex;gap:2px;padding:12px 24px 0;border-bottom:1px solid var(--border);flex-shrink:0}
+.doc-tab{padding:8px 16px;border-radius:var(--radius-sm) var(--radius-sm) 0 0;font-size:12px;font-weight:600;color:var(--text2);cursor:pointer;transition:all .15s;border:1px solid transparent;border-bottom:none;margin-bottom:-1px}
+.doc-tab:hover{color:var(--text);background:var(--surface2)}
+.doc-tab.active{background:var(--surface);border-color:var(--border);color:var(--accent2)}
+.doc-modal-body{overflow-y:auto;padding:20px 24px;flex:1}
+.doc-modal-footer{display:flex;align-items:center;justify-content:space-between;padding:12px 24px;border-top:1px solid var(--border);flex-shrink:0}
+.doc-section{display:none}.doc-section.active{display:block}
+.doc-h1{font-size:18px;font-weight:700;margin-bottom:6px}
+.doc-h2{font-size:13px;font-weight:700;margin:16px 0 6px;color:var(--accent2)}
+.doc-p{font-size:12px;color:var(--text2);line-height:1.7;margin-bottom:10px}
+.doc-code{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 14px;font-family:var(--mono);font-size:11px;color:var(--green);white-space:pre-wrap;word-break:break-all;margin-bottom:10px;position:relative}
+.doc-badge{display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;font-family:var(--mono);margin-right:4px;margin-bottom:2px}
+.badge-get{background:var(--green-dim);color:var(--green)}
+.badge-post{background:var(--accent-glow);color:var(--accent2)}
+.badge-del{background:var(--red-dim);color:var(--red)}
+.doc-table{width:100%;border-collapse:collapse;font-size:11px;margin-bottom:12px}
+.doc-table th{background:var(--surface2);padding:7px 10px;text-align:left;font-weight:600;color:var(--text3);border-bottom:1px solid var(--border)}
+.doc-table td{padding:7px 10px;border-bottom:1px solid var(--border);color:var(--text2);vertical-align:top}
+.doc-table td:first-child{font-family:var(--mono);font-size:10px;color:var(--cyan)}
+
+/* ── CUSTOM ALERT / CONFIRM MODAL ── */
+.cx-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:600;display:none;align-items:center;justify-content:center;backdrop-filter:blur(3px)}
+.cx-overlay.open{display:flex}
+.cx-modal{background:var(--surface);border:1px solid var(--border2);border-radius:12px;width:90vw;max-width:420px;box-shadow:0 24px 60px rgba(0,0,0,.4);animation:cxPop .18s cubic-bezier(.4,0,.2,1)}
+@keyframes cxPop{from{opacity:0;transform:scale(.93)}to{opacity:1;transform:scale(1)}}
+.cx-body{padding:24px 24px 16px}
+.cx-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;margin-bottom:12px}
+.cx-icon.warn{background:var(--yellow-dim)}
+.cx-icon.danger{background:var(--red-dim)}
+.cx-icon.info{background:var(--accent-glow)}
+.cx-icon.success{background:var(--green-dim)}
+.cx-title{font-size:15px;font-weight:700;margin-bottom:6px}
+.cx-msg{font-size:12px;color:var(--text2);line-height:1.6;margin-bottom:4px}
+.cx-input{width:100%;margin-top:12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:9px 11px;color:var(--text);font-family:var(--sans);font-size:12px;outline:none;transition:border-color .15s}
+.cx-input:focus{border-color:var(--accent)}
+.cx-footer{display:flex;gap:8px;justify-content:flex-end;padding:12px 24px 16px}
+.cx-btn{padding:8px 18px;border-radius:var(--radius-sm);font-family:var(--sans);font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;border:1px solid var(--border)}
+.cx-btn-cancel{background:transparent;color:var(--text2)}
+.cx-btn-cancel:hover{border-color:var(--border2);color:var(--text)}
+.cx-btn-confirm{background:var(--accent);border-color:var(--accent);color:#fff}
+.cx-btn-confirm:hover{background:var(--accent2)}
+.cx-btn-danger{background:var(--red);border-color:var(--red);color:#fff}
+.cx-btn-danger:hover{opacity:.9}
+
+/* ── ALERT PREVIEW BADGE ── */
+.alert-match-count{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:4px;font-size:11px;font-weight:600;background:var(--surface2);border:1px solid var(--border);color:var(--text2);margin-left:8px;vertical-align:middle}
+.alert-match-count.has-matches{background:var(--yellow-dim);border-color:var(--yellow);color:var(--yellow)}
+
+/* ── BULK DELETE BAR ── */
+.bulk-bar{display:none;align-items:center;gap:10px;padding:8px 14px;background:var(--surface2);border-bottom:1px solid var(--border);font-size:12px}
+.bulk-bar.show{display:flex}
+.bulk-count{font-weight:600;color:var(--text)}
+
+/* ── WEBHOOK FIELD BADGE ── */
+.webhook-status{display:inline-flex;align-items:center;gap:4px;font-size:10px;padding:2px 7px;border-radius:10px;background:var(--green-dim);color:var(--green);font-weight:600;margin-top:4px}
 </style>
 </head>
 <body>
@@ -413,10 +492,12 @@ html:not(.dark) .toast{box-shadow:0 8px 24px rgba(0,0,0,.15)}
 <!-- SIDEBAR -->
 <nav class="sidebar">
   <div class="sidebar-brand">
-    <div class="brand-icon">{{ user.logo_text[:2] }}</div>
-    <div>
-      <div class="brand-name">ObserveX</div>
-      <div class="brand-org">{{ user.org_name | lower }}</div>
+    <div class="sidebar-brand-content">
+      <div class="brand-icon">{{ user.logo_text[:2] }}</div>
+      <div>
+        <div class="brand-name">ObserveX</div>
+        <div class="brand-org">{{ user.org_name | lower }}</div>
+      </div>
     </div>
     <button class="sidebar-toggle" onclick="toggleSidebar()" title="Collapse sidebar" id="sidebarToggleBtn">
       <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="1" y="4" width="14" height="1.5" rx=".75" fill="currentColor"/><rect x="1" y="7.25" width="14" height="1.5" rx=".75" fill="currentColor"/><rect x="1" y="10.5" width="14" height="1.5" rx=".75" fill="currentColor"/></svg>
@@ -479,8 +560,18 @@ html:not(.dark) .toast{box-shadow:0 8px 24px rgba(0,0,0,.15)}
     <span class="topbar-title"><span>ObserveX</span> Workspace · {{ user.org_name }}</span>
     <div class="topbar-right">
       <button class="theme-toggle" id="themeToggleBtn" onclick="toggleTheme()" title="Toggle dark/light mode">🌙</button>
-      <button class="btn-primary" onclick="document.getElementById('fileInput').click()">⇡ Upload logs</button>
-      <button class="btn-secondary" onclick="showPage('explorer')">Open explorer</button>
+      <!-- Documentation Dropdown -->
+      <div class="docs-dropdown" id="docsDropdown">
+        <button class="btn-secondary docs-trigger" onclick="toggleDocsDropdown(event)" id="docsBtn">📖 Docs <span style="font-size:10px;opacity:.7">▾</span></button>
+        <div class="docs-menu" id="docsMenu">
+          <div class="docs-menu-header">Documentation</div>
+          <div class="docs-menu-item" onclick="showDocModal('api')"><span class="docs-menu-icon">🔑</span><div><div style="font-weight:600">API Reference</div><div style="font-size:10px;opacity:.6;margin-top:1px">Ingest logs via REST API</div></div></div>
+          <div class="docs-menu-item" onclick="showDocModal('s3')"><span class="docs-menu-icon">🪣</span><div><div style="font-weight:600">S3 Bucket Guide</div><div style="font-size:10px;opacity:.6;margin-top:1px">Pull logs from AWS S3</div></div></div>
+          <div class="docs-menu-item" onclick="showDocModal('alerts')"><span class="docs-menu-icon">🔔</span><div><div style="font-weight:600">Alert Configuration</div><div style="font-size:10px;opacity:.6;margin-top:1px">Set up rules and webhooks</div></div></div>
+          <div class="docs-menu-divider"></div>
+          <div class="docs-menu-item docs-download-all" onclick="downloadAllDocs()"><span class="docs-menu-icon">⬇</span><div><div style="font-weight:600">Download All Docs</div><div style="font-size:10px;opacity:.6;margin-top:1px">Complete reference as Markdown</div></div></div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -616,6 +707,7 @@ html:not(.dark) .toast{box-shadow:0 8px 24px rgba(0,0,0,.15)}
             </select>
             <button class="export-btn" onclick="exportLogs('csv')">⬇ CSV</button>
             <button class="export-btn" onclick="exportLogs('json')">⬇ JSON</button>
+            <button class="export-btn" onclick="toggleBulkMode()" id="bulkModeBtn" title="Select multiple logs for bulk actions">☐ Bulk</button>
           </div>
         </div>
         <!-- Row 2: Date range + Source + Live tail -->
@@ -651,6 +743,14 @@ html:not(.dark) .toast{box-shadow:0 8px 24px rgba(0,0,0,.15)}
         </div>
         <!-- Row 3: Active filter summary -->
         <div class="filter-summary" id="filterSummary" style="display:none"></div>
+        <!-- Bulk delete bar -->
+        <div class="bulk-bar" id="bulkBar">
+          <input type="checkbox" id="selectAllChk" onchange="toggleSelectAll(this.checked)" style="cursor:pointer;width:13px;height:13px"/>
+          <span class="bulk-count"><span id="bulkCount">0</span> selected</span>
+          <button onclick="bulkDeleteSelected()" style="padding:4px 12px;border-radius:var(--radius-sm);border:1px solid var(--red);background:var(--red-dim);color:var(--red);font-size:11px;cursor:pointer;font-family:var(--sans);font-weight:600">🗑 Delete selected</button>
+          <button onclick="clearBulkSelection()" style="padding:4px 10px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text2);font-size:11px;cursor:pointer;font-family:var(--sans)">Cancel</button>
+          <button onclick="toggleBulkMode()" style="margin-left:auto;padding:4px 10px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text3);font-size:11px;cursor:pointer;font-family:var(--sans)">Exit bulk mode</button>
+        </div>
         <div id="logTableBody">
           <div class="empty-state"><div class="empty-icon">◎</div><h3>No logs yet</h3><p>Upload a log file to start exploring events</p></div>
         </div>
@@ -748,10 +848,10 @@ Content-Type: application/json
   <!-- ══ ALERTS PAGE ══ -->
   <div class="page{% if active_section=='alerts' %} active{% endif %}" id="page-alerts">
     <div style="padding:24px">
-      <div class="page-header"><h1>Configure alert rules.</h1></div>
+      <div class="page-header"><h1>Alert Rules</h1><p>Get notified when log patterns match conditions — via email, Slack, or webhook.</p></div>
       <div class="section-card" style="margin-bottom:14px">
         <h3>Create Alert Rule</h3>
-        <p>Get notified when log patterns match conditions.</p>
+        <p>Define trigger conditions and notification channels below.</p>
         <div class="form-row" style="margin-top:12px">
           <input class="form-input" id="alertName" placeholder="Alert name (e.g. Payment timeout spike)"/>
           <select class="form-select" id="alertSeverity">
@@ -769,13 +869,23 @@ Content-Type: application/json
         <div class="form-row" style="margin-top:8px">
           <input class="form-input" id="alertKeyword" placeholder="Keyword / pattern to match (e.g. Connect timeout)" style="display:none"/>
           <input class="form-input" id="alertSource" placeholder="Filter to source (optional, e.g. system)"/>
-          <input class="form-input" id="alertEmail" type="email" placeholder="Notify email"/>
           <input class="form-input" id="alertThreshold" type="number" placeholder="Threshold count" value="5"/>
+          <input class="form-input" id="alertCooldown" type="number" placeholder="Cooldown (minutes)" value="15" title="Minimum minutes between repeated alerts"/>
+        </div>
+        <!-- Notification channels -->
+        <div style="margin:10px 0 8px;font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.6px">Notification Channels</div>
+        <div class="form-row">
+          <input class="form-input" id="alertEmail" type="email" placeholder="📧 Notify email (e.g. team@company.com)"/>
+          <input class="form-input" id="alertWebhook" placeholder="🔗 Webhook URL (Slack, Teams, Discord…)" title="POST payload will be sent here on trigger"/>
         </div>
         <div style="margin:10px 0 14px;font-size:11px;color:var(--text3)" id="alertHelp">
           Trigger when error rate exceeds threshold within a rolling 5-minute window.
         </div>
-        <button class="btn-primary" onclick="createAlert()">+ Create rule</button>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <button class="btn-primary" onclick="createAlert()">+ Create rule</button>
+          <button class="btn-secondary" onclick="previewAlert()" id="previewAlertBtn" style="gap:6px">🔍 Preview match count</button>
+          <span id="alertPreviewBadge" class="alert-match-count" style="display:none"></span>
+        </div>
       </div>
       <div id="alertsList">
         <div class="empty-state"><div class="empty-icon">🔔</div><h3>No alert rules</h3><p>Create alerts to get notified of log patterns.</p></div>
@@ -835,6 +945,29 @@ Content-Type: application/json
             <input type="checkbox" id="orgAdminOnly" {% if user.admin_only %}checked{% endif %}/> Admin-only mode
           </label>
         </div>
+        <div class="form-row" style="margin-top:4px">
+          <div style="flex:1">
+            <div style="font-size:11px;font-weight:600;color:var(--text3);margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px">Log Retention</div>
+            <select class="form-select" id="orgRetention" style="min-width:0">
+              <option value="7">7 days</option>
+              <option value="30" selected>30 days</option>
+              <option value="90">90 days</option>
+              <option value="365">1 year</option>
+              <option value="0">Forever</option>
+            </select>
+          </div>
+          <div style="flex:1">
+            <div style="font-size:11px;font-weight:600;color:var(--text3);margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px">Timezone</div>
+            <select class="form-select" id="orgTimezone" style="min-width:0">
+              <option value="UTC">UTC</option>
+              <option value="America/New_York">America/New_York</option>
+              <option value="America/Los_Angeles">America/Los_Angeles</option>
+              <option value="Europe/London">Europe/London</option>
+              <option value="Asia/Kolkata">Asia/Kolkata (IST)</option>
+              <option value="Asia/Singapore">Asia/Singapore</option>
+            </select>
+          </div>
+        </div>
         <button class="btn-primary" onclick="saveOrg()">Save changes</button>
       </div>
     </div>
@@ -876,6 +1009,204 @@ Content-Type: application/json
   <div id="errModalBody" class="log-modal-body"></div>
 </div>
 
+<!-- ══ DOCUMENTATION MODAL ══ -->
+<div class="doc-modal-overlay" id="docModalOverlay" onclick="closeDocModal(event)">
+  <div class="doc-modal" onclick="event.stopPropagation()">
+    <div class="doc-modal-header">
+      <div style="font-size:16px;font-weight:700" id="docModalTitle">Documentation</div>
+      <button onclick="closeDocModal()" style="background:none;border:none;cursor:pointer;color:var(--text3);padding:4px;border-radius:6px;font-size:18px;line-height:1;display:flex" title="Close">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 3l10 10M13 3 3 13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+    <div class="doc-modal-tabs">
+      <div class="doc-tab active" data-doc="api" onclick="switchDocTab('api')">🔑 API Reference</div>
+      <div class="doc-tab" data-doc="s3" onclick="switchDocTab('s3')">🪣 S3 Bucket</div>
+      <div class="doc-tab" data-doc="alerts" onclick="switchDocTab('alerts')">🔔 Alerts</div>
+    </div>
+    <div class="doc-modal-body">
+      <!-- API Reference -->
+      <div class="doc-section active" id="doc-api">
+        <div class="doc-h1">🔑 API Reference</div>
+        <p class="doc-p">ObserveX provides a REST API to ingest log events programmatically. All endpoints require a Bearer token from your API Keys page.</p>
+        <div class="doc-h2">Authentication</div>
+        <p class="doc-p">Pass your API key in the <code style="font-family:var(--mono);font-size:11px;background:var(--surface2);padding:1px 5px;border-radius:3px">Authorization</code> header for every request.</p>
+        <div class="doc-code">Authorization: Bearer oxk_your_api_key_here</div>
+        <div class="doc-h2">Endpoints</div>
+        <table class="doc-table">
+          <thead><tr><th>Method</th><th>Endpoint</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><span class="doc-badge badge-post">POST</span></td><td>/ingest/json</td><td>Ingest a single JSON log event</td></tr>
+            <tr><td><span class="doc-badge badge-post">POST</span></td><td>/ingest/batch</td><td>Ingest up to 1000 events in one request</td></tr>
+            <tr><td><span class="doc-badge badge-post">POST</span></td><td>/ingest/file</td><td>Upload a log file (multipart)</td></tr>
+            <tr><td><span class="doc-badge badge-get">GET</span></td><td>/api/logs</td><td>Query logs with filter, search, pagination</td></tr>
+            <tr><td><span class="doc-badge badge-get">GET</span></td><td>/api/logs/:id</td><td>Fetch single log event by ID</td></tr>
+            <tr><td><span class="doc-badge badge-del">DELETE</span></td><td>/api/logs/:id</td><td>Delete a single log event</td></tr>
+            <tr><td><span class="doc-badge badge-get">GET</span></td><td>/api/bootstrap</td><td>Summary stats, charts, alerts</td></tr>
+          </tbody>
+        </table>
+        <div class="doc-h2">Ingest a single event</div>
+        <div class="doc-code">POST /ingest/json
+Content-Type: application/json
+Authorization: Bearer oxk_your_key
+
+{
+  "timestamp": "2024-01-15T10:30:00Z",
+  "level": "error",
+  "source": "payment-service",
+  "message": "Stripe timeout after 30s",
+  "requestId": "req_abc123",
+  "userId": "usr_456"
+}</div>
+        <div class="doc-h2">Batch ingest</div>
+        <div class="doc-code">POST /ingest/batch
+Content-Type: application/json
+Authorization: Bearer oxk_your_key
+
+{
+  "events": [
+    {"timestamp": "...", "level": "error", "source": "...", "message": "..."},
+    {"timestamp": "...", "level": "info",  "source": "...", "message": "..."}
+  ]
+}</div>
+        <div class="doc-h2">Query parameters for GET /api/logs</div>
+        <table class="doc-table">
+          <thead><tr><th>Param</th><th>Type</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td>page</td><td>int</td><td>Page number (default: 1)</td></tr>
+            <tr><td>per_page</td><td>int</td><td>Results per page (max: 500)</td></tr>
+            <tr><td>level</td><td>string</td><td>Filter: error, warn, info, success, debug</td></tr>
+            <tr><td>q</td><td>string</td><td>Full-text search in message field</td></tr>
+            <tr><td>source</td><td>string</td><td>Filter by source tag</td></tr>
+            <tr><td>from_ts</td><td>datetime</td><td>Start of time range (ISO 8601)</td></tr>
+            <tr><td>to_ts</td><td>datetime</td><td>End of time range (ISO 8601)</td></tr>
+            <tr><td>sort</td><td>string</td><td>Column to sort by (timestamp, level, source)</td></tr>
+            <tr><td>dir</td><td>string</td><td>asc or desc (default: desc)</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- S3 Bucket Guide -->
+      <div class="doc-section" id="doc-s3">
+        <div class="doc-h1">🪣 S3 Bucket Guide</div>
+        <p class="doc-p">Connect ObserveX to an AWS S3 bucket to automatically pull and index log files on a schedule.</p>
+        <div class="doc-h2">Prerequisites</div>
+        <p class="doc-p">You need an AWS IAM user with the following permissions on your bucket:</p>
+        <div class="doc-code">{
+  "Effect": "Allow",
+  "Action": [
+    "s3:GetObject",
+    "s3:ListBucket"
+  ],
+  "Resource": [
+    "arn:aws:s3:::your-log-bucket",
+    "arn:aws:s3:::your-log-bucket/*"
+  ]
+}</div>
+        <div class="doc-h2">Supported log formats</div>
+        <table class="doc-table">
+          <thead><tr><th>Format</th><th>Extension</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td>JSON Lines</td><td>.jsonl, .ndjson</td><td>One JSON object per line</td></tr>
+            <tr><td>CloudWatch Export</td><td>.json</td><td>AWS CloudWatch log export format</td></tr>
+            <tr><td>Plain text</td><td>.log, .txt</td><td>One log line per row</td></tr>
+            <tr><td>CSV</td><td>.csv</td><td>Tabular log data with headers</td></tr>
+            <tr><td>Compressed</td><td>.gz</td><td>Gzip-compressed versions of above</td></tr>
+          </tbody>
+        </table>
+        <div class="doc-h2">Setup steps</div>
+        <p class="doc-p"><strong>1.</strong> Go to <em>Integrations → Add integration</em> and select <strong>S3 Bucket</strong>.</p>
+        <p class="doc-p"><strong>2.</strong> Enter your bucket name, region, optional key prefix, and IAM credentials.</p>
+        <p class="doc-p"><strong>3.</strong> Save the integration — ObserveX will validate access automatically.</p>
+        <p class="doc-p"><strong>4.</strong> Go to <em>Ingestion Jobs → Create job</em>, select your new S3 integration, and set a cron schedule.</p>
+        <div class="doc-h2">Common cron schedules</div>
+        <div class="doc-code">*/15 * * * *   → every 15 minutes
+0 * * * *      → every hour
+0 0 * * *      → daily at midnight UTC
+0 */6 * * *    → every 6 hours</div>
+        <div class="doc-h2">Key prefix filtering</div>
+        <p class="doc-p">Use the prefix field to limit which objects are pulled. For example, <code style="font-family:var(--mono);font-size:11px;background:var(--surface2);padding:1px 4px;border-radius:3px">prod/api-gateway/</code> will only ingest objects under that path.</p>
+        <div class="doc-h2">Troubleshooting</div>
+        <table class="doc-table">
+          <thead><tr><th>Error</th><th>Cause</th><th>Fix</th></tr></thead>
+          <tbody>
+            <tr><td>AccessDenied</td><td>Missing s3:GetObject permission</td><td>Update IAM policy</td></tr>
+            <tr><td>NoSuchBucket</td><td>Wrong bucket name or region</td><td>Verify bucket & region</td></tr>
+            <tr><td>InvalidCredentials</td><td>Wrong Access Key/Secret</td><td>Regenerate IAM key pair</td></tr>
+            <tr><td>0 files found</td><td>Prefix doesn't match any objects</td><td>Check prefix or leave blank</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Alerts Guide -->
+      <div class="doc-section" id="doc-alerts">
+        <div class="doc-h1">🔔 Alert Configuration</div>
+        <p class="doc-p">Alert rules continuously monitor your incoming logs and fire notifications when conditions are met. Alerts can be delivered via email or webhook (Slack, Teams, Discord, custom HTTP).</p>
+        <div class="doc-h2">Alert types</div>
+        <table class="doc-table">
+          <thead><tr><th>Type</th><th>Trigger condition</th></tr></thead>
+          <tbody>
+            <tr><td>Error Rate</td><td>Error count exceeds threshold in a rolling 5-minute window</td></tr>
+            <tr><td>Keyword Match</td><td>A specific phrase appears in log messages ≥ threshold times</td></tr>
+            <tr><td>Suspicious IP</td><td>A single IP exceeds threshold req/min with high error rate</td></tr>
+            <tr><td>Source Error Spike</td><td>A specific source emits more errors than threshold in 5 min</td></tr>
+          </tbody>
+        </table>
+        <div class="doc-h2">Severity levels</div>
+        <table class="doc-table">
+          <thead><tr><th>Level</th><th>Meaning</th><th>Suggested use</th></tr></thead>
+          <tbody>
+            <tr><td>SEV3 – Medium</td><td>Elevated error rate or unusual pattern</td><td>Slack notification</td></tr>
+            <tr><td>SEV2 – High</td><td>Service degradation likely</td><td>Email + Slack</td></tr>
+            <tr><td>SEV1 – Critical</td><td>Production outage or breach risk</td><td>PagerDuty / phone</td></tr>
+          </tbody>
+        </table>
+        <div class="doc-h2">Webhook payload format</div>
+        <p class="doc-p">When a rule triggers, ObserveX sends a POST request to your webhook URL with this JSON body:</p>
+        <div class="doc-code">{
+  "alert_name": "Payment timeout spike",
+  "severity": "sev2",
+  "alert_type": "keyword",
+  "condition": "keyword:\"Connect timeout\", threshold:5",
+  "triggered_at": "2024-01-15T10:35:00Z",
+  "match_count": 12,
+  "org": "your-org",
+  "link": "https://yourapp.railway.app/workspace/your-org/explorer"
+}</div>
+        <div class="doc-h2">Slack webhook example</div>
+        <p class="doc-p">Create an Incoming Webhook in your Slack app settings, then paste the URL into the Webhook field when creating an alert. ObserveX will automatically format the message for Slack.</p>
+        <div class="doc-h2">Cooldown period</div>
+        <p class="doc-p">The cooldown field (in minutes) prevents alert fatigue by suppressing repeated notifications for the same rule. Set to 0 for no cooldown (fires every time the condition is met). Recommended: 15–60 minutes for production alerts.</p>
+        <div class="doc-h2">Preview match count</div>
+        <p class="doc-p">Before saving an alert rule, click <strong>Preview match count</strong> to see how many existing logs would trigger this rule. This helps you tune the threshold before going live.</p>
+      </div>
+    </div>
+    <div class="doc-modal-footer">
+      <div style="font-size:11px;color:var(--text3)">ObserveX Documentation · v2.0</div>
+      <div style="display:flex;gap:8px">
+        <button class="btn-secondary" onclick="downloadCurrentDoc()" style="font-size:11px;padding:6px 12px">⬇ Download this doc</button>
+        <button class="btn-secondary" onclick="downloadAllDocs()" style="font-size:11px;padding:6px 12px">⬇ Download all</button>
+        <button class="btn-primary" onclick="closeDocModal()" style="font-size:11px;padding:6px 12px">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ CUSTOM CONFIRM / PROMPT MODAL ══ -->
+<div class="cx-overlay" id="cxOverlay">
+  <div class="cx-modal">
+    <div class="cx-body">
+      <div class="cx-icon" id="cxIcon">⚠</div>
+      <div class="cx-title" id="cxTitle">Confirm</div>
+      <div class="cx-msg" id="cxMsg"></div>
+      <input class="cx-input" id="cxInput" placeholder="" style="display:none"/>
+    </div>
+    <div class="cx-footer">
+      <button class="cx-btn cx-btn-cancel" id="cxCancel" onclick="cxResolve(false)">Cancel</button>
+      <button class="cx-btn cx-btn-confirm" id="cxConfirm" onclick="cxResolve(true)">Confirm</button>
+    </div>
+  </div>
+</div>
+
 <!-- TOAST -->
 <div class="toast-wrap" id="toastWrap"></div>
 
@@ -915,6 +1246,281 @@ function toggleSidebar() {
   }
 })();
 
+// ── CUSTOM CONFIRM / PROMPT (replaces browser confirm/prompt) ──
+let _cxResolveCallback = null;
+let _cxIsPrompt = false;
+
+function customConfirm(msg, opts = {}) {
+  return new Promise(resolve => {
+    _cxResolveCallback = resolve;
+    _cxIsPrompt = false;
+    const icon = document.getElementById('cxIcon');
+    const title = document.getElementById('cxTitle');
+    const msgEl = document.getElementById('cxMsg');
+    const input = document.getElementById('cxInput');
+    const confirmBtn = document.getElementById('cxConfirm');
+    const cancelBtn = document.getElementById('cxCancel');
+    icon.textContent = opts.icon || '⚠';
+    icon.className = 'cx-icon ' + (opts.iconType || 'warn');
+    title.textContent = opts.title || 'Confirm';
+    msgEl.textContent = msg;
+    input.style.display = 'none';
+    confirmBtn.textContent = opts.confirmText || 'Confirm';
+    confirmBtn.className = 'cx-btn ' + (opts.danger ? 'cx-btn-danger' : 'cx-btn-confirm');
+    cancelBtn.style.display = '';
+    document.getElementById('cxOverlay').classList.add('open');
+    setTimeout(() => confirmBtn.focus(), 50);
+  });
+}
+
+function customPrompt(msg, opts = {}) {
+  return new Promise(resolve => {
+    _cxResolveCallback = resolve;
+    _cxIsPrompt = true;
+    const icon = document.getElementById('cxIcon');
+    const title = document.getElementById('cxTitle');
+    const msgEl = document.getElementById('cxMsg');
+    const input = document.getElementById('cxInput');
+    const confirmBtn = document.getElementById('cxConfirm');
+    icon.textContent = opts.icon || 'ℹ';
+    icon.className = 'cx-icon info';
+    title.textContent = opts.title || 'Enter value';
+    msgEl.textContent = msg;
+    input.style.display = '';
+    input.value = opts.defaultVal || '';
+    input.placeholder = opts.placeholder || '';
+    confirmBtn.textContent = opts.confirmText || 'OK';
+    confirmBtn.className = 'cx-btn cx-btn-confirm';
+    document.getElementById('cxOverlay').classList.add('open');
+    setTimeout(() => input.focus(), 50);
+  });
+}
+
+function customAlert(msg, opts = {}) {
+  return new Promise(resolve => {
+    _cxResolveCallback = resolve;
+    _cxIsPrompt = false;
+    const icon = document.getElementById('cxIcon');
+    const title = document.getElementById('cxTitle');
+    const msgEl = document.getElementById('cxMsg');
+    const input = document.getElementById('cxInput');
+    const confirmBtn = document.getElementById('cxConfirm');
+    const cancelBtn = document.getElementById('cxCancel');
+    icon.textContent = opts.icon || 'ℹ';
+    icon.className = 'cx-icon ' + (opts.iconType || 'info');
+    title.textContent = opts.title || 'Notice';
+    msgEl.innerHTML = msg;
+    input.style.display = 'none';
+    confirmBtn.textContent = 'OK';
+    confirmBtn.className = 'cx-btn cx-btn-confirm';
+    cancelBtn.style.display = 'none';
+    document.getElementById('cxOverlay').classList.add('open');
+    setTimeout(() => confirmBtn.focus(), 50);
+  });
+}
+
+function cxResolve(confirmed) {
+  document.getElementById('cxOverlay').classList.remove('open');
+  const input = document.getElementById('cxInput');
+  if (_cxResolveCallback) {
+    if (_cxIsPrompt) {
+      _cxResolveCallback(confirmed ? input.value.trim() : null);
+    } else {
+      _cxResolveCallback(confirmed);
+    }
+    _cxResolveCallback = null;
+  }
+}
+
+// Enter key for cx modal is handled in the main keydown listener above
+
+// ── DOCS DROPDOWN ──
+let _docsOpen = false;
+let _currentDocTab = 'api';
+
+function toggleDocsDropdown(e) {
+  if (e) e.stopPropagation();
+  _docsOpen = !_docsOpen;
+  document.getElementById('docsMenu').classList.toggle('open', _docsOpen);
+}
+
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('#docsDropdown')) {
+    _docsOpen = false;
+    const m = document.getElementById('docsMenu');
+    if (m) m.classList.remove('open');
+  }
+});
+
+function showDocModal(tab) {
+  _docsOpen = false;
+  const m = document.getElementById('docsMenu');
+  if (m) m.classList.remove('open');
+  switchDocTab(tab || _currentDocTab);
+  document.getElementById('docModalOverlay').classList.add('open');
+}
+
+function closeDocModal(e) {
+  if (e && e.target !== document.getElementById('docModalOverlay') && e.type === 'click') {
+    if (!e.target.classList.contains('doc-modal-overlay')) return;
+  }
+  document.getElementById('docModalOverlay').classList.remove('open');
+}
+
+function switchDocTab(tab) {
+  _currentDocTab = tab;
+  document.querySelectorAll('.doc-tab').forEach(t => t.classList.toggle('active', t.dataset.doc === tab));
+  document.querySelectorAll('.doc-section').forEach(s => s.classList.toggle('active', s.id === 'doc-' + tab));
+}
+
+// ── DOWNLOAD DOC ──
+const DOC_CONTENT = {
+  api: `# ObserveX API Reference
+
+## Authentication
+All API requests require a Bearer token:
+  Authorization: Bearer oxk_your_api_key_here
+
+## Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | /ingest/json | Ingest a single JSON log event |
+| POST | /ingest/batch | Ingest up to 1000 events |
+| POST | /ingest/file | Upload a log file (multipart) |
+| GET | /api/logs | Query logs with filters |
+| GET | /api/logs/:id | Fetch single log event |
+| DELETE | /api/logs/:id | Delete a log event |
+| GET | /api/bootstrap | Summary stats and charts |
+
+## Ingest JSON Example
+\`\`\`
+POST /ingest/json
+Content-Type: application/json
+Authorization: Bearer oxk_your_key
+
+{
+  "timestamp": "2024-01-15T10:30:00Z",
+  "level": "error",
+  "source": "payment-service",
+  "message": "Stripe timeout after 30s",
+  "requestId": "req_abc123"
+}
+\`\`\`
+
+## Query Parameters for GET /api/logs
+- page (int): Page number
+- per_page (int): Results per page (max 500)
+- level (string): error | warn | info | success | debug
+- q (string): Full-text search
+- source (string): Filter by source
+- from_ts / to_ts (datetime): Time range (ISO 8601)
+- sort / dir: Column and direction (asc/desc)
+`,
+  s3: `# ObserveX S3 Bucket Integration Guide
+
+## Prerequisites
+IAM policy required:
+\`\`\`json
+{
+  "Effect": "Allow",
+  "Action": ["s3:GetObject", "s3:ListBucket"],
+  "Resource": [
+    "arn:aws:s3:::your-log-bucket",
+    "arn:aws:s3:::your-log-bucket/*"
+  ]
+}
+\`\`\`
+
+## Supported Formats
+- JSON Lines (.jsonl, .ndjson)
+- CloudWatch Export (.json)
+- Plain text (.log, .txt)
+- CSV (.csv)
+- Gzip-compressed (.gz)
+
+## Setup Steps
+1. Go to Integrations → Add integration → S3 Bucket
+2. Enter bucket name, region, optional prefix, and IAM credentials
+3. Save the integration
+4. Go to Ingestion Jobs → Create job, select your S3 integration, set cron schedule
+
+## Common Cron Schedules
+- \`*/15 * * * *\` — every 15 minutes
+- \`0 * * * *\` — every hour
+- \`0 0 * * *\` — daily at midnight UTC
+
+## Troubleshooting
+- AccessDenied → Update IAM policy
+- NoSuchBucket → Verify bucket name and region
+- InvalidCredentials → Regenerate IAM key pair
+- 0 files found → Check prefix or leave blank
+`,
+  alerts: `# ObserveX Alert Configuration Guide
+
+## Alert Types
+- Error Rate: Fires when errors exceed threshold in 5-minute window
+- Keyword Match: Fires when a phrase appears >= threshold times
+- Suspicious IP: Fires when a single IP exceeds threshold req/min
+- Source Error Spike: Fires when a source emits more errors than threshold
+
+## Severity Levels
+- SEV3 (Medium): Elevated error rate — Slack notification
+- SEV2 (High): Service degradation — Email + Slack
+- SEV1 (Critical): Production outage — PagerDuty / phone
+
+## Webhook Payload Format
+\`\`\`json
+{
+  "alert_name": "Payment timeout spike",
+  "severity": "sev2",
+  "alert_type": "keyword",
+  "condition": "keyword:\\"Connect timeout\\", threshold:5",
+  "triggered_at": "2024-01-15T10:35:00Z",
+  "match_count": 12,
+  "org": "your-org",
+  "link": "https://yourapp.railway.app/workspace/your-org/explorer"
+}
+\`\`\`
+
+## Cooldown Period
+Set cooldown (minutes) to prevent alert fatigue.
+Recommended: 15–60 minutes for production alerts.
+
+## Preview Match Count
+Click "Preview match count" before saving to test your rule against existing logs.
+`
+};
+
+function downloadCurrentDoc() {
+  downloadDoc(_currentDocTab);
+}
+
+function downloadDoc(tab) {
+  const content = DOC_CONTENT[tab] || '';
+  const names = { api: 'observex-api-reference', s3: 'observex-s3-guide', alerts: 'observex-alert-guide' };
+  const blob = new Blob([content], { type: 'text/markdown' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = (names[tab] || 'observex-docs') + '.md';
+  a.click();
+  toast('Documentation downloaded!', 'success');
+}
+
+function downloadAllDocs() {
+  const combined = Object.entries(DOC_CONTENT).map(([,v]) => v).join('\n\n---\n\n');
+  const blob = new Blob([combined], { type: 'text/markdown' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'observex-complete-documentation.md';
+  a.click();
+  toast('All documentation downloaded!', 'success');
+  // Close dropdown if open
+  _docsOpen = false;
+  const menu = document.getElementById('docsMenu');
+  if (menu) menu.classList.remove('open');
+}
+
 // ── STATE ──
 const ORG_SLUG = '{{ org_slug }}';
 const USER_ROLE = '{{ user.role }}';
@@ -924,6 +1530,8 @@ let logTotal = 0, logPages = 1;
 let cachedLogs = [];
 let logFromTs = '', logToTs = '', logSource = '', logActivePreset = 'all';
 let liveTailInterval = null;
+let _bulkMode = false;
+let _selectedIds = new Set();
 
 // ── INIT ──
 document.addEventListener('DOMContentLoaded', () => {
@@ -955,6 +1563,16 @@ document.addEventListener('DOMContentLoaded', () => {
     if (e.key === 'Escape') {
       closeDetail();
       closeErrModal();
+      closeDocModal();
+      const cx = document.getElementById('cxOverlay');
+      if (cx && cx.classList.contains('open')) cxResolve(false);
+    }
+    // Enter → confirm cx modal (but not when typing in regular inputs outside cx)
+    if (e.key === 'Enter') {
+      const cx = document.getElementById('cxOverlay');
+      if (cx && cx.classList.contains('open') && document.activeElement !== document.getElementById('cxInput')) {
+        cxResolve(true);
+      }
     }
   });
   // Show active page
@@ -962,7 +1580,91 @@ document.addEventListener('DOMContentLoaded', () => {
   showPage(initSection || 'overview');
 });
 
-// ── BOOTSTRAP ──
+// ── BULK MODE ──
+function toggleBulkMode() {
+  _bulkMode = !_bulkMode;
+  _selectedIds.clear();
+  document.getElementById('bulkBar').classList.toggle('show', _bulkMode);
+  document.getElementById('bulkCount').textContent = '0';
+  document.getElementById('selectAllChk').checked = false;
+  const btn = document.getElementById('bulkModeBtn');
+  if (btn) btn.textContent = _bulkMode ? '✓ Bulk on' : '☐ Bulk';
+  loadLogs();
+}
+
+function toggleSelectAll(checked) {
+  cachedLogs.forEach(l => {
+    if (checked) _selectedIds.add(l.id);
+    else _selectedIds.delete(l.id);
+  });
+  document.getElementById('bulkCount').textContent = _selectedIds.size;
+  document.querySelectorAll('.log-row-chk').forEach(c => { c.checked = checked; });
+}
+
+function toggleRowSelect(id, checked) {
+  if (checked) _selectedIds.add(id);
+  else _selectedIds.delete(id);
+  document.getElementById('bulkCount').textContent = _selectedIds.size;
+}
+
+function clearBulkSelection() {
+  _selectedIds.clear();
+  document.getElementById('bulkCount').textContent = '0';
+  document.getElementById('selectAllChk').checked = false;
+  document.querySelectorAll('.log-row-chk').forEach(c => { c.checked = false; });
+}
+
+async function bulkDeleteSelected() {
+  if (!_selectedIds.size) { toast('No logs selected', 'warn'); return; }
+  const confirmed = await customConfirm(`Delete ${_selectedIds.size} selected log${_selectedIds.size !== 1 ? 's' : ''}? This cannot be undone.`, {
+    title: 'Delete logs',
+    icon: '🗑',
+    iconType: 'danger',
+    danger: true,
+    confirmText: `Delete ${_selectedIds.size} logs`
+  });
+  if (!confirmed) return;
+  showLoader(true);
+  let deleted = 0;
+  for (const id of _selectedIds) {
+    const r = await fetch(`/api/logs/${id}`, { method: 'DELETE' });
+    if (r.ok) deleted++;
+  }
+  _selectedIds.clear();
+  document.getElementById('bulkCount').textContent = '0';
+  showLoader(false);
+  toast(`Deleted ${deleted} logs`, 'success');
+  loadLogs();
+  loadBootstrap();
+}
+
+// ── ALERT PREVIEW ──
+async function previewAlert() {
+  const alertType = document.getElementById('alertType').value;
+  const keyword   = document.getElementById('alertKeyword')?.value.trim() || '';
+  const source    = document.getElementById('alertSource')?.value.trim() || '';
+  const threshold = parseInt(document.getElementById('alertThreshold').value) || 5;
+
+  const badge = document.getElementById('alertPreviewBadge');
+  badge.style.display = 'inline-flex';
+  badge.className = 'alert-match-count';
+  badge.textContent = '⟳ Checking…';
+
+  const params = new URLSearchParams({ page: 1, per_page: 500, level: 'error' });
+  if (keyword) params.set('q', keyword);
+  if (source)  params.set('source', source);
+  try {
+    const r = await fetch('/api/logs?' + params);
+    const d = await r.json();
+    const count = d.total || 0;
+    badge.textContent = `${count} matching logs`;
+    badge.className = 'alert-match-count' + (count >= threshold ? ' has-matches' : '');
+    setTimeout(() => { badge.style.display = 'none'; }, 8000);
+  } catch (e) {
+    badge.textContent = 'Preview failed';
+    setTimeout(() => { badge.style.display = 'none'; }, 3000);
+  }
+}
 async function loadBootstrap() {
   try {
     const r = await fetch('/api/bootstrap');
@@ -1158,10 +1860,13 @@ function renderLogTable(logs) {
     return;
   }
   const sa = col => logSort === col ? `<span class="sort-ind">${logSortDir === 'asc' ? '▲' : '▼'}</span>` : '';
+  const bulkCol = _bulkMode ? '<th style="width:32px"><input type="checkbox" id="selectAllChk" onchange="toggleSelectAll(this.checked)" style="cursor:pointer;width:13px;height:13px"/></th>' : '';
   const rows = logs.map(l => {
     const msg = esc(l.message || '');
     const msgShort = l.message.length > 80 ? esc(l.message.slice(0, 80)) + '…' : msg;
-    return `<tr onclick="openDetail(${l.id})">
+    const chkCell = _bulkMode ? `<td onclick="event.stopPropagation()"><input type="checkbox" class="log-row-chk" ${_selectedIds.has(l.id)?'checked':''} onchange="toggleRowSelect(${l.id},this.checked)" style="cursor:pointer;width:13px;height:13px"/></td>` : '';
+    return `<tr onclick="${_bulkMode ? `toggleRowSelect(${l.id},!this.querySelector('.log-row-chk').checked);this.querySelector('.log-row-chk').checked=!this.querySelector('.log-row-chk').checked` : `openDetail(${l.id})`}">
+      ${chkCell}
       <td style="width:24px"><span class="level-dot dot-${l.level}"></span></td>
       <td><span class="lvl-badge lvl-${l.level}">${l.level.toUpperCase()}</span></td>
       <td class="evt-id">${esc(l.event_id||'—')}</td>
@@ -1174,6 +1879,7 @@ function renderLogTable(logs) {
     <div style="overflow-x:auto;width:100%">
       <table class="log-table" style="width:100%;min-width:680px">
         <thead><tr>
+          ${bulkCol}
           <th style="width:18px"></th>
           <th class="sortable" style="width:82px" onclick="toggleSort('level')">Level${sa('level')}</th>
           <th style="width:140px">Event ID</th>
@@ -1448,13 +2154,14 @@ function renderAlerts(alerts) {
   if (!alerts || !alerts.length) return;
   el.innerHTML = alerts.map(a => `
     <div class="alert-row">
-      <div>
+      <div style="flex:1;min-width:0">
         <div class="alert-name">${esc(a.name)}</div>
-        <div class="alert-detail">${esc(a.severity)} · ${esc(a.alert_type||'error_rate')} · threshold:${a.threshold||10}</div>
+        <div class="alert-detail">${esc(a.severity)} · ${esc(a.alert_type||'error_rate')} · threshold:${a.threshold||10}${a.cooldown_minutes?' · cooldown:'+a.cooldown_minutes+'m':''}</div>
+        ${a.webhook_url?`<div class="webhook-status">🔗 Webhook configured</div>`:''}
       </div>
       <span class="lvl-badge lvl-${a.severity==='sev1'?'error':a.severity==='sev2'?'warn':'info'}">${esc(a.severity).toUpperCase()}</span>
       <span class="lvl-badge lvl-${a.status==='active'?'success':'debug'}">${esc(a.status).toUpperCase()}</span>
-      ${a.notify_email?`<span class="src-tag">${esc(a.notify_email)}</span>`:''}
+      ${a.notify_email?`<span class="src-tag" style="font-size:10px">✉ ${esc(a.notify_email)}</span>`:''}
     </div>`).join('');
 }
 
@@ -1567,10 +2274,10 @@ function updateAlertFields() {
   const thresh = document.getElementById('alertThreshold');
   if (kw) kw.style.display = t === 'keyword' ? '' : 'none';
   const helpText = {
-    error_rate: 'Trigger when error rate exceeds threshold count within a rolling 5-minute window.',
-    keyword: 'Trigger when a specific keyword or phrase appears in log messages at least threshold times.',
-    suspicious_ip: 'Trigger when a single IP exceeds threshold requests per minute with high error rate.',
-    source_error: 'Trigger when a specific source emits more than threshold errors in 5 minutes.'
+    error_rate:    'Trigger when error count exceeds threshold within a rolling 5-minute window.',
+    keyword:       'Trigger when a keyword/phrase appears in log messages at least threshold times.',
+    suspicious_ip: 'Trigger when a single IP exceeds threshold requests per minute with a high error rate.',
+    source_error:  'Trigger when a specific source emits more than threshold errors in 5 minutes.'
   };
   if (help) help.textContent = helpText[t] || '';
   if (thresh) thresh.placeholder = t === 'keyword' ? 'Min occurrences' : t === 'suspicious_ip' ? 'Req/min threshold' : 'Error count threshold';
@@ -1583,26 +2290,34 @@ async function createAlert() {
   const keyword   = document.getElementById('alertKeyword')?.value.trim() || '';
   const source    = document.getElementById('alertSource')?.value.trim() || '';
   const email     = document.getElementById('alertEmail').value.trim();
+  const webhook   = document.getElementById('alertWebhook')?.value.trim() || '';
   const threshold = parseInt(document.getElementById('alertThreshold').value) || 5;
+  const cooldown  = parseInt(document.getElementById('alertCooldown')?.value) || 15;
   if (!name) { toast('Alert name required', 'error'); return; }
   if (alertType === 'keyword' && !keyword) { toast('Keyword required for keyword match rule', 'error'); return; }
+  if (!email && !webhook) { toast('Add at least one notification channel (email or webhook)', 'warn'); return; }
   const condParts = [];
   if (keyword) condParts.push(`keyword:"${keyword}"`);
   if (source)  condParts.push(`source:${source}`);
   condParts.push(`threshold:${threshold}`);
+  if (cooldown) condParts.push(`cooldown:${cooldown}m`);
   const r = await api('/api/alerts', 'POST', {
     name, severity, alert_type: alertType,
     condition_text: condParts.join(', '),
-    notify_email: email, threshold,
-    status: 'active', channel: 'Email',
-    keyword: keyword || null, source_filter: source || null
+    notify_email: email, threshold, cooldown_minutes: cooldown,
+    status: 'active', channel: email ? (webhook ? 'Email+Webhook' : 'Email') : 'Webhook',
+    keyword: keyword || null, source_filter: source || null,
+    webhook_url: webhook || null
   });
   if (r.ok) {
-    toast('Alert rule created', 'success');
-    ['alertName','alertKeyword','alertSource','alertEmail'].forEach(id => {
+    toast('✓ Alert rule created', 'success');
+    ['alertName','alertKeyword','alertSource','alertEmail','alertWebhook'].forEach(id => {
       const el = document.getElementById(id); if (el) el.value = '';
     });
     document.getElementById('alertThreshold').value = '5';
+    document.getElementById('alertCooldown').value = '15';
+    const badge = document.getElementById('alertPreviewBadge');
+    if (badge) badge.style.display = 'none';
     loadBootstrap();
   } else {
     toast((await r.json()).error || 'Error creating alert', 'error');
@@ -1687,7 +2402,14 @@ async function createApiKey() {
 }
 
 async function revokeKey(id) {
-  if (!confirm('Revoke this API key?')) return;
+  const confirmed = await customConfirm('Revoke this API key? Any services using it will immediately lose access.', {
+    title: 'Revoke API key',
+    icon: '🔑',
+    iconType: 'danger',
+    danger: true,
+    confirmText: 'Revoke key'
+  });
+  if (!confirmed) return;
   const r = await fetch(`/api/keys/${id}`, {method:'DELETE'});
   if (r.ok) { toast('Key revoked', 'success'); loadBootstrap(); }
 }
@@ -1931,7 +2653,13 @@ function applySearch(id) {
 }
 
 async function saveCurrentSearch() {
-  const name = prompt('Name this search:');
+  const name = await customPrompt('Give this search a name so you can reuse it later:', {
+    title: 'Save search',
+    icon: '☆',
+    iconType: 'info',
+    placeholder: 'e.g. Production errors last 24h',
+    confirmText: 'Save'
+  });
   if (!name) return;
   const filters = { q: logSearch, level: logFilter };
   if (logSource) filters.source = logSource;
