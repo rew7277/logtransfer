@@ -1931,6 +1931,10 @@ def test_api():
 def pricing_page():
     return render_template("pricing.html")
 
+@app.get("/documentation")
+def documentation_page():
+    return render_template("documentation.html")
+
 @app.get("/forgot-password")
 def forgot_password_page():
     if session.get("user_id"):

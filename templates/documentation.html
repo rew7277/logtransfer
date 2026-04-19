@@ -1,0 +1,1027 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Documentation — ObserveX</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Syne:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg: #080c14;
+  --surface: #0d1420;
+  --surface2: #131c2e;
+  --surface3: #1a2540;
+  --border: rgba(255,255,255,0.07);
+  --border2: rgba(255,255,255,0.13);
+  --blue: #3b82f6;
+  --blue2: #60a5fa;
+  --cyan: #22d3ee;
+  --green: #4ade80;
+  --amber: #fbbf24;
+  --red: #f87171;
+  --purple: #a78bfa;
+  --text: #f0f4ff;
+  --muted: #8898b3;
+  --muted2: #4a5a72;
+  --mono: 'IBM Plex Mono', monospace;
+  --sans: 'Syne', sans-serif;
+  --sidebar-w: 260px;
+  --nav-h: 60px;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body { font-family: var(--sans); background: var(--bg); color: var(--text); -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+
+body::before {
+  content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 0; opacity: 0.02;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+}
+
+/* NAV */
+nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 200; height: var(--nav-h);
+  display: flex; align-items: center; justify-content: space-between; padding: 0 32px;
+  background: rgba(8,12,20,0.92); backdrop-filter: blur(20px); border-bottom: 1px solid var(--border);
+}
+.nav-logo { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 16px; color: var(--text); text-decoration: none; }
+.nav-logo-icon { width: 28px; height: 28px; border-radius: 7px; background: linear-gradient(135deg, var(--blue), var(--cyan)); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; color: #fff; flex-shrink: 0; }
+.nav-right { display: flex; align-items: center; gap: 6px; }
+.nav-link { padding: 6px 14px; border-radius: 7px; font-size: 13px; font-weight: 600; text-decoration: none; transition: all .15s; color: var(--muted); }
+.nav-link:hover { color: var(--text); background: rgba(255,255,255,0.06); }
+.nav-link-active { color: var(--blue2); }
+.nav-btn { padding: 7px 16px; border-radius: 7px; background: var(--blue); color: #fff; font-family: var(--sans); font-size: 13px; font-weight: 700; text-decoration: none; transition: all .15s; }
+.nav-btn:hover { background: #2563eb; transform: translateY(-1px); }
+
+/* LAYOUT */
+.doc-layout { display: flex; padding-top: var(--nav-h); min-height: 100vh; position: relative; z-index: 1; }
+
+/* SIDEBAR */
+.doc-sidebar {
+  width: var(--sidebar-w); flex-shrink: 0; position: fixed; top: var(--nav-h); bottom: 0; left: 0;
+  overflow-y: auto; border-right: 1px solid var(--border); background: var(--surface);
+  padding: 28px 0 40px;
+}
+.doc-sidebar::-webkit-scrollbar { width: 4px; }
+.doc-sidebar::-webkit-scrollbar-track { background: transparent; }
+.doc-sidebar::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+.sidebar-section-label {
+  font-family: var(--mono); font-size: 10px; font-weight: 600; color: var(--muted2);
+  text-transform: uppercase; letter-spacing: 1.2px; padding: 14px 24px 6px;
+}
+.sidebar-link {
+  display: flex; align-items: center; gap: 9px; padding: 7px 24px;
+  font-size: 13px; font-weight: 500; color: var(--muted); text-decoration: none;
+  transition: all .12s; border-left: 2px solid transparent; cursor: pointer;
+}
+.sidebar-link:hover { color: var(--text); background: rgba(255,255,255,0.04); }
+.sidebar-link.active { color: var(--blue2); background: rgba(59,130,246,0.08); border-left-color: var(--blue2); }
+.sidebar-link-icon { font-size: 14px; flex-shrink: 0; }
+
+/* CONTENT */
+.doc-content { margin-left: var(--sidebar-w); flex: 1; max-width: 860px; padding: 48px 56px 80px; }
+
+/* HERO BANNER */
+.doc-hero {
+  background: linear-gradient(135deg, rgba(59,130,246,0.12), rgba(34,211,238,0.06));
+  border: 1px solid rgba(59,130,246,0.2); border-radius: 14px;
+  padding: 40px 36px; margin-bottom: 48px;
+}
+.doc-hero-badge {
+  display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px;
+  border-radius: 999px; background: rgba(59,130,246,0.15); border: 1px solid rgba(59,130,246,0.3);
+  font-family: var(--mono); font-size: 10px; color: var(--blue2); font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 14px;
+}
+.doc-hero h1 { font-size: 32px; font-weight: 800; color: var(--text); margin-bottom: 10px; }
+.doc-hero p { font-size: 15px; color: var(--muted); line-height: 1.7; max-width: 540px; }
+.doc-hero-btns { display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap; }
+.doc-hero-btn {
+  display: inline-flex; align-items: center; gap: 7px; padding: 9px 18px;
+  border-radius: 8px; font-family: var(--sans); font-size: 13px; font-weight: 600;
+  text-decoration: none; transition: all .15s; cursor: pointer; border: none;
+}
+.doc-btn-primary { background: var(--blue); color: #fff; }
+.doc-btn-primary:hover { background: #2563eb; transform: translateY(-1px); }
+.doc-btn-ghost { background: rgba(255,255,255,0.06); color: var(--text); border: 1px solid var(--border2); }
+.doc-btn-ghost:hover { background: rgba(255,255,255,0.1); }
+
+/* SECTIONS */
+.doc-section { margin-bottom: 72px; scroll-margin-top: calc(var(--nav-h) + 24px); }
+.section-tag {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-family: var(--mono); font-size: 10px; font-weight: 600; color: var(--cyan);
+  text-transform: uppercase; letter-spacing: 1.4px; margin-bottom: 10px;
+}
+.section-tag::before { content: '//'; color: var(--muted2); margin-right: 4px; }
+.doc-h1 { font-size: 26px; font-weight: 800; color: var(--text); margin-bottom: 10px; line-height: 1.2; }
+.doc-h2 {
+  font-size: 17px; font-weight: 700; color: var(--text); margin: 32px 0 10px;
+  padding-bottom: 8px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 8px;
+}
+.doc-h3 { font-size: 13px; font-weight: 700; color: var(--text); margin: 20px 0 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+.doc-p { font-size: 14px; color: var(--muted); line-height: 1.75; margin-bottom: 14px; }
+.doc-p a { color: var(--blue2); text-decoration: none; }
+.doc-p a:hover { text-decoration: underline; }
+.doc-hr { border: none; border-top: 1px solid var(--border); margin: 40px 0; }
+
+/* CODE */
+.doc-code-wrap { position: relative; margin-bottom: 16px; }
+.doc-code {
+  background: var(--surface2); border: 1px solid var(--border2); border-radius: 10px;
+  padding: 18px 20px; font-family: var(--mono); font-size: 12.5px; color: #a5d6a7;
+  white-space: pre-wrap; word-break: break-all; line-height: 1.8; overflow-x: auto;
+}
+.doc-code-bar {
+  display: flex; align-items: center; justify-content: space-between;
+  background: rgba(255,255,255,0.04); border: 1px solid var(--border2);
+  border-bottom: none; border-radius: 10px 10px 0 0; padding: 8px 16px;
+  font-family: var(--mono); font-size: 11px; color: var(--muted);
+}
+.doc-code-bar + .doc-code { border-radius: 0 0 10px 10px; }
+.copy-btn {
+  padding: 3px 10px; border-radius: 5px; border: 1px solid var(--border2);
+  background: transparent; color: var(--muted); font-family: var(--mono); font-size: 10px;
+  cursor: pointer; transition: all .15s;
+}
+.copy-btn:hover { border-color: var(--blue2); color: var(--blue2); }
+.c-k { color: var(--blue2); }
+.c-s { color: var(--amber); }
+.c-v { color: var(--green); }
+.c-c { color: var(--muted2); }
+.c-r { color: var(--red); }
+.c-p { color: var(--cyan); }
+.inline-code {
+  font-family: var(--mono); font-size: 11.5px; background: var(--surface2);
+  border: 1px solid var(--border2); padding: 1px 6px; border-radius: 4px; color: var(--cyan);
+}
+
+/* TABLES */
+.doc-table-wrap { overflow-x: auto; margin-bottom: 16px; border-radius: 10px; border: 1px solid var(--border2); }
+.doc-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.doc-table th { background: var(--surface2); padding: 10px 14px; text-align: left; font-weight: 700; color: var(--text); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; }
+.doc-table td { padding: 10px 14px; border-top: 1px solid var(--border); color: var(--muted); vertical-align: top; line-height: 1.5; }
+.doc-table tr:hover td { background: rgba(255,255,255,0.025); }
+.doc-table td:first-child { font-family: var(--mono); font-size: 12px; color: var(--cyan); white-space: nowrap; }
+
+/* BADGES */
+.method-badge {
+  display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 4px;
+  font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 0.5px;
+  margin-right: 6px; flex-shrink: 0;
+}
+.m-get { background: rgba(74,222,128,0.15); color: var(--green); }
+.m-post { background: rgba(59,130,246,0.15); color: var(--blue2); }
+.m-del { background: rgba(248,113,113,0.15); color: var(--red); }
+.m-patch { background: rgba(251,191,36,0.15); color: var(--amber); }
+
+/* ENDPOINT ROWS */
+.endpoint-row {
+  display: flex; align-items: flex-start; gap: 12px; padding: 14px 18px;
+  border: 1px solid var(--border); border-radius: 9px; margin-bottom: 8px;
+  background: var(--surface); transition: border-color .15s;
+}
+.endpoint-row:hover { border-color: var(--border2); }
+.endpoint-path { font-family: var(--mono); font-size: 13px; color: var(--text); font-weight: 600; }
+.endpoint-desc { font-size: 12px; color: var(--muted); margin-top: 3px; }
+
+/* CALLOUTS */
+.callout {
+  display: flex; gap: 12px; padding: 14px 18px; border-radius: 9px;
+  margin-bottom: 16px; font-size: 13px; line-height: 1.6;
+}
+.callout-info { background: rgba(59,130,246,0.08); border: 1px solid rgba(59,130,246,0.2); color: var(--muted); }
+.callout-warn { background: rgba(251,191,36,0.08); border: 1px solid rgba(251,191,36,0.2); color: var(--muted); }
+.callout-danger { background: rgba(248,113,113,0.08); border: 1px solid rgba(248,113,113,0.2); color: var(--muted); }
+.callout-success { background: rgba(74,222,128,0.08); border: 1px solid rgba(74,222,128,0.2); color: var(--muted); }
+.callout-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+
+/* FEATURE CARDS */
+.feature-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px,1fr)); gap: 12px; margin-bottom: 24px; }
+.feature-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 18px; transition: border-color .15s; }
+.feature-card:hover { border-color: var(--border2); }
+.feature-card-icon { font-size: 22px; margin-bottom: 10px; }
+.feature-card-title { font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 5px; }
+.feature-card-desc { font-size: 12px; color: var(--muted); line-height: 1.55; }
+
+/* STEPS */
+.steps { display: flex; flex-direction: column; gap: 0; margin-bottom: 24px; }
+.step { display: flex; gap: 18px; padding: 20px 0; border-bottom: 1px solid var(--border); }
+.step:last-child { border-bottom: none; }
+.step-num {
+  flex-shrink: 0; width: 30px; height: 30px; border-radius: 8px;
+  background: rgba(59,130,246,0.15); border: 1px solid rgba(59,130,246,0.3);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--mono); font-size: 12px; font-weight: 700; color: var(--blue2);
+}
+.step-content h4 { font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 5px; }
+.step-content p { font-size: 13px; color: var(--muted); line-height: 1.6; }
+
+/* TOC quick links */
+.toc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px,1fr)); gap: 10px; margin-bottom: 40px; }
+.toc-card {
+  display: flex; align-items: center; gap: 10px; padding: 14px 16px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+  text-decoration: none; color: var(--muted); font-size: 13px; font-weight: 600;
+  transition: all .15s;
+}
+.toc-card:hover { border-color: var(--blue2); color: var(--blue2); background: rgba(59,130,246,0.06); transform: translateY(-2px); }
+.toc-card-icon { font-size: 18px; }
+
+/* SCROLLBAR */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+/* RESPONSIVE */
+@media(max-width: 768px) {
+  .doc-sidebar { display: none; }
+  .doc-content { margin-left: 0; padding: 32px 20px 60px; }
+}
+
+/* TOAST */
+.toast-wrap { position: fixed; bottom: 20px; right: 20px; z-index: 999; }
+.toast { background: var(--surface2); border: 1px solid var(--border2); border-radius: 8px; padding: 10px 16px; font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 8px; box-shadow: 0 8px 24px rgba(0,0,0,.4); animation: toastIn .25s ease; }
+@keyframes toastIn { from{opacity:0;transform:translateX(16px)} to{opacity:1;transform:none} }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a href="/" class="nav-logo">
+    <div class="nav-logo-icon">OX</div>
+    ObserveX
+  </a>
+  <div class="nav-right">
+    <a href="/#features" class="nav-link">Features</a>
+    <a href="/#integrations" class="nav-link">Integrations</a>
+    <a href="/pricing" class="nav-link">Pricing</a>
+    <a href="/documentation" class="nav-link nav-link-active">Docs</a>
+    <a href="/login" class="nav-link">Sign in</a>
+    <a href="/create-account" class="nav-btn">Create workspace</a>
+  </div>
+</nav>
+
+<div class="doc-layout">
+
+  <!-- SIDEBAR -->
+  <aside class="doc-sidebar">
+    <div class="sidebar-section-label">Getting Started</div>
+    <a class="sidebar-link active" onclick="scrollTo('overview')"><span class="sidebar-link-icon">🚀</span> Overview</a>
+    <a class="sidebar-link" onclick="scrollTo('quickstart')"><span class="sidebar-link-icon">⚡</span> Quickstart</a>
+    <a class="sidebar-link" onclick="scrollTo('concepts')"><span class="sidebar-link-icon">💡</span> Core concepts</a>
+
+    <div class="sidebar-section-label">API Reference</div>
+    <a class="sidebar-link" onclick="scrollTo('authentication')"><span class="sidebar-link-icon">🔑</span> Authentication</a>
+    <a class="sidebar-link" onclick="scrollTo('ingest-api')"><span class="sidebar-link-icon">📥</span> Ingest API</a>
+    <a class="sidebar-link" onclick="scrollTo('query-api')"><span class="sidebar-link-icon">🔍</span> Query logs</a>
+    <a class="sidebar-link" onclick="scrollTo('keys-api')"><span class="sidebar-link-icon">🗝</span> API keys</a>
+    <a class="sidebar-link" onclick="scrollTo('alerts-api')"><span class="sidebar-link-icon">🔔</span> Alerts</a>
+
+    <div class="sidebar-section-label">Integrations</div>
+    <a class="sidebar-link" onclick="scrollTo('s3-guide')"><span class="sidebar-link-icon">🪣</span> S3 Bucket</a>
+    <a class="sidebar-link" onclick="scrollTo('webhooks')"><span class="sidebar-link-icon">🔗</span> Webhooks</a>
+    <a class="sidebar-link" onclick="scrollTo('scheduled-jobs')"><span class="sidebar-link-icon">⏱</span> Scheduled jobs</a>
+
+    <div class="sidebar-section-label">Features</div>
+    <a class="sidebar-link" onclick="scrollTo('log-explorer')"><span class="sidebar-link-icon">📊</span> Log explorer</a>
+    <a class="sidebar-link" onclick="scrollTo('alert-rules')"><span class="sidebar-link-icon">🚨</span> Alert rules</a>
+    <a class="sidebar-link" onclick="scrollTo('ai-explain')"><span class="sidebar-link-icon">✦</span> AI explain</a>
+    <a class="sidebar-link" onclick="scrollTo('bulk-ops')"><span class="sidebar-link-icon">☐</span> Bulk operations</a>
+    <a class="sidebar-link" onclick="scrollTo('team-access')"><span class="sidebar-link-icon">👥</span> Team & access</a>
+    <a class="sidebar-link" onclick="scrollTo('audit-trail')"><span class="sidebar-link-icon">📋</span> Audit trail</a>
+
+    <div class="sidebar-section-label">Reference</div>
+    <a class="sidebar-link" onclick="scrollTo('log-levels')"><span class="sidebar-link-icon">🏷</span> Log levels</a>
+    <a class="sidebar-link" onclick="scrollTo('formats')"><span class="sidebar-link-icon">📄</span> File formats</a>
+    <a class="sidebar-link" onclick="scrollTo('errors')"><span class="sidebar-link-icon">⚠</span> Error codes</a>
+  </aside>
+
+  <!-- CONTENT -->
+  <main class="doc-content">
+
+    <!-- HERO -->
+    <div class="doc-hero">
+      <div class="doc-hero-badge">📖 Documentation v2.0</div>
+      <h1>ObserveX Documentation</h1>
+      <p>Everything you need to ingest, search, alert on, and visualize your logs. From a single curl command to production-grade S3 pipelines.</p>
+      <div class="doc-hero-btns">
+        <a href="/create-account" class="doc-hero-btn doc-btn-primary">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+          Create free workspace
+        </a>
+        <button class="doc-hero-btn doc-btn-ghost" onclick="downloadAllDocs()">⬇ Download all docs (.md)</button>
+      </div>
+    </div>
+
+    <!-- QUICK LINKS -->
+    <div class="toc-grid">
+      <a class="toc-card" onclick="scrollTo('ingest-api')"><span class="toc-card-icon">📥</span> Ingest API</a>
+      <a class="toc-card" onclick="scrollTo('s3-guide')"><span class="toc-card-icon">🪣</span> S3 Bucket</a>
+      <a class="toc-card" onclick="scrollTo('alert-rules')"><span class="toc-card-icon">🔔</span> Alert Rules</a>
+      <a class="toc-card" onclick="scrollTo('webhooks')"><span class="toc-card-icon">🔗</span> Webhooks</a>
+      <a class="toc-card" onclick="scrollTo('ai-explain')"><span class="toc-card-icon">✦</span> AI Explain</a>
+      <a class="toc-card" onclick="scrollTo('log-explorer')"><span class="toc-card-icon">🔍</span> Log Explorer</a>
+    </div>
+
+    <!-- ══ OVERVIEW ══ -->
+    <div class="doc-section" id="overview">
+      <div class="section-tag">Getting Started</div>
+      <div class="doc-h1">Overview</div>
+      <p class="doc-p">ObserveX is a centralized log management and observability platform. It collects logs from multiple sources, indexes them for real-time search, fires configurable alerts, and surfaces AI-powered error analysis — all from a single workspace URL.</p>
+
+      <div class="feature-grid">
+        <div class="feature-card"><div class="feature-card-icon">📥</div><div class="feature-card-title">Multi-format Ingestion</div><div class="feature-card-desc">JSON, CSV, plain text, NDJSON, MuleSoft — auto-detected every time.</div></div>
+        <div class="feature-card"><div class="feature-card-icon">🪣</div><div class="feature-card-title">S3 Integration</div><div class="feature-card-desc">Poll any S3-compatible bucket on a cron schedule.</div></div>
+        <div class="feature-card"><div class="feature-card-icon">🔔</div><div class="feature-card-title">Smart Alerts</div><div class="feature-card-desc">Email + webhook (Slack, Teams, Discord) notifications with cooldown.</div></div>
+        <div class="feature-card"><div class="feature-card-icon">✦</div><div class="feature-card-title">AI Explain</div><div class="feature-card-desc">Claude AI analyzes error logs and explains root causes in plain English.</div></div>
+        <div class="feature-card"><div class="feature-card-icon">🔍</div><div class="feature-card-title">Live Explorer</div><div class="feature-card-desc">Search, filter, sort and live-tail logs with saved search support.</div></div>
+        <div class="feature-card"><div class="feature-card-icon">👥</div><div class="feature-card-title">Team Access</div><div class="feature-card-desc">Role-based access with invite links and a full audit trail.</div></div>
+        <div class="feature-card"><div class="feature-card-icon">☐</div><div class="feature-card-title">Bulk Operations</div><div class="feature-card-desc">Select and delete multiple logs at once with bulk mode.</div></div>
+        <div class="feature-card"><div class="feature-card-icon">📖</div><div class="feature-card-title">Built-in Docs</div><div class="feature-card-desc">In-app documentation with downloadable Markdown reference.</div></div>
+      </div>
+    </div>
+
+    <hr class="doc-hr"/>
+
+    <!-- ══ QUICKSTART ══ -->
+    <div class="doc-section" id="quickstart">
+      <div class="section-tag">Getting Started</div>
+      <div class="doc-h1">Quickstart</div>
+      <p class="doc-p">Get logs into ObserveX in under 2 minutes. No email verification required.</p>
+
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">01</div>
+          <div class="step-content">
+            <h4>Create a workspace</h4>
+            <p>Visit <a href="/create-account">/create-account</a>, enter your organization name, email, and password. Your workspace URL is generated instantly at <span class="inline-code">/workspace/your-slug</span>.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">02</div>
+          <div class="step-content">
+            <h4>Generate an API key</h4>
+            <p>Go to <strong>Ingest API → Your API keys → New key</strong>. Give it a name like <span class="inline-code">production</span>. The full key is shown once — copy it immediately.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">03</div>
+          <div class="step-content">
+            <h4>Send your first log</h4>
+            <div class="doc-code-wrap" style="margin-top:12px">
+              <div class="doc-code-bar"><span>bash</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+              <div class="doc-code">curl -X POST https://yourapp.railway.app/ingest/json \
+  -H "Authorization: Bearer oxk_your_key_here" \
+  -H "Content-Type: application/json" \
+  -d '{"timestamp":"2024-01-15T10:30:00Z","level":"error","source":"my-service","message":"Connection refused"}'</div>
+            </div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">04</div>
+          <div class="step-content">
+            <h4>Open the Log Explorer</h4>
+            <p>Go to your workspace and click <strong>Log explorer</strong> in the sidebar. Your log should appear immediately. Use the search and level filters to find it.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">05</div>
+          <div class="step-content">
+            <h4>Create your first alert</h4>
+            <p>Go to <strong>Alert rules → Create Alert Rule</strong>. Set type to <strong>Error Rate</strong>, threshold to <span class="inline-code">5</span>, add your email, and save. You'll be notified whenever errors spike.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <hr class="doc-hr"/>
+
+    <!-- ══ AUTHENTICATION ══ -->
+    <div class="doc-section" id="authentication">
+      <div class="section-tag">API Reference</div>
+      <div class="doc-h1">Authentication</div>
+      <p class="doc-p">All API requests must include a Bearer token in the <span class="inline-code">Authorization</span> header. Get your token from <strong>Ingest API → API keys</strong> in your workspace.</p>
+
+      <div class="callout callout-warn">
+        <span class="callout-icon">⚠</span>
+        <div>API keys are shown <strong>only once</strong> at creation. Store them securely — they cannot be retrieved after leaving the page. Revoke and regenerate if lost.</div>
+      </div>
+
+      <div class="doc-h2">Header format</div>
+      <div class="doc-code">Authorization: Bearer oxk_your_api_key_here</div>
+
+      <div class="doc-h2">API key properties</div>
+      <div class="doc-table-wrap">
+        <table class="doc-table">
+          <thead><tr><th>Property</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td>prefix</td><td>First 8 characters visible for identification (e.g. <span class="inline-code">oxk_a8f3</span>)</td></tr>
+            <tr><td>name</td><td>Human-readable label you set at creation</td></tr>
+            <tr><td>status</td><td><span class="inline-code">active</span> or <span class="inline-code">revoked</span></td></tr>
+            <tr><td>last_used_at</td><td>Timestamp of most recent successful auth</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <hr class="doc-hr"/>
+
+    <!-- ══ INGEST API ══ -->
+    <div class="doc-section" id="ingest-api">
+      <div class="section-tag">API Reference</div>
+      <div class="doc-h1">Ingest API</div>
+      <p class="doc-p">Push log events into ObserveX via HTTP from any service, script, or integration.</p>
+
+      <div class="doc-h2">Endpoints</div>
+
+      <div class="endpoint-row">
+        <span class="method-badge m-post">POST</span>
+        <div>
+          <div class="endpoint-path">/ingest/json</div>
+          <div class="endpoint-desc">Ingest a single JSON log event or an array of events</div>
+        </div>
+      </div>
+      <div class="endpoint-row">
+        <span class="method-badge m-post">POST</span>
+        <div>
+          <div class="endpoint-path">/ingest/batch</div>
+          <div class="endpoint-desc">Ingest up to 1,000 events in one request via <span class="inline-code">{"events":[...]}</span></div>
+        </div>
+      </div>
+      <div class="endpoint-row">
+        <span class="method-badge m-post">POST</span>
+        <div>
+          <div class="endpoint-path">/ingest/file</div>
+          <div class="endpoint-desc">Upload a log file via multipart/form-data</div>
+        </div>
+      </div>
+
+      <div class="doc-h2">Single event — request body fields</div>
+      <div class="doc-table-wrap">
+        <table class="doc-table">
+          <thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td>timestamp</td><td>string</td><td>Yes</td><td>ISO 8601 datetime (e.g. <span class="inline-code">2024-01-15T10:30:00Z</span>)</td></tr>
+            <tr><td>level</td><td>string</td><td>Yes</td><td>One of: <span class="inline-code">error</span> <span class="inline-code">warn</span> <span class="inline-code">info</span> <span class="inline-code">success</span> <span class="inline-code">debug</span></td></tr>
+            <tr><td>source</td><td>string</td><td>Yes</td><td>Source service or component name (e.g. <span class="inline-code">payment-service</span>)</td></tr>
+            <tr><td>message</td><td>string</td><td>Yes</td><td>Human-readable log message</td></tr>
+            <tr><td>event_id</td><td>string</td><td>No</td><td>Your own correlation/trace ID</td></tr>
+            <tr><td>*</td><td>any</td><td>No</td><td>Any additional fields are stored in the <span class="inline-code">payload</span> JSON column</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="doc-h2">Example — single event</div>
+      <div class="doc-code-wrap">
+        <div class="doc-code-bar"><span>curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+        <div class="doc-code">curl -X POST https://yourapp.railway.app/ingest/json \
+  -H "Authorization: Bearer oxk_your_key_here" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "timestamp": "2024-01-15T10:30:00Z",
+    "level": "error",
+    "source": "payment-service",
+    "message": "Stripe timeout after 30s",
+    "requestId": "req_abc123",
+    "userId": "usr_456",
+    "latency_ms": 30042
+  }'</div>
+      </div>
+
+      <div class="doc-h2">Example — batch ingest</div>
+      <div class="doc-code-wrap">
+        <div class="doc-code-bar"><span>curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+        <div class="doc-code">curl -X POST https://yourapp.railway.app/ingest/batch \
+  -H "Authorization: Bearer oxk_your_key_here" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "events": [
+      {"timestamp":"2024-01-15T10:30:00Z","level":"info","source":"api","message":"Order placed","orderId":"ORD-001"},
+      {"timestamp":"2024-01-15T10:30:01Z","level":"error","source":"api","message":"Payment failed","code":402}
+    ]
+  }'</div>
+      </div>
+
+      <div class="doc-h2">Example — file upload</div>
+      <div class="doc-code-wrap">
+        <div class="doc-code-bar"><span>curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+        <div class="doc-code">curl -X POST https://yourapp.railway.app/ingest/file \
+  -H "Authorization: Bearer oxk_your_key_here" \
+  -F "file=@/var/log/myapp.log"</div>
+      </div>
+
+      <div class="doc-h2">Response</div>
+      <div class="doc-code">{
+  "status": "ok",
+  "records": 1,
+  "source": "api-ingest",
+  "upload_id": 42
+}</div>
+    </div>
+
+    <hr class="doc-hr"/>
+
+    <!-- ══ QUERY API ══ -->
+    <div class="doc-section" id="query-api">
+      <div class="section-tag">API Reference</div>
+      <div class="doc-h1">Query Logs</div>
+
+      <div class="endpoint-row">
+        <span class="method-badge m-get">GET</span>
+        <div>
+          <div class="endpoint-path">/api/logs</div>
+          <div class="endpoint-desc">Paginated log query with full filtering support</div>
+        </div>
+      </div>
+      <div class="endpoint-row">
+        <span class="method-badge m-get">GET</span>
+        <div>
+          <div class="endpoint-path">/api/logs/:id</div>
+          <div class="endpoint-desc">Fetch a single log event by ID including full payload</div>
+        </div>
+      </div>
+      <div class="endpoint-row">
+        <span class="method-badge m-del">DELETE</span>
+        <div>
+          <div class="endpoint-path">/api/logs/:id</div>
+          <div class="endpoint-desc">Delete a single log event permanently</div>
+        </div>
+      </div>
+
+      <div class="doc-h2">Query parameters for GET /api/logs</div>
+      <div class="doc-table-wrap">
+        <table class="doc-table">
+          <thead><tr><th>Param</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td>page</td><td>int</td><td>1</td><td>Page number</td></tr>
+            <tr><td>per_page</td><td>int</td><td>50</td><td>Results per page (max 500)</td></tr>
+            <tr><td>level</td><td>string</td><td>all</td><td>Filter: error | warn | info | success | debug | all</td></tr>
+            <tr><td>q</td><td>string</td><td>—</td><td>Full-text search in message field</td></tr>
+            <tr><td>source</td><td>string</td><td>—</td><td>Exact source name filter</td></tr>
+            <tr><td>from_ts</td><td>datetime</td><td>—</td><td>Start of time range (ISO 8601 or <span class="inline-code">YYYY-MM-DD HH:MM:SS</span>)</td></tr>
+            <tr><td>to_ts</td><td>datetime</td><td>—</td><td>End of time range</td></tr>
+            <tr><td>sort</td><td>string</td><td>timestamp</td><td>Column: timestamp | level | source | message</td></tr>
+            <tr><td>dir</td><td>string</td><td>desc</td><td>Sort direction: asc | desc</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="doc-h2">Response structure</div>
+      <div class="doc-code">{
+  "records": [
+    {
+      "id": 1042,
+      "event_id": "req_abc123",
+      "timestamp": "2024-01-15T10:30:00Z",
+      "level": "error",
+      "source": "payment-service",
+      "message": "Stripe timeout after 30s",
+      "upload_id": 7,
+      "payload": { "requestId": "req_abc123", "latency_ms": 30042 }
+    }
+  ],
+  "total": 1204,
+  "page": 1,
+  "pages": 25,
+  "per_page": 50
+}</div>
+    </div>
+
+    <hr class="doc-hr"/>
+
+    <!-- ══ S3 GUIDE ══ -->
+    <div class="doc-section" id="s3-guide">
+      <div class="section-tag">Integrations</div>
+      <div class="doc-h1">S3 Bucket Integration</div>
+      <p class="doc-p">Connect ObserveX to any AWS S3 (or S3-compatible) bucket to automatically pull and index log files on a schedule.</p>
+
+      <div class="doc-h2">Required IAM policy</div>
+      <p class="doc-p">Create an IAM user with programmatic access and attach this policy (replace <span class="inline-code">your-log-bucket</span> with your actual bucket name):</p>
+      <div class="doc-code-wrap">
+        <div class="doc-code-bar"><span>IAM Policy JSON</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+        <div class="doc-code">{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": ["s3:GetObject", "s3:ListBucket"],
+      "Resource": [
+        "arn:aws:s3:::your-log-bucket",
+        "arn:aws:s3:::your-log-bucket/*"
+      ]
+    }
+  ]
+}</div>
+      </div>
+
+      <div class="doc-h2">Supported file formats</div>
+      <div class="doc-table-wrap">
+        <table class="doc-table">
+          <thead><tr><th>Format</th><th>Extensions</th><th>Notes</th></tr></thead>
+          <tbody>
+            <tr><td>JSON Lines</td><td>.jsonl, .ndjson</td><td>One JSON object per line — most efficient</td></tr>
+            <tr><td>CloudWatch Export</td><td>.json</td><td>AWS CloudWatch log export format</td></tr>
+            <tr><td>Plain text</td><td>.log, .txt</td><td>One log entry per line</td></tr>
+            <tr><td>CSV</td><td>.csv</td><td>Must have header row; timestamp, level, message columns auto-detected</td></tr>
+            <tr><td>Gzip compressed</td><td>.gz</td><td>Any of the above formats compressed</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="doc-h2">Setup steps</div>
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">01</div>
+          <div class="step-content"><h4>Add the integration</h4><p>Go to <strong>Integrations → Add integration</strong>, select <strong>S3 Bucket</strong>, enter bucket name, region, optional prefix, and IAM credentials.</p></div>
+        </div>
+        <div class="step">
+          <div class="step-num">02</div>
+          <div class="step-content"><h4>Create a scheduled job</h4><p>Go to <strong>Ingestion Jobs → Create job</strong>, select your new S3 integration, and set a cron schedule.</p></div>
+        </div>
+        <div class="step">
+          <div class="step-num">03</div>
+          <div class="step-content"><h4>Monitor runs</h4><p>Job run history is visible in <strong>Ingestion Jobs → Recent run history</strong>. Each run shows record count, status, and any error messages.</p></div>
+        </div>
+      </div>
+
+      <div class="doc-h2">Common cron schedules</div>
+      <div class="doc-code">*/15 * * * *   → every 15 minutes
+0 * * * *      → every hour
+0 */6 * * *    → every 6 hours
+0 0 * * *      → daily at midnight UTC
+0 8 * * 1-5    → weekdays at 8 AM UTC</div>
+
+      <div class="doc-h2">Troubleshooting</div>
+      <div class="doc-table-wrap">
+        <table class="doc-table">
+          <thead><tr><th>Error</th><th>Cause</th><th>Fix</th></tr></thead>
+          <tbody>
+            <tr><td>AccessDenied</td><td>Missing s3:GetObject or s3:ListBucket permission</td><td>Update IAM policy and re-save integration</td></tr>
+            <tr><td>NoSuchBucket</td><td>Wrong bucket name or region mismatch</td><td>Verify bucket name and region in AWS console</td></tr>
+            <tr><td>InvalidCredentials</td><td>Wrong Access Key ID or Secret Access Key</td><td>Generate a new IAM access key pair</td></tr>
+            <tr><td>0 files found</td><td>Prefix doesn't match any objects</td><td>Try leaving prefix blank, or verify path in S3 console</td></tr>
+            <tr><td>Parse error</td><td>File format not detected correctly</td><td>Rename file to use a supported extension (.jsonl, .log, .csv)</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <hr class="doc-hr"/>
+
+    <!-- ══ WEBHOOKS ══ -->
+    <div class="doc-section" id="webhooks">
+      <div class="section-tag">Integrations</div>
+      <div class="doc-h1">Webhooks</div>
+      <p class="doc-p">ObserveX can deliver alert notifications to any HTTP endpoint — Slack, Microsoft Teams, Discord, PagerDuty, or your own service.</p>
+
+      <div class="doc-h2">Webhook payload</div>
+      <p class="doc-p">When an alert fires, ObserveX sends a POST request with this JSON body:</p>
+      <div class="doc-code">{
+  "alert_name": "Payment timeout spike",
+  "severity": "sev2",
+  "alert_type": "keyword",
+  "condition": "keyword:\"Connect timeout\", threshold:5, cooldown:15m",
+  "triggered_at": "2024-01-15T10:35:00Z",
+  "match_count": 12,
+  "org": "your-org-slug",
+  "link": "https://yourapp.railway.app/workspace/your-org/explorer"
+}</div>
+
+      <div class="doc-h2">Slack setup</div>
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">01</div>
+          <div class="step-content"><h4>Create a Slack app</h4><p>Go to <a href="https://api.slack.com/apps" target="_blank">api.slack.com/apps</a> → Create new app → From scratch → add an <strong>Incoming Webhook</strong>.</p></div>
+        </div>
+        <div class="step">
+          <div class="step-num">02</div>
+          <div class="step-content"><h4>Get the webhook URL</h4><p>Activate Incoming Webhooks, click <strong>Add New Webhook to Workspace</strong>, select a channel, and copy the URL (starts with <span class="inline-code">https://hooks.slack.com/services/…</span>).</p></div>
+        </div>
+        <div class="step">
+          <div class="step-num">03</div>
+          <div class="step-content"><h4>Paste into alert rule</h4><p>When creating or editing an alert rule, paste the Slack webhook URL into the <strong>Webhook URL</strong> field.</p></div>
+        </div>
+      </div>
+
+      <div class="doc-h2">Microsoft Teams setup</div>
+      <p class="doc-p">In Teams: go to a channel → <strong>Connectors → Incoming Webhook → Configure</strong>. Copy the webhook URL and paste it into the alert rule's Webhook URL field.</p>
+    </div>
+
+    <hr class="doc-hr"/>
+
+    <!-- ══ ALERT RULES ══ -->
+    <div class="doc-section" id="alert-rules">
+      <div class="section-tag">Features</div>
+      <div class="doc-h1">Alert Rules</div>
+      <p class="doc-p">Alert rules continuously monitor incoming log events and fire notifications when thresholds are crossed. Configure alerts in <strong>Alert rules → Create Alert Rule</strong>.</p>
+
+      <div class="doc-h2">Alert types</div>
+      <div class="doc-table-wrap">
+        <table class="doc-table">
+          <thead><tr><th>Type</th><th>Trigger condition</th><th>Use case</th></tr></thead>
+          <tbody>
+            <tr><td>Error Rate</td><td>Error count exceeds threshold in rolling 5-minute window</td><td>Detect service outages</td></tr>
+            <tr><td>Keyword Match</td><td>A specific phrase appears ≥ threshold times in log messages</td><td>Detect specific exceptions, timeouts</td></tr>
+            <tr><td>Suspicious IP</td><td>A single IP exceeds threshold req/min with elevated error rate</td><td>Detect brute-force or scraping</td></tr>
+            <tr><td>Source Error Spike</td><td>A specific source emits more than threshold errors in 5 min</td><td>Detect single-service degradation</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="doc-h2">Severity levels</div>
+      <div class="doc-table-wrap">
+        <table class="doc-table">
+          <thead><tr><th>Level</th><th>Label</th><th>Recommended notification</th></tr></thead>
+          <tbody>
+            <tr><td>sev3</td><td>Medium</td><td>Slack channel message</td></tr>
+            <tr><td>sev2</td><td>High</td><td>Email + Slack</td></tr>
+            <tr><td>sev1</td><td>Critical</td><td>PagerDuty / phone / all channels</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="doc-h2">Cooldown period</div>
+      <p class="doc-p">The <strong>Cooldown</strong> field (in minutes) prevents alert fatigue by suppressing repeated notifications for the same rule within the cooldown window. Set to <span class="inline-code">0</span> to fire on every occurrence. Recommended: 15–60 minutes for production SEV2/SEV1 rules.</p>
+
+      <div class="doc-h2">Preview match count</div>
+      <p class="doc-p">Before saving a rule, click <strong>🔍 Preview match count</strong> to see how many existing logs would currently trigger it. This lets you tune your threshold before the rule goes live.</p>
+
+      <div class="doc-h2">Create alert via API</div>
+      <div class="doc-code-wrap">
+        <div class="doc-code-bar"><span>POST /api/alerts</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+        <div class="doc-code">{
+  "name": "Payment timeout spike",
+  "severity": "sev2",
+  "alert_type": "keyword",
+  "keyword": "Connect timeout",
+  "source_filter": "payment-service",
+  "threshold": 5,
+  "cooldown_minutes": 15,
+  "notify_email": "oncall@company.com",
+  "webhook_url": "https://hooks.slack.com/services/...",
+  "status": "active"
+}</div>
+      </div>
+    </div>
+
+    <hr class="doc-hr"/>
+
+    <!-- ══ AI EXPLAIN ══ -->
+    <div class="doc-section" id="ai-explain">
+      <div class="section-tag">Features</div>
+      <div class="doc-h1">✦ AI Explain</div>
+      <p class="doc-p">ObserveX integrates with Claude AI (Anthropic) to explain error and warning logs in plain English. Click any ERROR or WARN log in the explorer, then hit <strong>✦ AI Explain</strong> in the detail panel.</p>
+
+      <div class="doc-h2">What it explains</div>
+      <ul style="padding-left:20px;color:var(--muted);font-size:14px;line-height:2">
+        <li>Root cause of the error in plain language</li>
+        <li>Likely contributing factors based on the payload</li>
+        <li>Suggested next steps to investigate or fix</li>
+        <li>Related patterns to check in other logs</li>
+      </ul>
+
+      <div class="doc-h2">Setup</div>
+      <div class="callout callout-info">
+        <span class="callout-icon">ℹ</span>
+        <div>AI Explain requires an <strong>ANTHROPIC_API_KEY</strong> environment variable set on your Railway deployment. Add it in Railway → Your service → Variables.</div>
+      </div>
+
+      <div class="doc-h2">Via API</div>
+      <div class="doc-code-wrap">
+        <div class="doc-code-bar"><span>POST /api/logs/:id/explain</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+        <div class="doc-code">curl -X POST https://yourapp.railway.app/api/logs/1042/explain \
+  -H "Authorization: Bearer oxk_your_key_here"
+
+# Response:
+{
+  "explanation": "This error indicates a TCP connection timeout to Stripe's API...",
+  "log_id": 1042
+}</div>
+      </div>
+    </div>
+
+    <hr class="doc-hr"/>
+
+    <!-- ══ LOG EXPLORER ══ -->
+    <div class="doc-section" id="log-explorer">
+      <div class="section-tag">Features</div>
+      <div class="doc-h1">Log Explorer</div>
+      <p class="doc-p">The log explorer is the main search interface. Access it from the sidebar under <strong>Log explorer</strong>.</p>
+
+      <div class="doc-h2">Search & filters</div>
+      <div class="doc-table-wrap">
+        <table class="doc-table">
+          <thead><tr><th>Control</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td>Search box</td><td>Free-text search in message field. Keyboard shortcut: <span class="inline-code">⌘K</span></td></tr>
+            <tr><td>Level chips</td><td>Filter by ERROR, WARN, INFO, SUCCESS, DEBUG</td></tr>
+            <tr><td>Preset buttons</td><td>Quick time ranges: 15m, 1h, 6h, 24h, 7d, 30d</td></tr>
+            <tr><td>Date pickers</td><td>Custom from/to datetime range</td></tr>
+            <tr><td>Source dropdown</td><td>Filter by a specific source tag</td></tr>
+            <tr><td>Live tail</td><td>Auto-refresh every 5s with newest logs at top</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="doc-h2">Saved searches</div>
+      <p class="doc-p">Click <strong>☆ Save</strong> to name and save your current filter combination. Saved searches appear in the dropdown for one-click reuse across sessions.</p>
+
+      <div class="doc-h2">Export</div>
+      <p class="doc-p">Use <strong>⬇ CSV</strong> or <strong>⬇ JSON</strong> to export up to 5,000 logs matching your current filters.</p>
+    </div>
+
+    <hr class="doc-hr"/>
+
+    <!-- ══ BULK OPS ══ -->
+    <div class="doc-section" id="bulk-ops">
+      <div class="section-tag">Features</div>
+      <div class="doc-h1">Bulk Operations</div>
+      <p class="doc-p">Bulk mode lets you select and delete multiple log entries at once.</p>
+
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">01</div>
+          <div class="step-content"><h4>Enable bulk mode</h4><p>Click <strong>☐ Bulk</strong> in the top-right of the log explorer toolbar. Checkboxes appear on every row.</p></div>
+        </div>
+        <div class="step">
+          <div class="step-num">02</div>
+          <div class="step-content"><h4>Select logs</h4><p>Click individual checkboxes or use <strong>Select all</strong> at the top to select all logs on the current page.</p></div>
+        </div>
+        <div class="step">
+          <div class="step-num">03</div>
+          <div class="step-content"><h4>Delete</h4><p>Click <strong>🗑 Delete selected</strong>. A confirmation dialog shows the count — confirm to permanently remove the logs.</p></div>
+        </div>
+      </div>
+
+      <div class="callout callout-danger">
+        <span class="callout-icon">⛔</span>
+        <div>Bulk delete is <strong>permanent and irreversible</strong>. Logs deleted this way are gone immediately. Use with caution in production workspaces.</div>
+      </div>
+    </div>
+
+    <hr class="doc-hr"/>
+
+    <!-- ══ TEAM ACCESS ══ -->
+    <div class="doc-section" id="team-access">
+      <div class="section-tag">Features</div>
+      <div class="doc-h1">Team & Access</div>
+
+      <div class="doc-h2">Roles</div>
+      <div class="doc-table-wrap">
+        <table class="doc-table">
+          <thead><tr><th>Role</th><th>Capabilities</th></tr></thead>
+          <tbody>
+            <tr><td>admin</td><td>Full access: manage users, keys, org settings, all data</td></tr>
+            <tr><td>manager</td><td>Can view all logs, manage alerts and integrations</td></tr>
+            <tr><td>developer</td><td>Can view logs, create API keys, set up jobs</td></tr>
+            <tr><td>tester</td><td>Read-only access to log explorer</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="doc-h2">Inviting team members</div>
+      <p class="doc-p">Go to <strong>Invites → Send invite</strong>. Enter an email and role. A unique invite link is generated. If SMTP is configured, the invite is sent by email. Otherwise, copy the link manually and share it.</p>
+    </div>
+
+    <hr class="doc-hr"/>
+
+    <!-- ══ LOG LEVELS ══ -->
+    <div class="doc-section" id="log-levels">
+      <div class="section-tag">Reference</div>
+      <div class="doc-h1">Log Levels</div>
+      <div class="doc-table-wrap">
+        <table class="doc-table">
+          <thead><tr><th>Level</th><th>Color</th><th>Meaning</th></tr></thead>
+          <tbody>
+            <tr><td>error</td><td>🔴 Red</td><td>Unhandled exception, service failure, data corruption</td></tr>
+            <tr><td>warn</td><td>🟡 Amber</td><td>Degraded performance, deprecated usage, recoverable error</td></tr>
+            <tr><td>info</td><td>🔵 Blue</td><td>Normal operational event, request processed, job started</td></tr>
+            <tr><td>success</td><td>🟢 Green</td><td>Payment completed, file processed, job succeeded</td></tr>
+            <tr><td>debug</td><td>⚪ Grey</td><td>Verbose diagnostic output — filter out in production views</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <hr class="doc-hr"/>
+
+    <!-- ══ FORMATS ══ -->
+    <div class="doc-section" id="formats">
+      <div class="section-tag">Reference</div>
+      <div class="doc-h1">Supported File Formats</div>
+      <div class="doc-table-wrap">
+        <table class="doc-table">
+          <thead><tr><th>Format</th><th>Extensions</th><th>Auto-detected?</th></tr></thead>
+          <tbody>
+            <tr><td>JSON / JSON Lines</td><td>.json, .jsonl, .ndjson</td><td>Yes</td></tr>
+            <tr><td>CSV (with headers)</td><td>.csv</td><td>Yes</td></tr>
+            <tr><td>Plain text (one entry/line)</td><td>.log, .txt</td><td>Yes</td></tr>
+            <tr><td>MuleSoft block format</td><td>.log, .txt</td><td>Yes (content-based)</td></tr>
+            <tr><td>Gzip compressed</td><td>.gz</td><td>Yes</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <hr class="doc-hr"/>
+
+    <!-- ══ ERRORS ══ -->
+    <div class="doc-section" id="errors">
+      <div class="section-tag">Reference</div>
+      <div class="doc-h1">Error Codes</div>
+      <div class="doc-table-wrap">
+        <table class="doc-table">
+          <thead><tr><th>HTTP Code</th><th>Error</th><th>Resolution</th></tr></thead>
+          <tbody>
+            <tr><td>400</td><td>Bad Request</td><td>Missing required field (timestamp, level, source, message)</td></tr>
+            <tr><td>401</td><td>Unauthorized</td><td>Missing or invalid Bearer token</td></tr>
+            <tr><td>403</td><td>Forbidden</td><td>Workspace admin-only mode active; insufficient role</td></tr>
+            <tr><td>404</td><td>Not Found</td><td>Log ID, job ID, or alert ID does not exist</td></tr>
+            <tr><td>413</td><td>Payload Too Large</td><td>Batch exceeds 1,000 events or file is too large</td></tr>
+            <tr><td>429</td><td>Too Many Requests</td><td>Rate limit exceeded on auth endpoints</td></tr>
+            <tr><td>500</td><td>Internal Server Error</td><td>Unexpected error — check Railway logs for detail</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- BOTTOM CTA -->
+    <div style="background:linear-gradient(135deg,rgba(59,130,246,0.12),rgba(34,211,238,0.06));border:1px solid rgba(59,130,246,0.2);border-radius:14px;padding:36px;text-align:center;margin-top:40px">
+      <div style="font-size:22px;font-weight:800;margin-bottom:8px">Ready to start observing?</div>
+      <div style="font-size:14px;color:var(--muted);margin-bottom:20px">Create a free workspace in under 2 minutes. No credit card needed.</div>
+      <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+        <a href="/create-account" class="doc-hero-btn doc-btn-primary">+ Create free workspace</a>
+        <button class="doc-hero-btn doc-btn-ghost" onclick="downloadAllDocs()">⬇ Download all docs</button>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<div class="toast-wrap" id="toastWrap"></div>
+
+<script>
+// Sidebar active state on scroll
+const sections = document.querySelectorAll('.doc-section');
+const links = document.querySelectorAll('.sidebar-link');
+
+function scrollTo(id) {
+  const el = document.getElementById(id);
+  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  links.forEach(l => l.classList.remove('active'));
+  const active = Array.from(links).find(l => l.getAttribute('onclick') && l.getAttribute('onclick').includes("'" + id + "'"));
+  if (active) active.classList.add('active');
+}
+
+window.addEventListener('scroll', () => {
+  let current = '';
+  sections.forEach(s => {
+    if (window.scrollY >= s.offsetTop - 120) current = s.id;
+  });
+  links.forEach(l => {
+    const onclick = l.getAttribute('onclick') || '';
+    l.classList.toggle('active', onclick.includes("'" + current + "'"));
+  });
+}, { passive: true });
+
+function copyCode(btn) {
+  const codeEl = btn.closest('.doc-code-bar').nextElementSibling;
+  navigator.clipboard.writeText(codeEl.innerText).then(() => {
+    btn.textContent = 'Copied!';
+    toast('Copied to clipboard', 'success');
+    setTimeout(() => { btn.textContent = 'Copy'; }, 2000);
+  });
+}
+
+const DOC_CONTENT = {
+  overview: `# ObserveX Documentation\n\nObserveX is a centralized log management and observability platform.\n`,
+  api: `# API Reference\n\n## Authentication\nAll API requests require:\n  Authorization: Bearer oxk_your_api_key_here\n\n## Ingest Endpoints\n- POST /ingest/json — Single event\n- POST /ingest/batch — Up to 1000 events\n- POST /ingest/file — File upload\n\n## Query Endpoints\n- GET /api/logs — Paginated query\n- GET /api/logs/:id — Single event\n- DELETE /api/logs/:id — Delete event\n`,
+  s3: `# S3 Bucket Integration\n\n## Required IAM Policy\n{\n  "Effect": "Allow",\n  "Action": ["s3:GetObject","s3:ListBucket"],\n  "Resource": ["arn:aws:s3:::your-bucket","arn:aws:s3:::your-bucket/*"]\n}\n\n## Supported Formats\n- JSON Lines (.jsonl, .ndjson)\n- CloudWatch Export (.json)\n- Plain text (.log, .txt)\n- CSV (.csv)\n- Gzip (.gz)\n`,
+  alerts: `# Alert Rules\n\n## Types\n- Error Rate: errors > threshold in 5min window\n- Keyword Match: phrase appears >= threshold times\n- Suspicious IP: IP exceeds threshold req/min\n- Source Error Spike: source errors > threshold in 5min\n\n## Webhook Payload\n{\n  "alert_name": "...",\n  "severity": "sev2",\n  "triggered_at": "2024-01-15T10:35:00Z",\n  "match_count": 12\n}\n`
+};
+
+function downloadAllDocs() {
+  const content = `# ObserveX Complete Documentation\n\n` + Object.values(DOC_CONTENT).join('\n\n---\n\n');
+  const blob = new Blob([content], { type: 'text/markdown' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'observex-documentation.md';
+  a.click();
+  toast('Documentation downloaded!', 'success');
+}
+
+function toast(msg, type = 'info') {
+  const wrap = document.getElementById('toastWrap');
+  const el = document.createElement('div');
+  el.className = 'toast';
+  const c = type === 'success' ? '#4ade80' : type === 'error' ? '#f87171' : '#60a5fa';
+  el.innerHTML = `<span style="color:${c}">${type === 'success' ? '✓' : 'ℹ'}</span> ${msg}`;
+  wrap.appendChild(el);
+  setTimeout(() => el.remove(), 3000);
+}
+</script>
+</body>
+</html>

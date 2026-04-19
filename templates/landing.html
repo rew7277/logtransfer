@@ -359,6 +359,7 @@ footer a:hover { color: var(--text); }
     <a href="#features" class="nav-link nav-link-ghost">Features</a>
     <a href="#integrations" class="nav-link nav-link-ghost">Integrations</a>
     <a href="/pricing" class="nav-link nav-link-ghost">Pricing</a>
+    <a href="/documentation" class="nav-link nav-link-ghost">Docs</a>
     <a href="/login" class="nav-link nav-link-outline">Sign in</a>
     <a href="/create-account" class="nav-link nav-link-primary">Create workspace</a>
   </div>
@@ -409,10 +410,11 @@ footer a:hover { color: var(--text); }
 
 <!-- STATS -->
 <div class="stats-strip">
-  <div class="stat"><div class="stat-num">5+</div><div class="stat-label">Log formats supported</div></div>
+  <div class="stat"><div class="stat-num">8+</div><div class="stat-label">Log formats supported</div></div>
   <div class="stat"><div class="stat-num">∞</div><div class="stat-label">Logs per workspace</div></div>
   <div class="stat"><div class="stat-num">&lt;1s</div><div class="stat-label">Ingestion latency</div></div>
-  <div class="stat"><div class="stat-num">3</div><div class="stat-label">Alert channels</div></div>
+  <div class="stat"><div class="stat-num">4</div><div class="stat-label">Alert channels</div></div>
+  <div class="stat"><div class="stat-num">✦ AI</div><div class="stat-label">Error intelligence</div></div>
   <div class="stat"><div class="stat-num">100%</div><div class="stat-label">Your data, your workspace</div></div>
 </div>
 
@@ -427,73 +429,97 @@ footer a:hover { color: var(--text); }
       <div class="feat-card">
         <div class="feat-icon" style="background:rgba(59,130,246,.12)">📥</div>
         <div class="feat-title">Multi-format Ingestion</div>
-        <div class="feat-desc">Push logs as JSON, CSV, plain text, MuleSoft block format, or upload files directly. Auto-detection picks the right parser every time.</div>
+        <div class="feat-desc">Push logs as JSON, CSV, plain text, NDJSON, MuleSoft block format, or upload files directly. Auto-detection picks the right parser every time.</div>
       </div>
 
       <div class="feat-card">
         <div class="feat-icon" style="background:rgba(34,211,238,.12)">☁️</div>
         <div class="feat-title">S3 Integration</div>
-        <div class="feat-desc">Connect any S3-compatible bucket. ObserveX polls your bucket on a schedule, downloading and parsing new log files automatically.</div>
+        <div class="feat-desc">Connect any S3-compatible bucket. ObserveX polls your bucket on a cron schedule, downloading and parsing new log files automatically.</div>
       </div>
 
       <div class="feat-card">
         <div class="feat-icon" style="background:rgba(74,222,128,.12)">🔑</div>
         <div class="feat-title">API Key Management</div>
-        <div class="feat-desc">Create scoped API keys with prefix-based lookup and LRU caching. Revoke instantly. Every key access is tracked with last-used timestamps.</div>
+        <div class="feat-desc">Create scoped API keys with prefix-based lookup. Revoke instantly. Every key access is tracked with last-used timestamps and status badges.</div>
       </div>
 
       <div class="feat-card">
         <div class="feat-icon" style="background:rgba(251,191,36,.12)">🔔</div>
-        <div class="feat-title">Smart Alerts</div>
-        <div class="feat-desc">Define threshold-based alert rules on any field. Get notified via email, Slack webhook, or Teams webhook the moment a rule fires.</div>
+        <div class="feat-title">Smart Alerts + Webhooks</div>
+        <div class="feat-desc">Define threshold-based alert rules. Notify via email, Slack, Teams, or any webhook endpoint. Set cooldown periods to prevent alert fatigue.</div>
+      </div>
+
+      <div class="feat-card">
+        <div class="feat-icon" style="background:rgba(139,92,246,.12)">✦</div>
+        <div class="feat-title">AI Error Intelligence</div>
+        <div class="feat-desc">Powered by Claude AI — click any error log to get instant root cause analysis, contributing factors, and actionable fix suggestions in plain English.</div>
       </div>
 
       <div class="feat-card">
         <div class="feat-icon" style="background:rgba(248,113,113,.12)">⏱</div>
         <div class="feat-title">Scheduled Jobs</div>
-        <div class="feat-desc">Set up cron-based ingestion jobs that pull from S3 or API sources automatically. View next-run estimates and trigger manually anytime.</div>
+        <div class="feat-desc">Set up cron-based ingestion jobs that pull from S3 or API sources automatically. View run history, trigger manually, and monitor all jobs from the dashboard.</div>
       </div>
 
       <div class="feat-card">
         <div class="feat-icon" style="background:rgba(167,139,250,.12)">📊</div>
         <div class="feat-title">Dashboard &amp; Timeseries</div>
-        <div class="feat-desc">Real-time summary cards showing error rates, ingestion volume, top sources, and a per-minute timeseries chart of log activity.</div>
+        <div class="feat-desc">Real-time summary cards showing error rates, ingestion volume, health score, top sources, and a 24h timeseries chart of log activity with 30-day trend view.</div>
       </div>
 
       <div class="feat-card">
         <div class="feat-icon" style="background:rgba(59,130,246,.12)">🔍</div>
-        <div class="feat-title">Log Search &amp; Filter</div>
-        <div class="feat-desc">Filter by level (ERROR, WARN, INFO, DEBUG), source, date range, and free-text search. Click any log to expand full metadata.</div>
+        <div class="feat-title">Live Log Explorer</div>
+        <div class="feat-desc">Filter by level, source, date range, and free-text search. Live tail mode auto-refreshes every 5s. Save searches and reuse them across sessions.</div>
+      </div>
+
+      <div class="feat-card">
+        <div class="feat-icon" style="background:rgba(34,211,238,.12)">☐</div>
+        <div class="feat-title">Bulk Operations</div>
+        <div class="feat-desc">Enable bulk mode in the explorer to select and delete multiple logs at once. Select-all across a page or pick individual entries with checkboxes.</div>
+      </div>
+
+      <div class="feat-card">
+        <div class="feat-icon" style="background:rgba(74,222,128,.12)">🎯</div>
+        <div class="feat-title">Alert Preview</div>
+        <div class="feat-desc">Before saving an alert rule, click "Preview match count" to see exactly how many existing logs would trigger it — tune your threshold with confidence.</div>
       </div>
 
       <div class="feat-card">
         <div class="feat-icon" style="background:rgba(34,211,238,.12)">👥</div>
         <div class="feat-title">Team &amp; Invitations</div>
-        <div class="feat-desc">Invite team members by email with role-based access (admin / viewer). Accept via invite link. Admins can manage users, disable admin-only mode.</div>
+        <div class="feat-desc">Invite team members by email with role-based access (admin / manager / developer / tester). Accept via invite link. Full user management dashboard.</div>
       </div>
 
       <div class="feat-card">
         <div class="feat-icon" style="background:rgba(74,222,128,.12)">🏢</div>
         <div class="feat-title">Multi-workspace</div>
-        <div class="feat-desc">Every organization gets its own isolated workspace with a unique slug URL. Branding, theme color, and logo text are fully customizable.</div>
+        <div class="feat-desc">Every organization gets its own isolated workspace with a unique slug URL. Set log retention policy (7d–forever) and timezone per workspace.</div>
       </div>
 
       <div class="feat-card">
         <div class="feat-icon" style="background:rgba(251,191,36,.12)">📋</div>
-        <div class="feat-title">Audit Log</div>
+        <div class="feat-title">Audit Trail</div>
         <div class="feat-desc">Every action — logins, ingestion, user changes, key creation — is recorded in an immutable audit trail with timestamps and actor info.</div>
       </div>
 
       <div class="feat-card">
         <div class="feat-icon" style="background:rgba(248,113,113,.12)">📈</div>
         <div class="feat-title">Observability Metrics</div>
-        <div class="feat-desc">Track ingestion rates, active integrations, error trends, and alert history across all sources in your workspace observability view.</div>
+        <div class="feat-desc">Track ingestion rates, active integrations, error trends, health score, and suspicious IP detection across all sources in your observability view.</div>
+      </div>
+
+      <div class="feat-card">
+        <div class="feat-icon" style="background:rgba(59,130,246,.12)">📖</div>
+        <div class="feat-title">Built-in Documentation</div>
+        <div class="feat-desc">Full API reference, S3 guide, and alert docs are baked into the platform. Access via the Docs dropdown or the dedicated <a href="/documentation" style="color:var(--blue2);text-decoration:none">/documentation</a> page. Download as Markdown anytime.</div>
       </div>
 
       <div class="feat-card">
         <div class="feat-icon" style="background:rgba(167,139,250,.12)">🔐</div>
         <div class="feat-title">Enterprise Security</div>
-        <div class="feat-desc">Rate limiting on all auth endpoints, SSRF-protected URL validation, security headers (CSP, HSTS), bcrypt passwords, and CSRF tokens built in.</div>
+        <div class="feat-desc">Rate limiting on all auth endpoints, SSRF-protected URL validation, security headers (CSP, HSTS), bcrypt passwords, CSRF tokens, and admin-only workspace mode.</div>
       </div>
 
     </div>
@@ -638,6 +664,7 @@ footer a:hover { color: var(--text); }
     <span>ObserveX &nbsp;·&nbsp; Log Management Platform</span>
   </div>
   <div style="display:flex;gap:20px">
+    <a href="/documentation">Documentation</a>
     <a href="/pricing">Pricing</a>
     <a href="/login">Sign in</a>
     <a href="/create-account">Create workspace</a>
