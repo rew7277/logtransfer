@@ -256,10 +256,15 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
 .pg-btn:disabled{opacity:.3;cursor:default}
 
 /* ── DETAIL PANEL ── */
-.overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:200;backdrop-filter:blur(4px);opacity:0;pointer-events:none;transition:opacity .2s}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:200;backdrop-filter:blur(3px);opacity:0;pointer-events:none;transition:opacity .2s}
 .overlay.open{opacity:1;pointer-events:all}
-.detail-panel{position:fixed;top:0;right:0;bottom:0;width:480px;max-width:95vw;background:var(--surface);border-left:1px solid var(--border);z-index:201;overflow-y:auto;transform:translateX(100%);transition:transform .25s cubic-bezier(.4,0,.2,1);padding:20px}
-.detail-panel.open{transform:none}
+.log-modal{position:fixed;top:50%;left:50%;transform:translate(-50%,-60%);width:90vw;max-width:600px;max-height:85vh;background:var(--surface);border:1px solid var(--border);border-radius:12px;z-index:201;display:flex;flex-direction:column;opacity:0;pointer-events:none;transition:opacity .2s,transform .22s cubic-bezier(.4,0,.2,1);box-shadow:0 24px 64px rgba(0,0,0,.35)}
+.log-modal.open{opacity:1;pointer-events:all;transform:translate(-50%,-50%)}
+.log-modal-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border);flex-shrink:0}
+.log-modal-title{font-size:14px;font-weight:600;color:var(--text)}
+.log-modal-close{background:none;border:none;cursor:pointer;color:var(--text3);padding:4px;border-radius:6px;display:flex;align-items:center;transition:all .15s}
+.log-modal-close:hover{background:var(--surface2);color:var(--red)}
+.log-modal-body{overflow-y:auto;padding:20px;flex:1}
 .detail-close{position:absolute;top:16px;right:16px;width:28px;height:28px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;transition:all .15s}
 .detail-close:hover{background:var(--red-dim);color:var(--red);border-color:var(--red)}
 .detail-kv{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;margin-bottom:10px}
@@ -374,7 +379,6 @@ body.sidebar-collapsed .sidebar-footer{padding:8px}
 html:not(.dark) .payload-pre{background:#f6f8fa;color:#24292f}
 html:not(.dark) .api-code{background:#f6f8fa;color:#1a7f37}
 html:not(.dark) .stat-card:hover{box-shadow:0 8px 24px rgba(0,0,0,.1)}
-html:not(.dark) .detail-panel{box-shadow:-4px 0 24px rgba(0,0,0,.1)}
 html:not(.dark) .toast{box-shadow:0 8px 24px rgba(0,0,0,.15)}
 
 /* ── INGEST API ── */
@@ -404,24 +408,46 @@ html:not(.dark) .toast{box-shadow:0 8px 24px rgba(0,0,0,.15)}
       <div class="brand-name">ObserveX</div>
       <div class="brand-org">{{ user.org_name | lower }}</div>
     </div>
-    <button class="sidebar-toggle" onclick="toggleSidebar()" title="Toggle sidebar">&#8285;</button>
+    <button class="sidebar-toggle" onclick="toggleSidebar()" title="Collapse sidebar" id="sidebarToggleBtn">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="1" y="4" width="14" height="1.5" rx=".75" fill="currentColor"/><rect x="1" y="7.25" width="14" height="1.5" rx=".75" fill="currentColor"/><rect x="1" y="10.5" width="14" height="1.5" rx=".75" fill="currentColor"/></svg>
+    </button>
   </div>
 
   <div class="nav-section">Workspace</div>
-  <div class="nav-item{% if active_section=='overview' %} active{% endif %}" onclick="showPage('overview')"><span class="nav-icon">◈</span>Overview</div>
-  <div class="nav-item{% if active_section=='explorer' %} active{% endif %}" onclick="showPage('explorer')"><span class="nav-icon">◎</span>Log explorer <span class="nav-badge nb-blue" id="nb-all">—</span></div>
-  <div class="nav-item{% if active_section=='ingest' %} active{% endif %}" onclick="showPage('ingest')"><span class="nav-icon">⇡</span>Ingest API</div>
+  <div class="nav-item{% if active_section=='overview' %} active{% endif %}" onclick="showPage('overview')">
+    <span class="nav-icon"><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><rect x="1" y="1" width="6" height="6" rx="1.5" fill="currentColor" opacity=".9"/><rect x="9" y="1" width="6" height="6" rx="1.5" fill="currentColor" opacity=".9"/><rect x="1" y="9" width="6" height="6" rx="1.5" fill="currentColor" opacity=".9"/><rect x="9" y="9" width="6" height="6" rx="1.5" fill="currentColor" opacity=".9"/></svg></span>Overview
+  </div>
+  <div class="nav-item{% if active_section=='explorer' %} active{% endif %}" onclick="showPage('explorer')">
+    <span class="nav-icon"><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><rect x="1" y="3" width="14" height="1.5" rx=".75" fill="currentColor"/><rect x="1" y="7" width="10" height="1.5" rx=".75" fill="currentColor"/><rect x="1" y="11" width="12" height="1.5" rx=".75" fill="currentColor"/></svg></span>Log explorer <span class="nav-badge nb-blue" id="nb-all">—</span>
+  </div>
+  <div class="nav-item{% if active_section=='ingest' %} active{% endif %}" onclick="showPage('ingest')">
+    <span class="nav-icon"><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 2v9M4.5 7.5 8 11l3.5-3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><rect x="1" y="12.5" width="14" height="1.5" rx=".75" fill="currentColor"/></svg></span>Ingest API
+  </div>
 
   <div class="nav-section">Connectors</div>
-  <div class="nav-item{% if active_section=='integrations' %} active{% endif %}" onclick="showPage('integrations')"><span class="nav-icon">⌁</span>Integrations</div>
-  <div class="nav-item{% if active_section=='jobs' %} active{% endif %}" onclick="showPage('jobs')"><span class="nav-icon">↻</span>Ingestion jobs</div>
+  <div class="nav-item{% if active_section=='integrations' %} active{% endif %}" onclick="showPage('integrations')">
+    <span class="nav-icon"><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="3.5" cy="8" r="2" stroke="currentColor" stroke-width="1.4"/><circle cx="12.5" cy="8" r="2" stroke="currentColor" stroke-width="1.4"/><path d="M5.5 8h5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></span>Integrations
+  </div>
+  <div class="nav-item{% if active_section=='jobs' %} active{% endif %}" onclick="showPage('jobs')">
+    <span class="nav-icon"><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M13.5 8A5.5 5.5 0 1 1 8 2.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M10 2h3.5v3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Ingestion jobs
+  </div>
 
   <div class="nav-section">Settings</div>
-  <div class="nav-item{% if active_section=='alerts' %} active{% endif %}" onclick="showPage('alerts')"><span class="nav-icon">⚑</span>Alert rules <span class="nav-badge nb-red" id="nb-alerts">—</span></div>
-  <div class="nav-item{% if active_section=='users' %} active{% endif %}" onclick="showPage('users')"><span class="nav-icon">◉</span>Users &amp; access</div>
-  <div class="nav-item{% if active_section=='invites' %} active{% endif %}" onclick="showPage('invites')"><span class="nav-icon">✉</span>Invites</div>
-  <div class="nav-item{% if active_section=='organization' %} active{% endif %}" onclick="showPage('organization')"><span class="nav-icon">⬡</span>Organization</div>
-  <div class="nav-item{% if active_section=='audit' %} active{% endif %}" onclick="showPage('audit')"><span class="nav-icon">◷</span>Audit trail</div>
+  <div class="nav-item{% if active_section=='alerts' %} active{% endif %}" onclick="showPage('alerts')">
+    <span class="nav-icon"><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 1.5A4.5 4.5 0 0 0 3.5 6c0 3-1.5 4-1.5 4h12s-1.5-1-1.5-4A4.5 4.5 0 0 0 8 1.5Z" stroke="currentColor" stroke-width="1.3"/><path d="M9.2 13a1.5 1.5 0 0 1-2.4 0" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg></span>Alert rules <span class="nav-badge nb-red" id="nb-alerts">—</span>
+  </div>
+  <div class="nav-item{% if active_section=='users' %} active{% endif %}" onclick="showPage('users')">
+    <span class="nav-icon"><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="6" cy="5" r="2.5" stroke="currentColor" stroke-width="1.3"/><path d="M1 13c0-2.76 2.24-5 5-5s5 2.24 5 5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><path d="M11 7.5a2 2 0 1 0 0-4M14.5 13c0-2-1.3-3.7-3-4.3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg></span>Users &amp; access
+  </div>
+  <div class="nav-item{% if active_section=='invites' %} active{% endif %}" onclick="showPage('invites')">
+    <span class="nav-icon"><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><rect x="1" y="3.5" width="14" height="10" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M1 5.5l7 4.5 7-4.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg></span>Invites
+  </div>
+  <div class="nav-item{% if active_section=='organization' %} active{% endif %}" onclick="showPage('organization')">
+    <span class="nav-icon"><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><rect x="5" y="1" width="6" height="4" rx="1" stroke="currentColor" stroke-width="1.3"/><rect x="1" y="11" width="5" height="4" rx="1" stroke="currentColor" stroke-width="1.3"/><rect x="10" y="11" width="5" height="4" rx="1" stroke="currentColor" stroke-width="1.3"/><path d="M8 5v2.5M4 11V9a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg></span>Organization
+  </div>
+  <div class="nav-item{% if active_section=='audit' %} active{% endif %}" onclick="showPage('audit')">
+    <span class="nav-icon"><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><rect x="2" y="1.5" width="12" height="13" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M5 5.5h6M5 8h6M5 10.5h3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg></span>Audit trail
+  </div>
 
   <div class="sidebar-footer">
     <div class="sidebar-user"><strong>{{ user.name }}</strong>{{ user.role }}</div>
@@ -434,7 +460,9 @@ html:not(.dark) .toast{box-shadow:0 8px 24px rgba(0,0,0,.15)}
 
   <!-- TOPBAR -->
   <div class="topbar">
-    <button class="sidebar-toggle" onclick="toggleSidebar()" title="Toggle sidebar" style="margin-right:4px">&#9776;</button>
+    <button class="sidebar-toggle" onclick="toggleSidebar()" title="Toggle sidebar" style="margin-right:4px" id="topbarSidebarToggle">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1" y="4" width="14" height="1.5" rx=".75" fill="currentColor"/><rect x="1" y="7.25" width="14" height="1.5" rx=".75" fill="currentColor"/><rect x="1" y="10.5" width="14" height="1.5" rx=".75" fill="currentColor"/></svg>
+    </button>
     <span class="topbar-title"><span>ObserveX</span> Workspace · {{ user.org_name }}</span>
     <div class="topbar-right">
       <button class="theme-toggle" id="themeToggleBtn" onclick="toggleTheme()" title="Toggle dark/light mode">🌙</button>
@@ -709,17 +737,30 @@ Content-Type: application/json
     <div style="padding:24px">
       <div class="page-header"><h1>Configure alert rules.</h1></div>
       <div class="section-card" style="margin-bottom:14px">
-        <h3>Alert Rules</h3>
+        <h3>Create Alert Rule</h3>
         <p>Get notified when log patterns match conditions.</p>
-        <div class="form-row">
-          <input class="form-input" id="alertName" placeholder="Alert name"/>
-          <select class="form-select" id="alertSeverity"><option value="sev3">SEV3 – Medium</option><option value="sev2">SEV2 – High</option><option value="sev1">SEV1 – Critical</option></select>
-          <select class="form-select" id="alertType"><option value="error_rate">Error Rate</option><option value="suspicious_ip">Suspicious IP</option></select>
+        <div class="form-row" style="margin-top:12px">
+          <input class="form-input" id="alertName" placeholder="Alert name (e.g. Payment timeout spike)"/>
+          <select class="form-select" id="alertSeverity">
+            <option value="sev3">SEV3 – Medium</option>
+            <option value="sev2">SEV2 – High</option>
+            <option value="sev1">SEV1 – Critical</option>
+          </select>
+          <select class="form-select" id="alertType" onchange="updateAlertFields()">
+            <option value="error_rate">Error Rate</option>
+            <option value="keyword">Keyword Match</option>
+            <option value="suspicious_ip">Suspicious IP</option>
+            <option value="source_error">Source Error Spike</option>
+          </select>
         </div>
-        <div class="form-row">
-          <input class="form-input" id="alertCondition" placeholder="Condition description"/>
+        <div class="form-row" style="margin-top:8px">
+          <input class="form-input" id="alertKeyword" placeholder="Keyword / pattern to match (e.g. Connect timeout)" style="display:none"/>
+          <input class="form-input" id="alertSource" placeholder="Filter to source (optional, e.g. system)"/>
           <input class="form-input" id="alertEmail" type="email" placeholder="Notify email"/>
-          <input class="form-input" id="alertThreshold" type="number" placeholder="Threshold (default 10)" value="10"/>
+          <input class="form-input" id="alertThreshold" type="number" placeholder="Threshold count" value="5"/>
+        </div>
+        <div style="margin:10px 0 14px;font-size:11px;color:var(--text3)" id="alertHelp">
+          Trigger when error rate exceeds threshold within a rolling 5-minute window.
         </div>
         <button class="btn-primary" onclick="createAlert()">+ Create rule</button>
       </div>
@@ -798,9 +839,28 @@ Content-Type: application/json
 
 <!-- DETAIL PANEL -->
 <div class="overlay" id="overlay" onclick="closeDetail()"></div>
-<div class="detail-panel" id="detailPanel">
-  <button class="detail-close" onclick="closeDetail()">✕</button>
-  <div id="detailContent"></div>
+
+<!-- CENTERED LOG DETAIL MODAL -->
+<div class="log-modal" id="detailPanel">
+  <div class="log-modal-header">
+    <span class="log-modal-title">Log detail</span>
+    <button class="log-modal-close" onclick="closeDetail()" title="Close">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 3l10 10M13 3 3 13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+  </div>
+  <div id="detailContent" class="log-modal-body"></div>
+</div>
+
+<!-- ERROR PATTERN POPUP MODAL -->
+<div class="overlay" id="errOverlay" onclick="closeErrModal()" style="z-index:210"></div>
+<div class="log-modal" id="errModal" style="z-index:211;max-width:680px">
+  <div class="log-modal-header">
+    <span class="log-modal-title">Error pattern</span>
+    <button class="log-modal-close" onclick="closeErrModal()" title="Close">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 3l10 10M13 3 3 13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+  </div>
+  <div id="errModalBody" class="log-modal-body"></div>
 </div>
 
 <!-- TOAST -->
@@ -828,13 +888,17 @@ function applyThemeIcon() {
 
 // ── SIDEBAR COLLAPSE (persisted in localStorage) ──
 function toggleSidebar() {
-  var collapsed = document.body.classList.toggle('sidebar-collapsed');
+  const collapsed = document.body.classList.toggle('sidebar-collapsed');
   localStorage.setItem('oxSidebar', collapsed ? 'collapsed' : 'open');
+  const btn = document.getElementById('sidebarToggleBtn');
+  if (btn) btn.title = collapsed ? 'Expand sidebar' : 'Collapse sidebar';
 }
 
 (function() {
   if (localStorage.getItem('oxSidebar') === 'collapsed') {
     document.body.classList.add('sidebar-collapsed');
+    const btn = document.getElementById('sidebarToggleBtn');
+    if (btn) btn.title = 'Expand sidebar';
   }
 })();
 
@@ -1258,6 +1322,29 @@ function closeDetail() {
   document.getElementById('overlay').classList.remove('open');
   document.getElementById('detailPanel').classList.remove('open');
 }
+function openErrModal(pattern, count, level, sources, lastSeen) {
+  const srcTags = (sources||[]).slice(0,5).map(s => `<span class="src-tag">${esc(s)}</span>`).join(' ');
+  const dotColor = level === 'error' ? 'var(--red)' : 'var(--yellow)';
+  document.getElementById('errModalBody').innerHTML = `
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+      <span style="width:10px;height:10px;border-radius:50%;background:${dotColor};display:inline-block;flex-shrink:0"></span>
+      <span class="lvl-badge lvl-${level}">${level.toUpperCase()}</span>
+      ${srcTags}
+      <span style="margin-left:auto;font-size:11px;color:var(--text3)">Last: ${esc(lastSeen||'')}</span>
+    </div>
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:14px;font-size:12px;font-family:var(--mono);line-height:1.7;word-break:break-word;white-space:pre-wrap;color:var(--text);margin-bottom:16px">${esc(pattern)}</div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <span style="font-size:12px;color:var(--text2)"><strong>${count}</strong> occurrences</span>
+      <button onclick="drillError(${JSON.stringify(pattern).replace(/'/g,'&#39;')});closeErrModal();" style="margin-left:auto;padding:8px 16px;background:var(--accent);border:none;border-radius:var(--radius-sm);color:#fff;font-family:var(--sans);font-size:12px;cursor:pointer;font-weight:600">View in Explorer →</button>
+      <button onclick="copyText(${JSON.stringify(pattern).replace(/'/g,'&#39;')})" style="padding:8px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text2);font-family:var(--sans);font-size:12px;cursor:pointer">⎘ Copy</button>
+    </div>`;
+  document.getElementById('errOverlay').classList.add('open');
+  document.getElementById('errModal').classList.add('open');
+}
+function closeErrModal() {
+  document.getElementById('errOverlay').classList.remove('open');
+  document.getElementById('errModal').classList.remove('open');
+}
 
 // ── CHARTS ──
 function renderHourlyChart(ts) {
@@ -1430,17 +1517,53 @@ function renderApiKeys(keys) {
 }
 
 // ── ACTIONS ──
+function updateAlertFields() {
+  const t = document.getElementById('alertType').value;
+  const kw = document.getElementById('alertKeyword');
+  const help = document.getElementById('alertHelp');
+  const thresh = document.getElementById('alertThreshold');
+  if (kw) kw.style.display = t === 'keyword' ? '' : 'none';
+  const helpText = {
+    error_rate: 'Trigger when error rate exceeds threshold count within a rolling 5-minute window.',
+    keyword: 'Trigger when a specific keyword or phrase appears in log messages at least threshold times.',
+    suspicious_ip: 'Trigger when a single IP exceeds threshold requests per minute with high error rate.',
+    source_error: 'Trigger when a specific source emits more than threshold errors in 5 minutes.'
+  };
+  if (help) help.textContent = helpText[t] || '';
+  if (thresh) thresh.placeholder = t === 'keyword' ? 'Min occurrences' : t === 'suspicious_ip' ? 'Req/min threshold' : 'Error count threshold';
+}
+
 async function createAlert() {
-  const name = document.getElementById('alertName').value.trim();
-  const severity = document.getElementById('alertSeverity').value;
+  const name      = document.getElementById('alertName').value.trim();
+  const severity  = document.getElementById('alertSeverity').value;
   const alertType = document.getElementById('alertType').value;
-  const condition = document.getElementById('alertCondition').value.trim();
-  const email = document.getElementById('alertEmail').value.trim();
-  const threshold = parseInt(document.getElementById('alertThreshold').value)||10;
+  const keyword   = document.getElementById('alertKeyword')?.value.trim() || '';
+  const source    = document.getElementById('alertSource')?.value.trim() || '';
+  const email     = document.getElementById('alertEmail').value.trim();
+  const threshold = parseInt(document.getElementById('alertThreshold').value) || 5;
   if (!name) { toast('Alert name required', 'error'); return; }
-  const r = await api('/api/alerts', 'POST', {name, severity, alert_type: alertType, condition_text: condition||'condition pending', notify_email: email, threshold, status:'draft', channel:'Email'});
-  if (r.ok) { toast('Alert rule created', 'success'); loadBootstrap(); } 
-  else toast((await r.json()).error||'Error', 'error');
+  if (alertType === 'keyword' && !keyword) { toast('Keyword required for keyword match rule', 'error'); return; }
+  const condParts = [];
+  if (keyword) condParts.push(`keyword:"${keyword}"`);
+  if (source)  condParts.push(`source:${source}`);
+  condParts.push(`threshold:${threshold}`);
+  const r = await api('/api/alerts', 'POST', {
+    name, severity, alert_type: alertType,
+    condition_text: condParts.join(', '),
+    notify_email: email, threshold,
+    status: 'active', channel: 'Email',
+    keyword: keyword || null, source_filter: source || null
+  });
+  if (r.ok) {
+    toast('Alert rule created', 'success');
+    ['alertName','alertKeyword','alertSource','alertEmail'].forEach(id => {
+      const el = document.getElementById(id); if (el) el.value = '';
+    });
+    document.getElementById('alertThreshold').value = '5';
+    loadBootstrap();
+  } else {
+    toast((await r.json()).error || 'Error creating alert', 'error');
+  }
 }
 
 async function createUser() {
@@ -1577,7 +1700,10 @@ function renderErrorCards(groups) {
     const badgeCls = isErr ? 'lvl-error' : 'lvl-warn';
     const srcTags = (g.sources||[]).slice(0,3).map(s => `<span class="src-tag" style="font-size:10px">${esc(s)}</span>`).join('');
     const age = g.last_seen ? `Last: ${fmtTs(g.last_seen)}` : '';
-    return `<div class="error-card" onclick="drillError(${JSON.stringify(g.pattern).replace(/'/g,'&#39;')})">
+    const sourcesJson = JSON.stringify(g.sources||[]);
+    const patternJson = JSON.stringify(g.pattern);
+    const lastSeenEsc = esc(g.last_seen||'');
+    return `<div class="error-card" onclick="openErrModal(${patternJson},${g.count},${JSON.stringify(g.level)},${sourcesJson},${JSON.stringify(g.last_seen||'')})">
       <div class="error-card-left"><span style="width:8px;height:8px;border-radius:50%;background:${dotColor};display:inline-block;flex-shrink:0;margin-top:3px"></span></div>
       <div class="error-card-body">
         <div class="error-card-msg">${esc(g.pattern)}</div>

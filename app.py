@@ -1574,6 +1574,8 @@ def explain_log(log_id: int):
         f"- Payload: {json.dumps(payload, indent=2)[:800]}"
     )
     import urllib.request as _ur
+    import os as _os
+    anthropic_key = _os.environ.get("ANTHROPIC_API_KEY", "")
     req_body = json.dumps({
         "model": "claude-sonnet-4-20250514",
         "max_tokens": 600,
@@ -1582,7 +1584,11 @@ def explain_log(log_id: int):
     req = _ur.Request(
         "https://api.anthropic.com/v1/messages",
         data=req_body,
-        headers={"Content-Type": "application/json", "anthropic-version": "2023-06-01"},
+        headers={
+            "Content-Type": "application/json",
+            "anthropic-version": "2023-06-01",
+            "x-api-key": anthropic_key,
+        },
         method="POST",
     )
     try:
