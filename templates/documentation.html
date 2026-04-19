@@ -26,7 +26,8 @@
   --muted2: #4a5a72;
   --mono: 'IBM Plex Mono', monospace;
   --sans: 'Syne', sans-serif;
-  --sidebar-w: 260px;
+  --sidebar-w: 264px;
+  --toc-w: 220px;
   --nav-h: 60px;
 }
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -34,18 +35,19 @@ html { scroll-behavior: smooth; }
 body { font-family: var(--sans); background: var(--bg); color: var(--text); -webkit-font-smoothing: antialiased; overflow-x: hidden; }
 
 body::before {
-  content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 0; opacity: 0.02;
+  content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 0; opacity: 0.018;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
 }
 
-/* NAV */
+/* ── NAV ── */
 nav {
-  position: fixed; top: 0; left: 0; right: 0; z-index: 200; height: var(--nav-h);
-  display: flex; align-items: center; justify-content: space-between; padding: 0 32px;
-  background: rgba(8,12,20,0.92); backdrop-filter: blur(20px); border-bottom: 1px solid var(--border);
+  position: fixed; top: 0; left: 0; right: 0; z-index: 300; height: var(--nav-h);
+  display: flex; align-items: center; justify-content: space-between; padding: 0 24px;
+  background: rgba(8,12,20,0.94); backdrop-filter: blur(20px); border-bottom: 1px solid var(--border);
 }
 .nav-logo { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 16px; color: var(--text); text-decoration: none; }
 .nav-logo-icon { width: 28px; height: 28px; border-radius: 7px; background: linear-gradient(135deg, var(--blue), var(--cyan)); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; color: #fff; flex-shrink: 0; }
+.nav-center { display: flex; align-items: center; gap: 4px; }
 .nav-right { display: flex; align-items: center; gap: 6px; }
 .nav-link { padding: 6px 14px; border-radius: 7px; font-size: 13px; font-weight: 600; text-decoration: none; transition: all .15s; color: var(--muted); }
 .nav-link:hover { color: var(--text); background: rgba(255,255,255,0.06); }
@@ -53,39 +55,100 @@ nav {
 .nav-btn { padding: 7px 16px; border-radius: 7px; background: var(--blue); color: #fff; font-family: var(--sans); font-size: 13px; font-weight: 700; text-decoration: none; transition: all .15s; }
 .nav-btn:hover { background: #2563eb; transform: translateY(-1px); }
 
-/* LAYOUT */
+/* Search button in nav */
+.nav-search-btn {
+  display: flex; align-items: center; gap: 8px; padding: 6px 12px;
+  border: 1px solid var(--border2); border-radius: 7px; background: var(--surface);
+  color: var(--muted); font-family: var(--mono); font-size: 11px; cursor: pointer;
+  transition: all .15s; min-width: 180px;
+}
+.nav-search-btn:hover { border-color: var(--blue2); color: var(--text); }
+.nav-search-btn svg { flex-shrink: 0; opacity: 0.6; }
+.nav-search-kdb { margin-left: auto; display: flex; gap: 3px; }
+.nav-search-kdb kbd {
+  padding: 1px 5px; border-radius: 4px; border: 1px solid var(--border2);
+  font-size: 10px; background: var(--surface2); color: var(--muted2);
+}
+.nav-mobile-toggle { display: none; background: none; border: none; color: var(--muted); cursor: pointer; padding: 6px; }
+
+/* ── LAYOUT ── */
 .doc-layout { display: flex; padding-top: var(--nav-h); min-height: 100vh; position: relative; z-index: 1; }
 
-/* SIDEBAR */
+/* ── SIDEBAR ── */
 .doc-sidebar {
   width: var(--sidebar-w); flex-shrink: 0; position: fixed; top: var(--nav-h); bottom: 0; left: 0;
   overflow-y: auto; border-right: 1px solid var(--border); background: var(--surface);
-  padding: 28px 0 40px;
+  padding: 24px 0 40px; transition: transform .25s cubic-bezier(.4,0,.2,1);
 }
-.doc-sidebar::-webkit-scrollbar { width: 4px; }
-.doc-sidebar::-webkit-scrollbar-track { background: transparent; }
+.doc-sidebar::-webkit-scrollbar { width: 3px; }
 .doc-sidebar::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+.sidebar-search {
+  margin: 0 12px 18px; position: relative;
+}
+.sidebar-search input {
+  width: 100%; padding: 7px 10px 7px 32px; background: var(--surface2);
+  border: 1px solid var(--border2); border-radius: 7px; font-family: var(--mono);
+  font-size: 11.5px; color: var(--text); outline: none; transition: border-color .15s;
+}
+.sidebar-search input:focus { border-color: var(--blue2); }
+.sidebar-search input::placeholder { color: var(--muted2); }
+.sidebar-search-icon { position: absolute; left: 9px; top: 50%; transform: translateY(-50%); opacity: 0.5; }
+
 .sidebar-section-label {
   font-family: var(--mono); font-size: 10px; font-weight: 600; color: var(--muted2);
-  text-transform: uppercase; letter-spacing: 1.2px; padding: 14px 24px 6px;
+  text-transform: uppercase; letter-spacing: 1.3px; padding: 18px 18px 6px;
+  display: flex; align-items: center; gap: 6px;
 }
 .sidebar-link {
-  display: flex; align-items: center; gap: 9px; padding: 7px 24px;
-  font-size: 13px; font-weight: 500; color: var(--muted); text-decoration: none;
-  transition: all .12s; border-left: 2px solid transparent; cursor: pointer;
+  display: flex; align-items: center; gap: 9px; padding: 7px 18px;
+  font-size: 12.5px; font-weight: 500; color: var(--muted); text-decoration: none;
+  transition: all .12s; border-left: 2px solid transparent;
 }
-.sidebar-link:hover { color: var(--text); background: rgba(255,255,255,0.04); }
-.sidebar-link.active { color: var(--blue2); background: rgba(59,130,246,0.08); border-left-color: var(--blue2); }
-.sidebar-link-icon { font-size: 14px; flex-shrink: 0; }
+.sidebar-link:hover { color: var(--text); background: rgba(255,255,255,0.035); }
+.sidebar-link.active { color: var(--blue2); background: rgba(59,130,246,0.07); border-left-color: var(--blue2); }
+.sidebar-link-icon { font-size: 13px; flex-shrink: 0; width: 16px; text-align: center; }
+.sidebar-link-badge {
+  margin-left: auto; font-family: var(--mono); font-size: 9px; padding: 1px 5px;
+  border-radius: 3px; background: rgba(59,130,246,0.2); color: var(--blue2); font-weight: 700;
+}
 
-/* CONTENT */
-.doc-content { margin-left: var(--sidebar-w); flex: 1; max-width: 860px; padding: 48px 56px 80px; }
+/* ── MAIN CONTENT ── */
+.doc-content {
+  margin-left: var(--sidebar-w); margin-right: var(--toc-w);
+  flex: 1; max-width: 820px; padding: 48px 52px 80px;
+}
 
-/* HERO BANNER */
+/* ── RIGHT TOC ── */
+.doc-toc {
+  width: var(--toc-w); flex-shrink: 0; position: fixed; top: var(--nav-h);
+  right: 0; bottom: 0; overflow-y: auto; padding: 32px 16px;
+  border-left: 1px solid var(--border);
+}
+.doc-toc::-webkit-scrollbar { width: 3px; }
+.doc-toc-title {
+  font-family: var(--mono); font-size: 10px; font-weight: 600; color: var(--muted2);
+  text-transform: uppercase; letter-spacing: 1.3px; margin-bottom: 12px;
+}
+.doc-toc-item {
+  display: block; padding: 4px 8px; font-size: 12px; color: var(--muted);
+  text-decoration: none; border-left: 2px solid transparent; transition: all .12s;
+  line-height: 1.5;
+}
+.doc-toc-item:hover { color: var(--text); }
+.doc-toc-item.active { color: var(--blue2); border-left-color: var(--blue2); background: rgba(59,130,246,0.06); }
+.doc-toc-item.h3 { padding-left: 16px; font-size: 11px; }
+
+/* ── HERO BANNER ── */
 .doc-hero {
-  background: linear-gradient(135deg, rgba(59,130,246,0.12), rgba(34,211,238,0.06));
-  border: 1px solid rgba(59,130,246,0.2); border-radius: 14px;
-  padding: 40px 36px; margin-bottom: 48px;
+  background: linear-gradient(135deg, rgba(59,130,246,0.1), rgba(34,211,238,0.05));
+  border: 1px solid rgba(59,130,246,0.18); border-radius: 14px;
+  padding: 40px 36px; margin-bottom: 48px; position: relative; overflow: hidden;
+}
+.doc-hero::after {
+  content: ''; position: absolute; top: -60px; right: -60px; width: 240px; height: 240px;
+  border-radius: 50%; background: radial-gradient(circle, rgba(59,130,246,0.06), transparent 70%);
+  pointer-events: none;
 }
 .doc-hero-badge {
   display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px;
@@ -93,8 +156,8 @@ nav {
   font-family: var(--mono); font-size: 10px; color: var(--blue2); font-weight: 600;
   text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 14px;
 }
-.doc-hero h1 { font-size: 32px; font-weight: 800; color: var(--text); margin-bottom: 10px; }
-.doc-hero p { font-size: 15px; color: var(--muted); line-height: 1.7; max-width: 540px; }
+.doc-hero h1 { font-size: 30px; font-weight: 800; color: var(--text); margin-bottom: 10px; }
+.doc-hero p { font-size: 14.5px; color: var(--muted); line-height: 1.75; max-width: 520px; }
 .doc-hero-btns { display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap; }
 .doc-hero-btn {
   display: inline-flex; align-items: center; gap: 7px; padding: 9px 18px;
@@ -106,106 +169,140 @@ nav {
 .doc-btn-ghost { background: rgba(255,255,255,0.06); color: var(--text); border: 1px solid var(--border2); }
 .doc-btn-ghost:hover { background: rgba(255,255,255,0.1); }
 
-/* SECTIONS */
-.doc-section { margin-bottom: 72px; scroll-margin-top: calc(var(--nav-h) + 24px); }
+/* ── SECTIONS ── */
+.doc-section { margin-bottom: 72px; scroll-margin-top: calc(var(--nav-h) + 28px); }
 .section-tag {
   display: inline-flex; align-items: center; gap: 6px;
   font-family: var(--mono); font-size: 10px; font-weight: 600; color: var(--cyan);
   text-transform: uppercase; letter-spacing: 1.4px; margin-bottom: 10px;
 }
 .section-tag::before { content: '//'; color: var(--muted2); margin-right: 4px; }
-.doc-h1 { font-size: 26px; font-weight: 800; color: var(--text); margin-bottom: 10px; line-height: 1.2; }
-.doc-h2 {
-  font-size: 17px; font-weight: 700; color: var(--text); margin: 32px 0 10px;
-  padding-bottom: 8px; border-bottom: 1px solid var(--border);
-  display: flex; align-items: center; gap: 8px;
+
+.doc-h1 {
+  font-size: 26px; font-weight: 800; color: var(--text); margin-bottom: 12px; line-height: 1.2;
+  display: flex; align-items: center; gap: 10px;
 }
-.doc-h3 { font-size: 13px; font-weight: 700; color: var(--text); margin: 20px 0 8px; text-transform: uppercase; letter-spacing: 0.5px; }
-.doc-p { font-size: 14px; color: var(--muted); line-height: 1.75; margin-bottom: 14px; }
+.anchor-link {
+  opacity: 0; font-size: 16px; color: var(--muted2); text-decoration: none; transition: opacity .15s;
+  font-weight: 400;
+}
+.doc-h1:hover .anchor-link, .doc-h2:hover .anchor-link { opacity: 1; }
+
+.doc-h2 {
+  font-size: 16px; font-weight: 700; color: var(--text); margin: 36px 0 12px;
+  padding-bottom: 8px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 8px; scroll-margin-top: calc(var(--nav-h) + 28px);
+}
+.doc-h3 { font-size: 12.5px; font-weight: 700; color: var(--text); margin: 20px 0 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+.doc-p { font-size: 14px; color: var(--muted); line-height: 1.78; margin-bottom: 14px; }
 .doc-p a { color: var(--blue2); text-decoration: none; }
 .doc-p a:hover { text-decoration: underline; }
-.doc-hr { border: none; border-top: 1px solid var(--border); margin: 40px 0; }
+.doc-hr { border: none; border-top: 1px solid var(--border); margin: 48px 0; }
+.doc-ul { padding-left: 0; list-style: none; margin-bottom: 16px; }
+.doc-ul li { font-size: 14px; color: var(--muted); line-height: 1.75; padding-left: 16px; position: relative; }
+.doc-ul li::before { content: '—'; position: absolute; left: 0; color: var(--muted2); }
 
-/* CODE */
-.doc-code-wrap { position: relative; margin-bottom: 16px; }
-.doc-code {
-  background: var(--surface2); border: 1px solid var(--border2); border-radius: 10px;
-  padding: 18px 20px; font-family: var(--mono); font-size: 12.5px; color: #a5d6a7;
-  white-space: pre-wrap; word-break: break-all; line-height: 1.8; overflow-x: auto;
-}
+/* ── CODE BLOCKS ── */
+.doc-code-wrap { position: relative; margin-bottom: 20px; border-radius: 10px; overflow: hidden; border: 1px solid var(--border2); }
 .doc-code-bar {
   display: flex; align-items: center; justify-content: space-between;
-  background: rgba(255,255,255,0.04); border: 1px solid var(--border2);
-  border-bottom: none; border-radius: 10px 10px 0 0; padding: 8px 16px;
-  font-family: var(--mono); font-size: 11px; color: var(--muted);
+  background: rgba(255,255,255,0.03); border-bottom: 1px solid var(--border2);
+  padding: 8px 16px; font-family: var(--mono); font-size: 11px; color: var(--muted);
 }
-.doc-code-bar + .doc-code { border-radius: 0 0 10px 10px; }
+.code-lang-tabs { display: flex; gap: 2px; }
+.code-lang-tab {
+  padding: 3px 10px; border-radius: 5px; font-family: var(--mono); font-size: 10.5px;
+  font-weight: 600; cursor: pointer; border: none; color: var(--muted); background: transparent;
+  transition: all .12s;
+}
+.code-lang-tab.active { background: var(--blue); color: #fff; }
+.code-lang-tab:hover:not(.active) { color: var(--text); background: rgba(255,255,255,0.06); }
+.code-bar-right { display: flex; align-items: center; gap: 8px; }
 .copy-btn {
   padding: 3px 10px; border-radius: 5px; border: 1px solid var(--border2);
   background: transparent; color: var(--muted); font-family: var(--mono); font-size: 10px;
   cursor: pointer; transition: all .15s;
 }
 .copy-btn:hover { border-color: var(--blue2); color: var(--blue2); }
+.copy-btn.copied { border-color: var(--green); color: var(--green); }
+.doc-code {
+  background: var(--surface2); padding: 18px 20px; font-family: var(--mono); font-size: 12.5px;
+  color: #a5d6a7; white-space: pre; overflow-x: auto; line-height: 1.8; display: block;
+}
+.code-pane { display: none; }
+.code-pane.active { display: block; }
+
+/* syntax */
 .c-k { color: var(--blue2); }
 .c-s { color: var(--amber); }
 .c-v { color: var(--green); }
 .c-c { color: var(--muted2); }
 .c-r { color: var(--red); }
 .c-p { color: var(--cyan); }
+.c-fn { color: #f9a8d4; }
+
 .inline-code {
   font-family: var(--mono); font-size: 11.5px; background: var(--surface2);
   border: 1px solid var(--border2); padding: 1px 6px; border-radius: 4px; color: var(--cyan);
 }
 
-/* TABLES */
-.doc-table-wrap { overflow-x: auto; margin-bottom: 16px; border-radius: 10px; border: 1px solid var(--border2); }
+/* ── TABLES ── */
+.doc-table-wrap { overflow-x: auto; margin-bottom: 20px; border-radius: 10px; border: 1px solid var(--border2); }
 .doc-table { width: 100%; border-collapse: collapse; font-size: 13px; }
 .doc-table th { background: var(--surface2); padding: 10px 14px; text-align: left; font-weight: 700; color: var(--text); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; }
-.doc-table td { padding: 10px 14px; border-top: 1px solid var(--border); color: var(--muted); vertical-align: top; line-height: 1.5; }
-.doc-table tr:hover td { background: rgba(255,255,255,0.025); }
+.doc-table td { padding: 10px 14px; border-top: 1px solid var(--border); color: var(--muted); vertical-align: top; line-height: 1.55; }
+.doc-table tr:hover td { background: rgba(255,255,255,0.02); }
 .doc-table td:first-child { font-family: var(--mono); font-size: 12px; color: var(--cyan); white-space: nowrap; }
+.doc-table td.req-yes { color: var(--green); font-family: var(--mono); font-size: 11px; }
+.doc-table td.req-no { color: var(--muted2); font-family: var(--mono); font-size: 11px; }
 
-/* BADGES */
+/* ── BADGES ── */
 .method-badge {
   display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 4px;
   font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 0.5px;
-  margin-right: 6px; flex-shrink: 0;
+  flex-shrink: 0;
 }
 .m-get { background: rgba(74,222,128,0.15); color: var(--green); }
 .m-post { background: rgba(59,130,246,0.15); color: var(--blue2); }
 .m-del { background: rgba(248,113,113,0.15); color: var(--red); }
 .m-patch { background: rgba(251,191,36,0.15); color: var(--amber); }
 
-/* ENDPOINT ROWS */
-.endpoint-row {
-  display: flex; align-items: flex-start; gap: 12px; padding: 14px 18px;
-  border: 1px solid var(--border); border-radius: 9px; margin-bottom: 8px;
-  background: var(--surface); transition: border-color .15s;
+/* ── ENDPOINTS ── */
+.endpoint-block {
+  border: 1px solid var(--border); border-radius: 10px; margin-bottom: 12px;
+  background: var(--surface); overflow: hidden; transition: border-color .15s;
 }
-.endpoint-row:hover { border-color: var(--border2); }
-.endpoint-path { font-family: var(--mono); font-size: 13px; color: var(--text); font-weight: 600; }
-.endpoint-desc { font-size: 12px; color: var(--muted); margin-top: 3px; }
+.endpoint-block:hover { border-color: var(--border2); }
+.endpoint-header {
+  display: flex; align-items: center; gap: 12px; padding: 14px 18px; cursor: pointer;
+}
+.endpoint-path { font-family: var(--mono); font-size: 13px; color: var(--text); font-weight: 600; flex: 1; }
+.endpoint-desc { font-size: 12px; color: var(--muted); }
+.endpoint-chevron { color: var(--muted2); transition: transform .2s; margin-left: auto; }
+.endpoint-block.open .endpoint-chevron { transform: rotate(180deg); }
+.endpoint-body { display: none; border-top: 1px solid var(--border); padding: 16px 18px; }
+.endpoint-block.open .endpoint-body { display: block; }
 
-/* CALLOUTS */
+/* ── CALLOUTS ── */
 .callout {
   display: flex; gap: 12px; padding: 14px 18px; border-radius: 9px;
-  margin-bottom: 16px; font-size: 13px; line-height: 1.6;
+  margin-bottom: 16px; font-size: 13px; line-height: 1.65;
 }
-.callout-info { background: rgba(59,130,246,0.08); border: 1px solid rgba(59,130,246,0.2); color: var(--muted); }
-.callout-warn { background: rgba(251,191,36,0.08); border: 1px solid rgba(251,191,36,0.2); color: var(--muted); }
-.callout-danger { background: rgba(248,113,113,0.08); border: 1px solid rgba(248,113,113,0.2); color: var(--muted); }
-.callout-success { background: rgba(74,222,128,0.08); border: 1px solid rgba(74,222,128,0.2); color: var(--muted); }
-.callout-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+.callout-info { background: rgba(59,130,246,0.07); border: 1px solid rgba(59,130,246,0.2); color: var(--muted); }
+.callout-warn { background: rgba(251,191,36,0.07); border: 1px solid rgba(251,191,36,0.2); color: var(--muted); }
+.callout-danger { background: rgba(248,113,113,0.07); border: 1px solid rgba(248,113,113,0.2); color: var(--muted); }
+.callout-success { background: rgba(74,222,128,0.07); border: 1px solid rgba(74,222,128,0.2); color: var(--muted); }
+.callout-icon { font-size: 15px; flex-shrink: 0; margin-top: 1px; }
 
-/* FEATURE CARDS */
-.feature-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px,1fr)); gap: 12px; margin-bottom: 24px; }
-.feature-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 18px; transition: border-color .15s; }
-.feature-card:hover { border-color: var(--border2); }
+/* ── FEATURE GRID ── */
+.feature-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px,1fr)); gap: 12px; margin-bottom: 28px; }
+.feature-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 18px; transition: all .15s; }
+.feature-card:hover { border-color: var(--border2); transform: translateY(-2px); }
 .feature-card-icon { font-size: 22px; margin-bottom: 10px; }
 .feature-card-title { font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 5px; }
 .feature-card-desc { font-size: 12px; color: var(--muted); line-height: 1.55; }
 
-/* STEPS */
+/* ── STEPS ── */
 .steps { display: flex; flex-direction: column; gap: 0; margin-bottom: 24px; }
 .step { display: flex; gap: 18px; padding: 20px 0; border-bottom: 1px solid var(--border); }
 .step:last-child { border-bottom: none; }
@@ -216,47 +313,175 @@ nav {
   font-family: var(--mono); font-size: 12px; font-weight: 700; color: var(--blue2);
 }
 .step-content h4 { font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 5px; }
-.step-content p { font-size: 13px; color: var(--muted); line-height: 1.6; }
+.step-content p { font-size: 13px; color: var(--muted); line-height: 1.65; }
 
-/* TOC quick links */
-.toc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px,1fr)); gap: 10px; margin-bottom: 40px; }
+/* ── TOC QUICK LINKS ── */
+.toc-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 44px; }
 .toc-card {
   display: flex; align-items: center; gap: 10px; padding: 14px 16px;
   background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
-  text-decoration: none; color: var(--muted); font-size: 13px; font-weight: 600;
+  text-decoration: none; color: var(--muted); font-size: 12.5px; font-weight: 600;
   transition: all .15s;
 }
-.toc-card:hover { border-color: var(--blue2); color: var(--blue2); background: rgba(59,130,246,0.06); transform: translateY(-2px); }
-.toc-card-icon { font-size: 18px; }
+.toc-card:hover { border-color: var(--blue2); color: var(--blue2); background: rgba(59,130,246,0.05); transform: translateY(-2px); }
+.toc-card-icon { font-size: 17px; }
 
-/* SCROLLBAR */
-::-webkit-scrollbar { width: 5px; }
+/* ── RATE LIMIT BAR ── */
+.rate-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+.rate-row:last-child { border-bottom: none; }
+.rate-label { font-family: var(--mono); color: var(--cyan); font-size: 12px; width: 180px; flex-shrink: 0; }
+.rate-bar-wrap { flex: 1; height: 4px; background: var(--surface3); border-radius: 2px; overflow: hidden; }
+.rate-bar { height: 100%; border-radius: 2px; }
+.rate-val { font-family: var(--mono); font-size: 11px; color: var(--muted); width: 100px; text-align: right; }
+
+/* ── ENV VARS ── */
+.env-grid { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
+.env-row {
+  display: flex; align-items: flex-start; gap: 12px; padding: 12px 16px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+}
+.env-key { font-family: var(--mono); font-size: 12px; color: var(--cyan); flex-shrink: 0; width: 220px; }
+.env-required { font-family: var(--mono); font-size: 10px; padding: 1px 6px; border-radius: 3px; flex-shrink: 0; margin-top: 1px; }
+.env-req { background: rgba(248,113,113,0.15); color: var(--red); }
+.env-opt { background: rgba(74,222,128,0.12); color: var(--green); }
+.env-desc { font-size: 12px; color: var(--muted); line-height: 1.5; }
+
+/* ── CHANGELOG ── */
+.changelog-entry { display: flex; gap: 20px; padding: 18px 0; border-bottom: 1px solid var(--border); }
+.changelog-entry:last-child { border-bottom: none; }
+.changelog-version {
+  flex-shrink: 0; font-family: var(--mono); font-size: 11px; font-weight: 700;
+  color: var(--blue2); width: 56px;
+}
+.changelog-date { font-family: var(--mono); font-size: 10.5px; color: var(--muted2); margin-bottom: 6px; }
+.changelog-items { font-size: 13px; color: var(--muted); }
+.changelog-items li { margin-bottom: 3px; }
+.cl-tag { font-family: var(--mono); font-size: 9px; padding: 1px 5px; border-radius: 3px; margin-right: 6px; font-weight: 700; }
+.cl-new { background: rgba(74,222,128,0.15); color: var(--green); }
+.cl-fix { background: rgba(248,113,113,0.12); color: var(--red); }
+.cl-imp { background: rgba(59,130,246,0.15); color: var(--blue2); }
+
+/* ── NEXT/PREV ── */
+.doc-nav-bar {
+  display: flex; gap: 12px; margin-top: 52px; padding-top: 28px; border-top: 1px solid var(--border);
+}
+.doc-nav-btn {
+  flex: 1; display: flex; flex-direction: column; gap: 4px; padding: 14px 18px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+  text-decoration: none; transition: all .15s;
+}
+.doc-nav-btn:hover { border-color: var(--blue2); }
+.doc-nav-btn.next { text-align: right; }
+.doc-nav-label { font-family: var(--mono); font-size: 10px; color: var(--muted2); text-transform: uppercase; letter-spacing: 1px; }
+.doc-nav-title { font-size: 13px; font-weight: 700; color: var(--text); }
+
+/* ── FEEDBACK ── */
+.doc-feedback { display: flex; align-items: center; gap: 12px; margin-top: 24px; font-size: 13px; color: var(--muted); }
+.feedback-btn {
+  display: flex; align-items: center; gap: 6px; padding: 6px 12px;
+  border: 1px solid var(--border2); border-radius: 6px; background: transparent;
+  color: var(--muted); font-family: var(--sans); font-size: 12px; cursor: pointer; transition: all .15s;
+}
+.feedback-btn:hover { border-color: var(--green); color: var(--green); }
+.feedback-btn.no:hover { border-color: var(--red); color: var(--red); }
+
+/* ── SEARCH MODAL ── */
+.search-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 1000;
+  display: none; align-items: flex-start; justify-content: center; padding-top: 80px;
+  backdrop-filter: blur(6px);
+}
+.search-overlay.open { display: flex; }
+.search-modal {
+  background: var(--surface); border: 1px solid var(--border2); border-radius: 14px;
+  width: 100%; max-width: 580px; overflow: hidden; box-shadow: 0 24px 80px rgba(0,0,0,.6);
+  animation: searchIn .18s cubic-bezier(.4,0,.2,1);
+}
+@keyframes searchIn { from{opacity:0;transform:translateY(-12px) scale(.97)} to{opacity:1;transform:none} }
+.search-input-wrap { display: flex; align-items: center; gap: 10px; padding: 16px 18px; border-bottom: 1px solid var(--border); }
+.search-input-wrap svg { flex-shrink: 0; color: var(--muted); }
+.search-input {
+  flex: 1; background: none; border: none; font-family: var(--sans); font-size: 15px;
+  color: var(--text); outline: none;
+}
+.search-input::placeholder { color: var(--muted2); }
+.search-esc { font-family: var(--mono); font-size: 10px; padding: 2px 6px; border: 1px solid var(--border2); border-radius: 4px; color: var(--muted2); }
+.search-results { max-height: 360px; overflow-y: auto; padding: 8px 0; }
+.search-result-item {
+  display: flex; align-items: flex-start; gap: 12px; padding: 10px 18px; cursor: pointer;
+  transition: background .1s; text-decoration: none;
+}
+.search-result-item:hover { background: rgba(255,255,255,0.04); }
+.search-result-item.active { background: rgba(59,130,246,0.08); }
+.search-result-icon { font-size: 14px; margin-top: 1px; flex-shrink: 0; }
+.search-result-title { font-size: 13px; font-weight: 600; color: var(--text); }
+.search-result-desc { font-size: 11.5px; color: var(--muted); margin-top: 2px; }
+.search-result-section { font-family: var(--mono); font-size: 9.5px; color: var(--muted2); margin-top: 2px; }
+.search-no-results { padding: 24px; text-align: center; color: var(--muted); font-size: 13px; }
+.search-footer { display: flex; align-items: center; gap: 14px; padding: 10px 18px; border-top: 1px solid var(--border); font-family: var(--mono); font-size: 10.5px; color: var(--muted2); }
+.search-footer kbd { padding: 1px 5px; border: 1px solid var(--border2); border-radius: 4px; background: var(--surface2); }
+
+/* ── TOAST ── */
+.toast-wrap { position: fixed; bottom: 20px; right: 20px; z-index: 2000; display: flex; flex-direction: column; gap: 8px; }
+.toast {
+  background: var(--surface2); border: 1px solid var(--border2); border-radius: 8px;
+  padding: 10px 16px; font-size: 12px; font-weight: 600; display: flex; align-items: center;
+  gap: 8px; box-shadow: 0 8px 24px rgba(0,0,0,.4); animation: toastIn .2s ease;
+}
+@keyframes toastIn { from{opacity:0;transform:translateX(16px)} to{opacity:1;transform:none} }
+@keyframes toastOut { from{opacity:1;transform:none} to{opacity:0;transform:translateX(16px)} }
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
 
-/* RESPONSIVE */
-@media(max-width: 768px) {
-  .doc-sidebar { display: none; }
+/* ── RESPONSIVE ── */
+@media(max-width: 1200px) {
+  .doc-toc { display: none; }
+  .doc-content { margin-right: 0; }
+}
+@media(max-width: 860px) {
+  .doc-sidebar { transform: translateX(-100%); z-index: 200; }
+  .doc-sidebar.mobile-open { transform: translateX(0); box-shadow: 8px 0 32px rgba(0,0,0,.5); }
   .doc-content { margin-left: 0; padding: 32px 20px 60px; }
+  .nav-center { display: none; }
+  .nav-mobile-toggle { display: block; }
+  .toc-grid { grid-template-columns: repeat(2,1fr); }
+}
+@media(max-width: 480px) {
+  .toc-grid { grid-template-columns: 1fr; }
+  .doc-hero { padding: 28px 22px; }
+  .doc-hero h1 { font-size: 23px; }
 }
 
-/* TOAST */
-.toast-wrap { position: fixed; bottom: 20px; right: 20px; z-index: 999; }
-.toast { background: var(--surface2); border: 1px solid var(--border2); border-radius: 8px; padding: 10px 16px; font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 8px; box-shadow: 0 8px 24px rgba(0,0,0,.4); animation: toastIn .25s ease; }
-@keyframes toastIn { from{opacity:0;transform:translateX(16px)} to{opacity:1;transform:none} }
+/* Mobile overlay */
+.sidebar-overlay { display: none; position: fixed; inset: 0; z-index: 190; background: rgba(0,0,0,.5); }
+.sidebar-overlay.active { display: block; }
 </style>
 </head>
 <body>
 
-<!-- NAV -->
+<!-- ── NAV ── -->
 <nav>
-  <a href="/" class="nav-logo">
-    <div class="nav-logo-icon">OX</div>
-    ObserveX
-  </a>
+  <div style="display:flex;align-items:center;gap:16px">
+    <button class="nav-mobile-toggle" id="mobileToggle" aria-label="Toggle sidebar">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+    <a href="/" class="nav-logo">
+      <div class="nav-logo-icon">OX</div>
+      ObserveX
+    </a>
+  </div>
+  <div class="nav-center">
+    <button class="nav-search-btn" id="openSearch" aria-label="Search docs">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      Search documentation…
+      <span class="nav-search-kdb"><kbd>⌘</kbd><kbd>K</kbd></span>
+    </button>
+  </div>
   <div class="nav-right">
     <a href="/#features" class="nav-link">Features</a>
-    <a href="/#integrations" class="nav-link">Integrations</a>
     <a href="/pricing" class="nav-link">Pricing</a>
     <a href="/documentation" class="nav-link nav-link-active">Docs</a>
     <a href="/login" class="nav-link">Sign in</a>
@@ -264,83 +489,96 @@ nav {
   </div>
 </nav>
 
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
 <div class="doc-layout">
 
-  <!-- SIDEBAR -->
-  <aside class="doc-sidebar">
+  <!-- ── SIDEBAR ── -->
+  <aside class="doc-sidebar" id="docSidebar">
+    <div class="sidebar-search">
+      <svg class="sidebar-search-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <input type="text" placeholder="Filter sections…" id="sidebarFilter" autocomplete="off"/>
+    </div>
+
     <div class="sidebar-section-label">Getting Started</div>
-    <a class="sidebar-link active" onclick="scrollTo('overview')"><span class="sidebar-link-icon">🚀</span> Overview</a>
-    <a class="sidebar-link" onclick="scrollTo('quickstart')"><span class="sidebar-link-icon">⚡</span> Quickstart</a>
-    <a class="sidebar-link" onclick="scrollTo('concepts')"><span class="sidebar-link-icon">💡</span> Core concepts</a>
+    <a class="sidebar-link active" href="#overview"><span class="sidebar-link-icon">🚀</span> Overview</a>
+    <a class="sidebar-link" href="#quickstart"><span class="sidebar-link-icon">⚡</span> Quickstart</a>
+    <a class="sidebar-link" href="#concepts"><span class="sidebar-link-icon">💡</span> Core concepts</a>
 
     <div class="sidebar-section-label">API Reference</div>
-    <a class="sidebar-link" onclick="scrollTo('authentication')"><span class="sidebar-link-icon">🔑</span> Authentication</a>
-    <a class="sidebar-link" onclick="scrollTo('ingest-api')"><span class="sidebar-link-icon">📥</span> Ingest API</a>
-    <a class="sidebar-link" onclick="scrollTo('query-api')"><span class="sidebar-link-icon">🔍</span> Query logs</a>
-    <a class="sidebar-link" onclick="scrollTo('keys-api')"><span class="sidebar-link-icon">🗝</span> API keys</a>
-    <a class="sidebar-link" onclick="scrollTo('alerts-api')"><span class="sidebar-link-icon">🔔</span> Alerts</a>
+    <a class="sidebar-link" href="#authentication"><span class="sidebar-link-icon">🔑</span> Authentication</a>
+    <a class="sidebar-link" href="#ingest-api"><span class="sidebar-link-icon">📥</span> Ingest API</a>
+    <a class="sidebar-link" href="#query-api"><span class="sidebar-link-icon">🔍</span> Query logs</a>
+    <a class="sidebar-link" href="#keys-api"><span class="sidebar-link-icon">🗝</span> API keys</a>
+    <a class="sidebar-link" href="#alerts-api"><span class="sidebar-link-icon">🔔</span> Alerts API</a>
+    <a class="sidebar-link" href="#rate-limits"><span class="sidebar-link-icon">⏱</span> Rate limits</a>
 
     <div class="sidebar-section-label">Integrations</div>
-    <a class="sidebar-link" onclick="scrollTo('s3-guide')"><span class="sidebar-link-icon">🪣</span> S3 Bucket</a>
-    <a class="sidebar-link" onclick="scrollTo('webhooks')"><span class="sidebar-link-icon">🔗</span> Webhooks</a>
-    <a class="sidebar-link" onclick="scrollTo('scheduled-jobs')"><span class="sidebar-link-icon">⏱</span> Scheduled jobs</a>
+    <a class="sidebar-link" href="#s3-guide"><span class="sidebar-link-icon">🪣</span> S3 Bucket</a>
+    <a class="sidebar-link" href="#webhooks"><span class="sidebar-link-icon">🔗</span> Webhooks</a>
+    <a class="sidebar-link" href="#scheduled-jobs"><span class="sidebar-link-icon">⏰</span> Scheduled jobs</a>
 
     <div class="sidebar-section-label">Features</div>
-    <a class="sidebar-link" onclick="scrollTo('log-explorer')"><span class="sidebar-link-icon">📊</span> Log explorer</a>
-    <a class="sidebar-link" onclick="scrollTo('alert-rules')"><span class="sidebar-link-icon">🚨</span> Alert rules</a>
-    <a class="sidebar-link" onclick="scrollTo('ai-explain')"><span class="sidebar-link-icon">✦</span> AI explain</a>
-    <a class="sidebar-link" onclick="scrollTo('bulk-ops')"><span class="sidebar-link-icon">☐</span> Bulk operations</a>
-    <a class="sidebar-link" onclick="scrollTo('team-access')"><span class="sidebar-link-icon">👥</span> Team & access</a>
-    <a class="sidebar-link" onclick="scrollTo('audit-trail')"><span class="sidebar-link-icon">📋</span> Audit trail</a>
+    <a class="sidebar-link" href="#log-explorer"><span class="sidebar-link-icon">📊</span> Log explorer</a>
+    <a class="sidebar-link" href="#alert-rules"><span class="sidebar-link-icon">🚨</span> Alert rules</a>
+    <a class="sidebar-link" href="#ai-explain"><span class="sidebar-link-icon">✦</span> AI explain</a>
+    <a class="sidebar-link" href="#bulk-ops"><span class="sidebar-link-icon">☐</span> Bulk operations</a>
+    <a class="sidebar-link" href="#team-access"><span class="sidebar-link-icon">👥</span> Team & access</a>
+    <a class="sidebar-link" href="#audit-trail"><span class="sidebar-link-icon">📋</span> Audit trail</a>
 
     <div class="sidebar-section-label">Reference</div>
-    <a class="sidebar-link" onclick="scrollTo('log-levels')"><span class="sidebar-link-icon">🏷</span> Log levels</a>
-    <a class="sidebar-link" onclick="scrollTo('formats')"><span class="sidebar-link-icon">📄</span> File formats</a>
-    <a class="sidebar-link" onclick="scrollTo('errors')"><span class="sidebar-link-icon">⚠</span> Error codes</a>
+    <a class="sidebar-link" href="#env-vars"><span class="sidebar-link-icon">⚙</span> Environment vars</a>
+    <a class="sidebar-link" href="#log-levels"><span class="sidebar-link-icon">🏷</span> Log levels</a>
+    <a class="sidebar-link" href="#formats"><span class="sidebar-link-icon">📄</span> File formats</a>
+    <a class="sidebar-link" href="#errors"><span class="sidebar-link-icon">⚠</span> Error codes</a>
+    <a class="sidebar-link" href="#changelog"><span class="sidebar-link-icon">📝</span> Changelog <span class="sidebar-link-badge">v2.1</span></a>
   </aside>
 
-  <!-- CONTENT -->
+  <!-- ── MAIN CONTENT ── -->
   <main class="doc-content">
 
     <!-- HERO -->
     <div class="doc-hero">
-      <div class="doc-hero-badge">📖 Documentation v2.0</div>
+      <div class="doc-hero-badge">📖 Documentation v2.1</div>
       <h1>ObserveX Documentation</h1>
-      <p>Everything you need to ingest, search, alert on, and visualize your logs. From a single curl command to production-grade S3 pipelines.</p>
+      <p>Everything you need to ingest, search, alert on, and visualize your logs. From a single <span class="inline-code">curl</span> command to production-grade S3 pipelines with AI-powered error analysis.</p>
       <div class="doc-hero-btns">
         <a href="/create-account" class="doc-hero-btn doc-btn-primary">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
           Create free workspace
         </a>
-        <button class="doc-hero-btn doc-btn-ghost" onclick="downloadAllDocs()">⬇ Download all docs (.md)</button>
+        <button class="doc-hero-btn doc-btn-ghost" onclick="downloadAllDocs()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Download all docs (.md)
+        </button>
       </div>
     </div>
 
     <!-- QUICK LINKS -->
     <div class="toc-grid">
-      <a class="toc-card" onclick="scrollTo('ingest-api')"><span class="toc-card-icon">📥</span> Ingest API</a>
-      <a class="toc-card" onclick="scrollTo('s3-guide')"><span class="toc-card-icon">🪣</span> S3 Bucket</a>
-      <a class="toc-card" onclick="scrollTo('alert-rules')"><span class="toc-card-icon">🔔</span> Alert Rules</a>
-      <a class="toc-card" onclick="scrollTo('webhooks')"><span class="toc-card-icon">🔗</span> Webhooks</a>
-      <a class="toc-card" onclick="scrollTo('ai-explain')"><span class="toc-card-icon">✦</span> AI Explain</a>
-      <a class="toc-card" onclick="scrollTo('log-explorer')"><span class="toc-card-icon">🔍</span> Log Explorer</a>
+      <a class="toc-card" href="#ingest-api"><span class="toc-card-icon">📥</span> Ingest API</a>
+      <a class="toc-card" href="#s3-guide"><span class="toc-card-icon">🪣</span> S3 Bucket</a>
+      <a class="toc-card" href="#alert-rules"><span class="toc-card-icon">🔔</span> Alert Rules</a>
+      <a class="toc-card" href="#webhooks"><span class="toc-card-icon">🔗</span> Webhooks</a>
+      <a class="toc-card" href="#ai-explain"><span class="toc-card-icon">✦</span> AI Explain</a>
+      <a class="toc-card" href="#log-explorer"><span class="toc-card-icon">🔍</span> Log Explorer</a>
     </div>
 
     <!-- ══ OVERVIEW ══ -->
     <div class="doc-section" id="overview">
       <div class="section-tag">Getting Started</div>
-      <div class="doc-h1">Overview</div>
+      <div class="doc-h1">Overview <a href="#overview" class="anchor-link">#</a></div>
       <p class="doc-p">ObserveX is a centralized log management and observability platform. It collects logs from multiple sources, indexes them for real-time search, fires configurable alerts, and surfaces AI-powered error analysis — all from a single workspace URL.</p>
 
       <div class="feature-grid">
-        <div class="feature-card"><div class="feature-card-icon">📥</div><div class="feature-card-title">Multi-format Ingestion</div><div class="feature-card-desc">JSON, CSV, plain text, NDJSON, MuleSoft — auto-detected every time.</div></div>
-        <div class="feature-card"><div class="feature-card-icon">🪣</div><div class="feature-card-title">S3 Integration</div><div class="feature-card-desc">Poll any S3-compatible bucket on a cron schedule.</div></div>
+        <div class="feature-card"><div class="feature-card-icon">📥</div><div class="feature-card-title">Multi-format Ingestion</div><div class="feature-card-desc">JSON, CSV, plain text, NDJSON, MuleSoft — auto-detected from content.</div></div>
+        <div class="feature-card"><div class="feature-card-icon">🪣</div><div class="feature-card-title">S3 Integration</div><div class="feature-card-desc">Poll any S3-compatible bucket on a configurable cron schedule.</div></div>
         <div class="feature-card"><div class="feature-card-icon">🔔</div><div class="feature-card-title">Smart Alerts</div><div class="feature-card-desc">Email + webhook (Slack, Teams, Discord) notifications with cooldown.</div></div>
         <div class="feature-card"><div class="feature-card-icon">✦</div><div class="feature-card-title">AI Explain</div><div class="feature-card-desc">Claude AI analyzes error logs and explains root causes in plain English.</div></div>
         <div class="feature-card"><div class="feature-card-icon">🔍</div><div class="feature-card-title">Live Explorer</div><div class="feature-card-desc">Search, filter, sort and live-tail logs with saved search support.</div></div>
         <div class="feature-card"><div class="feature-card-icon">👥</div><div class="feature-card-title">Team Access</div><div class="feature-card-desc">Role-based access with invite links and a full audit trail.</div></div>
-        <div class="feature-card"><div class="feature-card-icon">☐</div><div class="feature-card-title">Bulk Operations</div><div class="feature-card-desc">Select and delete multiple logs at once with bulk mode.</div></div>
-        <div class="feature-card"><div class="feature-card-icon">📖</div><div class="feature-card-title">Built-in Docs</div><div class="feature-card-desc">In-app documentation with downloadable Markdown reference.</div></div>
+        <div class="feature-card"><div class="feature-card-icon">☐</div><div class="feature-card-title">Bulk Operations</div><div class="feature-card-desc">Select and delete multiple logs at once in bulk mode.</div></div>
+        <div class="feature-card"><div class="feature-card-icon">📋</div><div class="feature-card-title">Audit Trail</div><div class="feature-card-desc">Every admin action logged with actor, timestamp, and diff.</div></div>
       </div>
     </div>
 
@@ -349,22 +587,22 @@ nav {
     <!-- ══ QUICKSTART ══ -->
     <div class="doc-section" id="quickstart">
       <div class="section-tag">Getting Started</div>
-      <div class="doc-h1">Quickstart</div>
-      <p class="doc-p">Get logs into ObserveX in under 2 minutes. No email verification required.</p>
+      <div class="doc-h1">Quickstart <a href="#quickstart" class="anchor-link">#</a></div>
+      <p class="doc-p">Get logs into ObserveX in under 2 minutes.</p>
 
       <div class="steps">
         <div class="step">
           <div class="step-num">01</div>
           <div class="step-content">
             <h4>Create a workspace</h4>
-            <p>Visit <a href="/create-account">/create-account</a>, enter your organization name, email, and password. Your workspace URL is generated instantly at <span class="inline-code">/workspace/your-slug</span>.</p>
+            <p>Visit <a href="/create-account">/create-account</a>, enter your org name, email, and password. Your workspace URL is generated instantly.</p>
           </div>
         </div>
         <div class="step">
           <div class="step-num">02</div>
           <div class="step-content">
             <h4>Generate an API key</h4>
-            <p>Go to <strong>Ingest API → Your API keys → New key</strong>. Give it a name like <span class="inline-code">production</span>. The full key is shown once — copy it immediately.</p>
+            <p>Go to <strong>Ingest API → API keys → New key</strong>. The full key is shown <strong>once only</strong> — copy it to a secret manager immediately.</p>
           </div>
         </div>
         <div class="step">
@@ -372,11 +610,45 @@ nav {
           <div class="step-content">
             <h4>Send your first log</h4>
             <div class="doc-code-wrap" style="margin-top:12px">
-              <div class="doc-code-bar"><span>bash</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
-              <div class="doc-code">curl -X POST https://yourapp.railway.app/ingest/json \
+              <div class="doc-code-bar">
+                <div class="code-lang-tabs">
+                  <button class="code-lang-tab active" onclick="switchTab(this,'qs-1','curl')">cURL</button>
+                  <button class="code-lang-tab" onclick="switchTab(this,'qs-1','python')">Python</button>
+                  <button class="code-lang-tab" onclick="switchTab(this,'qs-1','node')">Node.js</button>
+                </div>
+                <div class="code-bar-right"><button class="copy-btn" onclick="copyActivePane(this)">Copy</button></div>
+              </div>
+              <div id="qs-1">
+                <pre class="doc-code code-pane active" data-lang="curl">curl -X POST https://yourapp.railway.app/ingest/json \
   -H "Authorization: Bearer oxk_your_key_here" \
   -H "Content-Type: application/json" \
-  -d '{"timestamp":"2024-01-15T10:30:00Z","level":"error","source":"my-service","message":"Connection refused"}'</div>
+  -d '{"timestamp":"2024-01-15T10:30:00Z","level":"error","source":"my-service","message":"Connection refused"}'</pre>
+                <pre class="doc-code code-pane" data-lang="python">import requests
+
+requests.post(
+    "https://yourapp.railway.app/ingest/json",
+    headers={"Authorization": "Bearer oxk_your_key_here"},
+    json={
+        "timestamp": "2024-01-15T10:30:00Z",
+        "level": "error",
+        "source": "my-service",
+        "message": "Connection refused"
+    }
+)</pre>
+                <pre class="doc-code code-pane" data-lang="node">await fetch("https://yourapp.railway.app/ingest/json", {
+  method: "POST",
+  headers: {
+    "Authorization": "Bearer oxk_your_key_here",
+    "Content-Type": "application/json"
+  },
+  body: JSON.stringify({
+    timestamp: new Date().toISOString(),
+    level: "error",
+    source: "my-service",
+    message: "Connection refused"
+  })
+});</pre>
+              </div>
             </div>
           </div>
         </div>
@@ -384,14 +656,14 @@ nav {
           <div class="step-num">04</div>
           <div class="step-content">
             <h4>Open the Log Explorer</h4>
-            <p>Go to your workspace and click <strong>Log explorer</strong> in the sidebar. Your log should appear immediately. Use the search and level filters to find it.</p>
+            <p>Go to your workspace → <strong>Log explorer</strong>. Your log appears immediately. Use level chips and the search box to filter.</p>
           </div>
         </div>
         <div class="step">
           <div class="step-num">05</div>
           <div class="step-content">
             <h4>Create your first alert</h4>
-            <p>Go to <strong>Alert rules → Create Alert Rule</strong>. Set type to <strong>Error Rate</strong>, threshold to <span class="inline-code">5</span>, add your email, and save. You'll be notified whenever errors spike.</p>
+            <p>Go to <strong>Alert rules → Create Alert Rule</strong>. Set type to <strong>Error Rate</strong>, threshold <span class="inline-code">5</span>, add your email. You'll be notified whenever errors spike above 5 in a 5-minute window.</p>
           </div>
         </div>
       </div>
@@ -399,31 +671,61 @@ nav {
 
     <hr class="doc-hr"/>
 
+    <!-- ══ CORE CONCEPTS ══ -->
+    <div class="doc-section" id="concepts">
+      <div class="section-tag">Getting Started</div>
+      <div class="doc-h1">Core Concepts <a href="#concepts" class="anchor-link">#</a></div>
+
+      <div id="concepts-workspace" class="doc-h2">Workspace<a href="#concepts-workspace" class="anchor-link">#</a></div>
+      <p class="doc-p">A <strong>workspace</strong> is an isolated tenant within ObserveX. All logs, API keys, alert rules, and team members belong to exactly one workspace. The workspace slug is globally unique and appears in every URL.</p>
+
+      <div id="concepts-upload" class="doc-h2">Uploads vs Events<a href="#concepts-upload" class="anchor-link">#</a></div>
+      <p class="doc-p">Each call to <span class="inline-code">/ingest/*</span> creates an <strong>upload record</strong> that groups the ingested log events. Events are queryable individually; uploads provide provenance (source IP, ingest method, timestamp, record count).</p>
+
+      <div id="concepts-source" class="doc-h2">Source tag<a href="#concepts-source" class="anchor-link">#</a></div>
+      <p class="doc-p">The <span class="inline-code">source</span> field is a free-form string identifying the emitting service or component (e.g. <span class="inline-code">payment-service</span>, <span class="inline-code">10.1.7.84</span>). It is indexed and filterable. Use consistent source names across deployments for effective alert rules.</p>
+
+      <div id="concepts-payload" class="doc-h2">Payload column<a href="#concepts-payload" class="anchor-link">#</a></div>
+      <p class="doc-p">Any fields beyond the four required ones (<span class="inline-code">timestamp</span>, <span class="inline-code">level</span>, <span class="inline-code">source</span>, <span class="inline-code">message</span>) are stored verbatim in the <span class="inline-code">payload</span> JSONB column. This is surfaced in the log detail panel and sent to AI Explain for richer root-cause analysis.</p>
+    </div>
+
+    <hr class="doc-hr"/>
+
     <!-- ══ AUTHENTICATION ══ -->
     <div class="doc-section" id="authentication">
       <div class="section-tag">API Reference</div>
-      <div class="doc-h1">Authentication</div>
-      <p class="doc-p">All API requests must include a Bearer token in the <span class="inline-code">Authorization</span> header. Get your token from <strong>Ingest API → API keys</strong> in your workspace.</p>
+      <div class="doc-h1">Authentication <a href="#authentication" class="anchor-link">#</a></div>
+      <p class="doc-p">All API requests must include a <span class="inline-code">Bearer</span> token in the <span class="inline-code">Authorization</span> header.</p>
 
       <div class="callout callout-warn">
         <span class="callout-icon">⚠</span>
-        <div>API keys are shown <strong>only once</strong> at creation. Store them securely — they cannot be retrieved after leaving the page. Revoke and regenerate if lost.</div>
+        <div>API keys are shown <strong>only once</strong> at creation. Store them in a secrets manager (Doppler, Vault, Railway Variables). They cannot be retrieved after leaving the page. Revoke and regenerate if lost.</div>
       </div>
 
       <div class="doc-h2">Header format</div>
-      <div class="doc-code">Authorization: Bearer oxk_your_api_key_here</div>
+      <div class="doc-code-wrap">
+        <div class="doc-code-bar"><span style="font-size:11px">HTTP Header</span><div class="code-bar-right"><button class="copy-btn" onclick="copyCode(this)">Copy</button></div></div>
+        <pre class="doc-code">Authorization: Bearer oxk_your_api_key_here</pre>
+      </div>
 
       <div class="doc-h2">API key properties</div>
       <div class="doc-table-wrap">
         <table class="doc-table">
-          <thead><tr><th>Property</th><th>Description</th></tr></thead>
+          <thead><tr><th>Property</th><th>Type</th><th>Description</th></tr></thead>
           <tbody>
-            <tr><td>prefix</td><td>First 8 characters visible for identification (e.g. <span class="inline-code">oxk_a8f3</span>)</td></tr>
-            <tr><td>name</td><td>Human-readable label you set at creation</td></tr>
-            <tr><td>status</td><td><span class="inline-code">active</span> or <span class="inline-code">revoked</span></td></tr>
-            <tr><td>last_used_at</td><td>Timestamp of most recent successful auth</td></tr>
+            <tr><td>id</td><td>integer</td><td>Unique identifier of the key record</td></tr>
+            <tr><td>prefix</td><td>string</td><td>First 8 chars visible for identification e.g. <span class="inline-code">oxk_a8f3</span></td></tr>
+            <tr><td>name</td><td>string</td><td>Human-readable label set at creation</td></tr>
+            <tr><td>status</td><td>string</td><td><span class="inline-code">active</span> | <span class="inline-code">revoked</span></td></tr>
+            <tr><td>last_used_at</td><td>datetime</td><td>Timestamp of most recent successful auth (UTC)</td></tr>
+            <tr><td>created_at</td><td>datetime</td><td>Creation timestamp</td></tr>
           </tbody>
         </table>
+      </div>
+
+      <div class="callout callout-info">
+        <span class="callout-icon">ℹ</span>
+        <div>API keys do not have scopes currently — each key grants full API access for the workspace it belongs to. Scope-based keys are on the roadmap.</div>
       </div>
     </div>
 
@@ -432,52 +734,30 @@ nav {
     <!-- ══ INGEST API ══ -->
     <div class="doc-section" id="ingest-api">
       <div class="section-tag">API Reference</div>
-      <div class="doc-h1">Ingest API</div>
+      <div class="doc-h1">Ingest API <a href="#ingest-api" class="anchor-link">#</a></div>
       <p class="doc-p">Push log events into ObserveX via HTTP from any service, script, or integration.</p>
 
       <div class="doc-h2">Endpoints</div>
 
-      <div class="endpoint-row">
-        <span class="method-badge m-post">POST</span>
-        <div>
-          <div class="endpoint-path">/ingest/json</div>
-          <div class="endpoint-desc">Ingest a single JSON log event or an array of events</div>
+      <div class="endpoint-block" id="ep-ingest-json">
+        <div class="endpoint-header" onclick="toggleEndpoint(this)">
+          <span class="method-badge m-post">POST</span>
+          <span class="endpoint-path">/ingest/json</span>
+          <span class="endpoint-desc">Single event or array of events (JSON body)</span>
+          <svg class="endpoint-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
         </div>
-      </div>
-      <div class="endpoint-row">
-        <span class="method-badge m-post">POST</span>
-        <div>
-          <div class="endpoint-path">/ingest/batch</div>
-          <div class="endpoint-desc">Ingest up to 1,000 events in one request via <span class="inline-code">{"events":[...]}</span></div>
-        </div>
-      </div>
-      <div class="endpoint-row">
-        <span class="method-badge m-post">POST</span>
-        <div>
-          <div class="endpoint-path">/ingest/file</div>
-          <div class="endpoint-desc">Upload a log file via multipart/form-data</div>
-        </div>
-      </div>
-
-      <div class="doc-h2">Single event — request body fields</div>
-      <div class="doc-table-wrap">
-        <table class="doc-table">
-          <thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
-          <tbody>
-            <tr><td>timestamp</td><td>string</td><td>Yes</td><td>ISO 8601 datetime (e.g. <span class="inline-code">2024-01-15T10:30:00Z</span>)</td></tr>
-            <tr><td>level</td><td>string</td><td>Yes</td><td>One of: <span class="inline-code">error</span> <span class="inline-code">warn</span> <span class="inline-code">info</span> <span class="inline-code">success</span> <span class="inline-code">debug</span></td></tr>
-            <tr><td>source</td><td>string</td><td>Yes</td><td>Source service or component name (e.g. <span class="inline-code">payment-service</span>)</td></tr>
-            <tr><td>message</td><td>string</td><td>Yes</td><td>Human-readable log message</td></tr>
-            <tr><td>event_id</td><td>string</td><td>No</td><td>Your own correlation/trace ID</td></tr>
-            <tr><td>*</td><td>any</td><td>No</td><td>Any additional fields are stored in the <span class="inline-code">payload</span> JSON column</td></tr>
-          </tbody>
-        </table>
-      </div>
-
-      <div class="doc-h2">Example — single event</div>
-      <div class="doc-code-wrap">
-        <div class="doc-code-bar"><span>curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
-        <div class="doc-code">curl -X POST https://yourapp.railway.app/ingest/json \
+        <div class="endpoint-body">
+          <p class="doc-p" style="margin-bottom:10px">Accepts a single event object or a JSON array of events. Content-Type must be <span class="inline-code">application/json</span>.</p>
+          <div class="doc-code-wrap">
+            <div class="doc-code-bar">
+              <div class="code-lang-tabs">
+                <button class="code-lang-tab active" onclick="switchTab(this,'ep-j-1','curl')">cURL</button>
+                <button class="code-lang-tab" onclick="switchTab(this,'ep-j-1','python')">Python</button>
+              </div>
+              <div class="code-bar-right"><button class="copy-btn" onclick="copyActivePane(this)">Copy</button></div>
+            </div>
+            <div id="ep-j-1">
+              <pre class="doc-code code-pane active" data-lang="curl">curl -X POST https://yourapp.railway.app/ingest/json \
   -H "Authorization: Bearer oxk_your_key_here" \
   -H "Content-Type: application/json" \
   -d '{
@@ -486,15 +766,40 @@ nav {
     "source": "payment-service",
     "message": "Stripe timeout after 30s",
     "requestId": "req_abc123",
-    "userId": "usr_456",
     "latency_ms": 30042
-  }'</div>
+  }'</pre>
+              <pre class="doc-code code-pane" data-lang="python">import requests, datetime
+
+resp = requests.post(
+    "https://yourapp.railway.app/ingest/json",
+    headers={"Authorization": "Bearer oxk_your_key_here"},
+    json={
+        "timestamp": datetime.datetime.utcnow().isoformat() + "Z",
+        "level": "error",
+        "source": "payment-service",
+        "message": "Stripe timeout after 30s",
+        "requestId": "req_abc123",
+        "latency_ms": 30042
+    }
+)
+print(resp.json())  # {"status":"ok","records":1}</pre>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <div class="doc-h2">Example — batch ingest</div>
-      <div class="doc-code-wrap">
-        <div class="doc-code-bar"><span>curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
-        <div class="doc-code">curl -X POST https://yourapp.railway.app/ingest/batch \
+      <div class="endpoint-block">
+        <div class="endpoint-header" onclick="toggleEndpoint(this)">
+          <span class="method-badge m-post">POST</span>
+          <span class="endpoint-path">/ingest/batch</span>
+          <span class="endpoint-desc">Up to 1,000 events in a single request</span>
+          <svg class="endpoint-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="endpoint-body">
+          <p class="doc-p" style="margin-bottom:10px">Wrap events in <span class="inline-code">{"events": [...]}</span>. Returns count of successfully ingested records.</p>
+          <div class="doc-code-wrap">
+            <div class="doc-code-bar"><span style="font-size:11px">curl</span><div class="code-bar-right"><button class="copy-btn" onclick="copyCode(this)">Copy</button></div></div>
+            <pre class="doc-code">curl -X POST https://yourapp.railway.app/ingest/batch \
   -H "Authorization: Bearer oxk_your_key_here" \
   -H "Content-Type: application/json" \
   -d '{
@@ -502,24 +807,54 @@ nav {
       {"timestamp":"2024-01-15T10:30:00Z","level":"info","source":"api","message":"Order placed","orderId":"ORD-001"},
       {"timestamp":"2024-01-15T10:30:01Z","level":"error","source":"api","message":"Payment failed","code":402}
     ]
-  }'</div>
+  }'</pre>
+          </div>
+        </div>
       </div>
 
-      <div class="doc-h2">Example — file upload</div>
-      <div class="doc-code-wrap">
-        <div class="doc-code-bar"><span>curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
-        <div class="doc-code">curl -X POST https://yourapp.railway.app/ingest/file \
+      <div class="endpoint-block">
+        <div class="endpoint-header" onclick="toggleEndpoint(this)">
+          <span class="method-badge m-post">POST</span>
+          <span class="endpoint-path">/ingest/file</span>
+          <span class="endpoint-desc">Upload a log file via multipart/form-data</span>
+          <svg class="endpoint-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="endpoint-body">
+          <p class="doc-p" style="margin-bottom:10px">Supported formats: <span class="inline-code">.json</span> <span class="inline-code">.jsonl</span> <span class="inline-code">.ndjson</span> <span class="inline-code">.csv</span> <span class="inline-code">.log</span> <span class="inline-code">.txt</span> <span class="inline-code">.gz</span>. Format is auto-detected.</p>
+          <div class="doc-code-wrap">
+            <div class="doc-code-bar"><span style="font-size:11px">curl</span><div class="code-bar-right"><button class="copy-btn" onclick="copyCode(this)">Copy</button></div></div>
+            <pre class="doc-code">curl -X POST https://yourapp.railway.app/ingest/file \
   -H "Authorization: Bearer oxk_your_key_here" \
-  -F "file=@/var/log/myapp.log"</div>
+  -F "file=@/var/log/myapp.log"</pre>
+          </div>
+        </div>
+      </div>
+
+      <div class="doc-h2">Request body fields</div>
+      <div class="doc-table-wrap">
+        <table class="doc-table">
+          <thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td>timestamp</td><td>string</td><td class="req-yes">required</td><td>ISO 8601 datetime e.g. <span class="inline-code">2024-01-15T10:30:00Z</span></td></tr>
+            <tr><td>level</td><td>string</td><td class="req-yes">required</td><td><span class="inline-code">error</span> | <span class="inline-code">warn</span> | <span class="inline-code">info</span> | <span class="inline-code">success</span> | <span class="inline-code">debug</span></td></tr>
+            <tr><td>source</td><td>string</td><td class="req-yes">required</td><td>Emitting service name e.g. <span class="inline-code">payment-service</span></td></tr>
+            <tr><td>message</td><td>string</td><td class="req-yes">required</td><td>Human-readable log message (indexed for full-text search)</td></tr>
+            <tr><td>event_id</td><td>string</td><td class="req-no">optional</td><td>Your own correlation / trace ID</td></tr>
+            <tr><td>*</td><td>any</td><td class="req-no">optional</td><td>Any additional fields stored in the <span class="inline-code">payload</span> JSONB column</td></tr>
+          </tbody>
+        </table>
       </div>
 
       <div class="doc-h2">Response</div>
-      <div class="doc-code">{
+      <div class="doc-code-wrap">
+        <div class="doc-code-bar"><span style="font-size:11px">JSON response</span></div>
+        <pre class="doc-code">{
   "status": "ok",
   "records": 1,
   "source": "api-ingest",
   "upload_id": 42
-}</div>
+}</pre>
+      </div>
     </div>
 
     <hr class="doc-hr"/>
@@ -527,50 +862,39 @@ nav {
     <!-- ══ QUERY API ══ -->
     <div class="doc-section" id="query-api">
       <div class="section-tag">API Reference</div>
-      <div class="doc-h1">Query Logs</div>
+      <div class="doc-h1">Query Logs <a href="#query-api" class="anchor-link">#</a></div>
 
-      <div class="endpoint-row">
-        <span class="method-badge m-get">GET</span>
-        <div>
-          <div class="endpoint-path">/api/logs</div>
-          <div class="endpoint-desc">Paginated log query with full filtering support</div>
+      <div class="endpoint-block">
+        <div class="endpoint-header" onclick="toggleEndpoint(this)">
+          <span class="method-badge m-get">GET</span>
+          <span class="endpoint-path">/api/logs</span>
+          <span class="endpoint-desc">Paginated log query with full filtering support</span>
+          <svg class="endpoint-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
         </div>
-      </div>
-      <div class="endpoint-row">
-        <span class="method-badge m-get">GET</span>
-        <div>
-          <div class="endpoint-path">/api/logs/:id</div>
-          <div class="endpoint-desc">Fetch a single log event by ID including full payload</div>
-        </div>
-      </div>
-      <div class="endpoint-row">
-        <span class="method-badge m-del">DELETE</span>
-        <div>
-          <div class="endpoint-path">/api/logs/:id</div>
-          <div class="endpoint-desc">Delete a single log event permanently</div>
-        </div>
-      </div>
+        <div class="endpoint-body">
+          <div class="doc-table-wrap">
+            <table class="doc-table">
+              <thead><tr><th>Param</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+              <tbody>
+                <tr><td>page</td><td>int</td><td>1</td><td>Page number (1-indexed)</td></tr>
+                <tr><td>per_page</td><td>int</td><td>50</td><td>Results per page (max 500)</td></tr>
+                <tr><td>level</td><td>string</td><td>all</td><td><span class="inline-code">error</span> | <span class="inline-code">warn</span> | <span class="inline-code">info</span> | <span class="inline-code">success</span> | <span class="inline-code">debug</span> | <span class="inline-code">all</span></td></tr>
+                <tr><td>q</td><td>string</td><td>—</td><td>Full-text search in message field</td></tr>
+                <tr><td>source</td><td>string</td><td>—</td><td>Exact source name filter</td></tr>
+                <tr><td>from_ts</td><td>datetime</td><td>—</td><td>Start of time range (ISO 8601)</td></tr>
+                <tr><td>to_ts</td><td>datetime</td><td>—</td><td>End of time range (ISO 8601)</td></tr>
+                <tr><td>sort</td><td>string</td><td>timestamp</td><td><span class="inline-code">timestamp</span> | <span class="inline-code">level</span> | <span class="inline-code">source</span></td></tr>
+                <tr><td>dir</td><td>string</td><td>desc</td><td><span class="inline-code">asc</span> | <span class="inline-code">desc</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="doc-code-wrap" style="margin-top:12px">
+            <div class="doc-code-bar"><span style="font-size:11px">Example request + response</span><div class="code-bar-right"><button class="copy-btn" onclick="copyCode(this)">Copy</button></div></div>
+            <pre class="doc-code">GET /api/logs?level=error&q=timeout&per_page=20&page=1
+Authorization: Bearer oxk_your_key_here
 
-      <div class="doc-h2">Query parameters for GET /api/logs</div>
-      <div class="doc-table-wrap">
-        <table class="doc-table">
-          <thead><tr><th>Param</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
-          <tbody>
-            <tr><td>page</td><td>int</td><td>1</td><td>Page number</td></tr>
-            <tr><td>per_page</td><td>int</td><td>50</td><td>Results per page (max 500)</td></tr>
-            <tr><td>level</td><td>string</td><td>all</td><td>Filter: error | warn | info | success | debug | all</td></tr>
-            <tr><td>q</td><td>string</td><td>—</td><td>Full-text search in message field</td></tr>
-            <tr><td>source</td><td>string</td><td>—</td><td>Exact source name filter</td></tr>
-            <tr><td>from_ts</td><td>datetime</td><td>—</td><td>Start of time range (ISO 8601 or <span class="inline-code">YYYY-MM-DD HH:MM:SS</span>)</td></tr>
-            <tr><td>to_ts</td><td>datetime</td><td>—</td><td>End of time range</td></tr>
-            <tr><td>sort</td><td>string</td><td>timestamp</td><td>Column: timestamp | level | source | message</td></tr>
-            <tr><td>dir</td><td>string</td><td>desc</td><td>Sort direction: asc | desc</td></tr>
-          </tbody>
-        </table>
-      </div>
-
-      <div class="doc-h2">Response structure</div>
-      <div class="doc-code">{
+# Response
+{
   "records": [
     {
       "id": 1042,
@@ -583,11 +907,74 @@ nav {
       "payload": { "requestId": "req_abc123", "latency_ms": 30042 }
     }
   ],
-  "total": 1204,
+  "total": 204,
   "page": 1,
-  "pages": 25,
-  "per_page": 50
-}</div>
+  "pages": 11,
+  "per_page": 20
+}</pre>
+          </div>
+        </div>
+      </div>
+
+      <div class="endpoint-block">
+        <div class="endpoint-header" onclick="toggleEndpoint(this)">
+          <span class="method-badge m-get">GET</span>
+          <span class="endpoint-path">/api/logs/:id</span>
+          <span class="endpoint-desc">Fetch a single log event by ID including full payload</span>
+          <svg class="endpoint-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="endpoint-body">
+          <pre class="doc-code">GET /api/logs/1042
+Authorization: Bearer oxk_your_key_here</pre>
+        </div>
+      </div>
+
+      <div class="endpoint-block">
+        <div class="endpoint-header" onclick="toggleEndpoint(this)">
+          <span class="method-badge m-del">DELETE</span>
+          <span class="endpoint-path">/api/logs/:id</span>
+          <span class="endpoint-desc">Permanently delete a single log event</span>
+          <svg class="endpoint-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="endpoint-body">
+          <div class="callout callout-danger"><span class="callout-icon">⛔</span><div>Delete is permanent and irreversible. Requires admin or manager role.</div></div>
+          <pre class="doc-code">DELETE /api/logs/1042
+Authorization: Bearer oxk_your_key_here
+
+# Response: 204 No Content</pre>
+        </div>
+      </div>
+    </div>
+
+    <hr class="doc-hr"/>
+
+    <!-- ══ RATE LIMITS ══ -->
+    <div class="doc-section" id="rate-limits">
+      <div class="section-tag">API Reference</div>
+      <div class="doc-h1">Rate Limits <a href="#rate-limits" class="anchor-link">#</a></div>
+      <p class="doc-p">Rate limits are enforced per workspace per endpoint category. Exceeding a limit returns HTTP <span class="inline-code">429 Too Many Requests</span> with a <span class="inline-code">Retry-After</span> header.</p>
+
+      <div class="doc-table-wrap">
+        <table class="doc-table">
+          <thead><tr><th>Endpoint group</th><th>Limit</th><th>Window</th><th>Notes</th></tr></thead>
+          <tbody>
+            <tr><td>POST /ingest/*</td><td>300 req</td><td>1 min</td><td>Batch requests count as 1 regardless of event count</td></tr>
+            <tr><td>GET /api/logs</td><td>120 req</td><td>1 min</td><td>Reduce per_page to lower DB cost per request</td></tr>
+            <tr><td>POST /api/logs/:id/explain</td><td>20 req</td><td>1 min</td><td>AI Explain calls Claude API — subject to Anthropic limits</td></tr>
+            <tr><td>Auth endpoints</td><td>10 req</td><td>15 min</td><td>Login, create-account, forgot-password</td></tr>
+            <tr><td>All other</td><td>200 req</td><td>1 min</td><td>Alert, key, webhook CRUD endpoints</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="doc-h2">Rate limit response headers</div>
+      <div class="doc-code-wrap">
+        <div class="doc-code-bar"><span style="font-size:11px">HTTP Response Headers</span></div>
+        <pre class="doc-code">X-RateLimit-Limit: 300
+X-RateLimit-Remaining: 142
+X-RateLimit-Reset: 1705316460    # Unix timestamp when window resets
+Retry-After: 23                  # Only on 429 — seconds to wait</pre>
+      </div>
     </div>
 
     <hr class="doc-hr"/>
@@ -595,14 +982,14 @@ nav {
     <!-- ══ S3 GUIDE ══ -->
     <div class="doc-section" id="s3-guide">
       <div class="section-tag">Integrations</div>
-      <div class="doc-h1">S3 Bucket Integration</div>
-      <p class="doc-p">Connect ObserveX to any AWS S3 (or S3-compatible) bucket to automatically pull and index log files on a schedule.</p>
+      <div class="doc-h1">S3 Bucket Integration <a href="#s3-guide" class="anchor-link">#</a></div>
+      <p class="doc-p">Connect ObserveX to any AWS S3 (or S3-compatible) bucket to automatically pull and index log files on a cron schedule.</p>
 
       <div class="doc-h2">Required IAM policy</div>
-      <p class="doc-p">Create an IAM user with programmatic access and attach this policy (replace <span class="inline-code">your-log-bucket</span> with your actual bucket name):</p>
+      <p class="doc-p">Create an IAM user with programmatic access and attach this policy:</p>
       <div class="doc-code-wrap">
-        <div class="doc-code-bar"><span>IAM Policy JSON</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
-        <div class="doc-code">{
+        <div class="doc-code-bar"><span style="font-size:11px">IAM Policy JSON</span><div class="code-bar-right"><button class="copy-btn" onclick="copyCode(this)">Copy</button></div></div>
+        <pre class="doc-code">{
   "Version": "2012-10-17",
   "Statement": [
     {
@@ -614,7 +1001,14 @@ nav {
       ]
     }
   ]
-}</div>
+}</pre>
+      </div>
+
+      <div class="doc-h2">Setup steps</div>
+      <div class="steps">
+        <div class="step"><div class="step-num">01</div><div class="step-content"><h4>Add the integration</h4><p>Go to <strong>Integrations → Add integration → S3 Bucket</strong>. Enter bucket name, region, optional key prefix, and IAM credentials.</p></div></div>
+        <div class="step"><div class="step-num">02</div><div class="step-content"><h4>Create a scheduled job</h4><p>Go to <strong>Ingestion Jobs → Create job</strong>, select your S3 integration, and set a cron schedule (e.g. every 15 minutes).</p></div></div>
+        <div class="step"><div class="step-num">03</div><div class="step-content"><h4>Monitor runs</h4><p>Each run shows record count, status, duration, and error messages in <strong>Ingestion Jobs → Recent run history</strong>.</p></div></div>
       </div>
 
       <div class="doc-h2">Supported file formats</div>
@@ -623,47 +1017,35 @@ nav {
           <thead><tr><th>Format</th><th>Extensions</th><th>Notes</th></tr></thead>
           <tbody>
             <tr><td>JSON Lines</td><td>.jsonl, .ndjson</td><td>One JSON object per line — most efficient</td></tr>
-            <tr><td>CloudWatch Export</td><td>.json</td><td>AWS CloudWatch log export format</td></tr>
+            <tr><td>CloudWatch Export</td><td>.json</td><td>AWS CloudWatch log export format auto-detected</td></tr>
             <tr><td>Plain text</td><td>.log, .txt</td><td>One log entry per line</td></tr>
-            <tr><td>CSV</td><td>.csv</td><td>Must have header row; timestamp, level, message columns auto-detected</td></tr>
+            <tr><td>CSV</td><td>.csv</td><td>Must have header row; timestamp, level, message auto-detected</td></tr>
             <tr><td>Gzip compressed</td><td>.gz</td><td>Any of the above formats compressed</td></tr>
+            <tr><td>MuleSoft block</td><td>.log, .txt</td><td>Detected by content pattern, not extension</td></tr>
           </tbody>
         </table>
       </div>
 
-      <div class="doc-h2">Setup steps</div>
-      <div class="steps">
-        <div class="step">
-          <div class="step-num">01</div>
-          <div class="step-content"><h4>Add the integration</h4><p>Go to <strong>Integrations → Add integration</strong>, select <strong>S3 Bucket</strong>, enter bucket name, region, optional prefix, and IAM credentials.</p></div>
-        </div>
-        <div class="step">
-          <div class="step-num">02</div>
-          <div class="step-content"><h4>Create a scheduled job</h4><p>Go to <strong>Ingestion Jobs → Create job</strong>, select your new S3 integration, and set a cron schedule.</p></div>
-        </div>
-        <div class="step">
-          <div class="step-num">03</div>
-          <div class="step-content"><h4>Monitor runs</h4><p>Job run history is visible in <strong>Ingestion Jobs → Recent run history</strong>. Each run shows record count, status, and any error messages.</p></div>
-        </div>
-      </div>
-
       <div class="doc-h2">Common cron schedules</div>
-      <div class="doc-code">*/15 * * * *   → every 15 minutes
+      <div class="doc-code-wrap">
+        <div class="doc-code-bar"><span style="font-size:11px">cron expressions</span><div class="code-bar-right"><button class="copy-btn" onclick="copyCode(this)">Copy</button></div></div>
+        <pre class="doc-code">*/15 * * * *   → every 15 minutes
 0 * * * *      → every hour
 0 */6 * * *    → every 6 hours
 0 0 * * *      → daily at midnight UTC
-0 8 * * 1-5    → weekdays at 8 AM UTC</div>
+0 8 * * 1-5    → weekdays at 8 AM UTC</pre>
+      </div>
 
       <div class="doc-h2">Troubleshooting</div>
       <div class="doc-table-wrap">
         <table class="doc-table">
           <thead><tr><th>Error</th><th>Cause</th><th>Fix</th></tr></thead>
           <tbody>
-            <tr><td>AccessDenied</td><td>Missing s3:GetObject or s3:ListBucket permission</td><td>Update IAM policy and re-save integration</td></tr>
-            <tr><td>NoSuchBucket</td><td>Wrong bucket name or region mismatch</td><td>Verify bucket name and region in AWS console</td></tr>
-            <tr><td>InvalidCredentials</td><td>Wrong Access Key ID or Secret Access Key</td><td>Generate a new IAM access key pair</td></tr>
-            <tr><td>0 files found</td><td>Prefix doesn't match any objects</td><td>Try leaving prefix blank, or verify path in S3 console</td></tr>
-            <tr><td>Parse error</td><td>File format not detected correctly</td><td>Rename file to use a supported extension (.jsonl, .log, .csv)</td></tr>
+            <tr><td>AccessDenied</td><td>Missing s3:GetObject or s3:ListBucket</td><td>Update IAM policy and re-save integration</td></tr>
+            <tr><td>NoSuchBucket</td><td>Wrong bucket name or region mismatch</td><td>Verify in AWS console</td></tr>
+            <tr><td>InvalidCredentials</td><td>Wrong Access Key ID or Secret</td><td>Generate a new IAM access key pair</td></tr>
+            <tr><td>0 files found</td><td>Prefix doesn't match any objects</td><td>Leave prefix blank, or verify path in S3 console</td></tr>
+            <tr><td>Parse error</td><td>File format not detected</td><td>Rename to a supported extension (.jsonl, .log, .csv)</td></tr>
           </tbody>
         </table>
       </div>
@@ -674,12 +1056,13 @@ nav {
     <!-- ══ WEBHOOKS ══ -->
     <div class="doc-section" id="webhooks">
       <div class="section-tag">Integrations</div>
-      <div class="doc-h1">Webhooks</div>
-      <p class="doc-p">ObserveX can deliver alert notifications to any HTTP endpoint — Slack, Microsoft Teams, Discord, PagerDuty, or your own service.</p>
+      <div class="doc-h1">Webhooks <a href="#webhooks" class="anchor-link">#</a></div>
+      <p class="doc-p">ObserveX delivers alert notifications to any HTTP endpoint — Slack, Microsoft Teams, Discord, PagerDuty, or your own service.</p>
 
       <div class="doc-h2">Webhook payload</div>
-      <p class="doc-p">When an alert fires, ObserveX sends a POST request with this JSON body:</p>
-      <div class="doc-code">{
+      <div class="doc-code-wrap">
+        <div class="doc-code-bar"><span style="font-size:11px">POST body sent by ObserveX</span></div>
+        <pre class="doc-code">{
   "alert_name": "Payment timeout spike",
   "severity": "sev2",
   "alert_type": "keyword",
@@ -688,26 +1071,76 @@ nav {
   "match_count": 12,
   "org": "your-org-slug",
   "link": "https://yourapp.railway.app/workspace/your-org/explorer"
-}</div>
+}</pre>
+      </div>
 
       <div class="doc-h2">Slack setup</div>
       <div class="steps">
-        <div class="step">
-          <div class="step-num">01</div>
-          <div class="step-content"><h4>Create a Slack app</h4><p>Go to <a href="https://api.slack.com/apps" target="_blank">api.slack.com/apps</a> → Create new app → From scratch → add an <strong>Incoming Webhook</strong>.</p></div>
-        </div>
-        <div class="step">
-          <div class="step-num">02</div>
-          <div class="step-content"><h4>Get the webhook URL</h4><p>Activate Incoming Webhooks, click <strong>Add New Webhook to Workspace</strong>, select a channel, and copy the URL (starts with <span class="inline-code">https://hooks.slack.com/services/…</span>).</p></div>
-        </div>
-        <div class="step">
-          <div class="step-num">03</div>
-          <div class="step-content"><h4>Paste into alert rule</h4><p>When creating or editing an alert rule, paste the Slack webhook URL into the <strong>Webhook URL</strong> field.</p></div>
-        </div>
+        <div class="step"><div class="step-num">01</div><div class="step-content"><h4>Create a Slack app</h4><p>Go to <a href="https://api.slack.com/apps" target="_blank">api.slack.com/apps</a> → Create new app → From scratch → enable <strong>Incoming Webhooks</strong>.</p></div></div>
+        <div class="step"><div class="step-num">02</div><div class="step-content"><h4>Get the webhook URL</h4><p>Add webhook to workspace, select a channel, copy the URL beginning with <span class="inline-code">https://hooks.slack.com/services/…</span></p></div></div>
+        <div class="step"><div class="step-num">03</div><div class="step-content"><h4>Paste into an alert rule</h4><p>When creating or editing an alert rule, paste the Slack URL into the <strong>Webhook URL</strong> field.</p></div></div>
       </div>
 
-      <div class="doc-h2">Microsoft Teams setup</div>
-      <p class="doc-p">In Teams: go to a channel → <strong>Connectors → Incoming Webhook → Configure</strong>. Copy the webhook URL and paste it into the alert rule's Webhook URL field.</p>
+      <div class="doc-h2">Microsoft Teams</div>
+      <p class="doc-p">In Teams: go to a channel → <strong>Connectors → Incoming Webhook → Configure</strong>. Copy the webhook URL and paste it into the alert rule.</p>
+
+      <div class="doc-h2">Verifying webhook delivery</div>
+      <p class="doc-p">ObserveX sends a <span class="inline-code">X-ObserveX-Signature</span> header on every webhook using HMAC-SHA256 of the request body. If you add a <strong>Webhook Secret</strong> on the alert rule, verify it server-side:</p>
+      <div class="doc-code-wrap">
+        <div class="doc-code-bar">
+          <div class="code-lang-tabs">
+            <button class="code-lang-tab active" onclick="switchTab(this,'wh-sig','python')">Python</button>
+            <button class="code-lang-tab" onclick="switchTab(this,'wh-sig','node')">Node.js</button>
+          </div>
+          <div class="code-bar-right"><button class="copy-btn" onclick="copyActivePane(this)">Copy</button></div>
+        </div>
+        <div id="wh-sig">
+          <pre class="doc-code code-pane active" data-lang="python">import hmac, hashlib
+
+def verify_signature(secret: str, body: bytes, sig_header: str) -> bool:
+    expected = hmac.new(secret.encode(), body, hashlib.sha256).hexdigest()
+    return hmac.compare_digest(f"sha256={expected}", sig_header)</pre>
+          <pre class="doc-code code-pane" data-lang="node">const crypto = require('crypto');
+
+function verifySignature(secret, rawBody, sigHeader) {
+  const expected = 'sha256=' + crypto
+    .createHmac('sha256', secret)
+    .update(rawBody)
+    .digest('hex');
+  return crypto.timingSafeEqual(
+    Buffer.from(expected), Buffer.from(sigHeader)
+  );
+}</pre>
+        </div>
+      </div>
+    </div>
+
+    <hr class="doc-hr"/>
+
+    <!-- ══ SCHEDULED JOBS ══ -->
+    <div class="doc-section" id="scheduled-jobs">
+      <div class="section-tag">Integrations</div>
+      <div class="doc-h1">Scheduled Jobs <a href="#scheduled-jobs" class="anchor-link">#</a></div>
+      <p class="doc-p">Scheduled jobs automate ingestion from connected integrations (currently S3 Bucket). Jobs run on a cron schedule and are executed server-side on Railway.</p>
+
+      <div class="doc-h2">Job lifecycle</div>
+      <div class="doc-table-wrap">
+        <table class="doc-table">
+          <thead><tr><th>Status</th><th>Meaning</th></tr></thead>
+          <tbody>
+            <tr><td>pending</td><td>Waiting for the cron timer to fire</td></tr>
+            <tr><td>running</td><td>Currently fetching and ingesting files</td></tr>
+            <tr><td>success</td><td>Completed; see records count in run history</td></tr>
+            <tr><td>error</td><td>Failed; error message available in run history detail</td></tr>
+            <tr><td>paused</td><td>Manually paused — will not fire until resumed</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout callout-info">
+        <span class="callout-icon">ℹ</span>
+        <div>Jobs track the <strong>last processed file key</strong> and skip already-ingested objects. Duplicate ingestion is prevented via the S3 ETag + upload record deduplication check.</div>
+      </div>
     </div>
 
     <hr class="doc-hr"/>
@@ -715,18 +1148,18 @@ nav {
     <!-- ══ ALERT RULES ══ -->
     <div class="doc-section" id="alert-rules">
       <div class="section-tag">Features</div>
-      <div class="doc-h1">Alert Rules</div>
-      <p class="doc-p">Alert rules continuously monitor incoming log events and fire notifications when thresholds are crossed. Configure alerts in <strong>Alert rules → Create Alert Rule</strong>.</p>
+      <div class="doc-h1">Alert Rules <a href="#alert-rules" class="anchor-link">#</a></div>
+      <p class="doc-p">Alert rules continuously monitor incoming log events and fire notifications when thresholds are crossed.</p>
 
       <div class="doc-h2">Alert types</div>
       <div class="doc-table-wrap">
         <table class="doc-table">
           <thead><tr><th>Type</th><th>Trigger condition</th><th>Use case</th></tr></thead>
           <tbody>
-            <tr><td>Error Rate</td><td>Error count exceeds threshold in rolling 5-minute window</td><td>Detect service outages</td></tr>
-            <tr><td>Keyword Match</td><td>A specific phrase appears ≥ threshold times in log messages</td><td>Detect specific exceptions, timeouts</td></tr>
-            <tr><td>Suspicious IP</td><td>A single IP exceeds threshold req/min with elevated error rate</td><td>Detect brute-force or scraping</td></tr>
-            <tr><td>Source Error Spike</td><td>A specific source emits more than threshold errors in 5 min</td><td>Detect single-service degradation</td></tr>
+            <tr><td>Error Rate</td><td>Error count exceeds threshold in rolling 5-min window</td><td>Detect service outages</td></tr>
+            <tr><td>Keyword Match</td><td>Specific phrase appears ≥ threshold times in messages</td><td>Detect specific exceptions, timeouts</td></tr>
+            <tr><td>Suspicious IP</td><td>A single IP exceeds threshold req/min with elevated errors</td><td>Detect brute-force / scraping</td></tr>
+            <tr><td>Source Error Spike</td><td>A specific source emits > threshold errors in 5 min</td><td>Detect single-service degradation</td></tr>
           </tbody>
         </table>
       </div>
@@ -734,25 +1167,19 @@ nav {
       <div class="doc-h2">Severity levels</div>
       <div class="doc-table-wrap">
         <table class="doc-table">
-          <thead><tr><th>Level</th><th>Label</th><th>Recommended notification</th></tr></thead>
+          <thead><tr><th>Level</th><th>Label</th><th>Recommended channel</th></tr></thead>
           <tbody>
             <tr><td>sev3</td><td>Medium</td><td>Slack channel message</td></tr>
             <tr><td>sev2</td><td>High</td><td>Email + Slack</td></tr>
-            <tr><td>sev1</td><td>Critical</td><td>PagerDuty / phone / all channels</td></tr>
+            <tr><td>sev1</td><td>Critical</td><td>PagerDuty + all channels</td></tr>
           </tbody>
         </table>
       </div>
 
-      <div class="doc-h2">Cooldown period</div>
-      <p class="doc-p">The <strong>Cooldown</strong> field (in minutes) prevents alert fatigue by suppressing repeated notifications for the same rule within the cooldown window. Set to <span class="inline-code">0</span> to fire on every occurrence. Recommended: 15–60 minutes for production SEV2/SEV1 rules.</p>
-
-      <div class="doc-h2">Preview match count</div>
-      <p class="doc-p">Before saving a rule, click <strong>🔍 Preview match count</strong> to see how many existing logs would currently trigger it. This lets you tune your threshold before the rule goes live.</p>
-
       <div class="doc-h2">Create alert via API</div>
       <div class="doc-code-wrap">
-        <div class="doc-code-bar"><span>POST /api/alerts</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
-        <div class="doc-code">{
+        <div class="doc-code-bar"><span style="font-size:11px">POST /api/alerts</span><div class="code-bar-right"><button class="copy-btn" onclick="copyCode(this)">Copy</button></div></div>
+        <pre class="doc-code">{
   "name": "Payment timeout spike",
   "severity": "sev2",
   "alert_type": "keyword",
@@ -763,7 +1190,7 @@ nav {
   "notify_email": "oncall@company.com",
   "webhook_url": "https://hooks.slack.com/services/...",
   "status": "active"
-}</div>
+}</pre>
       </div>
     </div>
 
@@ -772,34 +1199,33 @@ nav {
     <!-- ══ AI EXPLAIN ══ -->
     <div class="doc-section" id="ai-explain">
       <div class="section-tag">Features</div>
-      <div class="doc-h1">✦ AI Explain</div>
+      <div class="doc-h1">✦ AI Explain <a href="#ai-explain" class="anchor-link">#</a></div>
       <p class="doc-p">ObserveX integrates with Claude AI (Anthropic) to explain error and warning logs in plain English. Click any ERROR or WARN log in the explorer, then hit <strong>✦ AI Explain</strong> in the detail panel.</p>
 
       <div class="doc-h2">What it explains</div>
-      <ul style="padding-left:20px;color:var(--muted);font-size:14px;line-height:2">
+      <ul class="doc-ul" style="margin-bottom:20px">
         <li>Root cause of the error in plain language</li>
-        <li>Likely contributing factors based on the payload</li>
-        <li>Suggested next steps to investigate or fix</li>
-        <li>Related patterns to check in other logs</li>
+        <li>Likely contributing factors inferred from the payload</li>
+        <li>Suggested next steps to investigate or resolve</li>
+        <li>Related patterns to check in surrounding logs</li>
       </ul>
 
-      <div class="doc-h2">Setup</div>
       <div class="callout callout-info">
         <span class="callout-icon">ℹ</span>
-        <div>AI Explain requires an <strong>ANTHROPIC_API_KEY</strong> environment variable set on your Railway deployment. Add it in Railway → Your service → Variables.</div>
+        <div>AI Explain requires an <strong>ANTHROPIC_API_KEY</strong> environment variable set on your Railway service. Add it in <strong>Railway → Your service → Variables</strong>.</div>
       </div>
 
       <div class="doc-h2">Via API</div>
       <div class="doc-code-wrap">
-        <div class="doc-code-bar"><span>POST /api/logs/:id/explain</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
-        <div class="doc-code">curl -X POST https://yourapp.railway.app/api/logs/1042/explain \
+        <div class="doc-code-bar"><span style="font-size:11px">POST /api/logs/:id/explain</span><div class="code-bar-right"><button class="copy-btn" onclick="copyCode(this)">Copy</button></div></div>
+        <pre class="doc-code">curl -X POST https://yourapp.railway.app/api/logs/1042/explain \
   -H "Authorization: Bearer oxk_your_key_here"
 
 # Response:
 {
   "explanation": "This error indicates a TCP connection timeout to Stripe's API...",
   "log_id": 1042
-}</div>
+}</pre>
       </div>
     </div>
 
@@ -808,29 +1234,28 @@ nav {
     <!-- ══ LOG EXPLORER ══ -->
     <div class="doc-section" id="log-explorer">
       <div class="section-tag">Features</div>
-      <div class="doc-h1">Log Explorer</div>
-      <p class="doc-p">The log explorer is the main search interface. Access it from the sidebar under <strong>Log explorer</strong>.</p>
+      <div class="doc-h1">Log Explorer <a href="#log-explorer" class="anchor-link">#</a></div>
 
-      <div class="doc-h2">Search & filters</div>
+      <div class="doc-h2">Search &amp; filters</div>
       <div class="doc-table-wrap">
         <table class="doc-table">
           <thead><tr><th>Control</th><th>Description</th></tr></thead>
           <tbody>
-            <tr><td>Search box</td><td>Free-text search in message field. Keyboard shortcut: <span class="inline-code">⌘K</span></td></tr>
-            <tr><td>Level chips</td><td>Filter by ERROR, WARN, INFO, SUCCESS, DEBUG</td></tr>
-            <tr><td>Preset buttons</td><td>Quick time ranges: 15m, 1h, 6h, 24h, 7d, 30d</td></tr>
+            <tr><td>Search box</td><td>Full-text search in message field. Shortcut: <span class="inline-code">⌘K</span></td></tr>
+            <tr><td>Level chips</td><td>Toggle filter: ERROR / WARN / INFO / SUCCESS / DEBUG</td></tr>
+            <tr><td>Preset buttons</td><td>Quick ranges: 15m, 1h, 6h, 24h, 7d, 30d</td></tr>
             <tr><td>Date pickers</td><td>Custom from/to datetime range</td></tr>
-            <tr><td>Source dropdown</td><td>Filter by a specific source tag</td></tr>
-            <tr><td>Live tail</td><td>Auto-refresh every 5s with newest logs at top</td></tr>
+            <tr><td>Source dropdown</td><td>Filter by exact source tag</td></tr>
+            <tr><td>Live tail</td><td>Auto-refresh every 5s, newest logs at top</td></tr>
           </tbody>
         </table>
       </div>
 
-      <div class="doc-h2">Saved searches</div>
-      <p class="doc-p">Click <strong>☆ Save</strong> to name and save your current filter combination. Saved searches appear in the dropdown for one-click reuse across sessions.</p>
-
       <div class="doc-h2">Export</div>
-      <p class="doc-p">Use <strong>⬇ CSV</strong> or <strong>⬇ JSON</strong> to export up to 5,000 logs matching your current filters.</p>
+      <p class="doc-p">Use <strong>⬇ CSV</strong> or <strong>⬇ JSON</strong> to export up to 5,000 logs matching your current filters. The export honours all active filters.</p>
+
+      <div class="doc-h2">Saved searches</div>
+      <p class="doc-p">Click <strong>☆ Save</strong> to name and save the current filter combination. Saved searches persist across sessions and are stored per-workspace.</p>
     </div>
 
     <hr class="doc-hr"/>
@@ -838,27 +1263,17 @@ nav {
     <!-- ══ BULK OPS ══ -->
     <div class="doc-section" id="bulk-ops">
       <div class="section-tag">Features</div>
-      <div class="doc-h1">Bulk Operations</div>
-      <p class="doc-p">Bulk mode lets you select and delete multiple log entries at once.</p>
+      <div class="doc-h1">Bulk Operations <a href="#bulk-ops" class="anchor-link">#</a></div>
 
       <div class="steps">
-        <div class="step">
-          <div class="step-num">01</div>
-          <div class="step-content"><h4>Enable bulk mode</h4><p>Click <strong>☐ Bulk</strong> in the top-right of the log explorer toolbar. Checkboxes appear on every row.</p></div>
-        </div>
-        <div class="step">
-          <div class="step-num">02</div>
-          <div class="step-content"><h4>Select logs</h4><p>Click individual checkboxes or use <strong>Select all</strong> at the top to select all logs on the current page.</p></div>
-        </div>
-        <div class="step">
-          <div class="step-num">03</div>
-          <div class="step-content"><h4>Delete</h4><p>Click <strong>🗑 Delete selected</strong>. A confirmation dialog shows the count — confirm to permanently remove the logs.</p></div>
-        </div>
+        <div class="step"><div class="step-num">01</div><div class="step-content"><h4>Enable bulk mode</h4><p>Click <strong>☐ Bulk</strong> in the log explorer toolbar. Checkboxes appear on every row.</p></div></div>
+        <div class="step"><div class="step-num">02</div><div class="step-content"><h4>Select logs</h4><p>Click individual checkboxes or use <strong>Select all</strong> to select all logs on the current page.</p></div></div>
+        <div class="step"><div class="step-num">03</div><div class="step-content"><h4>Delete</h4><p>Click <strong>🗑 Delete selected</strong>. A confirmation dialog shows the count before permanently removing logs.</p></div></div>
       </div>
 
       <div class="callout callout-danger">
         <span class="callout-icon">⛔</span>
-        <div>Bulk delete is <strong>permanent and irreversible</strong>. Logs deleted this way are gone immediately. Use with caution in production workspaces.</div>
+        <div>Bulk delete is <strong>permanent and irreversible</strong>. Requires admin role. There is no undo.</div>
       </div>
     </div>
 
@@ -867,23 +1282,109 @@ nav {
     <!-- ══ TEAM ACCESS ══ -->
     <div class="doc-section" id="team-access">
       <div class="section-tag">Features</div>
-      <div class="doc-h1">Team & Access</div>
+      <div class="doc-h1">Team &amp; Access <a href="#team-access" class="anchor-link">#</a></div>
 
       <div class="doc-h2">Roles</div>
       <div class="doc-table-wrap">
         <table class="doc-table">
           <thead><tr><th>Role</th><th>Capabilities</th></tr></thead>
           <tbody>
-            <tr><td>admin</td><td>Full access: manage users, keys, org settings, all data</td></tr>
-            <tr><td>manager</td><td>Can view all logs, manage alerts and integrations</td></tr>
-            <tr><td>developer</td><td>Can view logs, create API keys, set up jobs</td></tr>
-            <tr><td>tester</td><td>Read-only access to log explorer</td></tr>
+            <tr><td>admin</td><td>Full access: manage users, API keys, org settings, bulk delete</td></tr>
+            <tr><td>manager</td><td>View all logs, manage alert rules, integrations, scheduled jobs</td></tr>
+            <tr><td>developer</td><td>View logs, create API keys, set up ingestion jobs</td></tr>
+            <tr><td>tester</td><td>Read-only access to log explorer. Cannot create keys or alerts.</td></tr>
           </tbody>
         </table>
       </div>
 
       <div class="doc-h2">Inviting team members</div>
-      <p class="doc-p">Go to <strong>Invites → Send invite</strong>. Enter an email and role. A unique invite link is generated. If SMTP is configured, the invite is sent by email. Otherwise, copy the link manually and share it.</p>
+      <p class="doc-p">Go to <strong>Invites → Send invite</strong>. Enter an email and role. A unique invite link is generated. If SMTP is configured, the invite is emailed automatically. Otherwise copy the link and share it manually. Invite links expire after 7 days.</p>
+    </div>
+
+    <hr class="doc-hr"/>
+
+    <!-- ══ AUDIT TRAIL ══ -->
+    <div class="doc-section" id="audit-trail">
+      <div class="section-tag">Features</div>
+      <div class="doc-h1">Audit Trail <a href="#audit-trail" class="anchor-link">#</a></div>
+      <p class="doc-p">Every privileged action in your workspace is logged automatically with actor, timestamp, action type, and affected resource. Access at <strong>Settings → Audit trail</strong>.</p>
+
+      <div class="doc-h2">Tracked actions</div>
+      <ul class="doc-ul" style="margin-bottom:20px">
+        <li>User invited / role changed / removed</li>
+        <li>API key created / revoked</li>
+        <li>Alert rule created / modified / deleted</li>
+        <li>Integration added / removed</li>
+        <li>Bulk delete executed (count of records removed)</li>
+        <li>Workspace settings changed</li>
+      </ul>
+
+      <div class="doc-h2">Audit log structure</div>
+      <div class="doc-code-wrap">
+        <div class="doc-code-bar"><span style="font-size:11px">GET /api/audit — sample record</span></div>
+        <pre class="doc-code">{
+  "id": 501,
+  "actor_email": "admin@company.com",
+  "action": "alert.create",
+  "resource_type": "alert_rule",
+  "resource_id": 38,
+  "meta": { "alert_name": "Payment spike", "severity": "sev2" },
+  "ip": "203.0.113.42",
+  "created_at": "2024-01-15T10:40:00Z"
+}</pre>
+      </div>
+    </div>
+
+    <hr class="doc-hr"/>
+
+    <!-- ══ ENV VARS ══ -->
+    <div class="doc-section" id="env-vars">
+      <div class="section-tag">Reference</div>
+      <div class="doc-h1">Environment Variables <a href="#env-vars" class="anchor-link">#</a></div>
+      <p class="doc-p">Set these in <strong>Railway → Your service → Variables</strong>. Required variables must be set before deployment.</p>
+
+      <div class="env-grid">
+        <div class="env-row">
+          <div class="env-key">DATABASE_URL</div>
+          <span class="env-required env-req">required</span>
+          <div class="env-desc">PostgreSQL connection string. Provided automatically by Railway's Postgres plugin.</div>
+        </div>
+        <div class="env-row">
+          <div class="env-key">SECRET_KEY</div>
+          <span class="env-required env-req">required</span>
+          <div class="env-desc">Flask session secret. Generate with <span class="inline-code">python -c "import secrets; print(secrets.token_hex(32))"</span></div>
+        </div>
+        <div class="env-row">
+          <div class="env-key">ANTHROPIC_API_KEY</div>
+          <span class="env-required env-opt">optional</span>
+          <div class="env-desc">Required to use AI Explain. Get yours at <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a></div>
+        </div>
+        <div class="env-row">
+          <div class="env-key">SMTP_HOST</div>
+          <span class="env-required env-opt">optional</span>
+          <div class="env-desc">SMTP server hostname for email alerts and invite emails. e.g. <span class="inline-code">smtp.sendgrid.net</span></div>
+        </div>
+        <div class="env-row">
+          <div class="env-key">SMTP_PORT</div>
+          <span class="env-required env-opt">optional</span>
+          <div class="env-desc">SMTP port. Default: <span class="inline-code">587</span> (TLS).</div>
+        </div>
+        <div class="env-row">
+          <div class="env-key">SMTP_USER</div>
+          <span class="env-required env-opt">optional</span>
+          <div class="env-desc">SMTP username / API key username.</div>
+        </div>
+        <div class="env-row">
+          <div class="env-key">SMTP_PASS</div>
+          <span class="env-required env-opt">optional</span>
+          <div class="env-desc">SMTP password or API key.</div>
+        </div>
+        <div class="env-row">
+          <div class="env-key">SMTP_FROM</div>
+          <span class="env-required env-opt">optional</span>
+          <div class="env-desc">From address for outbound email e.g. <span class="inline-code">alerts@yourdomain.com</span></div>
+        </div>
+      </div>
     </div>
 
     <hr class="doc-hr"/>
@@ -891,14 +1392,14 @@ nav {
     <!-- ══ LOG LEVELS ══ -->
     <div class="doc-section" id="log-levels">
       <div class="section-tag">Reference</div>
-      <div class="doc-h1">Log Levels</div>
+      <div class="doc-h1">Log Levels <a href="#log-levels" class="anchor-link">#</a></div>
       <div class="doc-table-wrap">
         <table class="doc-table">
           <thead><tr><th>Level</th><th>Color</th><th>Meaning</th></tr></thead>
           <tbody>
             <tr><td>error</td><td>🔴 Red</td><td>Unhandled exception, service failure, data corruption</td></tr>
             <tr><td>warn</td><td>🟡 Amber</td><td>Degraded performance, deprecated usage, recoverable error</td></tr>
-            <tr><td>info</td><td>🔵 Blue</td><td>Normal operational event, request processed, job started</td></tr>
+            <tr><td>info</td><td>🔵 Blue</td><td>Normal operational event: request processed, job started</td></tr>
             <tr><td>success</td><td>🟢 Green</td><td>Payment completed, file processed, job succeeded</td></tr>
             <tr><td>debug</td><td>⚪ Grey</td><td>Verbose diagnostic output — filter out in production views</td></tr>
           </tbody>
@@ -911,7 +1412,7 @@ nav {
     <!-- ══ FORMATS ══ -->
     <div class="doc-section" id="formats">
       <div class="section-tag">Reference</div>
-      <div class="doc-h1">Supported File Formats</div>
+      <div class="doc-h1">Supported File Formats <a href="#formats" class="anchor-link">#</a></div>
       <div class="doc-table-wrap">
         <table class="doc-table">
           <thead><tr><th>Format</th><th>Extensions</th><th>Auto-detected?</th></tr></thead>
@@ -920,7 +1421,7 @@ nav {
             <tr><td>CSV (with headers)</td><td>.csv</td><td>Yes</td></tr>
             <tr><td>Plain text (one entry/line)</td><td>.log, .txt</td><td>Yes</td></tr>
             <tr><td>MuleSoft block format</td><td>.log, .txt</td><td>Yes (content-based)</td></tr>
-            <tr><td>Gzip compressed</td><td>.gz</td><td>Yes</td></tr>
+            <tr><td>Gzip compressed</td><td>.gz</td><td>Yes (any above format)</td></tr>
           </tbody>
         </table>
       </div>
@@ -931,96 +1432,416 @@ nav {
     <!-- ══ ERRORS ══ -->
     <div class="doc-section" id="errors">
       <div class="section-tag">Reference</div>
-      <div class="doc-h1">Error Codes</div>
+      <div class="doc-h1">Error Codes <a href="#errors" class="anchor-link">#</a></div>
       <div class="doc-table-wrap">
         <table class="doc-table">
-          <thead><tr><th>HTTP Code</th><th>Error</th><th>Resolution</th></tr></thead>
+          <thead><tr><th>HTTP</th><th>Error</th><th>Resolution</th></tr></thead>
           <tbody>
-            <tr><td>400</td><td>Bad Request</td><td>Missing required field (timestamp, level, source, message)</td></tr>
+            <tr><td>400</td><td>Bad Request</td><td>Missing required field (timestamp, level, source, message) or malformed JSON</td></tr>
             <tr><td>401</td><td>Unauthorized</td><td>Missing or invalid Bearer token</td></tr>
-            <tr><td>403</td><td>Forbidden</td><td>Workspace admin-only mode active; insufficient role</td></tr>
-            <tr><td>404</td><td>Not Found</td><td>Log ID, job ID, or alert ID does not exist</td></tr>
-            <tr><td>413</td><td>Payload Too Large</td><td>Batch exceeds 1,000 events or file is too large</td></tr>
-            <tr><td>429</td><td>Too Many Requests</td><td>Rate limit exceeded on auth endpoints</td></tr>
-            <tr><td>500</td><td>Internal Server Error</td><td>Unexpected error — check Railway logs for detail</td></tr>
+            <tr><td>403</td><td>Forbidden</td><td>Workspace admin-only mode active or insufficient role for this action</td></tr>
+            <tr><td>404</td><td>Not Found</td><td>Log ID, job ID, or alert ID does not exist in this workspace</td></tr>
+            <tr><td>409</td><td>Conflict</td><td>Duplicate resource e.g. slug or email already exists</td></tr>
+            <tr><td>413</td><td>Payload Too Large</td><td>Batch exceeds 1,000 events or uploaded file is too large</td></tr>
+            <tr><td>429</td><td>Too Many Requests</td><td>Rate limit exceeded — check <span class="inline-code">Retry-After</span> header</td></tr>
+            <tr><td>500</td><td>Internal Server Error</td><td>Unexpected error — check Railway service logs for detail</td></tr>
+            <tr><td>503</td><td>Service Unavailable</td><td>Database unreachable — Railway Postgres may be restarting</td></tr>
           </tbody>
         </table>
       </div>
     </div>
 
-    <!-- BOTTOM CTA -->
-    <div style="background:linear-gradient(135deg,rgba(59,130,246,0.12),rgba(34,211,238,0.06));border:1px solid rgba(59,130,246,0.2);border-radius:14px;padding:36px;text-align:center;margin-top:40px">
-      <div style="font-size:22px;font-weight:800;margin-bottom:8px">Ready to start observing?</div>
-      <div style="font-size:14px;color:var(--muted);margin-bottom:20px">Create a free workspace in under 2 minutes. No credit card needed.</div>
-      <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
-        <a href="/create-account" class="doc-hero-btn doc-btn-primary">+ Create free workspace</a>
-        <button class="doc-hero-btn doc-btn-ghost" onclick="downloadAllDocs()">⬇ Download all docs</button>
+    <hr class="doc-hr"/>
+
+    <!-- ══ CHANGELOG ══ -->
+    <div class="doc-section" id="changelog">
+      <div class="section-tag">Reference</div>
+      <div class="doc-h1">Changelog <a href="#changelog" class="anchor-link">#</a></div>
+
+      <div class="changelog-entry">
+        <div class="changelog-version">v2.1</div>
+        <div>
+          <div class="changelog-date">2024-03-15</div>
+          <ul class="changelog-items">
+            <li><span class="cl-tag cl-new">NEW</span> Webhook signature verification with HMAC-SHA256</li>
+            <li><span class="cl-tag cl-new">NEW</span> Audit trail with full actor + action logging</li>
+            <li><span class="cl-tag cl-imp">IMP</span> Rate limit headers on all endpoints</li>
+            <li><span class="cl-tag cl-fix">FIX</span> S3 job deduplication now uses ETag instead of filename</li>
+          </ul>
+        </div>
+      </div>
+      <div class="changelog-entry">
+        <div class="changelog-version">v2.0</div>
+        <div>
+          <div class="changelog-date">2024-01-20</div>
+          <ul class="changelog-items">
+            <li><span class="cl-tag cl-new">NEW</span> AI Explain powered by Claude (Anthropic)</li>
+            <li><span class="cl-tag cl-new">NEW</span> Multi-prefix S3 integration support</li>
+            <li><span class="cl-tag cl-new">NEW</span> Bulk delete mode in log explorer</li>
+            <li><span class="cl-tag cl-imp">IMP</span> Parallel S3 fetches via ThreadPoolExecutor</li>
+            <li><span class="cl-tag cl-imp">IMP</span> SQLite disk cache for Railway restarts</li>
+          </ul>
+        </div>
+      </div>
+      <div class="changelog-entry">
+        <div class="changelog-version">v1.5</div>
+        <div>
+          <div class="changelog-date">2023-11-08</div>
+          <ul class="changelog-items">
+            <li><span class="cl-tag cl-new">NEW</span> Saved searches in log explorer</li>
+            <li><span class="cl-tag cl-new">NEW</span> Source Error Spike alert type</li>
+            <li><span class="cl-tag cl-fix">FIX</span> MuleSoft block format parsing edge cases</li>
+          </ul>
+        </div>
       </div>
     </div>
 
+    <!-- BOTTOM CTA -->
+    <div style="background:linear-gradient(135deg,rgba(59,130,246,0.1),rgba(34,211,238,0.05));border:1px solid rgba(59,130,246,0.18);border-radius:14px;padding:36px;text-align:center;margin-top:40px">
+      <div style="font-size:22px;font-weight:800;margin-bottom:8px">Ready to start observing?</div>
+      <div style="font-size:14px;color:var(--muted);margin-bottom:20px">Create a free workspace in under 2 minutes. No credit card required.</div>
+      <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+        <a href="/create-account" class="doc-hero-btn doc-btn-primary">+ Create free workspace</a>
+        <button class="doc-hero-btn doc-btn-ghost" onclick="downloadAllDocs()">⬇ Download docs</button>
+      </div>
+    </div>
+
+    <!-- NEXT/PREV -->
+    <div class="doc-nav-bar">
+      <a href="#overview" class="doc-nav-btn">
+        <span class="doc-nav-label">← Previous</span>
+        <span class="doc-nav-title">Overview</span>
+      </a>
+      <a href="#changelog" class="doc-nav-btn next">
+        <span class="doc-nav-label">Next →</span>
+        <span class="doc-nav-title">Changelog</span>
+      </a>
+    </div>
+
+    <!-- FEEDBACK -->
+    <div class="doc-feedback">
+      <span>Was this page helpful?</span>
+      <button class="feedback-btn" onclick="sendFeedback(true)">👍 Yes</button>
+      <button class="feedback-btn no" onclick="sendFeedback(false)">👎 No</button>
+    </div>
+
   </main>
+
+  <!-- ── RIGHT TOC ── -->
+  <aside class="doc-toc" id="docToc">
+    <div class="doc-toc-title">On this page</div>
+    <div id="tocLinks"></div>
+  </aside>
+
+</div>
+
+<!-- ── SEARCH MODAL ── -->
+<div class="search-overlay" id="searchOverlay" onclick="closeSearchOnBg(event)">
+  <div class="search-modal">
+    <div class="search-input-wrap">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <input type="text" class="search-input" id="searchInput" placeholder="Search docs…" autocomplete="off"/>
+      <span class="search-esc">ESC</span>
+    </div>
+    <div class="search-results" id="searchResults"></div>
+    <div class="search-footer">
+      <span><kbd>↑</kbd><kbd>↓</kbd> navigate</span>
+      <span><kbd>↵</kbd> go to</span>
+      <span><kbd>ESC</kbd> close</span>
+    </div>
+  </div>
 </div>
 
 <div class="toast-wrap" id="toastWrap"></div>
 
 <script>
-// Sidebar active state on scroll
+// ── SEARCH INDEX ──
+const searchIndex = [
+  { id:'overview', icon:'🚀', title:'Overview', section:'Getting Started', desc:'Centralized log management and observability platform' },
+  { id:'quickstart', icon:'⚡', title:'Quickstart', section:'Getting Started', desc:'Get logs into ObserveX in under 2 minutes' },
+  { id:'concepts', icon:'💡', title:'Core Concepts', section:'Getting Started', desc:'Workspace, uploads, source tags, payload column' },
+  { id:'authentication', icon:'🔑', title:'Authentication', section:'API Reference', desc:'Bearer token, API key properties, header format' },
+  { id:'ingest-api', icon:'📥', title:'Ingest API', section:'API Reference', desc:'POST /ingest/json, /ingest/batch, /ingest/file' },
+  { id:'query-api', icon:'🔍', title:'Query Logs', section:'API Reference', desc:'GET /api/logs with filtering, pagination, sorting' },
+  { id:'rate-limits', icon:'⏱', title:'Rate Limits', section:'API Reference', desc:'Request limits per endpoint group, Retry-After headers' },
+  { id:'s3-guide', icon:'🪣', title:'S3 Bucket Integration', section:'Integrations', desc:'IAM policy, supported formats, troubleshooting' },
+  { id:'webhooks', icon:'🔗', title:'Webhooks', section:'Integrations', desc:'Slack, Teams, Discord, HMAC signature verification' },
+  { id:'scheduled-jobs', icon:'⏰', title:'Scheduled Jobs', section:'Integrations', desc:'Cron-based automated ingestion, job lifecycle' },
+  { id:'log-explorer', icon:'📊', title:'Log Explorer', section:'Features', desc:'Search, filter, live tail, export, saved searches' },
+  { id:'alert-rules', icon:'🚨', title:'Alert Rules', section:'Features', desc:'Error rate, keyword match, suspicious IP, severity levels' },
+  { id:'ai-explain', icon:'✦', title:'AI Explain', section:'Features', desc:'Claude AI root cause analysis for error logs' },
+  { id:'bulk-ops', icon:'☐', title:'Bulk Operations', section:'Features', desc:'Select and delete multiple logs at once' },
+  { id:'team-access', icon:'👥', title:'Team & Access', section:'Features', desc:'Roles: admin, manager, developer, tester. Invite links.' },
+  { id:'audit-trail', icon:'📋', title:'Audit Trail', section:'Features', desc:'Actor-logged privileged actions with timestamps' },
+  { id:'env-vars', icon:'⚙', title:'Environment Variables', section:'Reference', desc:'DATABASE_URL, SECRET_KEY, ANTHROPIC_API_KEY, SMTP_*' },
+  { id:'log-levels', icon:'🏷', title:'Log Levels', section:'Reference', desc:'error, warn, info, success, debug — colors and meanings' },
+  { id:'formats', icon:'📄', title:'File Formats', section:'Reference', desc:'JSON, CSV, plain text, MuleSoft, Gzip auto-detection' },
+  { id:'errors', icon:'⚠', title:'Error Codes', section:'Reference', desc:'HTTP 400–503 error codes and resolutions' },
+  { id:'changelog', icon:'📝', title:'Changelog', section:'Reference', desc:'v2.1, v2.0, v1.5 release notes' },
+];
+
+// ── SIDEBAR SCROLL SPY ──
 const sections = document.querySelectorAll('.doc-section');
-const links = document.querySelectorAll('.sidebar-link');
+const sidebarLinks = document.querySelectorAll('.sidebar-link');
 
-function scrollTo(id) {
-  const el = document.getElementById(id);
-  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  links.forEach(l => l.classList.remove('active'));
-  const active = Array.from(links).find(l => l.getAttribute('onclick') && l.getAttribute('onclick').includes("'" + id + "'"));
-  if (active) active.classList.add('active');
-}
-
-window.addEventListener('scroll', () => {
-  let current = '';
-  sections.forEach(s => {
-    if (window.scrollY >= s.offsetTop - 120) current = s.id;
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      const id = entry.target.id;
+      sidebarLinks.forEach(l => {
+        l.classList.toggle('active', l.getAttribute('href') === '#' + id);
+      });
+      updateToc(id);
+    }
   });
-  links.forEach(l => {
-    const onclick = l.getAttribute('onclick') || '';
-    l.classList.toggle('active', onclick.includes("'" + current + "'"));
-  });
-}, { passive: true });
+}, { rootMargin: '-60px 0px -60% 0px', threshold: 0 });
 
-function copyCode(btn) {
-  const codeEl = btn.closest('.doc-code-bar').nextElementSibling;
-  navigator.clipboard.writeText(codeEl.innerText).then(() => {
-    btn.textContent = 'Copied!';
-    toast('Copied to clipboard', 'success');
-    setTimeout(() => { btn.textContent = 'Copy'; }, 2000);
-  });
-}
+sections.forEach(s => observer.observe(s));
 
-const DOC_CONTENT = {
-  overview: `# ObserveX Documentation\n\nObserveX is a centralized log management and observability platform.\n`,
-  api: `# API Reference\n\n## Authentication\nAll API requests require:\n  Authorization: Bearer oxk_your_api_key_here\n\n## Ingest Endpoints\n- POST /ingest/json — Single event\n- POST /ingest/batch — Up to 1000 events\n- POST /ingest/file — File upload\n\n## Query Endpoints\n- GET /api/logs — Paginated query\n- GET /api/logs/:id — Single event\n- DELETE /api/logs/:id — Delete event\n`,
-  s3: `# S3 Bucket Integration\n\n## Required IAM Policy\n{\n  "Effect": "Allow",\n  "Action": ["s3:GetObject","s3:ListBucket"],\n  "Resource": ["arn:aws:s3:::your-bucket","arn:aws:s3:::your-bucket/*"]\n}\n\n## Supported Formats\n- JSON Lines (.jsonl, .ndjson)\n- CloudWatch Export (.json)\n- Plain text (.log, .txt)\n- CSV (.csv)\n- Gzip (.gz)\n`,
-  alerts: `# Alert Rules\n\n## Types\n- Error Rate: errors > threshold in 5min window\n- Keyword Match: phrase appears >= threshold times\n- Suspicious IP: IP exceeds threshold req/min\n- Source Error Spike: source errors > threshold in 5min\n\n## Webhook Payload\n{\n  "alert_name": "...",\n  "severity": "sev2",\n  "triggered_at": "2024-01-15T10:35:00Z",\n  "match_count": 12\n}\n`
+// ── RIGHT TOC ──
+const tocData = {
+  'overview': [{id:'overview',t:'Overview',h:2},{id:'feature-grid',t:'Features',h:3}],
+  'quickstart': [{id:'quickstart',t:'Quickstart',h:2}],
+  'concepts': [{id:'concepts-workspace',t:'Workspace',h:2},{id:'concepts-upload',t:'Uploads vs Events',h:2},{id:'concepts-source',t:'Source tag',h:2},{id:'concepts-payload',t:'Payload column',h:2}],
+  'authentication': [{id:'authentication',t:'Authentication',h:2}],
+  'ingest-api': [{id:'ingest-api',t:'Endpoints',h:2}],
+  'query-api': [{id:'query-api',t:'Query Logs',h:2}],
+  'rate-limits': [{id:'rate-limits',t:'Rate Limits',h:2}],
+  's3-guide': [{id:'s3-guide',t:'IAM policy',h:2},{id:'s3-guide',t:'Supported formats',h:2},{id:'s3-guide',t:'Troubleshooting',h:2}],
+  'webhooks': [{id:'webhooks',t:'Webhook payload',h:2},{id:'webhooks',t:'Slack setup',h:2},{id:'webhooks',t:'Signature verify',h:2}],
+  'scheduled-jobs': [{id:'scheduled-jobs',t:'Job lifecycle',h:2}],
+  'alert-rules': [{id:'alert-rules',t:'Alert types',h:2},{id:'alert-rules',t:'Severity levels',h:2},{id:'alert-rules',t:'Create via API',h:2}],
+  'log-explorer': [{id:'log-explorer',t:'Search & filters',h:2},{id:'log-explorer',t:'Export',h:2}],
+  'env-vars': [{id:'env-vars',t:'Variables',h:2}],
+  'errors': [{id:'errors',t:'Error codes',h:2}],
+  'changelog': [{id:'changelog',t:'Versions',h:2}],
 };
 
-function downloadAllDocs() {
-  const content = `# ObserveX Complete Documentation\n\n` + Object.values(DOC_CONTENT).join('\n\n---\n\n');
-  const blob = new Blob([content], { type: 'text/markdown' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'observex-documentation.md';
-  a.click();
-  toast('Documentation downloaded!', 'success');
+function updateToc(sectionId) {
+  const tocLinks = document.getElementById('tocLinks');
+  const items = tocData[sectionId] || [];
+  tocLinks.innerHTML = items.map(item =>
+    `<a href="#${item.id}" class="doc-toc-item${item.h===3?' h3':''}">${item.t}</a>`
+  ).join('');
+}
+updateToc('overview');
+
+// ── SIDEBAR FILTER ──
+document.getElementById('sidebarFilter').addEventListener('input', function() {
+  const q = this.value.toLowerCase();
+  sidebarLinks.forEach(l => {
+    l.style.display = !q || l.textContent.toLowerCase().includes(q) ? '' : 'none';
+  });
+  document.querySelectorAll('.sidebar-section-label').forEach(label => {
+    let hasVisible = false;
+    let next = label.nextElementSibling;
+    while (next && !next.classList.contains('sidebar-section-label')) {
+      if (next.style.display !== 'none') hasVisible = true;
+      next = next.nextElementSibling;
+    }
+    label.style.display = !q || hasVisible ? '' : 'none';
+  });
+});
+
+// ── MOBILE SIDEBAR ──
+document.getElementById('mobileToggle').addEventListener('click', () => {
+  document.getElementById('docSidebar').classList.toggle('mobile-open');
+  document.getElementById('sidebarOverlay').classList.toggle('active');
+});
+document.getElementById('sidebarOverlay').addEventListener('click', () => {
+  document.getElementById('docSidebar').classList.remove('mobile-open');
+  document.getElementById('sidebarOverlay').classList.remove('active');
+});
+
+// ── SEARCH ──
+let searchActive = -1;
+
+function openSearch() {
+  document.getElementById('searchOverlay').classList.add('open');
+  document.getElementById('searchInput').focus();
+  renderSearch('');
+}
+function closeSearch() {
+  document.getElementById('searchOverlay').classList.remove('open');
+  document.getElementById('searchInput').value = '';
+  searchActive = -1;
+}
+function closeSearchOnBg(e) {
+  if (e.target === document.getElementById('searchOverlay')) closeSearch();
 }
 
+document.getElementById('openSearch').addEventListener('click', openSearch);
+document.addEventListener('keydown', e => {
+  if ((e.metaKey || e.ctrlKey) && e.key === 'k') { e.preventDefault(); openSearch(); }
+  if (e.key === 'Escape') closeSearch();
+  if (document.getElementById('searchOverlay').classList.contains('open')) {
+    const items = document.querySelectorAll('.search-result-item');
+    if (e.key === 'ArrowDown') { searchActive = Math.min(searchActive+1, items.length-1); highlightSearch(items); }
+    if (e.key === 'ArrowUp') { searchActive = Math.max(searchActive-1, 0); highlightSearch(items); }
+    if (e.key === 'Enter' && searchActive >= 0) { items[searchActive]?.click(); }
+  }
+});
+
+function highlightSearch(items) {
+  items.forEach((el,i) => el.classList.toggle('active', i === searchActive));
+  items[searchActive]?.scrollIntoView({ block:'nearest' });
+}
+
+document.getElementById('searchInput').addEventListener('input', function() {
+  searchActive = -1;
+  renderSearch(this.value);
+});
+
+function renderSearch(q) {
+  const el = document.getElementById('searchResults');
+  const results = q.trim()
+    ? searchIndex.filter(i => i.title.toLowerCase().includes(q.toLowerCase()) || i.desc.toLowerCase().includes(q.toLowerCase()))
+    : searchIndex;
+
+  if (!results.length) {
+    el.innerHTML = '<div class="search-no-results">No results for "' + escHtml(q) + '"</div>';
+    return;
+  }
+  el.innerHTML = results.map(r => `
+    <a class="search-result-item" href="#${r.id}" onclick="closeSearch()">
+      <span class="search-result-icon">${r.icon}</span>
+      <div>
+        <div class="search-result-title">${highlight(r.title, q)}</div>
+        <div class="search-result-desc">${r.desc}</div>
+        <div class="search-result-section">${r.section}</div>
+      </div>
+    </a>
+  `).join('');
+}
+
+function highlight(str, q) {
+  if (!q) return str;
+  return str.replace(new RegExp('(' + escRegex(q) + ')', 'gi'), '<mark style="background:rgba(59,130,246,0.3);color:var(--blue2);border-radius:2px">$1</mark>');
+}
+function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;'); }
+function escRegex(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+
+// ── CODE LANG TABS ──
+function switchTab(btn, groupId, lang) {
+  const group = document.getElementById(groupId);
+  group.querySelectorAll('.code-pane').forEach(p => p.classList.toggle('active', p.dataset.lang === lang));
+  btn.closest('.code-lang-tabs').querySelectorAll('.code-lang-tab').forEach(b => b.classList.toggle('active', b === btn));
+}
+
+// ── COPY CODE ──
+function copyCode(btn) {
+  const bar = btn.closest('.doc-code-bar');
+  const codeEl = bar.nextElementSibling.tagName === 'PRE'
+    ? bar.nextElementSibling
+    : bar.nextElementSibling.querySelector('.code-pane.active') || bar.nextElementSibling;
+  navigator.clipboard.writeText(codeEl.innerText.trim()).then(() => {
+    btn.textContent = '✓ Copied';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
+  });
+}
+
+function copyActivePane(btn) {
+  const bar = btn.closest('.doc-code-bar');
+  const wrap = bar.parentElement;
+  const pane = wrap.querySelector('.code-pane.active') || wrap.querySelector('.doc-code');
+  navigator.clipboard.writeText(pane.innerText.trim()).then(() => {
+    btn.textContent = '✓ Copied';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
+  });
+}
+
+// ── ENDPOINT TOGGLE ──
+function toggleEndpoint(header) {
+  header.parentElement.classList.toggle('open');
+}
+
+// ── FEEDBACK ──
+function sendFeedback(positive) {
+  toast(positive ? '🙏 Thanks for the feedback!' : '📝 Thanks — we\'ll improve this page.', positive ? 'success' : 'info');
+}
+
+// ── DOWNLOAD DOCS ──
+function downloadAllDocs() {
+  const md = `# ObserveX Documentation v2.1
+
+## Overview
+ObserveX is a centralized log management and observability platform.
+
+## Quickstart
+1. Create workspace at /create-account
+2. Generate API key: Ingest API → API keys → New key
+3. Send first log: POST /ingest/json with Bearer token
+
+## Authentication
+  Authorization: Bearer oxk_your_api_key_here
+
+## Ingest API
+- POST /ingest/json   — single event or array
+- POST /ingest/batch  — up to 1,000 events {"events":[...]}
+- POST /ingest/file   — multipart log file upload
+
+Required fields: timestamp (ISO8601), level, source, message
+
+## Query Logs
+- GET /api/logs?level=error&q=timeout&page=1&per_page=50
+- GET /api/logs/:id
+- DELETE /api/logs/:id
+
+## Rate Limits
+- POST /ingest/*: 300 req/min
+- GET /api/logs: 120 req/min
+- POST explain: 20 req/min
+
+## Alert Types
+- Error Rate, Keyword Match, Suspicious IP, Source Error Spike
+Severities: sev1 (critical), sev2 (high), sev3 (medium)
+
+## S3 Integration
+IAM: s3:GetObject + s3:ListBucket on your bucket
+Formats: .jsonl .ndjson .json .csv .log .txt .gz
+
+## Environment Variables
+DATABASE_URL      required  PostgreSQL connection string
+SECRET_KEY        required  Flask session secret
+ANTHROPIC_API_KEY optional  For AI Explain
+SMTP_HOST         optional  For email alerts
+
+## Error Codes
+400 Bad Request — missing required field
+401 Unauthorized — missing/invalid token
+403 Forbidden — insufficient role
+404 Not Found
+413 Payload Too Large — batch > 1000 or file too large
+429 Too Many Requests — check Retry-After header
+500 Internal Server Error — check Railway logs
+`;
+  const blob = new Blob([md], { type: 'text/markdown' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'observex-docs-v2.1.md';
+  a.click();
+  toast('Downloaded observex-docs-v2.1.md', 'success');
+}
+
+// ── TOAST ──
 function toast(msg, type = 'info') {
   const wrap = document.getElementById('toastWrap');
   const el = document.createElement('div');
   el.className = 'toast';
-  const c = type === 'success' ? '#4ade80' : type === 'error' ? '#f87171' : '#60a5fa';
-  el.innerHTML = `<span style="color:${c}">${type === 'success' ? '✓' : 'ℹ'}</span> ${msg}`;
+  const c = type === 'success' ? 'var(--green)' : type === 'error' ? 'var(--red)' : 'var(--blue2)';
+  el.innerHTML = `<span style="color:${c}">${type==='success'?'✓':'ℹ'}</span> ${msg}`;
   wrap.appendChild(el);
-  setTimeout(() => el.remove(), 3000);
+  setTimeout(() => { el.style.animation = 'toastOut .2s ease forwards'; setTimeout(() => el.remove(), 200); }, 3000);
+}
+
+// ── URL HASH NAV ──
+if (location.hash) {
+  setTimeout(() => {
+    const el = document.getElementById(location.hash.slice(1));
+    if (el) el.scrollIntoView({ behavior:'smooth', block:'start' });
+  }, 100);
 }
 </script>
 </body>

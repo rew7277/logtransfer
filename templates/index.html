@@ -253,11 +253,24 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
 .log-modal.open{opacity:1;pointer-events:all;transform:translate(-50%,-50%)}
 .log-modal-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border);flex-shrink:0}
 .log-modal-title{font-size:14px;font-weight:600;color:var(--text)}
-.log-modal-close{background:none;border:none;cursor:pointer;color:var(--text3);padding:4px;border-radius:6px;display:flex;align-items:center;transition:all .15s}
-.log-modal-close:hover{background:var(--surface2);color:var(--red)}
+.log-modal-close{
+  display:flex;align-items:center;justify-content:center;
+  width:26px;height:26px;border-radius:6px;
+  background:var(--surface2);border:1px solid var(--border2);
+  cursor:pointer;color:var(--text2);
+  transition:all .15s;flex-shrink:0;
+}
+.log-modal-close:hover{background:var(--red-dim);color:var(--red);border-color:var(--red);transform:scale(1.08)}
 .log-modal-body{overflow-y:auto;padding:20px;flex:1}
-.detail-close{position:absolute;top:16px;right:16px;width:28px;height:28px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;transition:all .15s}
-.detail-close:hover{background:var(--red-dim);color:var(--red);border-color:var(--red)}
+.detail-close{
+  position:absolute;top:14px;right:14px;
+  width:26px;height:26px;border-radius:6px;
+  background:var(--surface2);border:1px solid var(--border2);
+  color:var(--text2);cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  transition:all .15s;
+}
+.detail-close:hover{background:var(--red-dim);color:var(--red);border-color:var(--red);transform:scale(1.08)}
 .detail-kv{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;margin-bottom:10px}
 .detail-kv-label{font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:5px}
 .detail-kv-val{font-size:12px;word-break:break-all}
@@ -354,12 +367,26 @@ body.sidebar-collapsed .sidebar-footer{padding:8px;display:flex;justify-content:
 body.sidebar-collapsed .sidebar-footer .btn-logout-icon{display:flex}
 .btn-logout-icon{display:none;width:32px;height:32px;align-items:center;justify-content:center;border:1px solid var(--border);border-radius:var(--radius-sm);background:transparent;cursor:pointer;color:var(--text2);font-size:14px;transition:all .15s}
 .btn-logout-icon:hover{border-color:var(--red);color:var(--red);background:var(--red-dim)}
-/* Brand content: hide when collapsed, reveal toggle only */
-.sidebar-brand{display:flex;align-items:center;justify-content:space-between}
+
+/* Brand: full vs collapsed */
+.sidebar-brand{display:flex;align-items:center;padding:16px;border-bottom:1px solid var(--border)}
 .sidebar-brand-content{display:flex;align-items:center;gap:10px;min-width:0;flex:1}
-body.sidebar-collapsed .sidebar-brand-content{display:none}
-body.sidebar-collapsed .sidebar-brand{justify-content:center;padding:10px 8px}
-body.sidebar-collapsed #sidebarToggleBtn{margin-left:0}
+.sidebar-brand-collapsed{display:none;align-items:center;justify-content:center;padding:12px 8px;border-bottom:1px solid var(--border)}
+body.sidebar-collapsed .sidebar-brand{display:none}
+body.sidebar-collapsed .sidebar-brand-collapsed{display:flex}
+
+/* ── PANEL TOGGLE BUTTON (topbar) ── */
+.panel-toggle-btn{
+  display:flex;align-items:center;justify-content:center;
+  width:30px;height:30px;border-radius:var(--radius-sm);
+  border:1px solid var(--border2);background:var(--surface2);
+  cursor:pointer;color:var(--text2);flex-shrink:0;
+  transition:all .18s;margin-right:8px;
+}
+.panel-toggle-btn:hover{border-color:var(--accent);color:var(--accent2);background:var(--accent-glow)}
+.panel-toggle-btn .panel-toggle-arrow{transition:transform .22s cubic-bezier(.4,0,.2,1);transform-origin:center}
+body.sidebar-collapsed .panel-toggle-btn .panel-toggle-arrow{transform:rotate(180deg)}
+body.sidebar-collapsed .panel-toggle-btn{background:var(--accent-glow);border-color:var(--accent);color:var(--accent2)}
 
 /* ── STICKY LOG TABLE HEADER ── */
 .log-table thead th{position:sticky;top:0;z-index:2}
@@ -383,7 +410,6 @@ body.sidebar-collapsed .sidebar .nav-icon{width:20px;font-size:15px;flex-shrink:
 body.sidebar-collapsed .main{margin-left:52px}
 body.sidebar-collapsed .sidebar-brand{justify-content:center;padding:10px 6px}
 body.sidebar-collapsed .sidebar-footer{padding:8px}
-body.sidebar-collapsed #sidebarToggleBtn{margin-left:0}
 .sidebar-toggle{background:none;border:none;cursor:pointer;color:var(--text2);font-size:16px;padding:4px 6px;border-radius:var(--radius-sm);transition:all .15s;line-height:1;flex-shrink:0}
 .sidebar-toggle:hover{background:var(--surface2);color:var(--text)}
 
@@ -499,9 +525,9 @@ html:not(.dark) .toast{box-shadow:0 8px 24px rgba(0,0,0,.15)}
         <div class="brand-org">{{ user.org_name | lower }}</div>
       </div>
     </div>
-    <button class="sidebar-toggle" onclick="toggleSidebar()" title="Collapse sidebar" id="sidebarToggleBtn">
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="1" y="4" width="14" height="1.5" rx=".75" fill="currentColor"/><rect x="1" y="7.25" width="14" height="1.5" rx=".75" fill="currentColor"/><rect x="1" y="10.5" width="14" height="1.5" rx=".75" fill="currentColor"/></svg>
-    </button>
+  </div>
+  <div class="sidebar-brand-collapsed">
+    <div class="brand-icon" style="margin:0 auto">{{ user.logo_text[:2] }}</div>
   </div>
 
   <div class="nav-section">Workspace</div>
@@ -554,8 +580,12 @@ html:not(.dark) .toast{box-shadow:0 8px 24px rgba(0,0,0,.15)}
 
   <!-- TOPBAR -->
   <div class="topbar">
-    <button class="sidebar-toggle" onclick="toggleSidebar()" title="Toggle sidebar" style="margin-right:4px" id="topbarSidebarToggle">
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1" y="4" width="14" height="1.5" rx=".75" fill="currentColor"/><rect x="1" y="7.25" width="14" height="1.5" rx=".75" fill="currentColor"/><rect x="1" y="10.5" width="14" height="1.5" rx=".75" fill="currentColor"/></svg>
+    <button class="panel-toggle-btn" onclick="toggleSidebar()" title="Toggle navigation" id="topbarSidebarToggle" aria-label="Toggle sidebar">
+      <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+        <rect x="1" y="1" width="13" height="13" rx="2" stroke="currentColor" stroke-width="1.2"/>
+        <path d="M5 1v13" stroke="currentColor" stroke-width="1.2"/>
+        <path class="panel-toggle-arrow" d="M8 5.5L10 7.5L8 9.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
     </button>
     <span class="topbar-title"><span>ObserveX</span> Workspace · {{ user.org_name }}</span>
     <div class="topbar-right">
