@@ -1576,6 +1576,8 @@ def explain_log(log_id: int):
     import urllib.request as _ur
     import os as _os
     anthropic_key = _os.environ.get("ANTHROPIC_API_KEY", "")
+    if not anthropic_key:
+        return jsonify({"error": "ANTHROPIC_API_KEY not configured on server. Add it to your Railway environment variables."}), 503
     req_body = json.dumps({
         "model": "claude-sonnet-4-20250514",
         "max_tokens": 600,
@@ -1595,6 +1597,9 @@ def explain_log(log_id: int):
         with _ur.urlopen(req, timeout=20) as resp:
             data = json.loads(resp.read())
         explanation = data["content"][0]["text"]
+    except _ur.HTTPError as exc:
+        body = exc.read().decode("utf-8", errors="ignore")
+        return jsonify({"error": f"Anthropic API error {exc.code}: {body[:200]}"}), 500
     except Exception as exc:
         return jsonify({"error": f"AI explain failed: {exc}"}), 500
     return jsonify({"explanation": explanation})
