@@ -138,65 +138,56 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
 
 /* ── LOG TABLE ── */
 .table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
-.table-toolbar{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--border);flex-wrap:wrap}
-.search-box{flex:1;min-width:180px;position:relative}
-.search-box input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:7px 10px 7px 32px;color:var(--text);font-family:var(--sans);font-size:12px;outline:none;transition:border-color .15s}
+.table-toolbar{display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid var(--border);flex-wrap:wrap;min-width:0}
+.search-box{flex:1;min-width:160px;max-width:340px;position:relative}
+.search-box input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:6px 10px 6px 30px;color:var(--text);font-family:var(--sans);font-size:12px;outline:none;transition:border-color .15s}
 .search-box input:focus{border-color:var(--accent)}
 .search-box input::placeholder{color:var(--text3)}
-.search-icon{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:12px;pointer-events:none}
-.filter-chips{display:flex;gap:5px;flex-wrap:wrap}
-.chip{padding:4px 11px;border-radius:20px;font-size:11px;font-weight:600;border:1px solid var(--border);background:transparent;color:var(--text2);cursor:pointer;transition:all .15s;font-family:var(--sans)}
+.search-icon{position:absolute;left:9px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:12px;pointer-events:none}
+.filter-chips{display:flex;gap:4px}
+.chip{padding:4px 10px;border-radius:20px;font-size:11px;font-weight:600;border:1px solid var(--border);background:transparent;color:var(--text2);cursor:pointer;transition:all .15s;font-family:var(--sans);white-space:nowrap}
 .chip:hover{border-color:var(--border2);color:var(--text)}
 .chip.active{background:var(--accent);border-color:var(--accent);color:#fff}
 .chip.chip-red.active{background:var(--red);border-color:var(--red)}
 .chip.chip-green.active{background:var(--green);border-color:var(--green);color:#000}
 .chip.chip-yellow.active{background:var(--yellow);border-color:var(--yellow);color:#000}
 .chip.chip-purple.active{background:var(--purple);border-color:var(--purple)}
-.toolbar-right{margin-left:auto;display:flex;gap:6px;align-items:center}
-.rpp-select{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text2);font-size:11px;padding:4px 7px;cursor:pointer}
+.toolbar-right{margin-left:auto;display:flex;gap:5px;align-items:center;flex-shrink:0}
+.rpp-select{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text2);font-size:11px;padding:4px 6px;cursor:pointer}
 .rpp-select:focus{outline:none;border-color:var(--accent)}
-.export-btn{padding:5px 10px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text2);font-size:11px;cursor:pointer;font-family:var(--sans);transition:all .15s}
+.export-btn{padding:5px 9px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text2);font-size:11px;cursor:pointer;font-family:var(--sans);transition:all .15s;white-space:nowrap}
 .export-btn:hover{border-color:var(--accent2);color:var(--accent2)}
-.toolbar-row2{display:flex;align-items:center;gap:10px;padding:8px 14px;border-bottom:1px solid var(--border);flex-wrap:wrap;background:var(--surface)}
-.preset-group{display:flex;gap:3px;flex-shrink:0}
-.preset-btn{padding:3px 9px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text3);font-size:11px;cursor:pointer;font-family:var(--sans);transition:all .15s}
+.toolbar-row2{display:flex;align-items:center;gap:8px;padding:6px 12px;border-bottom:1px solid var(--border);flex-wrap:wrap}
+.preset-group{display:flex;gap:2px;flex-shrink:0}
+.preset-btn{padding:3px 8px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text3);font-size:11px;cursor:pointer;font-family:var(--sans);transition:all .15s}
 .preset-btn:hover{border-color:var(--accent);color:var(--accent)}
 .preset-btn.active{background:var(--accent);border-color:var(--accent);color:#fff}
-.date-range-group{display:flex;align-items:center;gap:6px;flex:1;min-width:260px}
+.date-range-group{display:flex;align-items:center;gap:5px}
 .dt-label{font-size:10px;color:var(--text3);font-weight:600;letter-spacing:.5px;text-transform:uppercase;white-space:nowrap}
-.dt-input{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text1);font-size:11px;padding:4px 8px;font-family:var(--sans);cursor:pointer;flex:1;min-width:130px}
+.dt-input{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text1);font-size:11px;padding:4px 6px;font-family:var(--sans);cursor:pointer;width:148px}
 .dt-input:focus{outline:none;border-color:var(--accent)}
-.dt-clear-btn{padding:3px 7px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text3);font-size:11px;cursor:pointer;transition:all .15s}
+.dt-clear-btn{padding:3px 6px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text3);font-size:11px;cursor:pointer;transition:all .15s}
 .dt-clear-btn:hover{color:var(--red);border-color:var(--red)}
-.source-select{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text2);font-size:11px;padding:4px 8px;cursor:pointer;font-family:var(--sans);max-width:160px}
+.source-select{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text2);font-size:11px;padding:4px 7px;cursor:pointer;font-family:var(--sans);max-width:140px}
 .source-select:focus{outline:none;border-color:var(--accent)}
 .live-tail-group{display:flex;align-items:center;margin-left:auto;flex-shrink:0}
-.live-tail-label{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text2);cursor:pointer;user-select:none}
+.live-tail-label{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2);cursor:pointer;user-select:none}
 .live-tail-label input{width:13px;height:13px;accent-color:var(--green);cursor:pointer}
 .live-dot{width:7px;height:7px;border-radius:50%;background:var(--text3);transition:background .2s}
 .live-dot.on{background:var(--green);box-shadow:0 0 6px var(--green);animation:pulse-dot 1.4s ease-in-out infinite}
 @keyframes pulse-dot{0%,100%{opacity:1}50%{opacity:.4}}
-.filter-summary{padding:7px 14px;background:color-mix(in srgb,var(--accent) 8%,transparent);border-bottom:1px solid var(--border);font-size:11px;color:var(--text2);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+@keyframes spin{to{transform:rotate(360deg)}}
+.filter-summary{padding:6px 12px;background:color-mix(in srgb,var(--accent) 8%,transparent);border-bottom:1px solid var(--border);font-size:11px;color:var(--text2);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .filter-summary strong{color:var(--text1)}
 .filter-summary .fs-clear{margin-left:auto;padding:2px 8px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text3);font-size:10px;cursor:pointer;font-family:var(--sans)}
 .filter-summary .fs-clear:hover{color:var(--red);border-color:var(--red)}
-.error-card{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border-radius:var(--radius-sm);border:1px solid var(--border);margin-bottom:8px;cursor:pointer;transition:border-color .15s,background .15s}
-.error-card:hover{border-color:var(--border2);background:var(--surface2)}
+.error-card{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border-radius:var(--radius-sm);border:1px solid var(--border);margin-bottom:8px;cursor:pointer;transition:border-color .15s,background .15s;background:var(--surface)}
+.error-card:hover{border-color:var(--red);background:var(--surface2)}
 .error-card-left{padding-top:2px;flex-shrink:0}
 .error-card-body{flex:1;min-width:0}
 .error-card-msg{font-size:12px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:4px}
 .error-card-meta{display:flex;align-items:center;flex-wrap:wrap;gap:4px}
 .error-card-right{flex-shrink:0;text-align:right}
-.error-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px;margin-bottom:16px}
-.error-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;cursor:pointer;transition:border-color .15s,transform .1s}
-.error-card:hover{border-color:var(--red);transform:translateY(-1px)}
-.error-card.warn-card:hover{border-color:var(--yellow)}
-.error-card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:6px}
-.error-card-pattern{font-size:12px;font-weight:600;color:var(--text1);line-height:1.4;flex:1;word-break:break-word}
-.error-card-count{background:var(--red);color:#fff;font-size:11px;font-weight:700;padding:2px 7px;border-radius:10px;flex-shrink:0}
-.error-card-count.warn-count{background:var(--yellow);color:#000}
-.error-card-meta{font-size:10px;color:var(--text3);display:flex;gap:10px;flex-wrap:wrap}
-.error-card-src{display:inline-block;background:var(--surface2);padding:1px 6px;border-radius:3px;font-size:10px;color:var(--text2);margin-right:3px}
 .ai-explain-btn{display:flex;align-items:center;gap:6px;width:100%;padding:9px 12px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text2);font-size:12px;cursor:pointer;font-family:var(--sans);transition:all .15s;margin-top:6px}
 .ai-explain-btn:hover{border-color:var(--accent2);color:var(--accent2)}
 .ai-explain-btn.loading{opacity:.6;cursor:wait}
@@ -567,18 +558,13 @@ html:not(.dark) .toast{box-shadow:0 8px 24px rgba(0,0,0,.15)}
 
   <!-- ══ LOG EXPLORER PAGE ══ -->
   <div class="page{% if active_section=='explorer' %} active{% endif %}" id="page-explorer">
-    <div style="padding:24px">
-      <div class="page-header">
+    <div style="padding:24px 24px 0">
+      <div class="page-header" style="margin-bottom:12px">
         <h1>Log explorer</h1>
         <p>Search, filter, and inspect log events across all uploads.</p>
       </div>
-      <!-- Upload zone also in explorer -->
-      <div class="upload-zone" id="uploadZone2" style="padding:20px;margin-bottom:16px">
-        <span class="upload-zone-icon" style="font-size:24px">📂</span>
-        <h3 style="font-size:13px">Drop or click to upload logs</h3>
-        <p style="font-size:11px">Drag files anywhere on this page</p>
-      </div>
-      <div class="table-wrap" id="explorerWrap">
+    </div>
+    <div class="table-wrap" id="explorerWrap" style="margin:0 24px 24px;border-radius:var(--radius)">
         <div class="table-toolbar">
           <div class="search-box"><span class="search-icon">⌕</span><input id="searchInput" placeholder="Search message, source, event ID…" oninput="onSearch()"/></div>
           <div class="filter-chips" id="filterChips">
@@ -638,11 +624,10 @@ html:not(.dark) .toast{box-shadow:0 8px 24px rgba(0,0,0,.15)}
         <!-- Row 3: Active filter summary -->
         <div class="filter-summary" id="filterSummary" style="display:none"></div>
         <div id="logTableBody">
-          <div class="empty-state"><div class="empty-icon">◎</div><h3>No logs yet</h3><p>Upload a log file above to start exploring events</p></div>
+          <div class="empty-state"><div class="empty-icon">◎</div><h3>No logs yet</h3><p>Upload a log file to start exploring events</p></div>
         </div>
         <div class="pagination" id="pagination"></div>
       </div>
-    </div>
   </div>
 
   <!-- ══ INGEST API PAGE ══ -->
@@ -1031,7 +1016,7 @@ function showExplorerFiltered(lvl) {
 
 // ── DRAG & DROP ──
 function setupDragDrop() {
-  ['uploadZone','uploadZone2'].forEach(id => {
+  ['uploadZone'].forEach(id => {
     const z = document.getElementById(id);
     if (!z) return;
     z.addEventListener('click', () => document.getElementById('fileInput').click());
@@ -1818,24 +1803,23 @@ async function loadObservability() {
 }
 
 // ── AI EXPLAIN in detail panel ──
-async function explainLog(id, level, source, message) {
+async function explainLog(id) {
   const box = document.getElementById('aiExplainBox');
+  if (!box) return;
   box.style.display = 'block';
-  box.innerHTML = '<div style="font-size:12px;color:var(--text3);padding:8px 0">Analyzing with AI…</div>';
+  box.innerHTML = '<div style="font-size:12px;color:var(--text3);padding:8px 0;display:flex;align-items:center;gap:8px"><span style="width:12px;height:12px;border:2px solid var(--accent);border-top-color:transparent;border-radius:50%;display:inline-block;animation:spin .7s linear infinite"></span>Analyzing with AI…</div>';
   try {
     const r = await fetch(`/api/logs/${id}/explain`, {method:'POST'});
-    if (!r.ok) { box.innerHTML = '<div style="font-size:12px;color:var(--red)">AI explain failed</div>'; return; }
     const d = await r.json();
-    if (d.error) { box.innerHTML = `<div style="font-size:12px;color:var(--red)">${esc(d.error)}</div>`; return; }
-    // Render markdown-ish: bold **text** and bullet points
+    if (!r.ok || d.error) { box.innerHTML = `<div style="font-size:12px;color:var(--red);padding:8px 0">⚠ ${esc(d.error||'AI explain failed')}</div>`; return; }
     let html = esc(d.explanation)
       .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-      .replace(/^• /gm, '<br>• ')
+      .replace(/^[\-•] /gm, '<br>• ')
       .replace(/\n\n/g, '<br><br>')
       .replace(/\n/g, '<br>');
-    box.innerHTML = `<div style="font-size:12px;line-height:1.7;color:var(--text)">${html}</div>
-      <button onclick="copyText(${JSON.stringify(d.explanation).replace(/'/g,'&#39;')})" style="margin-top:8px;padding:4px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);background:transparent;color:var(--text2);font-size:11px;cursor:pointer;font-family:var(--sans)">⎘ Copy</button>`;
-  } catch(e) { box.innerHTML = '<div style="font-size:12px;color:var(--red)">Request failed</div>'; }
+    box.innerHTML = `<div style="font-size:12px;line-height:1.75;color:var(--text)">${html}</div>
+      <button onclick="copyText(${JSON.stringify(d.explanation).replace(/'/g,'&#39;')})" style="margin-top:10px;padding:5px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);background:transparent;color:var(--text2);font-size:11px;cursor:pointer;font-family:var(--sans)">⎘ Copy explanation</button>`;
+  } catch(e) { box.innerHTML = `<div style="font-size:12px;color:var(--red);padding:8px 0">⚠ Request failed: ${e.message}</div>`; }
 }
 
 // ── SAVED SEARCHES ──
