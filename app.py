@@ -14,6 +14,7 @@ import smtplib
 import threading
 import time
 import urllib.parse
+import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 from email.message import EmailMessage
 from functools import lru_cache
@@ -40,6 +41,14 @@ except Exception:
     boto3 = None
     BotoCoreError = Exception
     ClientError = Exception
+
+try:
+    import psycopg2
+    import psycopg2.extras
+    HAS_PSYCOPG2 = True
+except ImportError:
+    psycopg2 = None  # type: ignore
+    HAS_PSYCOPG2 = False
 
 try:
     import requests as _requests_lib
@@ -264,16 +273,33 @@ def log_request(response):
 
 # ─────────────────────────── DB helpers ──────────────────────────────────────
 
-def get_db() -> sqlite3.Connection:
+def _is_pg() -> bool:
+    """Return True when a PostgreSQL DATABASE_URL is configured."""
+    return bool(os.environ.get("DATABASE_URL", "").strip()) and HAS_PSYCOPG2
+
+
+def _pg_connect():
+    """Open a psycopg2 connection using DATABASE_URL."""
+    conn = psycopg2.connect(os.environ["DATABASE_URL"])
+    conn.autocommit = False
+    psycopg2.extras.register_default_jsonb(conn)
+    return conn
+
+
+def get_db():
     if "db" not in g:
-        conn = sqlite3.connect(DB_PATH, timeout=30)
-        conn.row_factory = sqlite3.Row
-        conn.execute("PRAGMA journal_mode=WAL")
-        conn.execute("PRAGMA synchronous=NORMAL")
-        conn.execute("PRAGMA busy_timeout=5000")
-        conn.execute("PRAGMA cache_size=-8192")   # 8 MB page cache per connection
-        conn.execute("PRAGMA temp_store=MEMORY")
-        g.db = conn
+        if _is_pg():
+            conn = _pg_connect()
+            g.db = conn
+        else:
+            conn = sqlite3.connect(DB_PATH, timeout=30)
+            conn.row_factory = sqlite3.Row
+            conn.execute("PRAGMA journal_mode=WAL")
+            conn.execute("PRAGMA synchronous=NORMAL")
+            conn.execute("PRAGMA busy_timeout=5000")
+            conn.execute("PRAGMA cache_size=-8192")
+            conn.execute("PRAGMA temp_store=MEMORY")
+            g.db = conn
     return g.db
 
 @app.teardown_appcontext
@@ -282,8 +308,10 @@ def close_db(_: Any) -> None:
     if db is not None:
         db.close()
 
-def _open_db() -> sqlite3.Connection:
+def _open_db():
     """Open a standalone DB connection for use outside a request context."""
+    if _is_pg():
+        return _pg_connect()
     conn = sqlite3.connect(DB_PATH, timeout=30)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA journal_mode=WAL")
@@ -291,10 +319,20 @@ def _open_db() -> sqlite3.Connection:
     conn.execute("PRAGMA busy_timeout=5000")
     return conn
 
-def ensure_column(db: sqlite3.Connection, table: str, column: str, ddl: str) -> None:
-    cols = {row[1] for row in db.execute(f"PRAGMA table_info({table})").fetchall()}
-    if column not in cols:
-        db.execute(f"ALTER TABLE {table} ADD COLUMN {ddl}")
+def ensure_column(db, table: str, column: str, ddl: str) -> None:
+    if _is_pg():
+        cur = db.cursor()
+        cur.execute(
+            "SELECT column_name FROM information_schema.columns WHERE table_name=%s AND column_name=%s",
+            (table, column),
+        )
+        if cur.fetchone() is None:
+            cur.execute(f"ALTER TABLE {table} ADD COLUMN {ddl}")
+            db.commit()
+    else:
+        cols = {row[1] for row in db.execute(f"PRAGMA table_info({table})").fetchall()}
+        if column not in cols:
+            db.execute(f"ALTER TABLE {table} ADD COLUMN {ddl}")
 
 def iso_now() -> str:
     return datetime.now(timezone.utc).isoformat()
@@ -339,6 +377,60 @@ def send_email_message(subject: str, to_email: str, body_text: str) -> None:
 
 def public_base_url() -> str:
     return os.environ.get("PUBLIC_BASE_URL", "https://observex.in").rstrip("/")
+
+
+def send_slack_message(webhook_url: str, text: str) -> None:
+    """Post a plain-text message to a Slack Incoming Webhook."""
+    if not webhook_url or not webhook_url.startswith("https://hooks.slack.com/"):
+        logger.warning("Invalid or missing Slack webhook URL — message not sent.")
+        return
+    try:
+        payload = json.dumps({"text": text}).encode()
+        req = urllib.request.Request(
+            webhook_url,
+            data=payload,
+            headers={"Content-Type": "application/json"},
+        )
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            if resp.status != 200:
+                logger.warning("Slack webhook returned HTTP %s", resp.status)
+    except Exception as exc:
+        logger.error("Slack notification failed: %s", exc)
+
+
+def _call_anthropic(prompt: str, *, max_tokens: int = 512, system: str | None = None) -> str:
+    """Call the Anthropic Messages API and return the assistant text.
+
+    Requires ANTHROPIC_API_KEY in the environment. Returns an empty string on
+    failure rather than raising so callers degrade gracefully.
+    """
+    api_key = os.environ.get("ANTHROPIC_API_KEY", "")
+    if not api_key:
+        logger.warning("ANTHROPIC_API_KEY not configured — AI call skipped.")
+        return ""
+    body: dict[str, Any] = {
+        "model": "claude-3-5-haiku-20241022",
+        "max_tokens": max_tokens,
+        "messages": [{"role": "user", "content": prompt}],
+    }
+    if system:
+        body["system"] = system
+    try:
+        req = urllib.request.Request(
+            "https://api.anthropic.com/v1/messages",
+            data=json.dumps(body).encode(),
+            headers={
+                "Content-Type": "application/json",
+                "x-api-key": api_key,
+                "anthropic-version": "2023-06-01",
+            },
+        )
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            result = json.loads(resp.read())
+            return result["content"][0]["text"].strip()
+    except Exception as exc:
+        logger.error("Anthropic API call failed: %s", exc)
+        return ""
 
 def org_public_url(slug: str) -> str:
     return f"https://{slug}.observex.in"
@@ -583,37 +675,55 @@ def init_db() -> None:
         CREATE INDEX IF NOT EXISTS idx_vt_token        ON verification_tokens(token);
         CREATE INDEX IF NOT EXISTS idx_pr_token        ON password_resets(token);
         CREATE INDEX IF NOT EXISTS idx_inv_token       ON invitations(token);
+
+        CREATE TABLE IF NOT EXISTS error_fingerprints (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            org_id INTEGER NOT NULL,
+            fingerprint TEXT NOT NULL,
+            first_seen_at TEXT NOT NULL,
+            last_seen_at TEXT NOT NULL,
+            count INTEGER NOT NULL DEFAULT 1,
+            sample_message TEXT NOT NULL DEFAULT '',
+            UNIQUE(org_id, fingerprint),
+            FOREIGN KEY(org_id) REFERENCES organizations(id)
+        );
+        CREATE INDEX IF NOT EXISTS idx_fingerprints_org ON error_fingerprints(org_id, last_seen_at DESC);
         """
     )
 
-    ensure_column(db, "organizations", "theme_mode",    "theme_mode TEXT NOT NULL DEFAULT 'white'")
-    ensure_column(db, "organizations", "admin_only",    "admin_only INTEGER NOT NULL DEFAULT 0")
-    ensure_column(db, "ingestion_jobs", "integration_id", "integration_id INTEGER")
-    ensure_column(db, "users",          "email_verified",  "email_verified INTEGER NOT NULL DEFAULT 0")
-    ensure_column(db, "alert_rules",    "notify_email",    "notify_email TEXT")
-    ensure_column(db, "alert_rules",    "threshold",       "threshold INTEGER NOT NULL DEFAULT 10")
-    ensure_column(db, "alert_rules",    "alert_type",      "alert_type TEXT NOT NULL DEFAULT 'error_rate'")
+    ensure_column(db, "organizations", "theme_mode",       "theme_mode TEXT NOT NULL DEFAULT 'white'")
+    ensure_column(db, "organizations", "admin_only",        "admin_only INTEGER NOT NULL DEFAULT 0")
+    ensure_column(db, "organizations", "retention_days",    "retention_days INTEGER NOT NULL DEFAULT 90")
+    ensure_column(db, "ingestion_jobs", "integration_id",   "integration_id INTEGER")
+    ensure_column(db, "users",          "email_verified",   "email_verified INTEGER NOT NULL DEFAULT 0")
+    ensure_column(db, "alert_rules",    "notify_email",     "notify_email TEXT")
+    ensure_column(db, "alert_rules",    "threshold",        "threshold INTEGER NOT NULL DEFAULT 10")
+    ensure_column(db, "alert_rules",    "alert_type",       "alert_type TEXT NOT NULL DEFAULT 'error_rate'")
+    ensure_column(db, "alert_rules",    "slack_webhook_url","slack_webhook_url TEXT")
+    ensure_column(db, "log_events",     "correlation_id",   "correlation_id TEXT")
 
-    # Seed demo workspace — generate a random secure password if not provided
-    row = db.execute("SELECT id FROM organizations WHERE slug = ?", ("vewit",)).fetchone()
+    # Seed demo workspace — slug/email configurable via env vars
+    seed_slug  = os.environ.get("SEED_ORG_SLUG",   "vewit")
+    seed_email = os.environ.get("SEED_ADMIN_EMAIL", "admin@vewit.local")
+    row = db.execute("SELECT id FROM organizations WHERE slug = ?", (seed_slug,)).fetchone()
     if row is None:
         now = iso_now()
         admin_password = os.environ.get("SEED_ADMIN_PASSWORD") or secrets.token_urlsafe(16)
         db.execute(
             "INSERT INTO organizations (name, slug, theme_color, theme_mode, logo_text, admin_only, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
-            ("Vewit", "vewit", DEFAULT_THEME_COLORS["white"], "white", "VX", 0, now),
+            (seed_slug.capitalize(), seed_slug, DEFAULT_THEME_COLORS["white"], "white", seed_slug[:2].upper(), 0, now),
         )
-        org_id = db.execute("SELECT id FROM organizations WHERE slug = ?", ("vewit",)).fetchone()[0]
+        org_id = db.execute("SELECT id FROM organizations WHERE slug = ?", (seed_slug,)).fetchone()[0]
         db.execute(
             "INSERT INTO users (org_id, name, email, password_hash, role, created_at, email_verified) VALUES (?, ?, ?, ?, ?, ?, ?)",
-            (org_id, "Platform Admin", "admin@vewit.local", generate_password_hash(admin_password), "admin", now, 1),
+            (org_id, "Platform Admin", seed_email, generate_password_hash(admin_password), "admin", now, 1),
         )
-        admin_id = db.execute("SELECT id FROM users WHERE email = ?", ("admin@vewit.local",)).fetchone()[0]
+        admin_id = db.execute("SELECT id FROM users WHERE email = ?", (seed_email,)).fetchone()[0]
         db.execute(
             "INSERT INTO audit_events (org_id, user_id, action, target_type, target_id, detail_json, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
-            (org_id, admin_id, "seeded_demo_workspace", "workspace", str(org_id), json.dumps({"email": "admin@vewit.local"}), now),
+            (org_id, admin_id, "seeded_demo_workspace", "workspace", str(org_id), json.dumps({"email": seed_email}), now),
         )
-        logger.info("Seeded demo workspace. Admin password: %s", admin_password)
+        logger.info("Seeded demo workspace (slug=%s). Admin password: %s", seed_slug, admin_password)
     db.commit()
     db.close()
 
@@ -1183,16 +1293,164 @@ def start_worker() -> None:
 
 def scheduler_tick() -> None:
     conn = _open_db()
-    due  = conn.execute(
-        "SELECT * FROM ingestion_jobs WHERE status = 'scheduled' AND next_run_at IS NOT NULL AND next_run_at <= ?",
-        (iso_now(),),
-    ).fetchall()
-    for job in due:
-        try:
-            INGESTION_QUEUE.put_nowait(job["id"])
-        except Full:
-            logger.warning("Ingestion queue full — skipping scheduled job %d", job["id"])
-    conn.close()
+    try:
+        now_str = iso_now()
+
+        # ── 1. Dispatch scheduled ingestion jobs ──────────────────────────────
+        due = conn.execute(
+            "SELECT * FROM ingestion_jobs WHERE status = 'scheduled' AND next_run_at IS NOT NULL AND next_run_at <= ?",
+            (now_str,),
+        ).fetchall()
+        for job in due:
+            try:
+                INGESTION_QUEUE.put_nowait(job["id"])
+            except Full:
+                logger.warning("Ingestion queue full — skipping scheduled job %d", job["id"])
+
+        # ── 2. Anomaly detection — error spike vs 7-day rolling baseline ─────
+        #    Runs every tick but fires alerts with a 4-hour cooldown per org.
+        orgs = conn.execute("SELECT id, retention_days FROM organizations").fetchall()
+        now_dt      = datetime.now(timezone.utc)
+        window_1h   = (now_dt - timedelta(hours=1)).strftime("%Y-%m-%dT%H:%M:%S")
+        window_7d   = (now_dt - timedelta(days=7)).strftime("%Y-%m-%dT%H:%M:%S")
+        cooldown_4h = (now_dt - timedelta(hours=4)).strftime("%Y-%m-%dT%H:%M:%S")
+
+        for org_row in orgs:
+            org_id = org_row["id"]
+            try:
+                # Current-hour error count
+                hour_errors = conn.execute(
+                    "SELECT COUNT(*) FROM log_events WHERE org_id=? AND level='error' AND timestamp>=?",
+                    (org_id, window_1h),
+                ).fetchone()[0]
+
+                # 7-day hourly average
+                total_7d = conn.execute(
+                    "SELECT COUNT(*) FROM log_events WHERE org_id=? AND level='error' AND timestamp>=?",
+                    (org_id, window_7d),
+                ).fetchone()[0]
+                baseline_per_hour = total_7d / (7 * 24) if total_7d else 0
+
+                spike = hour_errors > max(10, baseline_per_hour * 3)
+                if spike:
+                    tk = f"anomaly:spike:org:{org_id}"
+                    already = conn.execute(
+                        "SELECT id FROM observability_fired WHERE org_id=? AND trigger_key=? AND fired_at>=?",
+                        (org_id, tk, cooldown_4h),
+                    ).fetchone()
+                    if not already:
+                        # Fetch alert rules with email/slack for this org
+                        rules = conn.execute(
+                            "SELECT notify_email, slack_webhook_url FROM alert_rules WHERE org_id=? AND status='active'",
+                            (org_id,),
+                        ).fetchall()
+
+                        # AI-generated summary (fire-and-forget, may be empty if no key)
+                        sample_rows = conn.execute(
+                            "SELECT message FROM log_events WHERE org_id=? AND level='error' AND timestamp>=? LIMIT 10",
+                            (org_id, window_1h),
+                        ).fetchall()
+                        samples = "\n".join(r["message"][:200] for r in sample_rows)
+                        ai_summary = _call_anthropic(
+                            f"Summarise these error log messages in 2-3 sentences for an ops team alert:\n{samples}",
+                            max_tokens=200,
+                        ) if samples else ""
+
+                        subject = f"[ObserveX] Error spike detected — {hour_errors} errors in last hour"
+                        body    = (
+                            f"Org ID: {org_id}\n"
+                            f"Errors in last hour: {hour_errors}\n"
+                            f"7-day baseline (per hour): {baseline_per_hour:.1f}\n"
+                            f"Spike ratio: {hour_errors / max(baseline_per_hour, 1):.1f}×\n"
+                            + (f"\nAI summary:\n{ai_summary}" if ai_summary else "")
+                        )
+                        for rule in rules:
+                            email_to = (rule["notify_email"] or "").strip()
+                            if email_to:
+                                try:
+                                    send_email_message(subject, email_to, body)
+                                except Exception as exc:
+                                    logger.error("Anomaly email failed for org %d: %s", org_id, exc)
+                            slack_hook = (rule["slack_webhook_url"] or "").strip() if "slack_webhook_url" in rule.keys() else ""
+                            if slack_hook:
+                                try:
+                                    send_slack_message(slack_hook, f":rotating_light: *{subject}*\n{body}")
+                                except Exception as exc:
+                                    logger.error("Anomaly Slack failed for org %d: %s", org_id, exc)
+
+                        conn.execute(
+                            "INSERT INTO observability_fired (org_id, alert_rule_id, trigger_key, fired_at) VALUES (?,?,?,?)",
+                            (org_id, None, tk, now_str),
+                        )
+
+                # ── 3. First-seen error fingerprint detection ─────────────────
+                recent_errors = conn.execute(
+                    "SELECT message FROM log_events WHERE org_id=? AND level='error' AND timestamp>=? LIMIT 200",
+                    (org_id, window_1h),
+                ).fetchall()
+                for err_row in recent_errors:
+                    raw = err_row["message"] or ""
+                    # Normalise numbers/UUIDs to create a stable fingerprint
+                    normalised = re.sub(r"[0-9a-f]{8}-[0-9a-f-]{27}", "<uuid>", raw, flags=re.I)
+                    normalised = re.sub(r"\b\d+\b", "<N>", normalised)
+                    fp = hashlib.md5(normalised[:300].encode()).hexdigest()
+                    existing = conn.execute(
+                        "SELECT id, count FROM error_fingerprints WHERE org_id=? AND fingerprint=?",
+                        (org_id, fp),
+                    ).fetchone()
+                    if existing is None:
+                        conn.execute(
+                            "INSERT INTO error_fingerprints (org_id, fingerprint, first_seen_at, last_seen_at, count, sample_message) VALUES (?,?,?,?,1,?)",
+                            (org_id, fp, now_str, now_str, raw[:500]),
+                        )
+                        # Alert on brand-new error pattern
+                        rules = conn.execute(
+                            "SELECT notify_email, slack_webhook_url FROM alert_rules WHERE org_id=? AND status='active'",
+                            (org_id,),
+                        ).fetchall()
+                        subject = "[ObserveX] New error pattern detected"
+                        body    = f"First occurrence of a new error pattern:\n\n{raw[:400]}"
+                        for rule in rules:
+                            email_to = (rule["notify_email"] or "").strip()
+                            if email_to:
+                                try:
+                                    send_email_message(subject, email_to, body)
+                                except Exception:
+                                    pass
+                            slack_hook = (rule["slack_webhook_url"] or "").strip() if "slack_webhook_url" in rule.keys() else ""
+                            if slack_hook:
+                                try:
+                                    send_slack_message(slack_hook, f":new: *{subject}*\n{body}")
+                                except Exception:
+                                    pass
+                    else:
+                        conn.execute(
+                            "UPDATE error_fingerprints SET count=count+1, last_seen_at=? WHERE id=?",
+                            (now_str, existing["id"]),
+                        )
+            except Exception as exc:
+                logger.error("Anomaly/fingerprint check failed for org %d: %s", org_id, exc)
+
+        # ── 4. Nightly log retention — delete old records per-org ─────────────
+        #    Runs only at the top of each UTC hour between 02:00-03:00.
+        if now_dt.hour == 2:
+            for org_row in orgs:
+                retention_days = org_row["retention_days"] or 90
+                cutoff = (now_dt - timedelta(days=retention_days)).strftime("%Y-%m-%dT%H:%M:%S")
+                try:
+                    deleted = conn.execute(
+                        "DELETE FROM log_events WHERE org_id=? AND timestamp<?",
+                        (org_row["id"], cutoff),
+                    ).rowcount
+                    if deleted:
+                        logger.info("Retention: deleted %d old log events for org %d (>%d days)",
+                                    deleted, org_row["id"], retention_days)
+                except Exception as exc:
+                    logger.error("Retention deletion failed for org %d: %s", org_row["id"], exc)
+
+        conn.commit()
+    finally:
+        conn.close()
 
 def start_scheduler() -> None:
     global scheduler
@@ -1573,35 +1831,11 @@ def explain_log(log_id: int):
         f"- Message: {log['message']}\n"
         f"- Payload: {json.dumps(payload, indent=2)[:800]}"
     )
-    import urllib.request as _ur
-    import os as _os
-    anthropic_key = _os.environ.get("ANTHROPIC_API_KEY", "")
-    if not anthropic_key:
+    if not os.environ.get("ANTHROPIC_API_KEY"):
         return jsonify({"error": "ANTHROPIC_API_KEY not configured on server. Add it to your Railway environment variables."}), 503
-    req_body = json.dumps({
-        "model": "claude-sonnet-4-20250514",
-        "max_tokens": 600,
-        "messages": [{"role": "user", "content": prompt}]
-    }).encode()
-    req = _ur.Request(
-        "https://api.anthropic.com/v1/messages",
-        data=req_body,
-        headers={
-            "Content-Type": "application/json",
-            "anthropic-version": "2023-06-01",
-            "x-api-key": anthropic_key,
-        },
-        method="POST",
-    )
-    try:
-        with _ur.urlopen(req, timeout=20) as resp:
-            data = json.loads(resp.read())
-        explanation = data["content"][0]["text"]
-    except _ur.HTTPError as exc:
-        body = exc.read().decode("utf-8", errors="ignore")
-        return jsonify({"error": f"Anthropic API error {exc.code}: {body[:200]}"}), 500
-    except Exception as exc:
-        return jsonify({"error": f"AI explain failed: {exc}"}), 500
+    explanation = _call_anthropic(prompt, max_tokens=600)
+    if not explanation:
+        return jsonify({"error": "AI explain failed — check server logs for details."}), 500
     return jsonify({"explanation": explanation})
 
 @app.get("/api/searches")
@@ -1811,11 +2045,12 @@ def add_alert():
     now     = iso_now()
     db      = get_db()
     cur     = db.execute(
-        "INSERT INTO alert_rules (org_id, name, severity, condition_text, status, channel, notify_email, threshold, alert_type, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO alert_rules (org_id, name, severity, condition_text, status, channel, notify_email, threshold, alert_type, slack_webhook_url, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         (user["org_id"], sanitize_input(payload.get("name") or "New alert"), payload.get("severity") or "sev3",
          sanitize_input(payload.get("condition_text") or "condition pending", 500), payload.get("status") or "draft",
          payload.get("channel") or "Email", sanitize_input(payload.get("notify_email") or ""),
-         int(payload.get("threshold") or 10), payload.get("alert_type") or "error_rate", now),
+         int(payload.get("threshold") or 10), payload.get("alert_type") or "error_rate",
+         sanitize_input(payload.get("slack_webhook_url") or ""), now),
     )
     db.commit()
     audit(user["org_id"], user["id"], "created_alert", "alert", str(cur.lastrowid), {"name": payload.get("name")})
@@ -2398,6 +2633,13 @@ def get_observability():
                 alerts_fired.append(f"Alerted {notify_email} for IP {entry['ip']}")
             except Exception as exc:
                 alerts_fired.append(f"Email failed for {entry['ip']}: {exc}")
+            slack_hook = (rule["slack_webhook_url"] or "").strip() if "slack_webhook_url" in rule.keys() else ""
+            if slack_hook:
+                try:
+                    send_slack_message(slack_hook, f":warning: *ObserveX Alert* — {subject}\n{body}")
+                    alerts_fired.append(f"Slack notified for IP {entry['ip']}")
+                except Exception as exc:
+                    alerts_fired.append(f"Slack failed for {entry['ip']}: {exc}")
             db.execute(
                 "INSERT INTO observability_fired (org_id, alert_rule_id, trigger_key, fired_at) VALUES (?,?,?,?)",
                 (org_id, rule["id"], trigger_key, iso_now()),
@@ -2426,6 +2668,153 @@ def get_obs_alert_rules():
         (user["org_id"],),
     ).fetchall()
     return jsonify([dict(r) for r in rows])
+
+
+# ─────────────────────────── New endpoints ───────────────────────────────────
+
+@app.post("/api/ingest/webhook")
+def webhook_ingest():
+    """HMAC-SHA256 validated webhook log ingest.
+    Header: X-ObserveX-Signature: sha256=<hex>
+    Body: JSON array of log objects or single log object.
+    """
+    key_info, error = require_api_key()
+    if error:
+        return error
+    secret = os.environ.get("WEBHOOK_SECRET", "")
+    if secret:
+        sig_header = request.headers.get("X-ObserveX-Signature", "")
+        expected   = "sha256=" + hmac.new(secret.encode(), request.data, "sha256").hexdigest()
+        if not hmac.compare_digest(sig_header, expected):
+            return jsonify({"error": "Invalid signature."}), 401
+
+    body = request.get_json(silent=True, force=True)
+    if body is None:
+        return jsonify({"error": "JSON body required."}), 400
+    events = body if isinstance(body, list) else [body]
+    if not events:
+        return jsonify({"error": "Empty payload."}), 400
+
+    db     = get_db()
+    org_id = key_info["org_id"]
+    now    = iso_now()
+    inserted = 0
+    for ev in events[:500]:  # hard cap per request
+        msg     = sanitize_input(str(ev.get("message") or ""), 2000)
+        level   = sanitize_input(str(ev.get("level") or "info").lower(), 20)
+        source  = sanitize_input(str(ev.get("source") or "webhook"), 200)
+        ts      = sanitize_input(str(ev.get("timestamp") or now), 50)
+        event_id = sanitize_input(str(ev.get("event_id") or ""), 100)
+        corr_id  = sanitize_input(str(ev.get("correlation_id") or ""), 100)
+        payload  = json.dumps({k: v for k, v in ev.items() if k not in ("message","level","source","timestamp","event_id","correlation_id")})
+        db.execute(
+            "INSERT INTO log_events (org_id, upload_id, timestamp, level, source, event_id, message, payload_json, created_at, correlation_id) VALUES (?,?,?,?,?,?,?,?,?,?)",
+            (org_id, None, ts, level, source, event_id, msg, payload, now, corr_id),
+        )
+        inserted += 1
+    db.commit()
+    return jsonify({"inserted": inserted}), 201
+
+
+@app.get("/api/logs/trace")
+def get_log_trace():
+    """Return all log events sharing a correlation_id."""
+    user, error = require_auth()
+    if error:
+        return error
+    corr_id = sanitize_input(request.args.get("correlation_id") or "", 100)
+    if not corr_id:
+        return jsonify({"error": "correlation_id query param required."}), 400
+    db   = get_db()
+    rows = db.execute(
+        "SELECT id, timestamp, level, source, event_id, message, payload_json, correlation_id FROM log_events WHERE org_id=? AND correlation_id=? ORDER BY timestamp ASC LIMIT 500",
+        (user["org_id"], corr_id),
+    ).fetchall()
+    return jsonify({"correlation_id": corr_id, "events": [dict(r) for r in rows]})
+
+
+@app.post("/api/ai/anomaly-summary")
+def ai_anomaly_summary():
+    """Return an AI-generated plain-English summary of the last hour's errors."""
+    user, error = require_auth()
+    if error:
+        return error
+    if not os.environ.get("ANTHROPIC_API_KEY"):
+        return jsonify({"error": "ANTHROPIC_API_KEY not configured."}), 503
+    db      = get_db()
+    since   = (datetime.now(timezone.utc) - timedelta(hours=1)).strftime("%Y-%m-%dT%H:%M:%S")
+    rows    = db.execute(
+        "SELECT message, source FROM log_events WHERE org_id=? AND level='error' AND timestamp>=? ORDER BY timestamp DESC LIMIT 30",
+        (user["org_id"], since),
+    ).fetchall()
+    if not rows:
+        return jsonify({"summary": "No errors in the last hour.", "count": 0})
+    samples = "\n".join(f"[{r['source']}] {r['message'][:200]}" for r in rows)
+    summary = _call_anthropic(
+        f"You are an SRE. Summarise the following error logs from the last hour in 3-4 sentences, "
+        f"highlighting patterns and urgency:\n\n{samples}",
+        max_tokens=300,
+    )
+    return jsonify({"summary": summary or "AI summary unavailable.", "count": len(rows)})
+
+
+@app.post("/api/ai/suggest-search")
+def ai_suggest_search():
+    """Convert a natural-language query into ObserveX log search filter JSON."""
+    user, error = require_auth()
+    if error:
+        return error
+    payload = request_payload()
+    query   = sanitize_input(payload.get("query") or "", 500)
+    if not query:
+        return jsonify({"error": "query field required."}), 400
+    if not os.environ.get("ANTHROPIC_API_KEY"):
+        return jsonify({"error": "ANTHROPIC_API_KEY not configured."}), 503
+    result = _call_anthropic(
+        f"Convert this natural-language log search query into a JSON object with these optional keys: "
+        f"level (string), search (string keyword), from_ts (ISO8601), to_ts (ISO8601), source (string). "
+        f"Return ONLY the JSON object, no explanation.\n\nQuery: {query}",
+        max_tokens=200,
+    )
+    try:
+        filters = json.loads(result)
+    except Exception:
+        filters = {"search": query}
+    return jsonify({"filters": filters, "raw": result})
+
+
+@app.get("/api/logs/fingerprints")
+def get_fingerprints():
+    """Return recent error pattern fingerprints for this org."""
+    user, error = require_auth()
+    if error:
+        return error
+    db   = get_db()
+    rows = db.execute(
+        "SELECT fingerprint, first_seen_at, last_seen_at, count, sample_message FROM error_fingerprints WHERE org_id=? ORDER BY last_seen_at DESC LIMIT 100",
+        (user["org_id"],),
+    ).fetchall()
+    return jsonify({"fingerprints": [dict(r) for r in rows]})
+
+
+@app.post("/api/org/retention")
+def set_retention():
+    """Admin endpoint to set per-org log retention policy (days)."""
+    user, error = require_admin()
+    if error:
+        return error
+    payload = request_payload()
+    try:
+        days = int(payload.get("retention_days") or 90)
+        if days < 1 or days > 3650:
+            raise ValueError
+    except (ValueError, TypeError):
+        return jsonify({"error": "retention_days must be an integer between 1 and 3650."}), 400
+    db = get_db()
+    db.execute("UPDATE organizations SET retention_days=? WHERE id=?", (days, user["org_id"]))
+    db.commit()
+    audit(user["org_id"], user["id"], "set_retention_policy", "organization", str(user["org_id"]), {"retention_days": days})
+    return jsonify({"message": f"Retention policy set to {days} days.", "retention_days": days})
 
 
 # ─────────────────────────── Startup ─────────────────────────────────────────
