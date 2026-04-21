@@ -3071,6 +3071,10 @@ function flowSetDisplay(id, value) {
   const el = document.getElementById(id);
   if (el) el.style.display = value;
 }
+function flowSetHtml(id, value) {
+  const el = document.getElementById(id);
+  if (el) el.innerHTML = value;
+}
 
 async function loadFlowTraces() {
   const q = (document.getElementById('flowSearchInput').value || '').trim();
