@@ -474,6 +474,32 @@ def _call_anthropic(prompt: str, *, max_tokens: int = 512, system: str | None = 
 def org_public_url(slug: str) -> str:
     return f"https://{slug}.observex.in"
 
+def generate_workspace_public_id() -> str:
+    return f"{secrets.randbelow(10**6):06d}-{secrets.randbelow(10**8):08d}-{secrets.randbelow(10**5):05d}"
+
+def workspace_path(workspace_public_id: str, slug: str, section: str = "overview") -> str:
+    safe_section = section or "overview"
+    return f"/workspace/{workspace_public_id}/{slug}/{safe_section}"
+
+def get_requested_environment() -> str:
+    env = sanitize_input(request.args.get("environment") or request.form.get("environment") or request.headers.get("X-Environment") or "", 30).upper()
+    return env if env else "ALL"
+
+def ensure_default_environments(db: Any, org_id: int) -> None:
+    defaults = [
+        ("DEV",  "#64748b", 0),
+        ("UAT",  "#f59e0b", 0),
+        ("PROD", "#ef4444", 1),
+        ("DR",   "#7c3aed", 0),
+    ]
+    for name, color, is_prod in defaults:
+        exists = db.execute("SELECT 1 FROM environments WHERE org_id = ? AND upper(name) = ? LIMIT 1", (org_id, name)).fetchone()
+        if not exists:
+            db.execute(
+                "INSERT INTO environments (org_id, name, slug, color, is_production, created_at) VALUES (?, ?, ?, ?, ?, ?)",
+                (org_id, name, name.lower(), color, is_prod, iso_now()),
+            )
+
 def create_verification_token(user_id: int) -> str:
     db = get_db()
     token = secrets.token_urlsafe(32)
@@ -696,6 +722,18 @@ def init_db() -> None:
             fired_at TEXT NOT NULL
         );
 
+        CREATE TABLE IF NOT EXISTS environments (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            org_id INTEGER NOT NULL,
+            name TEXT NOT NULL,
+            slug TEXT NOT NULL,
+            color TEXT NOT NULL DEFAULT '#64748b',
+            is_production INTEGER NOT NULL DEFAULT 0,
+            created_at TEXT NOT NULL,
+            UNIQUE(org_id, slug),
+            FOREIGN KEY(org_id) REFERENCES organizations(id)
+        );
+
         CREATE TABLE IF NOT EXISTS saved_searches (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             org_id INTEGER NOT NULL,
@@ -797,6 +835,9 @@ def init_db() -> None:
     ensure_column(db, "log_events",     "request_id",       "request_id TEXT")
     ensure_column(db, "api_keys",       "scopes",           "scopes TEXT NOT NULL DEFAULT 'ingest,read,admin'")
     ensure_column(db, "organizations",  "ingest_rate_limit","ingest_rate_limit INTEGER NOT NULL DEFAULT 10000")
+    ensure_column(db, "organizations",  "public_id",        "public_id TEXT")
+    ensure_column(db, "uploads",        "environment_name", "environment_name TEXT NOT NULL DEFAULT 'PROD'")
+    ensure_column(db, "log_events",     "environment_name", "environment_name TEXT NOT NULL DEFAULT 'PROD'")
     ensure_column(db, "alert_rules",    "latency_threshold_ms", "latency_threshold_ms INTEGER")
     ensure_column(db, "alert_rules",    "dead_source_minutes",  "dead_source_minutes INTEGER")
 
@@ -812,6 +853,14 @@ def init_db() -> None:
         except Exception as exc:
             logger.warning("Index creation skipped: %s — %s", idx_sql[:60], exc)
 
+    # Backfill workspace public IDs + environments for existing orgs
+    existing_orgs = db.execute("SELECT id, public_id FROM organizations").fetchall()
+    for org in existing_orgs:
+        if not (org["public_id"] or "").strip():
+            db.execute("UPDATE organizations SET public_id = ? WHERE id = ?", (generate_workspace_public_id(), org["id"]))
+            logger.info("assigned_workspace_public_id for org_id=%s", org["id"])
+        ensure_default_environments(db, org["id"])
+
     # Seed demo workspace — slug/email configurable via env vars
     seed_slug  = os.environ.get("SEED_ORG_SLUG",   "vewit")
     seed_email = os.environ.get("SEED_ADMIN_EMAIL", "admin@vewit.local")
@@ -820,8 +869,8 @@ def init_db() -> None:
         now = iso_now()
         admin_password = os.environ.get("SEED_ADMIN_PASSWORD") or secrets.token_urlsafe(16)
         db.execute(
-            "INSERT INTO organizations (name, slug, theme_color, theme_mode, logo_text, admin_only, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
-            (seed_slug.capitalize(), seed_slug, DEFAULT_THEME_COLORS["white"], "white", seed_slug[:2].upper(), 0, now),
+            "INSERT INTO organizations (name, slug, theme_color, theme_mode, logo_text, admin_only, created_at, public_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            (seed_slug.capitalize(), seed_slug, DEFAULT_THEME_COLORS["white"], "white", seed_slug[:2].upper(), 0, now, generate_workspace_public_id()),
         )
         org_id = db.execute("SELECT id FROM organizations WHERE slug = ?", (seed_slug,)).fetchone()[0]
         db.execute(
@@ -833,6 +882,7 @@ def init_db() -> None:
             "INSERT INTO audit_events (org_id, user_id, action, target_type, target_id, detail_json, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
             (org_id, admin_id, "seeded_demo_workspace", "workspace", str(org_id), json.dumps({"email": seed_email}), now),
         )
+        ensure_default_environments(db, org_id)
         logger.info("Seeded demo workspace (slug=%s). Admin password: %s", seed_slug, admin_password)
     db.commit()
     db.close()
@@ -848,7 +898,7 @@ def require_auth() -> tuple[dict[str, Any] | None, tuple[Any, int] | None]:
     row = db.execute(
         """
         SELECT u.id, u.name, u.email, u.role, u.org_id,
-               o.name AS org_name, o.slug, o.theme_color, o.theme_mode, o.logo_text, o.admin_only
+               o.name AS org_name, o.slug, o.public_id, o.theme_color, o.theme_mode, o.logo_text, o.admin_only
         FROM users u
         JOIN organizations o ON o.id = u.org_id
         WHERE u.id = ?
@@ -1424,12 +1474,12 @@ def run_ingestion_job_internal(user: dict[str, Any], job_id: int) -> tuple[bool,
         return False, "No records were ingested.", 0
 
     upload_cur = db.execute(
-        "INSERT INTO uploads (org_id, user_id, filename, total_records, created_at) VALUES (?, ?, ?, ?, ?)",
+        "INSERT INTO uploads (org_id, user_id, filename, total_records, environment_name, created_at) VALUES (?, ?, ?, ?, ?, ?)",
         (user["org_id"], user["id"], f"job-{job_id}-{job['source_type']}", len(records), now),
     )
     upload_id = upload_cur.lastrowid
     db.executemany(
-        "INSERT INTO log_events (org_id, upload_id, timestamp, level, source, event_id, message, payload_json, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO log_events (org_id, upload_id, timestamp, level, source, event_id, message, payload_json, environment_name, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         [(user["org_id"], upload_id, rec["timestamp"], rec["level"], rec["source"], rec.get("event_id") or "", rec["message"], json.dumps(rec.get("payload", {})), now) for rec in records],
     )
     db.execute(
@@ -1855,45 +1905,70 @@ def login_page():
         return redirect("/workspace")
     return render_template("login.html")
 
+
 @app.get("/workspace")
 def workspace():
     user, error = require_auth()
     if error:
         return redirect("/login")
-    db   = get_db()
-    org  = db.execute("SELECT slug FROM organizations WHERE id = ?", (user["org_id"],)).fetchone()
-    slug = org["slug"] if org else "workspace"
-    return redirect(f"/workspace/{slug}")
+    return redirect(workspace_path(user.get("public_id") or generate_workspace_public_id(), user["slug"], "overview"))
 
 @app.get("/workspace/<slug>")
 def workspace_slug(slug: str):
     user, error = require_auth()
     if error:
         return redirect("/login")
-    db  = get_db()
-    org = db.execute("SELECT id FROM organizations WHERE slug = ? AND id = ?", (slug, user["org_id"])).fetchone()
+    db = get_db()
+    org = db.execute("SELECT id, public_id FROM organizations WHERE slug = ? AND id = ?", (slug, user["org_id"])).fetchone()
     if not org:
         return redirect("/workspace")
-    return render_template("index.html", user=user, active_section="overview", org_slug=slug)
+    public_id = org["public_id"] or user.get("public_id") or generate_workspace_public_id()
+    if not org["public_id"]:
+        db.execute("UPDATE organizations SET public_id = ? WHERE id = ?", (public_id, org["id"]))
+        db.commit()
+    return redirect(workspace_path(public_id, slug, "overview"))
 
-@app.get("/workspace/<slug>/<section>")
-def workspace_section(slug: str, section: str):
+@app.get("/workspace/<workspace_id>/<slug>")
+def workspace_slug_with_id(workspace_id: str, slug: str):
     user, error = require_auth()
     if error:
         return redirect("/login")
-    db  = get_db()
-    org = db.execute("SELECT id FROM organizations WHERE slug = ? AND id = ?", (slug, user["org_id"])).fetchone()
+    db = get_db()
+    org = db.execute("SELECT id, public_id FROM organizations WHERE slug = ? AND id = ?", (slug, user["org_id"])).fetchone()
     if not org:
         return redirect("/workspace")
+    actual_public_id = org["public_id"] or user.get("public_id") or workspace_id
+    if workspace_id != actual_public_id:
+        return redirect(workspace_path(actual_public_id, slug, "overview"))
+    return render_template("index.html", user=user, active_section="overview", org_slug=slug, workspace_public_id=actual_public_id)
+
+@app.get("/workspace/<workspace_id>/<slug>/<section>")
+def workspace_section(workspace_id: str, slug: str, section: str):
+    user, error = require_auth()
+    if error:
+        return redirect("/login")
+    db = get_db()
+    org = db.execute("SELECT id, public_id FROM organizations WHERE slug = ? AND id = ?", (slug, user["org_id"])).fetchone()
+    if not org:
+        return redirect("/workspace")
+    actual_public_id = org["public_id"] or user.get("public_id") or workspace_id
+    if workspace_id != actual_public_id:
+        return redirect(workspace_path(actual_public_id, slug, section))
     valid_sections = {"overview", "explorer", "ingest", "integrations", "jobs", "alerts", "users",
-                      "dashboards", "invites", "organization", "audit", "observability"}
+                      "dashboards", "invites", "organization", "audit", "observability", "flow", "ai"}
     safe_section = section if section in valid_sections else "overview"
-    return render_template("index.html", user=user, active_section=safe_section, org_slug=slug)
+    return render_template("index.html", user=user, active_section=safe_section, org_slug=slug, workspace_public_id=actual_public_id)
 
+@app.get("/workspace/<slug>/<section>")
+def legacy_workspace_section(slug: str, section: str):
+    user, error = require_auth()
+    if error:
+        return redirect("/login")
+    return redirect(workspace_path(user.get("public_id") or generate_workspace_public_id(), slug, section))
 
-# ─────────────────────────── Auth API ────────────────────────────────────────
 
 @app.post("/login")
+
 @rate_limit("10 per minute; 50 per hour")
 def login():
     payload  = request_payload()
@@ -1915,7 +1990,7 @@ def login():
     session["session_token"] = _create_user_session(db, user["id"], user["org_id"])
     db.commit()
     audit(user["org_id"], user["id"], "logged_in", "session", str(user["id"]), {"email": user["email"]})
-    return jsonify({"message": "Login successful."})
+    return jsonify({"message": "Login successful.", "workspace_url": workspace_path(user.get("public_id") or "", user["slug"], "overview"), "workspace_id": user.get("public_id")})
 
 @app.post("/register")
 @rate_limit("5 per minute; 20 per hour")
@@ -1953,15 +2028,17 @@ def register_org_and_admin():
 
     now       = iso_now()
     logo_text = "".join([part[0] for part in org_name.split()[:2]]).upper() or "OX"
+    workspace_public_id = generate_workspace_public_id()
     cur       = db.execute(
-        "INSERT INTO organizations (name, slug, theme_color, theme_mode, logo_text, admin_only, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
-        (org_name, slug, DEFAULT_THEME_COLORS[theme_mode], theme_mode, logo_text[:3], 0, now),
+        "INSERT INTO organizations (name, slug, theme_color, theme_mode, logo_text, admin_only, created_at, public_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+        (org_name, slug, DEFAULT_THEME_COLORS[theme_mode], theme_mode, logo_text[:3], 0, now, workspace_public_id),
     )
     org_id   = cur.lastrowid
     user_cur = db.execute(
         "INSERT INTO users (org_id, name, email, password_hash, role, created_at, email_verified) VALUES (?, ?, ?, ?, ?, ?, ?)",
         (org_id, admin_name, email, generate_password_hash(password), "admin", now, 1),
     )
+    ensure_default_environments(db, org_id)
     db.commit()
     user_id = user_cur.lastrowid
     session.clear()
@@ -1973,7 +2050,8 @@ def register_org_and_admin():
     return jsonify({
         "message": "Workspace created successfully. Welcome to ObserveX!",
         "slug":    slug,
-        "workspace_url": org_public_url(slug),
+        "workspace_url": workspace_path(workspace_public_id, slug, "overview"),
+        "workspace_id": workspace_public_id,
     })
 
 @app.post("/logout")
@@ -2086,7 +2164,8 @@ def bootstrap():
             "theme_mode":    user["theme_mode"],
             "logo_text":     user["logo_text"],
             "admin_only":    bool(user["admin_only"]),
-            "workspace_url": org_public_url(user["slug"]),
+            "workspace_url": workspace_path(user.get("public_id") or "", user["slug"], "overview"),
+            "workspace_id": user.get("public_id"),
         },
         "summary":          dashboard_summary(user["org_id"]),
         "integrations":     integrations,
@@ -2100,6 +2179,7 @@ def bootstrap():
         "role_options":     sorted(VALID_ROLES),
         "theme_options":    sorted(VALID_THEMES),
         "api_keys":         api_keys_list,
+        "environments":    [dict(r) for r in db.execute("SELECT id, name, slug, color, is_production FROM environments WHERE org_id = ? ORDER BY is_production DESC, name ASC", (user["org_id"],)).fetchall()],
         "saved_searches":   [{"id": r["id"], "name": r["name"], "filters": json.loads(r["filters_json"]), "created_at": r["created_at"]} for r in db.execute("SELECT id, name, filters_json, created_at FROM saved_searches WHERE org_id = ? ORDER BY id DESC LIMIT 50", (user["org_id"],)).fetchall()],
         "onboarding": _get_onboarding_state(db, user["org_id"]),
         "permission_matrix": {
@@ -2125,7 +2205,11 @@ def get_logs():
     level = sanitize_input(request.args.get("level") or "all", 20).lower()
     minutes = request.args.get("minutes", "0")
     params: list[Any] = [user["org_id"]]
-    sql = "SELECT id, timestamp, level, source, event_id, message FROM log_events WHERE org_id = ?"
+    sql = "SELECT id, timestamp, level, source, event_id, message, environment_name FROM log_events WHERE org_id = ?"
+    environment_name = get_requested_environment()
+    if environment_name != "ALL":
+        sql += " AND upper(coalesce(environment_name, 'PROD')) = ?"
+        params.append(environment_name)
     if level != "all":
         sql += " AND level = ?"
         params.append(level)
@@ -2140,7 +2224,7 @@ def get_logs():
                 ).fetchall()]
                 if fts_ids:
                     placeholders = ",".join("?" * len(fts_ids))
-                    sql = f"SELECT id, timestamp, level, source, event_id, message FROM log_events WHERE org_id = ? AND id IN ({placeholders})"
+                    sql = f"SELECT id, timestamp, level, source, event_id, message, environment_name FROM log_events WHERE org_id = ? AND id IN ({placeholders})"
                     params = [user["org_id"]] + fts_ids
                     use_fts = True
             except Exception:
@@ -2201,10 +2285,14 @@ def get_log_sources():
     if error:
         return error
     db = get_db()
-    rows = db.execute(
-        "SELECT DISTINCT source FROM log_events WHERE org_id = ? AND source IS NOT NULL AND source != '' ORDER BY source LIMIT 200",
-        (user["org_id"],)
-    ).fetchall()
+    environment_name = get_requested_environment()
+    params = [user["org_id"]]
+    sql = "SELECT DISTINCT source FROM log_events WHERE org_id = ? AND source IS NOT NULL AND source != ''"
+    if environment_name != "ALL":
+        sql += " AND upper(coalesce(environment_name, 'PROD')) = ?"
+        params.append(environment_name)
+    sql += " ORDER BY source LIMIT 200"
+    rows = db.execute(sql, params).fetchall()
     return jsonify({"sources": [r["source"] for r in rows]})
 
 @app.get("/api/logs/errors/grouped")
@@ -2213,20 +2301,21 @@ def get_grouped_errors():
     if error:
         return error
     db = get_db()
-    # Group errors by truncated message pattern (first 120 chars) with counts
-    rows = db.execute(
-        """SELECT substr(message,1,120) AS pattern,
+    environment_name = get_requested_environment()
+    params = [user["org_id"]]
+    sql = """SELECT substr(message,1,120) AS pattern,
                   COUNT(*) AS count,
                   MIN(timestamp) AS first_seen,
                   MAX(timestamp) AS last_seen,
                   GROUP_CONCAT(DISTINCT source) AS sources,
                   level
            FROM log_events
-           WHERE org_id = ? AND level IN ('error','warn')
-           GROUP BY substr(message,1,120), level
-           ORDER BY count DESC LIMIT 20""",
-        (user["org_id"],)
-    ).fetchall()
+           WHERE org_id = ? AND level IN ('error','warn')"""
+    if environment_name != "ALL":
+        sql += " AND upper(coalesce(environment_name, 'PROD')) = ?"
+        params.append(environment_name)
+    sql += " GROUP BY substr(message,1,120), level ORDER BY count DESC LIMIT 20"
+    rows = db.execute(sql, params).fetchall()
     result = []
     for r in rows:
         result.append({
@@ -2288,20 +2377,26 @@ def _heuristic_log_explanation(log: dict[str, Any], ctx_rows: list[sqlite3.Row])
         f"4. **Prevention**\n- {prevention}"
     )
 
-def _fetch_trace_events(db: sqlite3.Connection, org_id: int, trace_id: str, limit: int = 500):
+def _fetch_trace_events(db: sqlite3.Connection, org_id: int, trace_id: str, limit: int = 500, environment_name: str = "ALL"):
     """Fetch events by correlation_id first, then fall back to event_id / request_id style IDs."""
-    rows = db.execute(
-        "SELECT id, timestamp, level, source, event_id, message, payload_json, correlation_id, status_code, duration_ms "
-        "FROM log_events WHERE org_id=? AND correlation_id=? ORDER BY timestamp ASC LIMIT ?",
-        (org_id, trace_id, limit),
-    ).fetchall()
+    params = [org_id, trace_id]
+    sql = "SELECT id, timestamp, level, source, event_id, message, payload_json, correlation_id, status_code, duration_ms, environment_name FROM log_events WHERE org_id=? AND correlation_id=?"
+    if environment_name != "ALL":
+        sql += " AND upper(coalesce(environment_name, 'PROD')) = ?"
+        params.append(environment_name)
+    sql += " ORDER BY timestamp ASC LIMIT ?"
+    params.append(limit)
+    rows = db.execute(sql, params).fetchall()
     trace_key = "correlation_id"
     if not rows:
-        rows = db.execute(
-            "SELECT id, timestamp, level, source, event_id, message, payload_json, correlation_id, status_code, duration_ms "
-            "FROM log_events WHERE org_id=? AND event_id=? ORDER BY timestamp ASC LIMIT ?",
-            (org_id, trace_id, limit),
-        ).fetchall()
+        params = [org_id, trace_id]
+        sql = "SELECT id, timestamp, level, source, event_id, message, payload_json, correlation_id, status_code, duration_ms, environment_name FROM log_events WHERE org_id=? AND event_id=?"
+        if environment_name != "ALL":
+            sql += " AND upper(coalesce(environment_name, 'PROD')) = ?"
+            params.append(environment_name)
+        sql += " ORDER BY timestamp ASC LIMIT ?"
+        params.append(limit)
+        rows = db.execute(sql, params).fetchall()
         trace_key = "event_id"
     return rows, trace_key
 
@@ -2422,12 +2517,17 @@ def get_uploads():
         cols = set()
 
     record_expr = "record_count" if "record_count" in cols else ("total_records AS record_count" if "total_records" in cols else "0 AS record_count")
-    source_expr = "source_type" if "source_type" in cols else "'file' AS source_type"
+    source_expr = "source_type" if "source_type" in cols else "\'file\' AS source_type"
+    env_expr = "environment_name" if "environment_name" in cols else "\'PROD\' AS environment_name"
 
-    rows = db.execute(
-        f"SELECT id, filename, {record_expr}, {source_expr}, created_at FROM uploads WHERE org_id = ? ORDER BY id DESC LIMIT 100",
-        (user["org_id"],)
-    ).fetchall()
+    environment_name = get_requested_environment()
+    params = [user["org_id"]]
+    sql = f"SELECT id, filename, {record_expr}, {source_expr}, {env_expr}, created_at FROM uploads WHERE org_id = ?"
+    if environment_name != "ALL":
+        sql += " AND upper(coalesce(environment_name, 'PROD')) = ?"
+        params.append(environment_name)
+    sql += " ORDER BY id DESC LIMIT 100"
+    rows = db.execute(sql, params).fetchall()
     return jsonify({"uploads": [dict(r) for r in rows]})
 
 @app.get("/api/logs/<int:log_id>")
@@ -2468,6 +2568,9 @@ def upload_logs():
     all_records: list[dict[str, Any]] = []
     filenames: list[str] = []
     skipped: list[str]   = []
+    environment_name = get_requested_environment()
+    if environment_name == "ALL":
+        environment_name = "PROD"
     db  = get_db()
     now = iso_now()
 
@@ -2505,15 +2608,15 @@ def upload_logs():
             continue
 
         cur       = db.execute(
-            "INSERT INTO uploads (org_id, user_id, filename, total_records, created_at) VALUES (?, ?, ?, ?, ?)",
-            (user["org_id"], user["id"], filename, len(records), now),
+            "INSERT INTO uploads (org_id, user_id, filename, total_records, environment_name, created_at) VALUES (?, ?, ?, ?, ?, ?)",
+            (user["org_id"], user["id"], filename, len(records), environment_name, now),
         )
         upload_id = cur.lastrowid
         db.executemany(
-            "INSERT INTO log_events (org_id, upload_id, timestamp, level, source, event_id, message, payload_json, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            [(user["org_id"], upload_id, r["timestamp"], r["level"], r["source"], r.get("event_id") or "", r["message"], json.dumps(r.get("payload", {})), now) for r in records],
+            "INSERT INTO log_events (org_id, upload_id, timestamp, level, source, event_id, message, payload_json, environment_name, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            [(user["org_id"], upload_id, r["timestamp"], r["level"], r["source"], r.get("event_id") or "", r["message"], json.dumps(r.get("payload", {})), environment_name, now) for r in records],
         )
-        audit(user["org_id"], user["id"], "uploaded_logs", "upload", str(upload_id), {"filename": filename, "records": len(records)})
+        audit(user["org_id"], user["id"], "uploaded_logs", "upload", str(upload_id), {"filename": filename, "records": len(records), "environment": environment_name})
         all_records.extend(records)
 
     db.commit()
@@ -2926,7 +3029,7 @@ def ingest_json():
     db  = get_db()
     now = iso_now()
     cur = db.execute(
-        "INSERT INTO uploads (org_id, user_id, filename, total_records, created_at) VALUES (?, ?, ?, ?, ?)",
+        "INSERT INTO uploads (org_id, user_id, filename, total_records, environment_name, created_at) VALUES (?, ?, ?, ?, ?, ?)",
         (org_id, user_id, "api-ingest.json", len(records), now),
     )
     upload_id = cur.lastrowid
@@ -2939,7 +3042,7 @@ def ingest_json():
             sf.get("status_code"), sf.get("duration_ms"), sf.get("req_user_id"), sf.get("request_id"),
         ))
     db.executemany(
-        "INSERT INTO log_events (org_id, upload_id, timestamp, level, source, event_id, message, payload_json, created_at, status_code, duration_ms, req_user_id, request_id) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)",
+        "INSERT INTO log_events (org_id, upload_id, timestamp, level, source, event_id, message, payload_json, environment_name, created_at, status_code, duration_ms, req_user_id, request_id) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
         rows_to_insert,
     )
     db.commit()
@@ -2969,6 +3072,7 @@ def ingest_file():
 
     db  = get_db()
     now = iso_now()
+    environment_name = (request.args.get("environment") or request.form.get("environment") or request.headers.get("X-Environment") or "PROD").upper()
     all_records: list[dict[str, Any]] = []
     file_results: list[dict[str, Any]] = []
 
@@ -2986,8 +3090,8 @@ def ingest_file():
             file_results.append({"filename": filename, "ingested": 0, "error": "No records parsed"})
             continue
         cur       = db.execute(
-            "INSERT INTO uploads (org_id, user_id, filename, total_records, created_at) VALUES (?, ?, ?, ?, ?)",
-            (org_id, user_id, filename, len(records), now),
+            "INSERT INTO uploads (org_id, user_id, filename, total_records, environment_name, created_at) VALUES (?, ?, ?, ?, ?, ?)",
+            (org_id, user_id, filename, len(records), environment_name, now),
         )
         upload_id = cur.lastrowid
         rows_to_insert = []
@@ -2995,14 +3099,14 @@ def ingest_file():
             sf = extract_structured_fields(r.get("payload") or {})
             rows_to_insert.append((
                 org_id, upload_id, r["timestamp"], r["level"], r["source"],
-                r.get("event_id") or "", r["message"], json.dumps(r.get("payload", {})), now,
+                r.get("event_id") or "", r["message"], json.dumps(r.get("payload", {})), environment_name, now,
                 sf.get("status_code"), sf.get("duration_ms"), sf.get("req_user_id"), sf.get("request_id"),
             ))
         db.executemany(
-            "INSERT INTO log_events (org_id, upload_id, timestamp, level, source, event_id, message, payload_json, created_at, status_code, duration_ms, req_user_id, request_id) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)",
+            "INSERT INTO log_events (org_id, upload_id, timestamp, level, source, event_id, message, payload_json, environment_name, created_at, status_code, duration_ms, req_user_id, request_id) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
             rows_to_insert,
         )
-        audit(org_id, user_id, "api_ingest_file", "upload", str(upload_id), {"filename": filename, "records": len(records)})
+        audit(org_id, user_id, "api_ingest_file", "upload", str(upload_id), {"filename": filename, "records": len(records), "environment": environment_name})
         all_records.extend(records)
         file_results.append({"filename": filename, "ingested": len(records), "upload_id": upload_id})
 
@@ -3125,12 +3229,13 @@ def get_observability():
         return error
     org_id         = user["org_id"]
     db             = get_db()
+    environment_name = get_requested_environment()
     window_minutes = max(1, min(int(request.args.get("minutes", 60)), 10080))
     since          = (datetime.now(timezone.utc) - timedelta(minutes=window_minutes)).strftime("%Y-%m-%dT%H:%M:%S")
 
     level_rows = db.execute(
-        "SELECT level, COUNT(*) as cnt FROM log_events WHERE org_id=? AND timestamp>=? GROUP BY level",
-        (org_id, since),
+        ("SELECT level, COUNT(*) as cnt FROM log_events WHERE org_id=? AND timestamp>=?" + (" AND upper(coalesce(environment_name, 'PROD'))=?" if environment_name != "ALL" else "") + " GROUP BY level"),
+        ([org_id, since] + ([environment_name] if environment_name != "ALL" else [])),
     ).fetchall()
     level_counts = {r["level"]: r["cnt"] for r in level_rows}
     total        = sum(level_counts.values())
@@ -3141,8 +3246,8 @@ def get_observability():
     since_24h = (datetime.now(timezone.utc) - timedelta(hours=24)).strftime("%Y-%m-%dT%H:%M:%S")
     hour_rows = db.execute(
         "SELECT strftime('%Y-%m-%dT%H:00:00', timestamp) as hour, level, COUNT(*) as cnt "
-        "FROM log_events WHERE org_id=? AND timestamp>=? GROUP BY hour, level ORDER BY hour",
-        (org_id, since_24h),
+        ("FROM log_events WHERE org_id=? AND timestamp>=?" + (" AND upper(coalesce(environment_name, 'PROD'))=?" if environment_name != "ALL" else "") + " GROUP BY hour, level ORDER BY hour"),
+        ([org_id, since_24h] + ([environment_name] if environment_name != "ALL" else [])),
     ).fetchall()
     hourly: dict[str, dict[str, int]] = {}
     for r in hour_rows:
@@ -3153,8 +3258,8 @@ def get_observability():
 
     ip_rx   = re.compile(r"\b(\d{1,3}(?:\.\d{1,3}){3})\b")
     ip_rows = db.execute(
-        "SELECT message, payload_json FROM log_events WHERE org_id=? AND timestamp>=? ORDER BY timestamp DESC LIMIT 5000",
-        (org_id, since),
+        ("SELECT message, payload_json FROM log_events WHERE org_id=? AND timestamp>=?" + (" AND upper(coalesce(environment_name, 'PROD'))=?" if environment_name != "ALL" else "") + " ORDER BY timestamp DESC LIMIT 5000"),
+        ([org_id, since] + ([environment_name] if environment_name != "ALL" else [])),
     ).fetchall()
     ip_hits: Counter = Counter()
     ip_errors: Counter = Counter()
@@ -3230,6 +3335,7 @@ def get_observability():
         "hourly":         hourly,
         "top_ips":        suspicious,
         "alerts_fired":   alerts_fired,
+        "environment":    environment_name,
     })
 
 @app.get("/api/observability/alert-rules")
@@ -3918,6 +4024,7 @@ def list_traces():
         return err
     org_id = user["org_id"]
     db = get_db()
+    environment_name = get_requested_environment()
     limit  = min(int(request.args.get("limit", 50)), 200)
     q      = sanitize_input(request.args.get("q", ""), 100)
     trace_expr = "COALESCE(NULLIF(correlation_id,''), NULLIF(event_id,''))"
@@ -3930,6 +4037,9 @@ def list_traces():
         "FROM log_events WHERE org_id=? AND " + trace_expr + " IS NOT NULL "
     )
     params: list = [org_id]
+    if environment_name != "ALL":
+        sql += " AND upper(coalesce(environment_name, 'PROD')) = ? "
+        params.append(environment_name)
     if q:
         sql += f" AND {trace_expr} LIKE ? "
         params.append(f"%{q}%")
@@ -3954,7 +4064,7 @@ def get_trace(trace_id: str):
     org_id   = user["org_id"]
     trace_id = sanitize_input(trace_id, 100)
     db       = get_db()
-    rows, trace_kind = _fetch_trace_events(db, org_id, trace_id, limit=500)
+    rows, trace_kind = _fetch_trace_events(db, org_id, trace_id, limit=500, environment_name=get_requested_environment())
     if not rows:
         return jsonify({"error": "Trace not found or no events match."}), 404
 
@@ -4006,7 +4116,7 @@ def ai_rca():
     log_ids  = payload.get("log_ids", [])
 
     if trace_id:
-        rows, _trace_kind = _fetch_trace_events(db, org_id, trace_id, limit=100)
+        rows, _trace_kind = _fetch_trace_events(db, org_id, trace_id, limit=100, environment_name=(payload.get("environment") or "ALL").upper())
     elif log_ids:
         placeholders = ",".join("?" * len(log_ids[:50]))
         rows = db.execute(

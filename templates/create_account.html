@@ -129,7 +129,7 @@ async function createWorkspace(){
       btn.disabled=false;btn.textContent='Create workspace';return;
     }
     showMsg('Workspace created! Redirecting to your dashboard…','success');
-    setTimeout(()=>{window.location.href=data.workspace_url||'/workspace/'+data.slug;},1000);
+    setTimeout(()=>{window.location.href=data.workspace_url||('/workspace/'+data.slug);},1000);
   }catch(e){
     showMsg('Network error: '+e.message,'error');
     btn.disabled=false;btn.textContent='Create workspace';

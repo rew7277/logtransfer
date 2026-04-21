@@ -718,7 +718,9 @@ html:not(.dark) .toast{box-shadow:0 8px 24px rgba(0,0,0,.15)}
       </svg>
     </button>
     <span class="topbar-title"><span>ObserveX</span> Workspace · {{ user.org_name }}</span>
+    <span class="workspace-id-chip" title="Unique workspace ID">ID · {{ workspace_public_id or user.public_id }}</span>
     <div class="topbar-right">
+      <div class="env-switcher"><label for="envSwitch">Env</label><select id="envSwitch" onchange="setEnvironment(this.value)"><option value="ALL">All</option></select></div>
       <button class="theme-toggle" id="themeToggleBtn" onclick="toggleTheme()" title="Toggle dark/light mode">🌙</button>
       <!-- Documentation Dropdown -->
       <div class="docs-dropdown" id="docsDropdown">
@@ -1806,8 +1808,11 @@ function downloadAllDocs() {
 
 // ── STATE ──
 const ORG_SLUG = '{{ org_slug }}';
+const WORKSPACE_ID = '{{ workspace_public_id or user.public_id }}';
 const USER_ROLE = '{{ user.role }}';
+let activeEnvironment = 'ALL';
 let bsData = null;   // bootstrap data
+try{ activeEnvironment = localStorage.getItem('observex.activeEnvironment') || 'ALL'; }catch(e){}
 let logPage = 1, logPerPage = 50, logFilter = 'all', logSearch = '', logSort = 'timestamp', logSortDir = 'desc';
 let logTotal = 0, logPages = 1;
 let cachedLogs = [];
@@ -1950,7 +1955,7 @@ async function previewAlert() {
 }
 async function loadBootstrap() {
   try {
-    const r = await fetch('/api/bootstrap');
+    const r = await fetch(withEnv('/api/bootstrap'));
     if (!r.ok) return;
     bsData = await r.json();
     applyBootstrap(bsData);
@@ -2080,7 +2085,7 @@ function showPage(name) {
   });
   // Lazy-load logs when explorer opened
   if (name === 'explorer') { loadLogs(); loadSources(); }
-  history.replaceState(null, '', `/workspace/${ORG_SLUG}/${name}`);
+  history.replaceState(null, '', `/workspace/${WORKSPACE_ID}/${ORG_SLUG}/${name}`);
 }
 
 function showExplorerFiltered(lvl) {
@@ -2291,7 +2296,7 @@ function clearDateRange() {
 // ── SOURCE FILTER ──
 async function loadSources() {
   try {
-    const r = await fetch('/api/logs/sources');
+    const r = await fetch(withEnv('/api/logs/sources'));
     if (!r.ok) return;
     const d = await r.json();
     const sel = document.getElementById('sourceSelect');
@@ -2776,7 +2781,7 @@ async function loadErrorGroups() {
   const el = document.getElementById('errorCards');
   el.innerHTML = '<p style="font-size:12px;color:var(--text3)">Loading…</p>';
   try {
-    const r = await fetch('/api/logs/errors/grouped');
+    const r = await fetch(withEnv('/api/logs/errors/grouped'));
     if (!r.ok) { el.innerHTML = '<p style="font-size:12px;color:var(--red)">Failed to load</p>'; return; }
     const d = await r.json();
     renderErrorCards(d.groups);
@@ -2850,7 +2855,7 @@ function renderDailyTrend(daily) {
 async function loadUploadHistory() {
   const el = document.getElementById('uploadHistWrap');
   try {
-    const r = await fetch('/api/uploads');
+    const r = await fetch(withEnv('/api/uploads'));
     if (!r.ok) return;
     const d = await r.json();
     if (!d.uploads || !d.uploads.length) {
