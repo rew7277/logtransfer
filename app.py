@@ -202,6 +202,22 @@ scheduler: Any = None
 INGESTION_QUEUE: Queue[int] = Queue(maxsize=500)  # bounded — apply back-pressure
 _WORKER_POOL: ThreadPoolExecutor | None = None
 
+# ─────────────────────────── Per-org ingest rate limiter ──────────────────────
+# Maps org_id -> (count_this_minute, minute_bucket_epoch)
+_ORG_RATE: dict[int, tuple[int, int]] = {}
+_ORG_RATE_LOCK = threading.Lock()
+
+def _check_org_rate(org_id: int, limit: int) -> bool:
+    """Return True if org is within its per-minute ingest rate limit."""
+    bucket = int(time.time()) // 60
+    with _ORG_RATE_LOCK:
+        count, stored_bucket = _ORG_RATE.get(org_id, (0, bucket))
+        if stored_bucket != bucket:
+            count = 0
+        count += 1
+        _ORG_RATE[org_id] = (count, bucket)
+    return count <= limit
+
 # ─────────────────────────── Security helpers ────────────────────────────────
 
 def validate_password_strength(password: str) -> str | None:
@@ -259,6 +275,14 @@ def add_security_headers(response):
 def attach_request_id():
     g.request_id = secrets.token_hex(8)
     g.request_start = time.monotonic()
+    # Session hardening — enforce absolute expiry and touch last_active
+    token = session.get("session_token")
+    if token:
+        _touch_session(token)
+    user_id = session.get("user_id")
+    if user_id and not token:
+        # Legacy session without token — still valid, just not tracked
+        pass
 
 @app.after_request
 def log_request(response):
@@ -533,8 +557,26 @@ def init_db() -> None:
             message TEXT NOT NULL,
             payload_json TEXT NOT NULL,
             created_at TEXT NOT NULL,
+            status_code INTEGER,
+            duration_ms REAL,
+            req_user_id TEXT,
+            request_id TEXT,
             FOREIGN KEY(org_id) REFERENCES organizations(id),
             FOREIGN KEY(upload_id) REFERENCES uploads(id)
+        );
+
+        CREATE TABLE IF NOT EXISTS user_sessions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            org_id INTEGER NOT NULL,
+            session_token TEXT NOT NULL UNIQUE,
+            ip_address TEXT,
+            user_agent TEXT,
+            created_at TEXT NOT NULL,
+            last_active_at TEXT NOT NULL,
+            expires_at TEXT NOT NULL,
+            revoked INTEGER NOT NULL DEFAULT 0,
+            FOREIGN KEY(user_id) REFERENCES users(id)
         );
 
         CREATE TABLE IF NOT EXISTS audit_events (
@@ -688,8 +730,43 @@ def init_db() -> None:
             FOREIGN KEY(org_id) REFERENCES organizations(id)
         );
         CREATE INDEX IF NOT EXISTS idx_fingerprints_org ON error_fingerprints(org_id, last_seen_at DESC);
+
+        CREATE INDEX IF NOT EXISTS idx_log_status_code  ON log_events(org_id, status_code);
+        CREATE INDEX IF NOT EXISTS idx_log_duration     ON log_events(org_id, duration_ms);
+        CREATE INDEX IF NOT EXISTS idx_log_request_id   ON log_events(request_id);
+        CREATE INDEX IF NOT EXISTS idx_sessions_user    ON user_sessions(user_id, revoked);
+        CREATE INDEX IF NOT EXISTS idx_sessions_token   ON user_sessions(session_token);
         """
     )
+
+    # FTS5 full-text search (SQLite only — skip on PostgreSQL)
+    if not _is_pg():
+        try:
+            db.execute(
+                """CREATE VIRTUAL TABLE IF NOT EXISTS log_fts
+                   USING fts5(message, content='log_events', content_rowid='id')"""
+            )
+            db.execute(
+                """CREATE TRIGGER IF NOT EXISTS log_fts_ai
+                   AFTER INSERT ON log_events BEGIN
+                       INSERT INTO log_fts(rowid, message) VALUES (new.id, new.message);
+                   END"""
+            )
+            db.execute(
+                """CREATE TRIGGER IF NOT EXISTS log_fts_ad
+                   AFTER DELETE ON log_events BEGIN
+                       INSERT INTO log_fts(log_fts, rowid, message) VALUES('delete', old.id, old.message);
+                   END"""
+            )
+            db.execute(
+                """CREATE TRIGGER IF NOT EXISTS log_fts_au
+                   AFTER UPDATE ON log_events BEGIN
+                       INSERT INTO log_fts(log_fts, rowid, message) VALUES('delete', old.id, old.message);
+                       INSERT INTO log_fts(rowid, message) VALUES (new.id, new.message);
+                   END"""
+            )
+        except Exception as exc:
+            logger.warning("FTS5 setup skipped: %s", exc)
 
     ensure_column(db, "organizations", "theme_mode",       "theme_mode TEXT NOT NULL DEFAULT 'white'")
     ensure_column(db, "organizations", "admin_only",        "admin_only INTEGER NOT NULL DEFAULT 0")
@@ -701,6 +778,14 @@ def init_db() -> None:
     ensure_column(db, "alert_rules",    "alert_type",       "alert_type TEXT NOT NULL DEFAULT 'error_rate'")
     ensure_column(db, "alert_rules",    "slack_webhook_url","slack_webhook_url TEXT")
     ensure_column(db, "log_events",     "correlation_id",   "correlation_id TEXT")
+    ensure_column(db, "log_events",     "status_code",      "status_code INTEGER")
+    ensure_column(db, "log_events",     "duration_ms",      "duration_ms REAL")
+    ensure_column(db, "log_events",     "req_user_id",      "req_user_id TEXT")
+    ensure_column(db, "log_events",     "request_id",       "request_id TEXT")
+    ensure_column(db, "api_keys",       "scopes",           "scopes TEXT NOT NULL DEFAULT 'ingest,read,admin'")
+    ensure_column(db, "organizations",  "ingest_rate_limit","ingest_rate_limit INTEGER NOT NULL DEFAULT 10000")
+    ensure_column(db, "alert_rules",    "latency_threshold_ms", "latency_threshold_ms INTEGER")
+    ensure_column(db, "alert_rules",    "dead_source_minutes",  "dead_source_minutes INTEGER")
 
     # Seed demo workspace — slug/email configurable via env vars
     seed_slug  = os.environ.get("SEED_ORG_SLUG",   "vewit")
@@ -758,9 +843,10 @@ def require_admin() -> tuple[dict[str, Any] | None, tuple[Any, int] | None]:
         return None, (jsonify({"error": "Admin access required."}), 403)
     return user, None
 
-def require_api_key() -> tuple[dict[str, Any] | None, tuple[Any, int] | None]:
+def require_api_key(required_scope: str | None = None) -> tuple[dict[str, Any] | None, tuple[Any, int] | None]:
     """Authenticate via Bearer token (API key). Uses an in-process cache to
     avoid running bcrypt on every single request — critical for high throughput.
+    Optionally enforces a required scope ('ingest', 'read', 'admin').
     """
     auth_header = request.headers.get("Authorization", "")
     if auth_header.startswith("Bearer "):
@@ -773,15 +859,18 @@ def require_api_key() -> tuple[dict[str, Any] | None, tuple[Any, int] | None]:
     # 1. Try cache first (O(1) lookup, no bcrypt)
     cached = _get_cached_key(raw_key)
     if cached is not None:
-        # Update last_used_at asynchronously — fire-and-forget
         _update_key_last_used_async(cached["id"])
+        if required_scope:
+            scopes = [s.strip() for s in (cached.get("scopes") or "ingest,read,admin").split(",")]
+            if required_scope not in scopes:
+                return None, (jsonify({"error": f"API key missing required scope: '{required_scope}'."}), 403)
         return cached, None
 
     # 2. Cache miss: look up by prefix, then verify hash
     db = get_db()
     prefix = raw_key[:8]
     rows = db.execute(
-        """SELECT ak.*, u.role, u.name AS user_name, o.slug
+        """SELECT ak.*, u.role, u.name AS user_name, o.slug, o.ingest_rate_limit
            FROM api_keys ak
            JOIN users u ON u.id = ak.user_id
            JOIN organizations o ON o.id = ak.org_id
@@ -794,6 +883,10 @@ def require_api_key() -> tuple[dict[str, Any] | None, tuple[Any, int] | None]:
             _set_cached_key(raw_key, key_info)
             db.execute("UPDATE api_keys SET last_used_at = ? WHERE id = ?", (iso_now(), row["id"]))
             db.commit()
+            if required_scope:
+                scopes = [s.strip() for s in (key_info.get("scopes") or "ingest,read,admin").split(",")]
+                if required_scope not in scopes:
+                    return None, (jsonify({"error": f"API key missing required scope: '{required_scope}'."}), 403)
             return key_info, None
 
     return None, (jsonify({"error": "Invalid or revoked API key."}), 401)
@@ -818,6 +911,82 @@ def audit(org_id: int, user_id: int | None, action: str, target_type: str, targe
         (org_id, user_id, action, target_type, target_id, json.dumps(detail or {}), iso_now()),
     )
     db.commit()
+
+
+# ─────────────────────────── Structured field extractor ──────────────────────
+
+_STATUS_KEYS   = {"status_code", "status", "statusCode", "http_status", "httpStatus", "code"}
+_DURATION_KEYS = {"duration_ms", "duration", "elapsed_ms", "elapsed", "latency_ms", "latency", "responseTime", "response_time"}
+_RUSER_KEYS    = {"user_id", "userId", "user", "account_id", "accountId", "customerId"}
+_REQID_KEYS    = {"request_id", "requestId", "req_id", "trace_id", "traceId", "x-request-id"}
+
+def extract_structured_fields(payload: dict[str, Any]) -> dict[str, Any]:
+    """Promote well-known keys from payload into indexed top-level fields."""
+    out: dict[str, Any] = {}
+    flat = {}
+    # Flatten one level deep
+    for k, v in payload.items():
+        flat[k] = v
+        if isinstance(v, dict):
+            for k2, v2 in v.items():
+                flat[k2] = v2
+
+    for k, v in flat.items():
+        if k in _STATUS_KEYS and out.get("status_code") is None:
+            try:
+                sc = int(v)
+                if 100 <= sc <= 599:
+                    out["status_code"] = sc
+            except (TypeError, ValueError):
+                pass
+        if k in _DURATION_KEYS and out.get("duration_ms") is None:
+            try:
+                out["duration_ms"] = float(v)
+            except (TypeError, ValueError):
+                pass
+        if k in _RUSER_KEYS and out.get("req_user_id") is None:
+            out["req_user_id"] = str(v)[:100]
+        if k in _REQID_KEYS and out.get("request_id") is None:
+            out["request_id"] = str(v)[:100]
+    return out
+
+
+# ─────────────────────────── Session helpers ──────────────────────────────────
+SESSION_MAX_AGE_DAYS = int(os.environ.get("SESSION_MAX_AGE_DAYS", "7"))
+
+def _create_user_session(db: Any, user_id: int, org_id: int) -> str:
+    """Insert a user_sessions row and return the opaque token stored in Flask session."""
+    token     = secrets.token_urlsafe(32)
+    now       = iso_now()
+    expires   = (datetime.now(timezone.utc) + timedelta(days=SESSION_MAX_AGE_DAYS)).isoformat()
+    ip        = request.remote_addr or ""
+    ua        = (request.headers.get("User-Agent") or "")[:200]
+    db.execute(
+        "INSERT INTO user_sessions (user_id, org_id, session_token, ip_address, user_agent, created_at, last_active_at, expires_at) VALUES (?,?,?,?,?,?,?,?)",
+        (user_id, org_id, token, ip, ua, now, now, expires),
+    )
+    return token
+
+def _touch_session(token: str) -> None:
+    """Update last_active_at in a background thread — fire-and-forget."""
+    def _do():
+        try:
+            conn = _open_db()
+            conn.execute("UPDATE user_sessions SET last_active_at=? WHERE session_token=?", (iso_now(), token))
+            conn.commit()
+            conn.close()
+        except Exception:
+            pass
+    threading.Thread(target=_do, daemon=True).start()
+
+def _revoke_session(token: str) -> None:
+    try:
+        conn = _open_db()
+        conn.execute("UPDATE user_sessions SET revoked=1 WHERE session_token=?", (token,))
+        conn.commit()
+        conn.close()
+    except Exception:
+        pass
 
 
 # ─────────────────────────── Log parsing ─────────────────────────────────────
@@ -1291,10 +1460,31 @@ def start_worker() -> None:
     consumer.start()
     logger.info("Ingestion worker pool started with %d threads", pool_size)
 
+def _fire_alert(conn: Any, org_id: int, rule: Any, subject: str, body: str, now_str: str, tk: str) -> None:
+    """Fire email + Slack for a rule and record in observability_fired."""
+    email_to   = (rule["notify_email"]     or "").strip() if "notify_email"     in rule.keys() else ""
+    slack_hook = (rule["slack_webhook_url"] or "").strip() if "slack_webhook_url" in rule.keys() else ""
+    if email_to:
+        try:
+            send_email_message(subject, email_to, body)
+        except Exception as exc:
+            logger.error("Alert email failed org=%d: %s", org_id, exc)
+    if slack_hook:
+        try:
+            send_slack_message(slack_hook, f":rotating_light: *{subject}*\n{body}")
+        except Exception as exc:
+            logger.error("Alert Slack failed org=%d: %s", org_id, exc)
+    conn.execute(
+        "INSERT INTO observability_fired (org_id, alert_rule_id, trigger_key, fired_at) VALUES (?,?,?,?)",
+        (org_id, rule["id"] if hasattr(rule, "keys") and "id" in rule.keys() else None, tk, now_str),
+    )
+
+
 def scheduler_tick() -> None:
     conn = _open_db()
     try:
         now_str = iso_now()
+        now_dt  = datetime.now(timezone.utc)
 
         # ── 1. Dispatch scheduled ingestion jobs ──────────────────────────────
         due = conn.execute(
@@ -1307,95 +1497,178 @@ def scheduler_tick() -> None:
             except Full:
                 logger.warning("Ingestion queue full — skipping scheduled job %d", job["id"])
 
-        # ── 2. Anomaly detection — error spike vs 7-day rolling baseline ─────
-        #    Runs every tick but fires alerts with a 4-hour cooldown per org.
-        orgs = conn.execute("SELECT id, retention_days FROM organizations").fetchall()
-        now_dt      = datetime.now(timezone.utc)
+        orgs        = conn.execute("SELECT id, retention_days FROM organizations").fetchall()
         window_1h   = (now_dt - timedelta(hours=1)).strftime("%Y-%m-%dT%H:%M:%S")
         window_7d   = (now_dt - timedelta(days=7)).strftime("%Y-%m-%dT%H:%M:%S")
         cooldown_4h = (now_dt - timedelta(hours=4)).strftime("%Y-%m-%dT%H:%M:%S")
+        cooldown_1h = (now_dt - timedelta(hours=1)).strftime("%Y-%m-%dT%H:%M:%S")
 
         for org_row in orgs:
             org_id = org_row["id"]
             try:
-                # Current-hour error count
+                active_rules = conn.execute(
+                    "SELECT * FROM alert_rules WHERE org_id=? AND status='active'", (org_id,)
+                ).fetchall()
+
+                # ── 2. Error spike anomaly detection ─────────────────────────
                 hour_errors = conn.execute(
                     "SELECT COUNT(*) FROM log_events WHERE org_id=? AND level='error' AND timestamp>=?",
                     (org_id, window_1h),
                 ).fetchone()[0]
-
-                # 7-day hourly average
                 total_7d = conn.execute(
                     "SELECT COUNT(*) FROM log_events WHERE org_id=? AND level='error' AND timestamp>=?",
                     (org_id, window_7d),
                 ).fetchone()[0]
                 baseline_per_hour = total_7d / (7 * 24) if total_7d else 0
 
-                spike = hour_errors > max(10, baseline_per_hour * 3)
-                if spike:
+                if hour_errors > max(10, baseline_per_hour * 3):
                     tk = f"anomaly:spike:org:{org_id}"
-                    already = conn.execute(
+                    if not conn.execute(
                         "SELECT id FROM observability_fired WHERE org_id=? AND trigger_key=? AND fired_at>=?",
                         (org_id, tk, cooldown_4h),
-                    ).fetchone()
-                    if not already:
-                        # Fetch alert rules with email/slack for this org
-                        rules = conn.execute(
-                            "SELECT notify_email, slack_webhook_url FROM alert_rules WHERE org_id=? AND status='active'",
-                            (org_id,),
-                        ).fetchall()
-
-                        # AI-generated summary (fire-and-forget, may be empty if no key)
+                    ).fetchone():
                         sample_rows = conn.execute(
                             "SELECT message FROM log_events WHERE org_id=? AND level='error' AND timestamp>=? LIMIT 10",
                             (org_id, window_1h),
                         ).fetchall()
-                        samples = "\n".join(r["message"][:200] for r in sample_rows)
-                        ai_summary = _call_anthropic(
+                        samples     = "\n".join(r["message"][:200] for r in sample_rows)
+                        ai_summary  = _call_anthropic(
                             f"Summarise these error log messages in 2-3 sentences for an ops team alert:\n{samples}",
                             max_tokens=200,
                         ) if samples else ""
-
-                        subject = f"[ObserveX] Error spike detected — {hour_errors} errors in last hour"
+                        subject = f"[ObserveX] Error spike — {hour_errors} errors in last hour"
                         body    = (
-                            f"Org ID: {org_id}\n"
-                            f"Errors in last hour: {hour_errors}\n"
-                            f"7-day baseline (per hour): {baseline_per_hour:.1f}\n"
-                            f"Spike ratio: {hour_errors / max(baseline_per_hour, 1):.1f}×\n"
-                            + (f"\nAI summary:\n{ai_summary}" if ai_summary else "")
+                            f"Org: {org_id} | Errors/hour: {hour_errors} | Baseline: {baseline_per_hour:.1f} | "
+                            f"Ratio: {hour_errors / max(baseline_per_hour, 1):.1f}×"
+                            + (f"\n\nAI summary:\n{ai_summary}" if ai_summary else "")
                         )
-                        for rule in rules:
-                            email_to = (rule["notify_email"] or "").strip()
-                            if email_to:
-                                try:
-                                    send_email_message(subject, email_to, body)
-                                except Exception as exc:
-                                    logger.error("Anomaly email failed for org %d: %s", org_id, exc)
-                            slack_hook = (rule["slack_webhook_url"] or "").strip() if "slack_webhook_url" in rule.keys() else ""
-                            if slack_hook:
-                                try:
-                                    send_slack_message(slack_hook, f":rotating_light: *{subject}*\n{body}")
-                                except Exception as exc:
-                                    logger.error("Anomaly Slack failed for org %d: %s", org_id, exc)
+                        for rule in active_rules:
+                            _fire_alert(conn, org_id, rule, subject, body, now_str, tk)
 
-                        conn.execute(
-                            "INSERT INTO observability_fired (org_id, alert_rule_id, trigger_key, fired_at) VALUES (?,?,?,?)",
-                            (org_id, None, tk, now_str),
-                        )
+                # ── 3. Latency alerting ───────────────────────────────────────
+                latency_rules = [r for r in active_rules
+                                 if r["alert_type"] == "latency"
+                                 and r["latency_threshold_ms"] is not None]
+                for rule in latency_rules:
+                    threshold_ms = rule["latency_threshold_ms"]
+                    p95_row = conn.execute(
+                        """SELECT duration_ms FROM log_events
+                           WHERE org_id=? AND duration_ms IS NOT NULL AND timestamp>=?
+                           ORDER BY duration_ms DESC
+                           LIMIT 1 OFFSET CAST((
+                               SELECT COUNT(*) FROM log_events
+                               WHERE org_id=? AND duration_ms IS NOT NULL AND timestamp>=?
+                           ) * 0.05 AS INTEGER)""",
+                        (org_id, window_1h, org_id, window_1h),
+                    ).fetchone()
+                    if p95_row and p95_row["duration_ms"] is not None:
+                        p95 = p95_row["duration_ms"]
+                        if p95 > threshold_ms:
+                            tk = f"latency:rule:{rule['id']}:org:{org_id}"
+                            if not conn.execute(
+                                "SELECT id FROM observability_fired WHERE org_id=? AND trigger_key=? AND fired_at>=?",
+                                (org_id, tk, cooldown_1h),
+                            ).fetchone():
+                                subject = f"[ObserveX] High latency — p95={p95:.0f}ms (threshold {threshold_ms}ms)"
+                                body    = (f"Alert: {rule['name']}\nOrg: {org_id}\n"
+                                           f"p95 latency last hour: {p95:.0f}ms\nThreshold: {threshold_ms}ms")
+                                _fire_alert(conn, org_id, rule, subject, body, now_str, tk)
 
-                # ── 3. First-seen error fingerprint detection ─────────────────
+                # ── 4. Dead source detection ──────────────────────────────────
+                dead_rules = [r for r in active_rules
+                              if r["alert_type"] == "dead_source"
+                              and r["dead_source_minutes"] is not None]
+                if dead_rules:
+                    active_sources = conn.execute(
+                        "SELECT DISTINCT source FROM log_events WHERE org_id=? AND timestamp>=? AND source != ''",
+                        (org_id, (now_dt - timedelta(hours=24)).strftime("%Y-%m-%dT%H:%M:%S")),
+                    ).fetchall()
+                    for src_row in active_sources:
+                        source = src_row["source"]
+                        last   = conn.execute(
+                            "SELECT MAX(timestamp) AS last_ts FROM log_events WHERE org_id=? AND source=?",
+                            (org_id, source),
+                        ).fetchone()
+                        if not last or not last["last_ts"]:
+                            continue
+                        try:
+                            last_dt = datetime.fromisoformat(last["last_ts"].replace("Z", "+00:00"))
+                            if last_dt.tzinfo is None:
+                                last_dt = last_dt.replace(tzinfo=timezone.utc)
+                            silent_minutes = (now_dt - last_dt).total_seconds() / 60
+                        except Exception:
+                            continue
+                        for rule in dead_rules:
+                            if silent_minutes >= rule["dead_source_minutes"]:
+                                tk = f"dead_source:{source}:rule:{rule['id']}"
+                                if not conn.execute(
+                                    "SELECT id FROM observability_fired WHERE org_id=? AND trigger_key=? AND fired_at>=?",
+                                    (org_id, tk, cooldown_4h),
+                                ).fetchone():
+                                    subject = f"[ObserveX] Dead source — '{source}' silent for {silent_minutes:.0f}m"
+                                    body    = (f"Alert: {rule['name']}\nSource '{source}' has not sent logs for "
+                                               f"{silent_minutes:.0f} minutes (threshold: {rule['dead_source_minutes']} min).\n"
+                                               f"Last seen: {last['last_ts']}")
+                                    _fire_alert(conn, org_id, rule, subject, body, now_str, tk)
+
+                # ── 5. Generic custom alert rule evaluator ────────────────────
+                #    Supports simple expressions in condition_text:
+                #    "level=error count>N window=Xm"
+                #    "status_code=5xx count>N window=Xm"
+                custom_rules = [r for r in active_rules if r["alert_type"] == "custom"]
+                _COND_RE = re.compile(
+                    r"(?:level\s*=\s*(\w+))?"
+                    r".*?(?:status_code\s*=\s*(5xx|4xx|\d+))?"
+                    r".*?count\s*>\s*(\d+)"
+                    r".*?window\s*=\s*(\d+)m?",
+                    re.I,
+                )
+                for rule in custom_rules:
+                    m = _COND_RE.search(rule["condition_text"] or "")
+                    if not m:
+                        continue
+                    lvl_filter, sc_filter, count_str, window_str = m.groups()
+                    try:
+                        threshold_count = int(count_str)
+                        window_mins     = max(1, min(int(window_str), 1440))
+                    except (TypeError, ValueError):
+                        continue
+                    since_w = (now_dt - timedelta(minutes=window_mins)).strftime("%Y-%m-%dT%H:%M:%S")
+                    q   = "SELECT COUNT(*) FROM log_events WHERE org_id=? AND timestamp>=?"
+                    qp: list[Any] = [org_id, since_w]
+                    if lvl_filter:
+                        q  += " AND level=?"; qp.append(lvl_filter.lower())
+                    if sc_filter:
+                        if sc_filter == "5xx":
+                            q  += " AND status_code>=500 AND status_code<600"
+                        elif sc_filter == "4xx":
+                            q  += " AND status_code>=400 AND status_code<500"
+                        else:
+                            q  += " AND status_code=?"; qp.append(int(sc_filter))
+                    actual_count = conn.execute(q, qp).fetchone()[0]
+                    if actual_count > threshold_count:
+                        tk = f"custom:rule:{rule['id']}:bucket:{int(now_dt.timestamp())//3600}"
+                        if not conn.execute(
+                            "SELECT id FROM observability_fired WHERE org_id=? AND trigger_key=? AND fired_at>=?",
+                            (org_id, tk, cooldown_1h),
+                        ).fetchone():
+                            subject = f"[ObserveX] Alert: {rule['name']} triggered"
+                            body    = (f"Rule: {rule['name']}\nCondition: {rule['condition_text']}\n"
+                                       f"Actual count in last {window_mins}m: {actual_count} (threshold: {threshold_count})")
+                            _fire_alert(conn, org_id, rule, subject, body, now_str, tk)
+
+                # ── 6. First-seen error fingerprint detection ─────────────────
                 recent_errors = conn.execute(
                     "SELECT message FROM log_events WHERE org_id=? AND level='error' AND timestamp>=? LIMIT 200",
                     (org_id, window_1h),
                 ).fetchall()
                 for err_row in recent_errors:
-                    raw = err_row["message"] or ""
-                    # Normalise numbers/UUIDs to create a stable fingerprint
+                    raw        = err_row["message"] or ""
                     normalised = re.sub(r"[0-9a-f]{8}-[0-9a-f-]{27}", "<uuid>", raw, flags=re.I)
                     normalised = re.sub(r"\b\d+\b", "<N>", normalised)
-                    fp = hashlib.md5(normalised[:300].encode()).hexdigest()
-                    existing = conn.execute(
-                        "SELECT id, count FROM error_fingerprints WHERE org_id=? AND fingerprint=?",
+                    fp         = hashlib.md5(normalised[:300].encode()).hexdigest()
+                    existing   = conn.execute(
+                        "SELECT id FROM error_fingerprints WHERE org_id=? AND fingerprint=?",
                         (org_id, fp),
                     ).fetchone()
                     if existing is None:
@@ -1403,36 +1676,82 @@ def scheduler_tick() -> None:
                             "INSERT INTO error_fingerprints (org_id, fingerprint, first_seen_at, last_seen_at, count, sample_message) VALUES (?,?,?,?,1,?)",
                             (org_id, fp, now_str, now_str, raw[:500]),
                         )
-                        # Alert on brand-new error pattern
-                        rules = conn.execute(
-                            "SELECT notify_email, slack_webhook_url FROM alert_rules WHERE org_id=? AND status='active'",
-                            (org_id,),
-                        ).fetchall()
                         subject = "[ObserveX] New error pattern detected"
                         body    = f"First occurrence of a new error pattern:\n\n{raw[:400]}"
-                        for rule in rules:
-                            email_to = (rule["notify_email"] or "").strip()
-                            if email_to:
-                                try:
-                                    send_email_message(subject, email_to, body)
-                                except Exception:
-                                    pass
-                            slack_hook = (rule["slack_webhook_url"] or "").strip() if "slack_webhook_url" in rule.keys() else ""
-                            if slack_hook:
-                                try:
-                                    send_slack_message(slack_hook, f":new: *{subject}*\n{body}")
-                                except Exception:
-                                    pass
+                        for rule in active_rules:
+                            _fire_alert(conn, org_id, rule, subject, body, now_str,
+                                        f"fingerprint:{fp}:org:{org_id}")
                     else:
                         conn.execute(
                             "UPDATE error_fingerprints SET count=count+1, last_seen_at=? WHERE id=?",
                             (now_str, existing["id"]),
                         )
-            except Exception as exc:
-                logger.error("Anomaly/fingerprint check failed for org %d: %s", org_id, exc)
 
-        # ── 4. Nightly log retention — delete old records per-org ─────────────
-        #    Runs only at the top of each UTC hour between 02:00-03:00.
+            except Exception as exc:
+                logger.error("Scheduler checks failed for org %d: %s", org_id, exc)
+
+        # ── 7. Weekly digest email — every Sunday at 08:00 UTC ────────────────
+        if now_dt.weekday() == 6 and now_dt.hour == 8:
+            for org_row in orgs:
+                org_id = org_row["id"]
+                tk     = f"weekly_digest:org:{org_id}:week:{now_dt.isocalendar()[1]}"
+                if conn.execute(
+                    "SELECT id FROM observability_fired WHERE org_id=? AND trigger_key=?",
+                    (org_id, tk),
+                ).fetchone():
+                    continue
+                try:
+                    since_7d = window_7d
+                    stats    = conn.execute(
+                        """SELECT
+                             COUNT(*) AS total,
+                             SUM(CASE WHEN level='error' THEN 1 ELSE 0 END) AS errors,
+                             SUM(CASE WHEN level='warn'  THEN 1 ELSE 0 END) AS warnings,
+                             COUNT(DISTINCT source) AS sources
+                           FROM log_events WHERE org_id=? AND timestamp>=?""",
+                        (org_id, since_7d),
+                    ).fetchone()
+                    top_fp = conn.execute(
+                        "SELECT sample_message, count FROM error_fingerprints WHERE org_id=? ORDER BY count DESC LIMIT 5",
+                        (org_id,),
+                    ).fetchall()
+                    admin_emails = conn.execute(
+                        "SELECT email FROM users WHERE org_id=? AND role='admin'", (org_id,)
+                    ).fetchall()
+                    fp_summary = "\n".join(f"  • ({r['count']}×) {r['sample_message'][:120]}" for r in top_fp)
+                    ai_insights = ""
+                    if os.environ.get("ANTHROPIC_API_KEY") and fp_summary:
+                        ai_insights = _call_anthropic(
+                            f"Weekly log digest for an engineering team. Stats: {dict(stats)}.\n"
+                            f"Top error patterns:\n{fp_summary}\n"
+                            f"Write 3-4 actionable bullet points for the engineering team.",
+                            max_tokens=300,
+                        )
+                    subject = f"[ObserveX] Weekly Digest — {now_dt.strftime('%b %d, %Y')}"
+                    body    = (
+                        f"Weekly log summary for your workspace\n"
+                        f"{'─'*50}\n"
+                        f"Period:   Last 7 days\n"
+                        f"Total events:  {stats['total'] or 0:,}\n"
+                        f"Errors:        {stats['errors'] or 0:,}\n"
+                        f"Warnings:      {stats['warnings'] or 0:,}\n"
+                        f"Active sources:{stats['sources'] or 0}\n\n"
+                        f"Top recurring error patterns:\n{fp_summary or '  None'}\n"
+                        + (f"\nAI insights:\n{ai_insights}" if ai_insights else "")
+                    )
+                    for admin in admin_emails:
+                        try:
+                            send_email_message(subject, admin["email"], body)
+                        except Exception as exc:
+                            logger.error("Weekly digest email failed org=%d: %s", org_id, exc)
+                    conn.execute(
+                        "INSERT INTO observability_fired (org_id, alert_rule_id, trigger_key, fired_at) VALUES (?,?,?,?)",
+                        (org_id, None, tk, now_str),
+                    )
+                except Exception as exc:
+                    logger.error("Weekly digest failed for org %d: %s", org_id, exc)
+
+        # ── 8. Nightly log retention — 02:00 UTC ─────────────────────────────
         if now_dt.hour == 2:
             for org_row in orgs:
                 retention_days = org_row["retention_days"] or 90
@@ -1443,7 +1762,7 @@ def scheduler_tick() -> None:
                         (org_row["id"], cutoff),
                     ).rowcount
                     if deleted:
-                        logger.info("Retention: deleted %d old log events for org %d (>%d days)",
+                        logger.info("Retention: deleted %d log events for org %d (>%d days)",
                                     deleted, org_row["id"], retention_days)
                 except Exception as exc:
                     logger.error("Retention deletion failed for org %d: %s", org_row["id"], exc)
@@ -1540,8 +1859,10 @@ def login():
     if user["admin_only"] and user["role"] != "admin":
         return jsonify({"error": "This workspace is in admin-only mode."}), 403
     session.clear()
-    session["user_id"] = user["id"]
-    session["csrf"]    = secrets.token_hex(16)
+    session["user_id"]      = user["id"]
+    session["csrf"]         = secrets.token_hex(16)
+    session["session_token"] = _create_user_session(db, user["id"], user["org_id"])
+    db.commit()
     audit(user["org_id"], user["id"], "logged_in", "session", str(user["id"]), {"email": user["email"]})
     return jsonify({"message": "Login successful."})
 
@@ -1593,8 +1914,10 @@ def register_org_and_admin():
     db.commit()
     user_id = user_cur.lastrowid
     session.clear()
-    session["user_id"] = user_id
-    session["csrf"]    = secrets.token_hex(16)
+    session["user_id"]       = user_id
+    session["csrf"]          = secrets.token_hex(16)
+    session["session_token"] = _create_user_session(db, user_id, org_id)
+    db.commit()
     audit(org_id, user_id, "created_workspace", "organization", str(org_id), {"slug": slug, "email": email})
     return jsonify({
         "message": "Workspace created successfully. Welcome to ObserveX!",
@@ -1605,7 +1928,10 @@ def register_org_and_admin():
 @app.post("/logout")
 def logout():
     user_id = session.get("user_id")
+    token   = session.get("session_token")
     user, _ = require_auth() if user_id else (None, None)
+    if token:
+        _revoke_session(token)
     session.clear()
     if user:
         audit(user["org_id"], user["id"], "logged_out", "session", str(user["id"]), {})
@@ -1708,9 +2034,25 @@ def get_logs():
         sql += " AND level = ?"
         params.append(level)
     if q:
-        sql += " AND (lower(message) LIKE ? OR lower(source) LIKE ? OR lower(coalesce(event_id,'')) LIKE ?)"
-        pattern = f"%{q.lower()}%"
-        params.extend([pattern, pattern, pattern])
+        # Use FTS5 when available (SQLite only) for much faster full-text search
+        use_fts = False
+        if not _is_pg():
+            try:
+                fts_ids = [r[0] for r in get_db().execute(
+                    "SELECT rowid FROM log_fts WHERE log_fts MATCH ? AND rowid IN (SELECT id FROM log_events WHERE org_id=?) LIMIT 2000",
+                    (q, user["org_id"]),
+                ).fetchall()]
+                if fts_ids:
+                    placeholders = ",".join("?" * len(fts_ids))
+                    sql = f"SELECT id, timestamp, level, source, event_id, message FROM log_events WHERE org_id = ? AND id IN ({placeholders})"
+                    params = [user["org_id"]] + fts_ids
+                    use_fts = True
+            except Exception:
+                pass
+        if not use_fts:
+            sql += " AND (lower(message) LIKE ? OR lower(source) LIKE ? OR lower(coalesce(event_id,'')) LIKE ?)"
+            pattern = f"%{q.lower()}%"
+            params.extend([pattern, pattern, pattern])
     try:
         mins = int(minutes)
         if mins > 0:
@@ -1818,25 +2160,49 @@ def explain_log(log_id: int):
         payload = json.loads(log.get("payload_json") or "{}")
     except Exception:
         payload = {}
+
+    # Fetch context: 5 events before and after on same source (or correlation_id if set)
+    corr_id = log.get("correlation_id") or ""
+    if corr_id:
+        ctx_rows = db.execute(
+            "SELECT timestamp, level, source, message FROM log_events WHERE org_id=? AND correlation_id=? AND id!=? ORDER BY timestamp ASC LIMIT 10",
+            (user["org_id"], corr_id, log_id),
+        ).fetchall()
+    else:
+        ctx_rows = db.execute(
+            """SELECT timestamp, level, source, message FROM log_events
+               WHERE org_id=? AND source=? AND id!=?
+               ORDER BY ABS(CAST(strftime('%s', timestamp) AS INTEGER) - CAST(strftime('%s', ?) AS INTEGER))
+               LIMIT 10""",
+            (user["org_id"], log["source"], log_id, log["timestamp"]),
+        ).fetchall()
+    context_block = ""
+    if ctx_rows:
+        context_block = "\n\nSurrounding events (same source / correlation chain):\n" + "\n".join(
+            f"  [{r['timestamp']}] [{r['level'].upper()}] {r['source']}: {r['message'][:200]}" for r in ctx_rows
+        )
+
     prompt = (
-        f"You are a senior software engineer analyzing a log entry. "
-        f"Be concise and practical. Respond in 3 short sections:\n"
+        f"You are a senior SRE analysing a log event in context. "
+        f"Be concise and practical. Respond in 4 short sections:\n"
         f"1. **What happened** (1-2 sentences)\n"
-        f"2. **Likely cause** (1-2 sentences)\n"
-        f"3. **Fix / next steps** (2-3 bullet points)\n\n"
-        f"Log entry:\n"
+        f"2. **Root cause** — use the surrounding events if they reveal a chain (1-3 sentences)\n"
+        f"3. **Fix / next steps** (2-3 bullet points)\n"
+        f"4. **Prevention** (1 bullet)\n\n"
+        f"Focal log entry:\n"
         f"- Level: {log['level']}\n"
         f"- Source: {log['source']}\n"
         f"- Timestamp: {log['timestamp']}\n"
         f"- Message: {log['message']}\n"
         f"- Payload: {json.dumps(payload, indent=2)[:800]}"
+        f"{context_block}"
     )
     if not os.environ.get("ANTHROPIC_API_KEY"):
         return jsonify({"error": "ANTHROPIC_API_KEY not configured on server. Add it to your Railway environment variables."}), 503
-    explanation = _call_anthropic(prompt, max_tokens=600)
+    explanation = _call_anthropic(prompt, max_tokens=700)
     if not explanation:
         return jsonify({"error": "AI explain failed — check server logs for details."}), 500
-    return jsonify({"explanation": explanation})
+    return jsonify({"explanation": explanation, "context_events": len(ctx_rows)})
 
 @app.get("/api/searches")
 def get_searches():
@@ -2352,11 +2718,16 @@ def ingest_json():
     Public REST endpoint to ingest JSON logs.
     Auth: Authorization: Bearer <api_key>  OR  X-API-Key: <api_key>
     """
-    key_row, error = require_api_key()
+    key_row, error = require_api_key(required_scope="ingest")
     if error:
         return error
     org_id  = key_row["org_id"]
     user_id = key_row["user_id"]
+
+    # Per-org rate limit
+    rate_limit_val = int(key_row.get("ingest_rate_limit") or 10000)
+    if not _check_org_rate(org_id, rate_limit_val):
+        return jsonify({"error": f"Ingest rate limit exceeded ({rate_limit_val} events/min). Retry shortly."}), 429
 
     # Enforce a per-request body size limit (separate from global 50MB)
     MAX_INGEST_BODY = 10 * 1024 * 1024  # 10 MB
@@ -2386,9 +2757,17 @@ def ingest_json():
         (org_id, user_id, "api-ingest.json", len(records), now),
     )
     upload_id = cur.lastrowid
+    rows_to_insert = []
+    for r in records:
+        sf = extract_structured_fields(r.get("payload") or {})
+        rows_to_insert.append((
+            org_id, upload_id, r["timestamp"], r["level"], r["source"],
+            r.get("event_id") or "", r["message"], json.dumps(r.get("payload", {})), now,
+            sf.get("status_code"), sf.get("duration_ms"), sf.get("req_user_id"), sf.get("request_id"),
+        ))
     db.executemany(
-        "INSERT INTO log_events (org_id, upload_id, timestamp, level, source, event_id, message, payload_json, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-        [(org_id, upload_id, r["timestamp"], r["level"], r["source"], r.get("event_id") or "", r["message"], json.dumps(r.get("payload", {})), now) for r in records],
+        "INSERT INTO log_events (org_id, upload_id, timestamp, level, source, event_id, message, payload_json, created_at, status_code, duration_ms, req_user_id, request_id) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)",
+        rows_to_insert,
     )
     db.commit()
     audit(org_id, user_id, "api_ingest_json", "upload", str(upload_id), {"records": len(records)})
@@ -2401,12 +2780,17 @@ def ingest_file():
     Public REST endpoint for file upload ingestion.
     Auth: Authorization: Bearer <api_key>  OR  X-API-Key: <api_key>
     """
-    key_row, error = require_api_key()
+    key_row, error = require_api_key(required_scope="ingest")
     if error:
         return error
     org_id  = key_row["org_id"]
     user_id = key_row["user_id"]
-    files   = request.files.getlist("files") or request.files.getlist("file")
+
+    rate_limit_val = int(key_row.get("ingest_rate_limit") or 10000)
+    if not _check_org_rate(org_id, rate_limit_val):
+        return jsonify({"error": f"Ingest rate limit exceeded ({rate_limit_val} events/min)."}), 429
+
+    files = request.files.getlist("files") or request.files.getlist("file")
     if not files or not any(f.filename for f in files):
         return jsonify({"error": "No file(s) uploaded. Use multipart/form-data with field name 'file' or 'files'."}), 400
 
@@ -2433,9 +2817,17 @@ def ingest_file():
             (org_id, user_id, filename, len(records), now),
         )
         upload_id = cur.lastrowid
+        rows_to_insert = []
+        for r in records:
+            sf = extract_structured_fields(r.get("payload") or {})
+            rows_to_insert.append((
+                org_id, upload_id, r["timestamp"], r["level"], r["source"],
+                r.get("event_id") or "", r["message"], json.dumps(r.get("payload", {})), now,
+                sf.get("status_code"), sf.get("duration_ms"), sf.get("req_user_id"), sf.get("request_id"),
+            ))
         db.executemany(
-            "INSERT INTO log_events (org_id, upload_id, timestamp, level, source, event_id, message, payload_json, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            [(org_id, upload_id, r["timestamp"], r["level"], r["source"], r.get("event_id") or "", r["message"], json.dumps(r.get("payload", {})), now) for r in records],
+            "INSERT INTO log_events (org_id, upload_id, timestamp, level, source, event_id, message, payload_json, created_at, status_code, duration_ms, req_user_id, request_id) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)",
+            rows_to_insert,
         )
         audit(org_id, user_id, "api_ingest_file", "upload", str(upload_id), {"filename": filename, "records": len(records)})
         all_records.extend(records)
@@ -2458,22 +2850,32 @@ def create_api_key():
     name    = sanitize_input(payload.get("name") or "")
     if not name:
         return jsonify({"error": "Key name is required."}), 400
+    # Validate scopes
+    VALID_SCOPES = {"ingest", "read", "admin"}
+    raw_scopes   = payload.get("scopes") or ["ingest", "read", "admin"]
+    if isinstance(raw_scopes, str):
+        raw_scopes = [s.strip() for s in raw_scopes.split(",")]
+    scopes = [s for s in raw_scopes if s in VALID_SCOPES]
+    if not scopes:
+        return jsonify({"error": f"At least one valid scope required: {sorted(VALID_SCOPES)}"}), 400
+    scopes_str = ",".join(sorted(set(scopes)))
     raw_key  = "oxk_" + secrets.token_urlsafe(32)
     prefix   = raw_key[:8]
     key_hash = generate_password_hash(raw_key)
     db       = get_db()
     cur      = db.execute(
-        "INSERT INTO api_keys (org_id, user_id, name, key_hash, prefix, status, created_at) VALUES (?, ?, ?, ?, ?, 'active', ?)",
-        (user["org_id"], user["id"], name, key_hash, prefix, iso_now()),
+        "INSERT INTO api_keys (org_id, user_id, name, key_hash, prefix, status, scopes, created_at) VALUES (?, ?, ?, ?, ?, 'active', ?, ?)",
+        (user["org_id"], user["id"], name, key_hash, prefix, scopes_str, iso_now()),
     )
     db.commit()
-    audit(user["org_id"], user["id"], "created_api_key", "api_key", str(cur.lastrowid), {"name": name})
+    audit(user["org_id"], user["id"], "created_api_key", "api_key", str(cur.lastrowid), {"name": name, "scopes": scopes_str})
     return jsonify({
         "message": "API key created. Copy it now — it will not be shown again.",
         "id":      cur.lastrowid,
         "name":    name,
         "key":     raw_key,
         "prefix":  prefix,
+        "scopes":  scopes_str,
     }), 201
 
 @app.get("/api/keys")
@@ -2483,7 +2885,7 @@ def list_api_keys():
         return error
     db   = get_db()
     rows = db.execute(
-        "SELECT ak.id, ak.name, ak.prefix, ak.status, ak.created_at, ak.last_used_at, u.name AS created_by "
+        "SELECT ak.id, ak.name, ak.prefix, ak.status, ak.scopes, ak.created_at, ak.last_used_at, u.name AS created_by "
         "FROM api_keys ak JOIN users u ON u.id = ak.user_id WHERE ak.org_id = ? ORDER BY ak.id DESC",
         (user["org_id"],),
     ).fetchall()
@@ -2670,7 +3072,9 @@ def get_obs_alert_rules():
     return jsonify([dict(r) for r in rows])
 
 
-# ─────────────────────────── New endpoints ───────────────────────────────────
+# ─────────────────────────── New endpoints (v2) ──────────────────────────────
+
+# ── Webhook ingest (scope-gated + structured extraction) ─────────────────────
 
 @app.post("/api/ingest/webhook")
 def webhook_ingest():
@@ -2678,9 +3082,14 @@ def webhook_ingest():
     Header: X-ObserveX-Signature: sha256=<hex>
     Body: JSON array of log objects or single log object.
     """
-    key_info, error = require_api_key()
+    key_info, error = require_api_key(required_scope="ingest")
     if error:
         return error
+    org_id = key_info["org_id"]
+    rate_limit_val = int(key_info.get("ingest_rate_limit") or 10000)
+    if not _check_org_rate(org_id, rate_limit_val):
+        return jsonify({"error": "Ingest rate limit exceeded."}), 429
+
     secret = os.environ.get("WEBHOOK_SECRET", "")
     if secret:
         sig_header = request.headers.get("X-ObserveX-Signature", "")
@@ -2695,30 +3104,32 @@ def webhook_ingest():
     if not events:
         return jsonify({"error": "Empty payload."}), 400
 
-    db     = get_db()
-    org_id = key_info["org_id"]
-    now    = iso_now()
+    db  = get_db()
+    now = iso_now()
     inserted = 0
-    for ev in events[:500]:  # hard cap per request
-        msg     = sanitize_input(str(ev.get("message") or ""), 2000)
-        level   = sanitize_input(str(ev.get("level") or "info").lower(), 20)
-        source  = sanitize_input(str(ev.get("source") or "webhook"), 200)
-        ts      = sanitize_input(str(ev.get("timestamp") or now), 50)
+    for ev in events[:500]:
+        msg      = sanitize_input(str(ev.get("message") or ""), 2000)
+        level    = sanitize_input(str(ev.get("level") or "info").lower(), 20)
+        source   = sanitize_input(str(ev.get("source") or "webhook"), 200)
+        ts       = sanitize_input(str(ev.get("timestamp") or now), 50)
         event_id = sanitize_input(str(ev.get("event_id") or ""), 100)
         corr_id  = sanitize_input(str(ev.get("correlation_id") or ""), 100)
-        payload  = json.dumps({k: v for k, v in ev.items() if k not in ("message","level","source","timestamp","event_id","correlation_id")})
+        payload  = {k: v for k, v in ev.items() if k not in ("message","level","source","timestamp","event_id","correlation_id")}
+        sf       = extract_structured_fields(payload)
         db.execute(
-            "INSERT INTO log_events (org_id, upload_id, timestamp, level, source, event_id, message, payload_json, created_at, correlation_id) VALUES (?,?,?,?,?,?,?,?,?,?)",
-            (org_id, None, ts, level, source, event_id, msg, payload, now, corr_id),
+            "INSERT INTO log_events (org_id, upload_id, timestamp, level, source, event_id, message, payload_json, created_at, correlation_id, status_code, duration_ms, req_user_id, request_id) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+            (org_id, None, ts, level, source, event_id, msg, json.dumps(payload), now, corr_id,
+             sf.get("status_code"), sf.get("duration_ms"), sf.get("req_user_id"), sf.get("request_id")),
         )
         inserted += 1
     db.commit()
     return jsonify({"inserted": inserted}), 201
 
 
+# ── Correlation trace ─────────────────────────────────────────────────────────
+
 @app.get("/api/logs/trace")
 def get_log_trace():
-    """Return all log events sharing a correlation_id."""
     user, error = require_auth()
     if error:
         return error
@@ -2733,17 +3144,411 @@ def get_log_trace():
     return jsonify({"correlation_id": corr_id, "events": [dict(r) for r in rows]})
 
 
+# ── Log export (CSV + NDJSON streaming) ──────────────────────────────────────
+
+@app.get("/api/logs/export")
+def export_logs():
+    """Streaming log export. Query params: format=csv|ndjson, level, source, from_ts, to_ts, q."""
+    user, error = require_auth()
+    if error:
+        return error
+
+    fmt      = sanitize_input(request.args.get("format") or "ndjson", 10).lower()
+    if fmt not in ("csv", "ndjson"):
+        return jsonify({"error": "format must be 'csv' or 'ndjson'."}), 400
+
+    level    = sanitize_input(request.args.get("level") or "all", 20).lower()
+    source   = sanitize_input(request.args.get("source") or "", 100)
+    from_ts  = sanitize_input(request.args.get("from_ts") or "", 50)
+    to_ts    = sanitize_input(request.args.get("to_ts") or "", 50)
+    q        = sanitize_input(request.args.get("q") or "", 200)
+    params: list[Any] = [user["org_id"]]
+    sql = "SELECT id, timestamp, level, source, event_id, message, payload_json, correlation_id, status_code, duration_ms FROM log_events WHERE org_id=?"
+    if level != "all":
+        sql += " AND level=?";  params.append(level)
+    if source:
+        sql += " AND source=?"; params.append(source)
+    if from_ts:
+        sql += " AND timestamp>=?"; params.append(from_ts)
+    if to_ts:
+        sql += " AND timestamp<=?"; params.append(to_ts)
+    if q:
+        sql += " AND lower(message) LIKE ?"; params.append(f"%{q.lower()}%")
+    sql += " ORDER BY timestamp DESC LIMIT 100000"
+
+    from flask import Response, stream_with_context
+
+    def generate_ndjson():
+        conn = _open_db()
+        try:
+            for row in conn.execute(sql, params):
+                yield json.dumps(dict(row)) + "\n"
+        finally:
+            conn.close()
+
+    def generate_csv():
+        conn = _open_db()
+        output = io.StringIO()
+        writer = csv.writer(output)
+        writer.writerow(["id","timestamp","level","source","event_id","message","correlation_id","status_code","duration_ms","payload_json"])
+        yield output.getvalue(); output.seek(0); output.truncate(0)
+        try:
+            for row in conn.execute(sql, params):
+                r = dict(row)
+                writer.writerow([r.get("id"), r.get("timestamp"), r.get("level"), r.get("source"),
+                                  r.get("event_id"), r.get("message"), r.get("correlation_id"),
+                                  r.get("status_code"), r.get("duration_ms"), r.get("payload_json")])
+                yield output.getvalue(); output.seek(0); output.truncate(0)
+        finally:
+            conn.close()
+
+    if fmt == "csv":
+        return Response(
+            stream_with_context(generate_csv()),
+            mimetype="text/csv",
+            headers={"Content-Disposition": "attachment; filename=observex-logs.csv"},
+        )
+    return Response(
+        stream_with_context(generate_ndjson()),
+        mimetype="application/x-ndjson",
+        headers={"Content-Disposition": "attachment; filename=observex-logs.ndjson"},
+    )
+
+
+# ── Missing CRUD: alert_rules ─────────────────────────────────────────────────
+
+@app.get("/api/alerts")
+def list_alerts():
+    user, error = require_auth()
+    if error:
+        return error
+    db   = get_db()
+    rows = db.execute("SELECT * FROM alert_rules WHERE org_id=? ORDER BY created_at DESC", (user["org_id"],)).fetchall()
+    return jsonify({"alerts": [dict(r) for r in rows]})
+
+@app.put("/api/alerts/<int:alert_id>")
+def update_alert(alert_id: int):
+    user, error = require_admin()
+    if error:
+        return error
+    db  = get_db()
+    row = db.execute("SELECT id FROM alert_rules WHERE id=? AND org_id=?", (alert_id, user["org_id"])).fetchone()
+    if not row:
+        return jsonify({"error": "Alert not found."}), 404
+    payload = request_payload()
+    db.execute(
+        """UPDATE alert_rules SET name=?, severity=?, condition_text=?, status=?, channel=?,
+           notify_email=?, threshold=?, alert_type=?, slack_webhook_url=?,
+           latency_threshold_ms=?, dead_source_minutes=?
+           WHERE id=? AND org_id=?""",
+        (sanitize_input(payload.get("name") or ""),
+         payload.get("severity") or "sev3",
+         sanitize_input(payload.get("condition_text") or "", 500),
+         payload.get("status") or "draft",
+         payload.get("channel") or "Email",
+         sanitize_input(payload.get("notify_email") or ""),
+         int(payload.get("threshold") or 10),
+         payload.get("alert_type") or "error_rate",
+         sanitize_input(payload.get("slack_webhook_url") or ""),
+         payload.get("latency_threshold_ms"),
+         payload.get("dead_source_minutes"),
+         alert_id, user["org_id"]),
+    )
+    db.commit()
+    audit(user["org_id"], user["id"], "updated_alert", "alert", str(alert_id), {"name": payload.get("name")})
+    return jsonify({"message": "Alert updated."})
+
+@app.delete("/api/alerts/<int:alert_id>")
+def delete_alert(alert_id: int):
+    user, error = require_admin()
+    if error:
+        return error
+    db  = get_db()
+    row = db.execute("SELECT id FROM alert_rules WHERE id=? AND org_id=?", (alert_id, user["org_id"])).fetchone()
+    if not row:
+        return jsonify({"error": "Alert not found."}), 404
+    db.execute("DELETE FROM alert_rules WHERE id=? AND org_id=?", (alert_id, user["org_id"]))
+    db.commit()
+    audit(user["org_id"], user["id"], "deleted_alert", "alert", str(alert_id), {})
+    return jsonify({"message": "Alert deleted."})
+
+
+# ── Missing CRUD: integrations ────────────────────────────────────────────────
+
+@app.get("/api/integrations")
+def list_integrations():
+    user, error = require_auth()
+    if error:
+        return error
+    db   = get_db()
+    rows = db.execute("SELECT * FROM integrations WHERE org_id=? ORDER BY created_at DESC", (user["org_id"],)).fetchall()
+    return jsonify({"integrations": [dict(r) for r in rows]})
+
+@app.put("/api/integrations/<int:intg_id>")
+def update_integration(intg_id: int):
+    user, error = require_admin()
+    if error:
+        return error
+    db  = get_db()
+    row = db.execute("SELECT id FROM integrations WHERE id=? AND org_id=?", (intg_id, user["org_id"])).fetchone()
+    if not row:
+        return jsonify({"error": "Integration not found."}), 404
+    payload = request_payload()
+    now     = iso_now()
+    db.execute(
+        "UPDATE integrations SET name=?, status=?, settings_json=?, updated_at=? WHERE id=? AND org_id=?",
+        (sanitize_input(payload.get("name") or ""), payload.get("status") or "configured",
+         json.dumps(payload.get("settings") or {}), now, intg_id, user["org_id"]),
+    )
+    db.commit()
+    audit(user["org_id"], user["id"], "updated_integration", "integration", str(intg_id), {})
+    return jsonify({"message": "Integration updated."})
+
+@app.delete("/api/integrations/<int:intg_id>")
+def delete_integration(intg_id: int):
+    user, error = require_admin()
+    if error:
+        return error
+    db  = get_db()
+    row = db.execute("SELECT id FROM integrations WHERE id=? AND org_id=?", (intg_id, user["org_id"])).fetchone()
+    if not row:
+        return jsonify({"error": "Integration not found."}), 404
+    db.execute("DELETE FROM integrations WHERE id=? AND org_id=?", (intg_id, user["org_id"]))
+    db.commit()
+    audit(user["org_id"], user["id"], "deleted_integration", "integration", str(intg_id), {})
+    return jsonify({"message": "Integration deleted."})
+
+
+# ── Missing CRUD: ingestion jobs ──────────────────────────────────────────────
+
+@app.put("/api/jobs/<int:job_id>")
+def update_job(job_id: int):
+    user, error = require_admin()
+    if error:
+        return error
+    db  = get_db()
+    row = db.execute("SELECT id FROM ingestion_jobs WHERE id=? AND org_id=?", (job_id, user["org_id"])).fetchone()
+    if not row:
+        return jsonify({"error": "Job not found."}), 404
+    payload = request_payload()
+    db.execute(
+        "UPDATE ingestion_jobs SET name=?, status=?, schedule=?, next_run_at=?, details_json=? WHERE id=? AND org_id=?",
+        (sanitize_input(payload.get("name") or ""), payload.get("status") or "scheduled",
+         payload.get("schedule") or "0 * * * *",
+         parse_cron_next_run(payload.get("schedule") or "0 * * * *"),
+         json.dumps(payload.get("details") or {}), job_id, user["org_id"]),
+    )
+    db.commit()
+    audit(user["org_id"], user["id"], "updated_job", "job", str(job_id), {"name": payload.get("name")})
+    return jsonify({"message": "Job updated."})
+
+@app.delete("/api/jobs/<int:job_id>")
+def delete_job(job_id: int):
+    user, error = require_admin()
+    if error:
+        return error
+    db  = get_db()
+    row = db.execute("SELECT id FROM ingestion_jobs WHERE id=? AND org_id=?", (job_id, user["org_id"])).fetchone()
+    if not row:
+        return jsonify({"error": "Job not found."}), 404
+    db.execute("DELETE FROM ingestion_jobs WHERE id=? AND org_id=?", (job_id, user["org_id"]))
+    db.commit()
+    audit(user["org_id"], user["id"], "deleted_job", "job", str(job_id), {})
+    return jsonify({"message": "Job deleted."})
+
+@app.get("/api/jobs/<int:job_id>/runs")
+def get_job_runs(job_id: int):
+    user, error = require_auth()
+    if error:
+        return error
+    db   = get_db()
+    row  = db.execute("SELECT id FROM ingestion_jobs WHERE id=? AND org_id=?", (job_id, user["org_id"])).fetchone()
+    if not row:
+        return jsonify({"error": "Job not found."}), 404
+    try:
+        page     = max(1, int(request.args.get("page", 1)))
+        per_page = max(10, min(100, int(request.args.get("per_page", 20))))
+    except (ValueError, TypeError):
+        page, per_page = 1, 20
+    total = db.execute("SELECT COUNT(*) FROM ingestion_runs WHERE job_id=? AND org_id=?", (job_id, user["org_id"])).fetchone()[0]
+    rows  = db.execute(
+        "SELECT id, status, message, record_count, created_at, completed_at FROM ingestion_runs WHERE job_id=? AND org_id=? ORDER BY id DESC LIMIT ? OFFSET ?",
+        (job_id, user["org_id"], per_page, (page-1)*per_page),
+    ).fetchall()
+    return jsonify({"runs": [dict(r) for r in rows], "total": total, "page": page, "per_page": per_page})
+
+
+# ── Missing CRUD: log annotations ─────────────────────────────────────────────
+
+@app.post("/api/logs/<int:log_id>/annotate")
+def add_annotation(log_id: int):
+    user, error = require_auth()
+    if error:
+        return error
+    db  = get_db()
+    if not db.execute("SELECT id FROM log_events WHERE id=? AND org_id=?", (log_id, user["org_id"])).fetchone():
+        return jsonify({"error": "Log event not found."}), 404
+    payload = request_payload()
+    tag  = sanitize_input(payload.get("tag") or "note", 50)
+    note = sanitize_input(payload.get("note") or "", 2000)
+    cur  = db.execute(
+        "INSERT INTO log_annotations (org_id, log_id, user_id, tag, note, created_at) VALUES (?,?,?,?,?,?)",
+        (user["org_id"], log_id, user["id"], tag, note, iso_now()),
+    )
+    db.commit()
+    return jsonify({"message": "Annotation saved.", "id": cur.lastrowid}), 201
+
+@app.get("/api/logs/<int:log_id>/annotations")
+def get_annotations(log_id: int):
+    user, error = require_auth()
+    if error:
+        return error
+    db   = get_db()
+    rows = db.execute(
+        "SELECT a.id, a.tag, a.note, a.created_at, u.name AS author FROM log_annotations a JOIN users u ON u.id=a.user_id WHERE a.log_id=? AND a.org_id=? ORDER BY a.created_at ASC",
+        (log_id, user["org_id"]),
+    ).fetchall()
+    return jsonify({"annotations": [dict(r) for r in rows]})
+
+@app.delete("/api/logs/annotations/<int:annotation_id>")
+def delete_annotation(annotation_id: int):
+    user, error = require_auth()
+    if error:
+        return error
+    db  = get_db()
+    row = db.execute("SELECT id FROM log_annotations WHERE id=? AND org_id=? AND user_id=?", (annotation_id, user["org_id"], user["id"])).fetchone()
+    if not row:
+        return jsonify({"error": "Annotation not found or not yours."}), 404
+    db.execute("DELETE FROM log_annotations WHERE id=?", (annotation_id,))
+    db.commit()
+    return jsonify({"message": "Annotation deleted."})
+
+
+# ── Missing CRUD: saved dashboards ────────────────────────────────────────────
+
+@app.put("/api/dashboards/<int:dash_id>")
+def update_dashboard(dash_id: int):
+    user, error = require_auth()
+    if error:
+        return error
+    db  = get_db()
+    row = db.execute("SELECT id FROM saved_dashboards WHERE id=? AND org_id=?", (dash_id, user["org_id"])).fetchone()
+    if not row:
+        return jsonify({"error": "Dashboard not found."}), 404
+    payload = request_payload()
+    db.execute(
+        "UPDATE saved_dashboards SET name=?, config_json=? WHERE id=? AND org_id=?",
+        (sanitize_input(payload.get("name") or "Dashboard"), json.dumps(payload.get("config") or {}), dash_id, user["org_id"]),
+    )
+    db.commit()
+    return jsonify({"message": "Dashboard updated."})
+
+@app.delete("/api/dashboards/<int:dash_id>")
+def delete_dashboard(dash_id: int):
+    user, error = require_auth()
+    if error:
+        return error
+    db  = get_db()
+    row = db.execute("SELECT id FROM saved_dashboards WHERE id=? AND org_id=? AND user_id=?", (dash_id, user["org_id"], user["id"])).fetchone()
+    if not row:
+        return jsonify({"error": "Dashboard not found or not yours."}), 404
+    db.execute("DELETE FROM saved_dashboards WHERE id=?", (dash_id,))
+    db.commit()
+    return jsonify({"message": "Dashboard deleted."})
+
+
+# ── Session management ────────────────────────────────────────────────────────
+
+@app.get("/api/sessions")
+def list_sessions():
+    user, error = require_auth()
+    if error:
+        return error
+    db   = get_db()
+    rows = db.execute(
+        "SELECT id, ip_address, user_agent, created_at, last_active_at, expires_at, revoked FROM user_sessions WHERE user_id=? ORDER BY last_active_at DESC LIMIT 20",
+        (user["id"],),
+    ).fetchall()
+    current_token = session.get("session_token", "")
+    result = []
+    for r in rows:
+        d = dict(r)
+        d["is_current"] = False  # token not exposed — mark by recency heuristic
+        result.append(d)
+    return jsonify({"sessions": result})
+
+@app.delete("/api/sessions/<int:session_id>")
+def revoke_session_endpoint(session_id: int):
+    user, error = require_auth()
+    if error:
+        return error
+    db  = get_db()
+    row = db.execute("SELECT session_token FROM user_sessions WHERE id=? AND user_id=?", (session_id, user["id"])).fetchone()
+    if not row:
+        return jsonify({"error": "Session not found."}), 404
+    db.execute("UPDATE user_sessions SET revoked=1 WHERE id=?", (session_id,))
+    db.commit()
+    return jsonify({"message": "Session revoked."})
+
+
+# ── Audit log endpoint ────────────────────────────────────────────────────────
+
+@app.get("/api/audit")
+def get_audit_log():
+    user, error = require_admin()
+    if error:
+        return error
+    db = get_db()
+    try:
+        page     = max(1, int(request.args.get("page", 1)))
+        per_page = max(10, min(200, int(request.args.get("per_page", 50))))
+    except (ValueError, TypeError):
+        page, per_page = 1, 50
+    from_ts = sanitize_input(request.args.get("from_ts") or "", 50)
+    to_ts   = sanitize_input(request.args.get("to_ts") or "", 50)
+    action  = sanitize_input(request.args.get("action") or "", 100)
+    uid     = request.args.get("user_id")
+
+    params: list[Any] = [user["org_id"]]
+    sql = "SELECT ae.*, u.name AS user_name, u.email AS user_email FROM audit_events ae LEFT JOIN users u ON u.id=ae.user_id WHERE ae.org_id=?"
+    if from_ts:
+        sql += " AND ae.created_at>=?"; params.append(from_ts)
+    if to_ts:
+        sql += " AND ae.created_at<=?"; params.append(to_ts)
+    if action:
+        sql += " AND ae.action=?"; params.append(action)
+    if uid:
+        try:
+            sql += " AND ae.user_id=?"; params.append(int(uid))
+        except (ValueError, TypeError):
+            pass
+
+    total = db.execute(sql.replace("SELECT ae.*, u.name AS user_name, u.email AS user_email", "SELECT COUNT(*)"), params).fetchone()[0]
+    sql  += f" ORDER BY ae.created_at DESC LIMIT {per_page} OFFSET {(page-1)*per_page}"
+    rows  = db.execute(sql, params).fetchall()
+    events = []
+    for r in rows:
+        d = dict(r)
+        try:
+            d["detail"] = json.loads(d.get("detail_json") or "{}")
+        except Exception:
+            d["detail"] = {}
+        events.append(d)
+    return jsonify({"events": events, "total": total, "page": page, "per_page": per_page})
+
+
+# ── AI endpoints ──────────────────────────────────────────────────────────────
+
 @app.post("/api/ai/anomaly-summary")
 def ai_anomaly_summary():
-    """Return an AI-generated plain-English summary of the last hour's errors."""
     user, error = require_auth()
     if error:
         return error
     if not os.environ.get("ANTHROPIC_API_KEY"):
         return jsonify({"error": "ANTHROPIC_API_KEY not configured."}), 503
-    db      = get_db()
-    since   = (datetime.now(timezone.utc) - timedelta(hours=1)).strftime("%Y-%m-%dT%H:%M:%S")
-    rows    = db.execute(
+    db    = get_db()
+    since = (datetime.now(timezone.utc) - timedelta(hours=1)).strftime("%Y-%m-%dT%H:%M:%S")
+    rows  = db.execute(
         "SELECT message, source FROM log_events WHERE org_id=? AND level='error' AND timestamp>=? ORDER BY timestamp DESC LIMIT 30",
         (user["org_id"], since),
     ).fetchall()
@@ -2760,7 +3565,6 @@ def ai_anomaly_summary():
 
 @app.post("/api/ai/suggest-search")
 def ai_suggest_search():
-    """Convert a natural-language query into ObserveX log search filter JSON."""
     user, error = require_auth()
     if error:
         return error
@@ -2783,9 +3587,38 @@ def ai_suggest_search():
     return jsonify({"filters": filters, "raw": result})
 
 
+@app.post("/api/ai/build-alert")
+def ai_build_alert():
+    """Convert a natural-language alert description into a structured alert rule JSON."""
+    user, error = require_auth()
+    if error:
+        return error
+    payload = request_payload()
+    desc    = sanitize_input(payload.get("description") or "", 500)
+    if not desc:
+        return jsonify({"error": "description field required."}), 400
+    if not os.environ.get("ANTHROPIC_API_KEY"):
+        return jsonify({"error": "ANTHROPIC_API_KEY not configured."}), 503
+    result = _call_anthropic(
+        f"Convert this natural-language alert description into a JSON object for an alert rule with these keys:\n"
+        f"  name (string), severity ('sev1'|'sev2'|'sev3'|'sev4'), condition_text (string, human-readable),\n"
+        f"  alert_type ('error_rate'|'suspicious_ip'|'latency'|'dead_source'|'custom'),\n"
+        f"  threshold (integer — count or ms depending on type), channel ('Email'|'Slack'|'Both'),\n"
+        f"  latency_threshold_ms (integer, only for latency type), dead_source_minutes (integer, only for dead_source type).\n"
+        f"Return ONLY the JSON object, no explanation or markdown.\n\nDescription: {desc}",
+        max_tokens=300,
+    )
+    try:
+        rule = json.loads(result)
+    except Exception:
+        rule = {"name": desc[:100], "condition_text": desc, "alert_type": "custom", "severity": "sev3", "threshold": 10}
+    return jsonify({"rule": rule, "raw": result})
+
+
+# ── Error fingerprints ────────────────────────────────────────────────────────
+
 @app.get("/api/logs/fingerprints")
 def get_fingerprints():
-    """Return recent error pattern fingerprints for this org."""
     user, error = require_auth()
     if error:
         return error
@@ -2797,9 +3630,10 @@ def get_fingerprints():
     return jsonify({"fingerprints": [dict(r) for r in rows]})
 
 
+# ── Org: retention + ingest rate limit ───────────────────────────────────────
+
 @app.post("/api/org/retention")
 def set_retention():
-    """Admin endpoint to set per-org log retention policy (days)."""
     user, error = require_admin()
     if error:
         return error
@@ -2815,6 +3649,90 @@ def set_retention():
     db.commit()
     audit(user["org_id"], user["id"], "set_retention_policy", "organization", str(user["org_id"]), {"retention_days": days})
     return jsonify({"message": f"Retention policy set to {days} days.", "retention_days": days})
+
+@app.post("/api/org/rate-limit")
+def set_ingest_rate_limit():
+    """Admin: set per-org ingest rate limit (events per minute)."""
+    user, error = require_admin()
+    if error:
+        return error
+    payload = request_payload()
+    try:
+        limit = int(payload.get("ingest_rate_limit") or 10000)
+        if limit < 1 or limit > 1_000_000:
+            raise ValueError
+    except (ValueError, TypeError):
+        return jsonify({"error": "ingest_rate_limit must be between 1 and 1,000,000."}), 400
+    db = get_db()
+    db.execute("UPDATE organizations SET ingest_rate_limit=? WHERE id=?", (limit, user["org_id"]))
+    db.commit()
+    audit(user["org_id"], user["id"], "set_ingest_rate_limit", "organization", str(user["org_id"]), {"limit": limit})
+    return jsonify({"message": f"Ingest rate limit set to {limit} events/min.", "ingest_rate_limit": limit})
+
+
+# ── OpenAPI specification ─────────────────────────────────────────────────────
+
+@app.get("/api/openapi.json")
+def openapi_spec():
+    """Machine-readable OpenAPI 3.0 spec for all public endpoints."""
+    spec = {
+        "openapi": "3.0.3",
+        "info": {
+            "title": "ObserveX API",
+            "version": "2.0.0",
+            "description": "Enterprise log observability platform. Authenticate with a Bearer API key for ingest/read endpoints, or use session cookies for browser-based endpoints.",
+        },
+        "servers": [{"url": os.environ.get("PUBLIC_BASE_URL", "https://observex.in")}],
+        "components": {
+            "securitySchemes": {
+                "ApiKeyBearer": {"type": "http", "scheme": "bearer", "bearerFormat": "oxk_*"},
+                "XApiKey":      {"type": "apiKey", "in": "header", "name": "X-API-Key"},
+            }
+        },
+        "paths": {
+            "/ingest/json":              {"post": {"summary": "Ingest JSON logs", "security": [{"ApiKeyBearer": []}], "tags": ["Ingest"]}},
+            "/ingest/file":              {"post": {"summary": "Ingest log files (multipart)", "security": [{"ApiKeyBearer": []}], "tags": ["Ingest"]}},
+            "/api/ingest/webhook":       {"post": {"summary": "Webhook ingest (HMAC-validated)", "security": [{"ApiKeyBearer": []}], "tags": ["Ingest"]}},
+            "/api/logs":                 {"get":  {"summary": "Query log events (paginated)", "tags": ["Logs"]}},
+            "/api/logs/export":          {"get":  {"summary": "Stream export (CSV or NDJSON)", "tags": ["Logs"], "parameters": [
+                {"name": "format", "in": "query", "schema": {"type": "string", "enum": ["csv", "ndjson"]}},
+                {"name": "level",  "in": "query", "schema": {"type": "string"}},
+                {"name": "source", "in": "query", "schema": {"type": "string"}},
+                {"name": "from_ts","in": "query", "schema": {"type": "string", "format": "date-time"}},
+                {"name": "to_ts",  "in": "query", "schema": {"type": "string", "format": "date-time"}},
+                {"name": "q",      "in": "query", "schema": {"type": "string"}},
+            ]}},
+            "/api/logs/trace":           {"get":  {"summary": "Correlation trace by correlation_id", "tags": ["Logs"]}},
+            "/api/logs/fingerprints":    {"get":  {"summary": "Error pattern fingerprints", "tags": ["Logs"]}},
+            "/api/logs/errors/grouped":  {"get":  {"summary": "Grouped error patterns", "tags": ["Logs"]}},
+            "/api/logs/{id}/explain":    {"post": {"summary": "AI root-cause explanation", "tags": ["AI", "Logs"]}},
+            "/api/logs/{id}/annotate":   {"post": {"summary": "Add annotation to log event", "tags": ["Logs"]}},
+            "/api/logs/{id}/annotations":{"get":  {"summary": "List annotations", "tags": ["Logs"]}},
+            "/api/alerts":               {"get":  {"summary": "List alert rules", "tags": ["Alerts"]}, "post": {"summary": "Create alert rule", "tags": ["Alerts"]}},
+            "/api/alerts/{id}":          {"put":  {"summary": "Update alert rule", "tags": ["Alerts"]}, "delete": {"summary": "Delete alert rule", "tags": ["Alerts"]}},
+            "/api/integrations":         {"get":  {"summary": "List integrations", "tags": ["Integrations"]}, "post": {"summary": "Create integration", "tags": ["Integrations"]}},
+            "/api/integrations/{id}":    {"put":  {"summary": "Update integration", "tags": ["Integrations"]}, "delete": {"summary": "Delete integration", "tags": ["Integrations"]}},
+            "/api/jobs":                 {"post": {"summary": "Create ingestion job", "tags": ["Jobs"]}},
+            "/api/jobs/{id}":            {"put":  {"summary": "Update job", "tags": ["Jobs"]}, "delete": {"summary": "Delete job", "tags": ["Jobs"]}},
+            "/api/jobs/{id}/run":        {"post": {"summary": "Trigger job immediately", "tags": ["Jobs"]}},
+            "/api/jobs/{id}/runs":       {"get":  {"summary": "Job run history (paginated)", "tags": ["Jobs"]}},
+            "/api/dashboards":           {"post": {"summary": "Save dashboard", "tags": ["Dashboards"]}},
+            "/api/dashboards/{id}":      {"put":  {"summary": "Update dashboard", "tags": ["Dashboards"]}, "delete": {"summary": "Delete dashboard", "tags": ["Dashboards"]}},
+            "/api/keys":                 {"get":  {"summary": "List API keys", "tags": ["Keys"]}, "post": {"summary": "Create API key (with scopes)", "tags": ["Keys"]}},
+            "/api/keys/{id}":            {"delete":{"summary": "Revoke API key", "tags": ["Keys"]}},
+            "/api/sessions":             {"get":  {"summary": "List active sessions", "tags": ["Auth"]}},
+            "/api/sessions/{id}":        {"delete":{"summary": "Revoke session", "tags": ["Auth"]}},
+            "/api/audit":                {"get":  {"summary": "Audit log (paginated, admin)", "tags": ["Audit"]}},
+            "/api/org/retention":        {"post": {"summary": "Set retention policy", "tags": ["Org"]}},
+            "/api/org/rate-limit":       {"post": {"summary": "Set ingest rate limit", "tags": ["Org"]}},
+            "/api/ai/anomaly-summary":   {"post": {"summary": "AI summary of last hour errors", "tags": ["AI"]}},
+            "/api/ai/suggest-search":    {"post": {"summary": "NL → search filter JSON", "tags": ["AI"]}},
+            "/api/ai/build-alert":       {"post": {"summary": "NL → alert rule JSON", "tags": ["AI"]}},
+            "/api/observability":        {"get":  {"summary": "IP + error observability dashboard", "tags": ["Observability"]}},
+            "/api/health":               {"get":  {"summary": "Health check", "tags": ["System"]}},
+        },
+    }
+    return jsonify(spec)
 
 
 # ─────────────────────────── Startup ─────────────────────────────────────────
