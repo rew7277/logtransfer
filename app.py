@@ -428,30 +428,38 @@ def _call_anthropic(prompt: str, *, max_tokens: int = 512, system: str | None = 
     Requires ANTHROPIC_API_KEY in the environment. Returns an empty string on
     failure rather than raising so callers degrade gracefully.
     """
-    api_key = os.environ.get("ANTHROPIC_API_KEY", "")
+    api_key = os.environ.get("ANTHROPIC_API_KEY", "").strip()
     if not api_key:
         logger.warning("ANTHROPIC_API_KEY not configured — AI call skipped.")
         return ""
+
+    api_url = os.environ.get("ANTHROPIC_API_URL", "https://api.anthropic.com/v1/messages").strip() or "https://api.anthropic.com/v1/messages"
+    model = os.environ.get("ANTHROPIC_MODEL", "claude-3-5-haiku-20241022").strip() or "claude-3-5-haiku-20241022"
     body: dict[str, Any] = {
-        "model": "claude-3-5-haiku-20241022",
+        "model": model,
         "max_tokens": max_tokens,
-        "messages": [{"role": "user", "content": prompt}],
+        "messages": [{"role": "user", "content": [{"type": "text", "text": prompt}]}],
     }
     if system:
         body["system"] = system
     try:
         req = urllib.request.Request(
-            "https://api.anthropic.com/v1/messages",
+            api_url,
             data=json.dumps(body).encode(),
             headers={
                 "Content-Type": "application/json",
                 "x-api-key": api_key,
-                "anthropic-version": "2023-06-01",
+                "anthropic-version": os.environ.get("ANTHROPIC_VERSION", "2023-06-01"),
             },
         )
-        with urllib.request.urlopen(req, timeout=30) as resp:
+        with urllib.request.urlopen(req, timeout=45) as resp:
             result = json.loads(resp.read())
-            return result["content"][0]["text"].strip()
+            content = result.get("content") or []
+            parts: list[str] = []
+            for item in content:
+                if isinstance(item, dict) and item.get("type") == "text" and item.get("text"):
+                    parts.append(str(item["text"]))
+            return "\n".join(parts).strip()
     except Exception as exc:
         logger.error("Anthropic API call failed: %s", exc)
         return ""
@@ -2223,6 +2231,72 @@ def get_grouped_errors():
             "level":      r["level"],
         })
     return jsonify({"groups": result})
+def _heuristic_log_explanation(log: dict[str, Any], ctx_rows: list[sqlite3.Row]) -> str:
+    message = str(log.get("message") or "")
+    source = str(log.get("source") or "unknown")
+    level = str(log.get("level") or "info").lower()
+    lowered = message.lower()
+    what = f"The log indicates a {level.upper()} event in {source}."
+    root = "The exact root cause is not confirmed from the available events."
+    fixes = ["Review the full payload and surrounding logs for upstream failures or validation issues."]
+    prevention = "Add structured correlation IDs and duration/status fields for each hop so the request chain is easier to reconstruct."
+    if "timeout" in lowered:
+        root = "The request likely failed because an upstream dependency did not respond within the expected time."
+        fixes = [
+            "Check the upstream service availability and network path.",
+            "Review timeout and retry settings between services.",
+            "Inspect latency spikes around the same timestamp.",
+        ]
+    elif "error sending http request" in lowered or "http request" in lowered:
+        root = "The application failed while calling an external HTTP endpoint, which usually points to upstream outage, DNS/TLS issues, or a bad endpoint configuration."
+        fixes = [
+            "Verify the target URL, DNS resolution, TLS certificates, and connectivity from the app runtime.",
+            "Check whether the upstream endpoint was reachable at the same timestamp.",
+            "Capture response code/body for failed calls to improve diagnosis.",
+        ]
+    elif "bad request" in lowered or "400" in lowered:
+        root = "The downstream service rejected the request, which usually means a payload, header, or parameter validation issue."
+        fixes = [
+            "Compare the sent payload with a known good request.",
+            "Validate mandatory headers, auth, and field formats.",
+        ]
+    elif "refused" in lowered or "connection refused" in lowered:
+        root = "The destination host actively refused the connection, which usually means the service was down or not listening on the expected port."
+        fixes = [
+            "Confirm the target service is running and listening on the expected host/port.",
+            "Verify security group / firewall / proxy rules.",
+        ]
+    ctx = ""
+    if ctx_rows:
+        ctx = "\n" + "\n".join(
+            f"- [{r['timestamp']}] [{str(r['level']).upper()}] {r['source']}: {str(r['message'])[:180]}"
+            for r in ctx_rows[:5]
+        )
+    fix_block = "\n".join(f"- {item}" for item in fixes)
+    return (
+        f"1. **What happened**\n{what}\n\n"
+        f"2. **Root cause**\n{root}\n"
+        + (f"\nRelevant surrounding events:{ctx}\n" if ctx else "\n")
+        + f"\n3. **Fix / next steps**\n{fix_block}\n\n"
+        f"4. **Prevention**\n- {prevention}"
+    )
+
+def _fetch_trace_events(db: sqlite3.Connection, org_id: int, trace_id: str, limit: int = 500):
+    """Fetch events by correlation_id first, then fall back to event_id / request_id style IDs."""
+    rows = db.execute(
+        "SELECT id, timestamp, level, source, event_id, message, payload_json, correlation_id, status_code, duration_ms "
+        "FROM log_events WHERE org_id=? AND correlation_id=? ORDER BY timestamp ASC LIMIT ?",
+        (org_id, trace_id, limit),
+    ).fetchall()
+    trace_key = "correlation_id"
+    if not rows:
+        rows = db.execute(
+            "SELECT id, timestamp, level, source, event_id, message, payload_json, correlation_id, status_code, duration_ms "
+            "FROM log_events WHERE org_id=? AND event_id=? ORDER BY timestamp ASC LIMIT ?",
+            (org_id, trace_id, limit),
+        ).fetchall()
+        trace_key = "event_id"
+    return rows, trace_key
 
 @app.post("/api/logs/<int:log_id>/explain")
 def explain_log(log_id: int):
@@ -2281,9 +2355,11 @@ def explain_log(log_id: int):
     if not os.environ.get("ANTHROPIC_API_KEY"):
         return jsonify({"error": "ANTHROPIC_API_KEY not configured on server. Add it to your Railway environment variables."}), 503
     explanation = _call_anthropic(prompt, max_tokens=700)
+    used_fallback = False
     if not explanation:
-        return jsonify({"error": "AI explain failed — check server logs for details."}), 500
-    return jsonify({"explanation": explanation, "context_events": len(ctx_rows)})
+        explanation = _heuristic_log_explanation(log, ctx_rows)
+        used_fallback = True
+    return jsonify({"explanation": explanation, "context_events": len(ctx_rows), "fallback": used_fallback})
 
 @app.get("/api/searches")
 def get_searches():
@@ -3829,7 +3905,7 @@ def openapi_spec():
 
 @app.get("/api/traces")
 def list_traces():
-    """List distinct trace/correlation IDs with event counts and error flags."""
+    """List distinct trace IDs using correlation_id first and event_id as a fallback."""
     user, err = require_auth()
     if err:
         return err
@@ -3837,21 +3913,29 @@ def list_traces():
     db = get_db()
     limit  = min(int(request.args.get("limit", 50)), 200)
     q      = sanitize_input(request.args.get("q", ""), 100)
-    sql    = (
-        "SELECT correlation_id, COUNT(*) AS event_count, "
-        "  MAX(CASE WHEN level IN ('error','critical') THEN 1 ELSE 0 END) AS has_error, "
-        "  MIN(timestamp) AS started_at, MAX(timestamp) AS ended_at "
-        "FROM log_events "
-        "WHERE org_id=? AND correlation_id IS NOT NULL AND correlation_id != '' "
+    trace_expr = "COALESCE(NULLIF(correlation_id,''), NULLIF(event_id,''))"
+    sql = (
+        f"SELECT {trace_expr} AS trace_id, "
+        "COUNT(*) AS event_count, "
+        "MAX(CASE WHEN level IN ('error','critical') THEN 1 ELSE 0 END) AS has_error, "
+        "MIN(timestamp) AS started_at, MAX(timestamp) AS ended_at, "
+        "MAX(CASE WHEN correlation_id IS NOT NULL AND correlation_id != '' THEN 1 ELSE 0 END) AS has_correlation "
+        "FROM log_events WHERE org_id=? AND " + trace_expr + " IS NOT NULL "
     )
     params: list = [org_id]
     if q:
-        sql += " AND correlation_id LIKE ? "
+        sql += f" AND {trace_expr} LIKE ? "
         params.append(f"%{q}%")
-    sql += " GROUP BY correlation_id ORDER BY started_at DESC LIMIT ?"
+    sql += f" GROUP BY {trace_expr} ORDER BY started_at DESC LIMIT ?"
     params.append(limit)
     rows = db.execute(sql, params).fetchall()
-    return jsonify({"traces": [dict(r) for r in rows]})
+    traces = []
+    for r in rows:
+        item = dict(r)
+        item["correlation_id"] = item["trace_id"]
+        item["trace_kind"] = "correlation_id" if item.pop("has_correlation", 0) else "event_id"
+        traces.append(item)
+    return jsonify({"traces": traces})
 
 
 @app.get("/api/traces/<trace_id>")
@@ -3863,14 +3947,7 @@ def get_trace(trace_id: str):
     org_id   = user["org_id"]
     trace_id = sanitize_input(trace_id, 100)
     db       = get_db()
-    rows = db.execute(
-        "SELECT id, timestamp, level, source, event_id, message, "
-        "       payload_json, correlation_id, status_code, duration_ms "
-        "FROM log_events "
-        "WHERE org_id=? AND correlation_id=? "
-        "ORDER BY timestamp ASC LIMIT 500",
-        (org_id, trace_id),
-    ).fetchall()
+    rows, trace_kind = _fetch_trace_events(db, org_id, trace_id, limit=500)
     if not rows:
         return jsonify({"error": "Trace not found or no events match."}), 404
 
@@ -3895,6 +3972,7 @@ def get_trace(trace_id: str):
     total_span_ms = events[-1].get("offset_ms", 0) if events else 0
     return jsonify({
         "trace_id":     trace_id,
+        "trace_kind":   trace_kind,
         "event_count":  len(events),
         "has_error":    has_error,
         "total_span_ms": total_span_ms,
@@ -3921,11 +3999,7 @@ def ai_rca():
     log_ids  = payload.get("log_ids", [])
 
     if trace_id:
-        rows = db.execute(
-            "SELECT id, timestamp, level, source, message, payload_json, status_code, duration_ms "
-            "FROM log_events WHERE org_id=? AND correlation_id=? ORDER BY timestamp ASC LIMIT 100",
-            (org_id, trace_id),
-        ).fetchall()
+        rows, _trace_kind = _fetch_trace_events(db, org_id, trace_id, limit=100)
     elif log_ids:
         placeholders = ",".join("?" * len(log_ids[:50]))
         rows = db.execute(

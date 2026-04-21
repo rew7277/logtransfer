@@ -3019,9 +3019,9 @@ async function loadFlowTraces() {
         ? `<span class="trace-err-dot" title="Has errors"></span>`
         : `<span class="trace-ok-dot" title="No errors"></span>`;
       const span = t.started_at ? `<span style="color:var(--text3)">${t.started_at.substring(0,19).replace('T',' ')}</span>` : '';
-      return `<div class="trace-list-row" onclick="loadWaterfall('${escHtml(t.correlation_id)}')">
+      return `<div class="trace-list-row" onclick="loadWaterfall('${escHtml(t.trace_id || t.correlation_id)}')">
         ${dot}
-        <span class="trace-id-pill">${escHtml(t.correlation_id)}</span>
+        <span class="trace-id-pill">${escHtml(t.trace_id || t.correlation_id)}</span>${t.trace_kind==='event_id' ? '<span class="trace-meta" style="margin-left:8px">event ID</span>' : ''}
         <span class="trace-meta">${t.event_count} event${t.event_count===1?'':'s'}  ${span}</span>
         <span style="font-size:11px;color:var(--text3)">→</span>
       </div>`;
