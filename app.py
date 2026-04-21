@@ -852,6 +852,32 @@ def require_admin() -> tuple[dict[str, Any] | None, tuple[Any, int] | None]:
         return None, (jsonify({"error": "Admin access required."}), 403)
     return user, None
 
+# Role hierarchy: higher number = more privilege
+ROLE_LEVELS: dict[str, int] = {
+    "tester":    1,
+    "developer": 2,
+    "manager":   3,
+    "admin":     4,
+}
+
+def require_role(min_role: str) -> tuple[dict[str, Any] | None, tuple[Any, int] | None]:
+    """Require the authenticated user to have at least `min_role` privilege.
+
+    Role hierarchy (ascending): tester → developer → manager → admin.
+    - tester:    read-only access
+    - developer: read + create API keys + run jobs + saved searches
+    - manager:   developer + manage integrations, alerts, jobs, invitations
+    - admin:     full access including org settings, users, retention
+    """
+    user, error = require_auth()
+    if error:
+        return None, error
+    user_level = ROLE_LEVELS.get(user["role"], 0)
+    min_level  = ROLE_LEVELS.get(min_role, 99)
+    if user_level < min_level:
+        return None, (jsonify({"error": f"Insufficient permissions. '{min_role}' role or above required."}), 403)
+    return user, None
+
 def require_api_key(required_scope: str | None = None) -> tuple[dict[str, Any] | None, tuple[Any, int] | None]:
     """Authenticate via Bearer token (API key). Uses an in-process cache to
     avoid running bcrypt on every single request — critical for high throughput.
@@ -1953,6 +1979,39 @@ def logout():
 def health():
     return jsonify({"status": "ok", "service": "ObserveX Enterprise", "time": iso_now()})
 
+def _get_onboarding_state(db: Any, org_id: int) -> dict[str, Any]:
+    """Return a checklist of first-run milestones so the UI can render
+    a guided onboarding panel until all steps are complete."""
+    has_integration = db.execute(
+        "SELECT 1 FROM integrations WHERE org_id = ? LIMIT 1", (org_id,)
+    ).fetchone() is not None
+    has_logs = db.execute(
+        "SELECT 1 FROM log_events WHERE org_id = ? LIMIT 1", (org_id,)
+    ).fetchone() is not None
+    has_alert = db.execute(
+        "SELECT 1 FROM alert_rules WHERE org_id = ? LIMIT 1", (org_id,)
+    ).fetchone() is not None
+    has_team_member = db.execute(
+        "SELECT 1 FROM users WHERE org_id = ? AND id != (SELECT MIN(id) FROM users WHERE org_id = ?) LIMIT 1",
+        (org_id, org_id),
+    ).fetchone() is not None
+    has_api_key = db.execute(
+        "SELECT 1 FROM api_keys WHERE org_id = ? AND status = 'active' LIMIT 1", (org_id,)
+    ).fetchone() is not None
+    steps = [
+        {"id": "connect_source",  "label": "Connect a log source",    "done": has_integration},
+        {"id": "ingest_logs",     "label": "Ingest your first logs",   "done": has_logs},
+        {"id": "create_alert",    "label": "Set up an alert",          "done": has_alert},
+        {"id": "create_api_key",  "label": "Generate an API key",      "done": has_api_key},
+        {"id": "invite_teammate", "label": "Invite a team member",     "done": has_team_member},
+    ]
+    return {
+        "steps":    steps,
+        "complete": all(s["done"] for s in steps),
+        "percent":  round(sum(1 for s in steps if s["done"]) / len(steps) * 100),
+    }
+
+
 @app.get("/api/bootstrap")
 def bootstrap():
     user, error = require_auth()
@@ -2026,6 +2085,18 @@ def bootstrap():
         "theme_options":    sorted(VALID_THEMES),
         "api_keys":         api_keys_list,
         "saved_searches":   [{"id": r["id"], "name": r["name"], "filters": json.loads(r["filters_json"]), "created_at": r["created_at"]} for r in db.execute("SELECT id, name, filters_json, created_at FROM saved_searches WHERE org_id = ? ORDER BY id DESC LIMIT 50", (user["org_id"],)).fetchall()],
+        "onboarding": _get_onboarding_state(db, user["org_id"]),
+        "permission_matrix": {
+            "can_manage_org":          user["role"] == "admin",
+            "can_manage_users":        user["role"] == "admin",
+            "can_manage_integrations": user["role"] in ("admin", "manager"),
+            "can_manage_alerts":       user["role"] in ("admin", "manager"),
+            "can_manage_jobs":         user["role"] in ("admin", "manager"),
+            "can_invite_users":        user["role"] in ("admin", "manager"),
+            "can_run_jobs":            user["role"] in ("admin", "manager", "developer"),
+            "can_create_api_keys":     user["role"] in ("admin", "manager", "developer"),
+            "can_view_audit":          user["role"] in ("admin", "manager"),
+        },
     })
 
 @app.get("/api/logs")
@@ -2394,7 +2465,7 @@ def create_user():
 
 @app.post("/api/integrations")
 def add_integration():
-    user, error = require_admin()
+    user, error = require_role("manager")
     if error:
         return error
     payload = request_payload()
@@ -2413,7 +2484,7 @@ def add_integration():
 
 @app.post("/api/alerts")
 def add_alert():
-    user, error = require_admin()
+    user, error = require_role("manager")
     if error:
         return error
     payload = request_payload()
@@ -2433,7 +2504,7 @@ def add_alert():
 
 @app.post("/api/jobs")
 def add_job():
-    user, error = require_admin()
+    user, error = require_role("manager")
     if error:
         return error
     payload     = request_payload()
@@ -2451,7 +2522,7 @@ def add_job():
 
 @app.post("/api/jobs/<int:job_id>/run")
 def run_job(job_id: int):
-    user, error = require_admin()
+    user, error = require_role("developer")
     if error:
         return error
     try:
@@ -2587,7 +2658,7 @@ def accept_invite_page(token: str):
 
 @app.post("/api/invitations")
 def create_invitation():
-    user, error = require_admin()
+    user, error = require_role("manager")
     if error:
         return error
     payload = request_payload()
@@ -3237,7 +3308,7 @@ def list_alerts():
 
 @app.put("/api/alerts/<int:alert_id>")
 def update_alert(alert_id: int):
-    user, error = require_admin()
+    user, error = require_role("manager")
     if error:
         return error
     db  = get_db()
@@ -3269,7 +3340,7 @@ def update_alert(alert_id: int):
 
 @app.delete("/api/alerts/<int:alert_id>")
 def delete_alert(alert_id: int):
-    user, error = require_admin()
+    user, error = require_role("manager")
     if error:
         return error
     db  = get_db()
@@ -3295,7 +3366,7 @@ def list_integrations():
 
 @app.put("/api/integrations/<int:intg_id>")
 def update_integration(intg_id: int):
-    user, error = require_admin()
+    user, error = require_role("manager")
     if error:
         return error
     db  = get_db()
@@ -3315,7 +3386,7 @@ def update_integration(intg_id: int):
 
 @app.delete("/api/integrations/<int:intg_id>")
 def delete_integration(intg_id: int):
-    user, error = require_admin()
+    user, error = require_role("admin")
     if error:
         return error
     db  = get_db()
@@ -3332,7 +3403,7 @@ def delete_integration(intg_id: int):
 
 @app.put("/api/jobs/<int:job_id>")
 def update_job(job_id: int):
-    user, error = require_admin()
+    user, error = require_role("manager")
     if error:
         return error
     db  = get_db()
@@ -3353,7 +3424,7 @@ def update_job(job_id: int):
 
 @app.delete("/api/jobs/<int:job_id>")
 def delete_job(job_id: int):
-    user, error = require_admin()
+    user, error = require_role("admin")
     if error:
         return error
     db  = get_db()
@@ -3504,7 +3575,7 @@ def revoke_session_endpoint(session_id: int):
 
 @app.get("/api/audit")
 def get_audit_log():
-    user, error = require_admin()
+    user, error = require_role("manager")
     if error:
         return error
     db = get_db()

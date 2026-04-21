@@ -109,6 +109,14 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
 .page-header{margin-bottom:20px}
 .page-header h1{font-size:20px;font-weight:700;letter-spacing:-.4px}
 .page-header p{font-size:13px;color:var(--text2);margin-top:4px}
+.ob-step{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--text2)}
+.ob-step.ob-done{color:var(--text3)}
+.ob-check{width:18px;height:18px;border-radius:50%;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0;color:var(--text3)}
+.ob-step.ob-done .ob-check{background:var(--accent2);border-color:var(--accent2);color:#fff}
+.ob-label{flex:1}
+.ob-step.ob-done .ob-label{text-decoration:line-through;opacity:.5}
+.ob-go{margin-left:auto;font-size:11px;font-weight:600;color:var(--accent2);background:none;border:none;cursor:pointer;padding:2px 6px;border-radius:4px}
+.ob-go:hover{background:rgba(100,180,255,.1)}
 
 /* ── STATS GRID ── */
 .stats-row{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:20px}
@@ -614,6 +622,24 @@ html:not(.dark) .toast{box-shadow:0 8px 24px rgba(0,0,0,.15)}
       <div class="page-header">
         <p style="font-size:11px;font-weight:600;color:var(--text3);letter-spacing:.8px;text-transform:uppercase;margin-bottom:4px">ObserveX Workspace</p>
         <h1>Investigate logs, run connectors, and manage your organization.</h1>
+      </div>
+
+      <!-- ── Onboarding checklist (hidden once complete or dismissed) ── -->
+      <div id="onboardingPanel" style="display:none;margin-bottom:20px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:18px 20px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+          <div style="display:flex;align-items:center;gap:10px">
+            <span style="font-size:16px">🚀</span>
+            <div>
+              <div style="font-size:13px;font-weight:700;color:var(--text)">Get started with ObserveX</div>
+              <div style="font-size:11px;color:var(--text2);margin-top:1px" class="ob-pct">0% complete</div>
+            </div>
+          </div>
+          <button onclick="dismissOnboarding()" style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:18px;line-height:1;padding:2px 6px" title="Dismiss">×</button>
+        </div>
+        <div style="height:4px;background:var(--border);border-radius:2px;margin-bottom:14px">
+          <div class="ob-bar-fill" style="height:100%;width:0%;background:var(--accent2);border-radius:2px;transition:width .4s ease"></div>
+        </div>
+        <ul class="ob-steps" style="list-style:none;display:flex;flex-direction:column;gap:8px"></ul>
       </div>
 
       <!-- Stats -->
@@ -1754,6 +1780,53 @@ function applyBootstrap(d) {
   renderRuns(d.ingestion_runs);
   renderAudit(d.audit);
   renderApiKeys(d.api_keys);
+  renderOnboarding(d.onboarding, d.user);
+}
+
+// ── Onboarding checklist ──
+var _onboardingDismissed = false;
+try { _onboardingDismissed = !!localStorage.getItem('ox_onboard_dismissed'); } catch(e){}
+
+function renderOnboarding(ob, user) {
+  var el = document.getElementById('onboardingPanel');
+  if (!el) return;
+  // Only show to admin/manager; hide once all done or dismissed
+  var isManager = user && (user.role === 'admin' || user.role === 'manager');
+  if (!isManager || !ob || ob.complete || _onboardingDismissed) {
+    el.style.display = 'none';
+    return;
+  }
+  el.style.display = '';
+  var bar = el.querySelector('.ob-bar-fill');
+  if (bar) bar.style.width = ob.percent + '%';
+  var pct = el.querySelector('.ob-pct');
+  if (pct) pct.textContent = ob.percent + '% complete';
+  var list = el.querySelector('.ob-steps');
+  if (!list) return;
+  list.innerHTML = '';
+  var navMap = {
+    connect_source:  'integrations',
+    ingest_logs:     'logs',
+    create_alert:    'alerts',
+    create_api_key:  'api-keys',
+    invite_teammate: 'team'
+  };
+  ob.steps.forEach(function(s) {
+    var li = document.createElement('li');
+    li.className = 'ob-step' + (s.done ? ' ob-done' : '');
+    li.innerHTML =
+      '<span class="ob-check">' + (s.done ? '✓' : '') + '</span>' +
+      '<span class="ob-label">' + s.label + '</span>' +
+      (!s.done && navMap[s.id] ? '<button class="ob-go" onclick="navigate(\''+navMap[s.id]+'\')">Start →</button>' : '');
+    list.appendChild(li);
+  });
+}
+
+function dismissOnboarding() {
+  try { localStorage.setItem('ox_onboard_dismissed','1'); } catch(e){}
+  _onboardingDismissed = true;
+  var el = document.getElementById('onboardingPanel');
+  if (el) el.style.display = 'none';
 }
 
 // ── Auto-refresh ──
