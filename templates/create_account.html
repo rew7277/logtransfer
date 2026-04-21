@@ -8,88 +8,114 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Syne:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
 <style>
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Syne',sans-serif;background:#f0f2f5;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;-webkit-font-smoothing:antialiased}
-.card{background:#fff;border-radius:12px;box-shadow:0 4px 24px rgba(0,0,0,.08),0 1px 4px rgba(0,0,0,.04);width:100%;max-width:440px;padding:36px 40px}
-.logo{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:24px}.logo img{height:42px;width:auto;display:block}
-
-h1{font-size:20px;font-weight:700;text-align:center;margin-bottom:6px;color:#0d1117}
-.subtitle{font-size:13px;color:#656d76;text-align:center;margin-bottom:24px}
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#eef2f7;--card:#ffffff;--text:#0f172a;--muted:#64748b;--line:#d7deea;--blue:#2563eb;--blue2:#1d4ed8}
+body{font-family:'Syne',sans-serif;background:radial-gradient(circle at top,#f8fbff 0%,#eef2f7 52%,#e8edf5 100%);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;color:var(--text);-webkit-font-smoothing:antialiased}
+.auth-shell{width:100%;max-width:1080px;display:grid;grid-template-columns:1fr 1.05fr;overflow:hidden;border-radius:28px;box-shadow:0 24px 80px rgba(15,23,42,.12),0 8px 24px rgba(15,23,42,.06);background:var(--card);border:1px solid rgba(148,163,184,.16)}
+.hero{background:linear-gradient(135deg,#081225 0%,#0f172a 50%,#10213f 100%);color:#e5eefc;padding:44px;display:flex;flex-direction:column;justify-content:space-between;position:relative;overflow:hidden}
+.hero:before{content:"";position:absolute;inset:0;background:
+linear-gradient(rgba(255,255,255,.05) 1px, transparent 1px),
+linear-gradient(90deg, rgba(255,255,255,.05) 1px, transparent 1px);
+background-size:34px 34px;opacity:.32}
+.hero-inner,.hero-foot{position:relative;z-index:1}
+.hero-logo img{height:42px;width:auto;display:block;margin-bottom:26px}
+.hero h1{font-size:38px;line-height:1.02;font-weight:800;letter-spacing:-1.2px;max-width:380px;margin-bottom:14px}
+.hero p{font-size:15px;line-height:1.7;color:#b8c6dd;max-width:420px}
+.hero-points{margin-top:26px;display:grid;gap:12px}
+.hero-point{display:flex;gap:10px;align-items:flex-start;color:#d6e2f5;font-size:14px}
+.dot{width:10px;height:10px;border-radius:999px;background:linear-gradient(135deg,#8b5cf6,#22d3ee);margin-top:6px;flex:0 0 10px}
+.hero-foot{font-size:13px;color:#9fb0ca}
+.card{padding:40px 38px 32px;display:flex;flex-direction:column;justify-content:center}
+.logo{display:flex;justify-content:center;margin-bottom:18px}
+.logo img{height:42px;width:auto;display:block}
+h2{font-size:30px;font-weight:800;text-align:center;margin-bottom:8px;letter-spacing:-.6px}
+.subtitle{font-size:14px;color:var(--muted);text-align:center;margin-bottom:26px}
 .field{margin-bottom:14px}
-label{display:block;font-size:12px;font-weight:600;color:#424a53;margin-bottom:5px}
-input,select{width:100%;padding:9px 12px;background:#f6f8fa;border:1px solid #d0d7de;border-radius:7px;font-family:'Syne',sans-serif;font-size:13px;color:#0d1117;outline:none;transition:border-color .15s,box-shadow .15s}
-input:focus,select:focus{border-color:#1f6feb;box-shadow:0 0 0 3px rgba(31,111,235,.12);background:#fff}
-input::placeholder{color:#adb5bd}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+label{display:block;font-size:12px;font-weight:700;color:#334155;margin-bottom:6px}
+input,select{width:100%;padding:12px 14px;background:#f8fafc;border:1px solid var(--line);border-radius:12px;font-family:'Syne',sans-serif;font-size:14px;color:#0f172a;outline:none;transition:border-color .15s,box-shadow .15s,background .15s}
+input:focus,select:focus{border-color:var(--blue);box-shadow:0 0 0 4px rgba(37,99,235,.12);background:#fff}
+input::placeholder{color:#94a3b8}
 .pw-wrap{position:relative}
-.pw-wrap input{padding-right:38px}
-.pw-toggle{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#adb5bd;display:flex;align-items:center;padding:2px}
-.pw-toggle:hover{color:#656d76}
-.strength-bar{height:3px;border-radius:2px;margin-top:6px;background:#e8eaed;overflow:hidden}
-.strength-fill{height:100%;border-radius:2px;transition:width .3s,background .3s;width:0}
-.strength-label{font-size:10px;color:#adb5bd;margin-top:3px}
-.btn{width:100%;padding:10px;background:#1f6feb;border:none;border-radius:7px;color:#fff;font-family:'Syne',sans-serif;font-size:14px;font-weight:700;cursor:pointer;transition:all .15s;margin-top:6px}
-.btn:hover{background:#388bfd;transform:translateY(-1px);box-shadow:0 4px 12px rgba(31,111,235,.3)}
-.btn:active{transform:none}
-.btn:disabled{opacity:.6;cursor:not-allowed;transform:none;box-shadow:none}
-.msg{padding:10px 14px;border-radius:7px;font-size:12px;font-weight:500;margin-bottom:16px;display:none}
-.msg.error{background:#fff0f0;border:1px solid #ffcdd2;color:#c62828;display:block}
-.msg.success{background:#f0fff4;border:1px solid #c8e6c9;color:#2e7d32;display:block}
-.link-row{text-align:center;margin-top:18px;font-size:12px;color:#656d76}
-.link-row a{color:#1f6feb;text-decoration:none;font-weight:600}
+.pw-wrap input{padding-right:42px}
+.pw-toggle{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#94a3b8;display:flex;align-items:center;padding:2px}
+.pw-toggle:hover{color:#64748b}
+.strength-bar{height:4px;border-radius:999px;margin-top:8px;background:#e5e7eb;overflow:hidden}
+.strength-fill{height:100%;border-radius:999px;transition:width .3s,background .3s;width:0}
+.strength-label{font-size:11px;color:#94a3b8;margin-top:5px}
+.btn{width:100%;padding:13px 16px;background:linear-gradient(135deg,var(--blue),#3b82f6);border:none;border-radius:12px;color:#fff;font-family:'Syne',sans-serif;font-size:14px;font-weight:800;cursor:pointer;transition:transform .15s,box-shadow .15s,background .15s;margin-top:8px}
+.btn:hover{background:linear-gradient(135deg,var(--blue2),var(--blue));transform:translateY(-1px);box-shadow:0 12px 24px rgba(37,99,235,.24)}
+.btn:disabled{opacity:.65;cursor:not-allowed;transform:none;box-shadow:none}
+.msg{padding:12px 14px;border-radius:12px;font-size:12px;font-weight:600;margin-bottom:18px;display:none}
+.msg.error{background:#fff1f2;border:1px solid #fecdd3;color:#be123c;display:block}
+.msg.success{background:#f0fdf4;border:1px solid #bbf7d0;color:#15803d;display:block}
+.link-row{text-align:center;margin-top:18px;font-size:13px;color:var(--muted)}
+.link-row a{color:var(--blue);text-decoration:none;font-weight:700}
 .link-row a:hover{text-decoration:underline}
-.info-box{background:#f6f8fa;border:1px solid #d0d7de;border-radius:7px;padding:12px;font-size:12px;color:#656d76;margin-top:14px;line-height:1.6}
-.info-box strong{color:#0d1117}
-code{font-family:'IBM Plex Mono',monospace;font-size:11px}
+@media(max-width:900px){.auth-shell{grid-template-columns:1fr}.hero{display:none}.card{padding:34px 24px 28px}.grid2{grid-template-columns:1fr}h2{font-size:28px}}
 </style>
 </head>
 <body>
-<div class="card">
-  <div class="logo"><img src="/static/images/logo-primary.svg" alt="ObserveX"></div>
-    <span class="logo-name">ObserveX</span>
-  </div>
-  <h1>Create Workspace</h1>
-  <p class="subtitle">Start managing your logs with ObserveX</p>
-
-  <div class="msg" id="msg"></div>
-
-  <div class="field">
-    <label for="organization_name">Organization name</label>
-    <input type="text" id="organization_name" name="organization_name" placeholder="e.g. Acme Corp" autocomplete="organization" required/>
-  </div>
-
-  <div class="field">
-    <label for="name">Your name</label>
-    <input type="text" id="name" name="name" placeholder="Full name" autocomplete="name" required/>
-  </div>
-
-  <div class="field">
-    <label for="email">Email</label>
-    <input type="email" id="email" name="email" placeholder="you@company.com" autocomplete="email" required/>
-  </div>
-
-  <div class="field">
-    <label for="password">Password</label>
-    <div class="pw-wrap">
-      <input type="password" id="password" name="password" placeholder="Min 8 characters" autocomplete="new-password" required oninput="checkStrength(this.value)"/>
-      <button class="pw-toggle" type="button" onclick="togglePw()" title="Show/hide password">
-        <svg id="eyeIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
-        </svg>
-      </button>
+<div class="auth-shell">
+  <aside class="hero">
+    <div class="hero-inner">
+      <div class="hero-logo"><img src="/static/images/logo-dark.svg" alt="ObserveX"></div>
+      <h1>Create your ObserveX workspace</h1>
+      <p>Start monitoring logs, tracing failures, and using AI-assisted diagnostics from one clean workspace.</p>
+      <div class="hero-points">
+        <div class="hero-point"><span class="dot"></span><span>Centralized log explorer and filtering</span></div>
+        <div class="hero-point"><span class="dot"></span><span>Trace request paths across services</span></div>
+        <div class="hero-point"><span class="dot"></span><span>Invite your team and manage access easily</span></div>
+      </div>
     </div>
-    <div class="strength-bar"><div class="strength-fill" id="strengthFill"></div></div>
-    <div class="strength-label" id="strengthLabel"></div>
-  </div>
+    <div class="hero-foot">Set up in minutes. Scale with confidence.</div>
+  </aside>
 
-  <input type="hidden" name="theme_mode" value="white"/>
-  <input type="hidden" name="role" value="admin"/>
+  <main class="card">
+    <div class="logo"><img src="/static/images/logo-primary.svg" alt="ObserveX"></div>
+    <h2>Create workspace</h2>
+    <p class="subtitle">Start managing your logs with ObserveX</p>
 
-  <button class="btn" id="submitBtn" onclick="createWorkspace()">Create workspace</button>
+    <div class="msg" id="msg"></div>
 
-  <div class="link-row">Already have a workspace? <a href="/login">Sign in</a></div>
+    <div class="field">
+      <label for="organization_name">Organization name</label>
+      <input type="text" id="organization_name" name="organization_name" placeholder="e.g. Acme Corp" autocomplete="organization" required/>
+    </div>
 
+    <div class="grid2">
+      <div class="field">
+        <label for="name">Your name</label>
+        <input type="text" id="name" name="name" placeholder="Full name" autocomplete="name" required/>
+      </div>
+
+      <div class="field">
+        <label for="email">Work email</label>
+        <input type="email" id="email" name="email" placeholder="you@company.com" autocomplete="email" required/>
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="password">Password</label>
+      <div class="pw-wrap">
+        <input type="password" id="password" name="password" placeholder="At least 8 characters" autocomplete="new-password" oninput="checkStrength(this.value)"/>
+        <button class="pw-toggle" type="button" onclick="togglePw()" title="Show/hide password">
+          <svg id="eyeIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+          </svg>
+        </button>
+      </div>
+      <div class="strength-bar"><div class="strength-fill" id="strengthFill"></div></div>
+      <div class="strength-label" id="strengthLabel"></div>
+    </div>
+
+    <button class="btn" id="submitBtn" onclick="createWorkspace()">Create workspace</button>
+
+    <div class="link-row">
+      Already have a workspace? <a href="/login">Sign in</a>
+    </div>
+  </main>
 </div>
-
 <script>
 function togglePw(){
   const inp=document.getElementById('password');
