@@ -1911,7 +1911,8 @@ def workspace():
     user, error = require_auth()
     if error:
         return redirect("/login")
-    return redirect(workspace_path(user.get("public_id") or generate_workspace_public_id(), user["slug"], "overview"))
+    workspace_public_id = user["public_id"] if "public_id" in user.keys() and user["public_id"] else generate_workspace_public_id()
+    return redirect(workspace_path(workspace_public_id, user["slug"], "overview"))
 
 @app.get("/workspace/<slug>")
 def workspace_slug(slug: str):
@@ -1922,7 +1923,7 @@ def workspace_slug(slug: str):
     org = db.execute("SELECT id, public_id FROM organizations WHERE slug = ? AND id = ?", (slug, user["org_id"])).fetchone()
     if not org:
         return redirect("/workspace")
-    public_id = org["public_id"] or user.get("public_id") or generate_workspace_public_id()
+    public_id = org["public_id"] or user["public_id"] if "public_id" in user.keys() else None or generate_workspace_public_id()
     if not org["public_id"]:
         db.execute("UPDATE organizations SET public_id = ? WHERE id = ?", (public_id, org["id"]))
         db.commit()
@@ -1937,7 +1938,7 @@ def workspace_slug_with_id(workspace_id: str, slug: str):
     org = db.execute("SELECT id, public_id FROM organizations WHERE slug = ? AND id = ?", (slug, user["org_id"])).fetchone()
     if not org:
         return redirect("/workspace")
-    actual_public_id = org["public_id"] or user.get("public_id") or workspace_id
+    actual_public_id = org["public_id"] or (user["public_id"] if "public_id" in user.keys() and user["public_id"] else None) or workspace_id
     if workspace_id != actual_public_id:
         return redirect(workspace_path(actual_public_id, slug, "overview"))
     return render_template("index.html", user=user, active_section="overview", org_slug=slug, workspace_public_id=actual_public_id)
@@ -1951,7 +1952,7 @@ def workspace_section(workspace_id: str, slug: str, section: str):
     org = db.execute("SELECT id, public_id FROM organizations WHERE slug = ? AND id = ?", (slug, user["org_id"])).fetchone()
     if not org:
         return redirect("/workspace")
-    actual_public_id = org["public_id"] or user.get("public_id") or workspace_id
+    actual_public_id = org["public_id"] or (user["public_id"] if "public_id" in user.keys() and user["public_id"] else None) or workspace_id
     if workspace_id != actual_public_id:
         return redirect(workspace_path(actual_public_id, slug, section))
     valid_sections = {"overview", "explorer", "ingest", "integrations", "jobs", "alerts", "users",
@@ -1964,7 +1965,7 @@ def legacy_workspace_section(slug: str, section: str):
     user, error = require_auth()
     if error:
         return redirect("/login")
-    return redirect(workspace_path(user.get("public_id") or generate_workspace_public_id(), slug, section))
+    return redirect(workspace_path(user["public_id"] if "public_id" in user.keys() else None or generate_workspace_public_id(), slug, section))
 
 
 @app.post("/login")
@@ -1990,7 +1991,8 @@ def login():
     session["session_token"] = _create_user_session(db, user["id"], user["org_id"])
     db.commit()
     audit(user["org_id"], user["id"], "logged_in", "session", str(user["id"]), {"email": user["email"]})
-    return jsonify({"message": "Login successful.", "workspace_url": workspace_path(user.get("public_id") or "", user["slug"], "overview"), "workspace_id": user.get("public_id")})
+    workspace_public_id = user["public_id"] if "public_id" in user.keys() else ""
+    return jsonify({"message": "Login successful.", "workspace_url": workspace_path(workspace_public_id, user["slug"], "overview"), "workspace_id": workspace_public_id})
 
 @app.post("/register")
 @rate_limit("5 per minute; 20 per hour")
@@ -2164,8 +2166,8 @@ def bootstrap():
             "theme_mode":    user["theme_mode"],
             "logo_text":     user["logo_text"],
             "admin_only":    bool(user["admin_only"]),
-            "workspace_url": workspace_path(user.get("public_id") or "", user["slug"], "overview"),
-            "workspace_id": user.get("public_id"),
+            "workspace_url": workspace_path(user["public_id"] if "public_id" in user.keys() else None or "", user["slug"], "overview"),
+            "workspace_id": user["public_id"] if "public_id" in user.keys() else None,
         },
         "summary":          dashboard_summary(user["org_id"]),
         "integrations":     integrations,

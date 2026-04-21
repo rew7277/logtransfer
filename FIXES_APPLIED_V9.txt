@@ -1,0 +1,3 @@
+Fixed login 500 caused by sqlite3.Row.get misuse.
+Fixed environment SQL string quoting that caused startup SyntaxWarning.
+This should restore login and let the updated pages/routes load properly.
