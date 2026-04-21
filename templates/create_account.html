@@ -1,140 +1,68 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
+<html lang="en"><head>
 <link rel="icon" type="image/svg+xml" href="/static/images/favicon.svg">
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Create Workspace · ObserveX</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Syne:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Syne:wght@600;700;800&display=swap" rel="stylesheet"/>
 <style>
-*{box-sizing:border-box;margin:0;padding:0}
-:root{--bg:#eef2f7;--card:#ffffff;--text:#0f172a;--muted:#64748b;--line:#d7deea;--blue:#2563eb;--blue2:#1d4ed8}
-body{font-family:'Syne',sans-serif;background:radial-gradient(circle at top,#f8fbff 0%,#eef2f7 52%,#e8edf5 100%);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;color:var(--text);-webkit-font-smoothing:antialiased}
-.auth-shell{width:100%;max-width:1080px;display:grid;grid-template-columns:1fr 1.05fr;overflow:hidden;border-radius:28px;box-shadow:0 24px 80px rgba(15,23,42,.12),0 8px 24px rgba(15,23,42,.06);background:var(--card);border:1px solid rgba(148,163,184,.16)}
-.hero{background:linear-gradient(135deg,#081225 0%,#0f172a 50%,#10213f 100%);color:#e5eefc;padding:44px;display:flex;flex-direction:column;justify-content:space-between;position:relative;overflow:hidden}
-.hero:before{content:"";position:absolute;inset:0;background:
-linear-gradient(rgba(255,255,255,.05) 1px, transparent 1px),
-linear-gradient(90deg, rgba(255,255,255,.05) 1px, transparent 1px);
-background-size:34px 34px;opacity:.32}
-.hero-inner,.hero-foot{position:relative;z-index:1}
-.hero-logo img{height:42px;width:auto;display:block;margin-bottom:26px}
-.hero h1{font-size:38px;line-height:1.02;font-weight:800;letter-spacing:-1.2px;max-width:380px;margin-bottom:14px}
-.hero p{font-size:15px;line-height:1.7;color:#b8c6dd;max-width:420px}
-.hero-points{margin-top:26px;display:grid;gap:12px}
-.hero-point{display:flex;gap:10px;align-items:flex-start;color:#d6e2f5;font-size:14px}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;font-family:Inter,Arial,sans-serif;background:radial-gradient(circle at top,#f8fbff 0%,#eef2f7 52%,#e8edf5 100%);display:flex;align-items:center;justify-content:center;padding:24px;color:#0f172a}
+.shell{width:100%;max-width:1080px;display:grid;grid-template-columns:1fr 1.04fr;border-radius:28px;overflow:hidden;background:#fff;box-shadow:0 24px 80px rgba(15,23,42,.12),0 8px 24px rgba(15,23,42,.06);border:1px solid rgba(148,163,184,.18)}
+.hero{position:relative;padding:44px;background:linear-gradient(145deg,#071226 0%,#0f172a 48%,#13284d 100%);color:#e5eefc;display:flex;flex-direction:column;justify-content:space-between;overflow:hidden}
+.hero:before{content:"";position:absolute;inset:0;background:linear-gradient(rgba(255,255,255,.05) 1px, transparent 1px),linear-gradient(90deg, rgba(255,255,255,.05) 1px, transparent 1px);background-size:34px 34px;opacity:.30}
+.hero > *{position:relative;z-index:1}
+.hero img{height:44px;width:auto;display:block;margin-bottom:26px}
+.hero h1{margin:0 0 14px;font:800 40px/1.02 Syne,Inter,sans-serif;letter-spacing:-1.2px;max-width:380px}
+.hero p{margin:0;color:#b8c6dd;line-height:1.7;max-width:420px}
+.points{display:grid;gap:12px;margin-top:28px}
+.point{display:flex;gap:10px;font-size:14px;color:#d7e3f7;align-items:flex-start}
 .dot{width:10px;height:10px;border-radius:999px;background:linear-gradient(135deg,#8b5cf6,#22d3ee);margin-top:6px;flex:0 0 10px}
-.hero-foot{font-size:13px;color:#9fb0ca}
+.foot{font-size:13px;color:#9fb0ca}
 .card{padding:40px 38px 32px;display:flex;flex-direction:column;justify-content:center}
-.logo{display:flex;justify-content:center;margin-bottom:18px}
-.logo img{height:42px;width:auto;display:block}
-h2{font-size:30px;font-weight:800;text-align:center;margin-bottom:8px;letter-spacing:-.6px}
-.subtitle{font-size:14px;color:var(--muted);text-align:center;margin-bottom:26px}
-.field{margin-bottom:14px}
-.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.logo{display:flex;justify-content:center;margin-bottom:18px} .logo img{height:44px;width:auto}
+h2{margin:0 0 8px;font:800 30px/1.1 Syne,Inter,sans-serif;text-align:center;letter-spacing:-.6px}
+.sub{margin:0 0 26px;text-align:center;color:#64748b;font-size:14px}
+.field{margin-bottom:14px} .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 label{display:block;font-size:12px;font-weight:700;color:#334155;margin-bottom:6px}
-input,select{width:100%;padding:12px 14px;background:#f8fafc;border:1px solid var(--line);border-radius:12px;font-family:'Syne',sans-serif;font-size:14px;color:#0f172a;outline:none;transition:border-color .15s,box-shadow .15s,background .15s}
-input:focus,select:focus{border-color:var(--blue);box-shadow:0 0 0 4px rgba(37,99,235,.12);background:#fff}
+input,select{width:100%;padding:12px 14px;background:#f8fafc;border:1px solid #d7deea;border-radius:12px;font:14px Inter,Arial,sans-serif;color:#0f172a;outline:none;transition:border-color .15s,box-shadow .15s,background .15s}
+input:focus,select:focus{border-color:#2563eb;box-shadow:0 0 0 4px rgba(37,99,235,.12);background:#fff}
 input::placeholder{color:#94a3b8}
-.pw-wrap{position:relative}
-.pw-wrap input{padding-right:42px}
-.pw-toggle{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#94a3b8;display:flex;align-items:center;padding:2px}
-.pw-toggle:hover{color:#64748b}
-.strength-bar{height:4px;border-radius:999px;margin-top:8px;background:#e5e7eb;overflow:hidden}
-.strength-fill{height:100%;border-radius:999px;transition:width .3s,background .3s;width:0}
-.strength-label{font-size:11px;color:#94a3b8;margin-top:5px}
-.btn{width:100%;padding:13px 16px;background:linear-gradient(135deg,var(--blue),#3b82f6);border:none;border-radius:12px;color:#fff;font-family:'Syne',sans-serif;font-size:14px;font-weight:800;cursor:pointer;transition:transform .15s,box-shadow .15s,background .15s;margin-top:8px}
-.btn:hover{background:linear-gradient(135deg,var(--blue2),var(--blue));transform:translateY(-1px);box-shadow:0 12px 24px rgba(37,99,235,.24)}
-.btn:disabled{opacity:.65;cursor:not-allowed;transform:none;box-shadow:none}
-.msg{padding:12px 14px;border-radius:12px;font-size:12px;font-weight:600;margin-bottom:18px;display:none}
-.msg.error{background:#fff1f2;border:1px solid #fecdd3;color:#be123c;display:block}
-.msg.success{background:#f0fdf4;border:1px solid #bbf7d0;color:#15803d;display:block}
-.link-row{text-align:center;margin-top:18px;font-size:13px;color:var(--muted)}
-.link-row a{color:var(--blue);text-decoration:none;font-weight:700}
-.link-row a:hover{text-decoration:underline}
-@media(max-width:900px){.auth-shell{grid-template-columns:1fr}.hero{display:none}.card{padding:34px 24px 28px}.grid2{grid-template-columns:1fr}h2{font-size:28px}}
-
-/* PREMIUM AUTH V6 */
-.auth-shell{backdrop-filter:blur(18px)}
-.hero{background:
- radial-gradient(circle at top left, rgba(99,102,241,.32), transparent 34%),
- radial-gradient(circle at bottom right, rgba(34,211,238,.22), transparent 28%),
- linear-gradient(135deg,#081225 0%,#0f172a 50%,#10213f 100%)}
-.hero h1{max-width:420px}
-.hero p{max-width:440px}
-.hero-foot{padding-top:18px;border-top:1px solid rgba(255,255,255,.08)}
-.card{position:relative}
-.card:before{content:"";position:absolute;top:0;left:0;right:0;height:4px;border-radius:28px 28px 0 0;background:linear-gradient(90deg,#7c3aed,#2563eb,#22d3ee)}
-.logo img{height:46px}
-.subtitle{max-width:340px;margin-left:auto;margin-right:auto}
-input,select{box-shadow:inset 0 1px 1px rgba(15,23,42,.02)}
-.field-hint{font-size:11px;color:#94a3b8;margin-top:6px}
-.link-row{padding-top:14px;border-top:1px solid #e5eaf3}
-@media(max-width:900px){body{padding:16px}.card:before{border-radius:22px 22px 0 0}}
-''</style>
-</head>
-<body>
-<div class="auth-shell">
-  <aside class="hero">
-    <div class="hero-inner">
-      <div class="hero-logo"><img src="/static/images/logo-dark.svg" alt="ObserveX"></div>
-      <h1>Create your ObserveX workspace</h1>
-      <p>Start monitoring logs, tracing failures, and using AI-assisted diagnostics from one clean workspace.</p>
-      <div class="hero-points">
-        <div class="hero-point"><span class="dot"></span><span>Centralized log explorer and filtering</span></div>
-        <div class="hero-point"><span class="dot"></span><span>Trace request paths across services</span></div>
-        <div class="hero-point"><span class="dot"></span><span>Invite your team and manage access easily</span></div>
-      </div>
-    </div>
-    <div class="hero-foot">Set up in minutes. Scale with confidence.</div>
-  </aside>
-
-  <main class="card">
-    <div class="logo"><img src="/static/images/logo-primary.svg" alt="ObserveX"></div>
-    <h2>Create workspace</h2>
-    <p class="subtitle">Start managing your logs with ObserveX</p>
-    <div class="field-hint" style="text-align:center;margin-bottom:18px">Create your workspace, then invite teammates once you sign in.</div>
-
-    <div class="msg" id="msg"></div>
-
-    <div class="field">
-      <label for="organization_name">Organization name</label>
-      <input type="text" id="organization_name" name="organization_name" placeholder="e.g. Acme Corp" autocomplete="organization" required/>
-    </div>
-
-    <div class="grid2">
-      <div class="field">
-        <label for="name">Your name</label>
-        <input type="text" id="name" name="name" placeholder="Full name" autocomplete="name" required/>
-      </div>
-
-      <div class="field">
-        <label for="email">Work email</label>
-        <input type="email" id="email" name="email" placeholder="you@company.com" autocomplete="email" required/>
-      </div>
-    </div>
-
-    <div class="field">
-      <label for="password">Password</label>
-      <div class="pw-wrap">
-        <input type="password" id="password" name="password" placeholder="At least 8 characters" autocomplete="new-password" oninput="checkStrength(this.value)"/>
-        <button class="pw-toggle" type="button" onclick="togglePw()" title="Show/hide password">
-          <svg id="eyeIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
-          </svg>
-        </button>
-      </div>
-      <div class="strength-bar"><div class="strength-fill" id="strengthFill"></div></div>
-      <div class="strength-label" id="strengthLabel"></div>
-    </div>
-
-    <button class="btn" id="submitBtn" onclick="createWorkspace()">Create workspace</button>
-
-    <div class="link-row">
-      Already have a workspace? <a href="/login">Sign in</a>
-    </div>
-  </main>
+.pw-wrap{position:relative} .pw-wrap input{padding-right:42px}
+.pw-toggle{position:absolute;right:12px;top:50%;transform:translateY(-50%);border:0;background:none;color:#94a3b8;cursor:pointer}
+.strength-bar{height:4px;background:#e5e7eb;border-radius:999px;overflow:hidden;margin-top:8px} .strength-fill{height:100%;width:0;transition:all .25s}
+.strength-label{margin-top:5px;font-size:11px;color:#94a3b8}
+.btn{width:100%;padding:13px 16px;margin-top:8px;border:0;border-radius:12px;background:linear-gradient(135deg,#2563eb,#3b82f6);color:#fff;font:800 14px Inter,Arial,sans-serif;cursor:pointer;transition:all .15s}
+.btn:hover{transform:translateY(-1px);box-shadow:0 12px 24px rgba(37,99,235,.24);background:linear-gradient(135deg,#1d4ed8,#2563eb)}
+.msg{display:none;padding:12px 14px;border-radius:12px;font-size:12px;font-weight:700;margin-bottom:16px}
+.msg.error{display:block;background:#fff1f2;border:1px solid #fecdd3;color:#be123c}
+.msg.success{display:block;background:#f0fdf4;border:1px solid #bbf7d0;color:#15803d}
+.link-row{margin-top:18px;text-align:center;font-size:13px;color:#64748b} .link-row a{color:#2563eb;text-decoration:none;font-weight:700} .link-row a:hover{text-decoration:underline}
+@media(max-width:900px){.shell{grid-template-columns:1fr}.hero{display:none}.card{padding:34px 24px 28px}.grid2{grid-template-columns:1fr}}
+</style></head><body>
+<div class="shell">
+<aside class="hero">
+<div>
+<img src="/static/images/logo-dark.svg" alt="ObserveX">
+<h1>Create your ObserveX workspace</h1>
+<p>Start monitoring logs, tracing failures, and using AI-assisted diagnostics from one clean workspace.</p>
+<div class="points">
+<div class="point"><span class="dot"></span><span>Centralized log explorer and filtering</span></div>
+<div class="point"><span class="dot"></span><span>Trace request paths across services</span></div>
+<div class="point"><span class="dot"></span><span>Invite your team and manage access easily</span></div>
+</div></div><div class="foot">Set up in minutes. Scale with confidence.</div></aside>
+<main class="card">
+<div class="logo"><img src="/static/images/logo-primary.svg" alt="ObserveX"></div>
+<h2>Create workspace</h2><p class="sub">Start managing your logs with ObserveX</p>
+<div class="msg" id="msg"></div>
+<div class="field"><label for="organization_name">Organization name</label><input type="text" id="organization_name" name="organization_name" placeholder="e.g. Acme Corp" autocomplete="organization" required></div>
+<div class="grid2">
+<div class="field"><label for="name">Your name</label><input type="text" id="name" name="name" placeholder="Full name" autocomplete="name" required></div>
+<div class="field"><label for="email">Work email</label><input type="email" id="email" name="email" placeholder="you@company.com" autocomplete="email" required></div>
 </div>
+<div class="field"><label for="password">Password</label><div class="pw-wrap"><input type="password" id="password" name="password" placeholder="At least 8 characters" autocomplete="new-password" oninput="checkStrength(this.value)"><button class="pw-toggle" type="button" onclick="togglePw()" title="Show/hide password">👁</button></div><div class="strength-bar"><div class="strength-fill" id="strengthFill"></div></div><div class="strength-label" id="strengthLabel"></div></div>
+<button class="btn" id="submitBtn" onclick="createWorkspace()">Create workspace</button>
+<div class="link-row">Already have a workspace? <a href="/login">Sign in</a></div>
+</main></div>
 <script>
 function togglePw(){
   const inp=document.getElementById('password');
@@ -209,6 +137,4 @@ async function createWorkspace(){
 }
 
 document.addEventListener('keydown',e=>{if(e.key==='Enter')createWorkspace();});
-</script>
-</body>
-</html>
+</script></body></html>
