@@ -2940,6 +2940,25 @@ async function deleteSavedSearch(id) {
 function api(url, method, body) {
   return fetch(url, {method, headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)});
 }
+
+async function apiFetch(url, options = {}) {
+  const opts = { ...options };
+  opts.method = opts.method || 'GET';
+  opts.credentials = opts.credentials || 'same-origin';
+  const headers = { 'Accept': 'application/json', ...(opts.headers || {}) };
+
+  const hasJsonBody = opts.body && typeof opts.body === 'object' && !(opts.body instanceof FormData);
+  if (hasJsonBody) {
+    opts.body = JSON.stringify(opts.body);
+    if (!headers['Content-Type'] && !headers['content-type']) {
+      headers['Content-Type'] = 'application/json';
+    }
+  }
+
+  opts.headers = headers;
+  return fetch(url, opts);
+}
+
 function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function fmtTs(s) {
   if (!s) return '—';
@@ -3090,11 +3109,15 @@ async function runRCA() {
   try {
     const res = await apiFetch('/api/ai/rca', {
       method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ trace_id: traceId })
+      body: { trace_id: traceId }
     });
     const data = await res.json();
-    if (!res.ok) { toast(data.error || 'RCA failed', 'error'); return; }
+    if (!res.ok) {
+      resultBox.innerHTML = `<div class="sum-bullet" style="border-color:var(--red);color:var(--red)">${escHtml(data.error || 'RCA failed')}</div>`;
+      resultBox.classList.add('show');
+      toast(data.error || 'RCA failed', 'error');
+      return;
+    }
     const r = data.rca;
     const sevCls = (r.severity||'low').toLowerCase();
     const timeline = (r.timeline||[]).map(t =>
@@ -3114,6 +3137,8 @@ async function runRCA() {
     resultBox.classList.add('show');
     toast('RCA complete', 'success');
   } catch(e) {
+    resultBox.innerHTML = `<div class="sum-bullet" style="border-color:var(--red);color:var(--red)">${escHtml(e.message)}</div>`;
+    resultBox.classList.add('show');
     toast('RCA error: ' + e.message, 'error');
   } finally {
     btn.disabled = false;
@@ -3136,11 +3161,15 @@ async function runSummarize() {
     if (level)  body.level  = level;
     const res = await apiFetch('/api/ai/summarize', {
       method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify(body)
+      body
     });
     const data = await res.json();
-    if (!res.ok) { toast(data.error || 'Summarise failed', 'error'); return; }
+    if (!res.ok) {
+      resultBox.innerHTML = `<div class="sum-bullet" style="border-color:var(--red);color:var(--red)">${escHtml(data.error || 'Summarise failed')}</div>`;
+      resultBox.classList.add('show');
+      toast(data.error || 'Summarise failed', 'error');
+      return;
+    }
     const r = data.result;
     const bullets = (r.summary||[]).map(b => `<div class="sum-bullet">${escHtml(b)}</div>`).join('');
     resultBox.innerHTML = `
@@ -3155,6 +3184,8 @@ async function runSummarize() {
     resultBox.classList.add('show');
     toast('Summary ready', 'success');
   } catch(e) {
+    resultBox.innerHTML = `<div class="sum-bullet" style="border-color:var(--red);color:var(--red)">${escHtml(e.message)}</div>`;
+    resultBox.classList.add('show');
     toast('Summarise error: ' + e.message, 'error');
   } finally {
     btn.disabled = false;
