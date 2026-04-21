@@ -731,9 +731,6 @@ def init_db() -> None:
         );
         CREATE INDEX IF NOT EXISTS idx_fingerprints_org ON error_fingerprints(org_id, last_seen_at DESC);
 
-        CREATE INDEX IF NOT EXISTS idx_log_status_code  ON log_events(org_id, status_code);
-        CREATE INDEX IF NOT EXISTS idx_log_duration     ON log_events(org_id, duration_ms);
-        CREATE INDEX IF NOT EXISTS idx_log_request_id   ON log_events(request_id);
         CREATE INDEX IF NOT EXISTS idx_sessions_user    ON user_sessions(user_id, revoked);
         CREATE INDEX IF NOT EXISTS idx_sessions_token   ON user_sessions(session_token);
         """
@@ -786,6 +783,18 @@ def init_db() -> None:
     ensure_column(db, "organizations",  "ingest_rate_limit","ingest_rate_limit INTEGER NOT NULL DEFAULT 10000")
     ensure_column(db, "alert_rules",    "latency_threshold_ms", "latency_threshold_ms INTEGER")
     ensure_column(db, "alert_rules",    "dead_source_minutes",  "dead_source_minutes INTEGER")
+
+    # These indexes reference columns added via ensure_column above, so they must
+    # come AFTER ensure_column — not inside the executescript block.
+    for idx_sql in [
+        "CREATE INDEX IF NOT EXISTS idx_log_status_code ON log_events(org_id, status_code)",
+        "CREATE INDEX IF NOT EXISTS idx_log_duration    ON log_events(org_id, duration_ms)",
+        "CREATE INDEX IF NOT EXISTS idx_log_request_id  ON log_events(request_id)",
+    ]:
+        try:
+            db.execute(idx_sql)
+        except Exception as exc:
+            logger.warning("Index creation skipped: %s — %s", idx_sql[:60], exc)
 
     # Seed demo workspace — slug/email configurable via env vars
     seed_slug  = os.environ.get("SEED_ORG_SLUG",   "vewit")
