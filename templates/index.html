@@ -1194,7 +1194,12 @@ Content-Type: application/json
           <button class="btn" onclick="closeWaterfall()" style="font-size:12px;padding:5px 12px">← Back</button>
           <span style="font-size:12px;color:var(--text2)">Trace: <span id="flowActiveTraceId" style="font-family:var(--mono);color:var(--cyan)"></span></span>
         </div>
-        <div class="waterfall-wrap" id="flowWaterfall"></div>
+        <div class="flow-waterfall-shell">
+          <aside class="flow-side-card" id="flowSideRail" style="display:none"></aside>
+          <div class="flow-main-card">
+            <div class="waterfall-wrap" id="flowWaterfall"></div>
+          </div>
+        </div>
       </div>
 
       <!-- Empty state -->
@@ -3135,9 +3140,9 @@ async function loadWaterfall(traceId) {
   flowSetText('flowTraceCount', '');
   const wrap = document.getElementById('flowWaterfallWrap');
   const wf = document.getElementById('flowWaterfall');
-  document.getElementById('flowActiveTraceId').textContent = traceId;
-  wrap.style.display = 'block';
-  wf.innerHTML = '<div style="padding:24px;text-align:center;color:var(--text2);font-size:12px">Loading trace…</div>';
+  flowSetText('flowActiveTraceId', traceId);
+  if (wrap) wrap.style.display = 'block';
+  if (wf) wf.innerHTML = '<div style="padding:24px;text-align:center;color:var(--text2);font-size:12px">Loading trace…</div>';
   try {
     const res = await apiFetch(`/api/traces/${encodeURIComponent(traceId)}`);
     if (!res.ok) { const d = await res.json(); renderFlowSummary(null); wf.innerHTML = `<div style="padding:20px;color:var(--red);font-size:12px">${d.error||'Not found'}</div>`; return; }
@@ -3155,10 +3160,10 @@ async function loadWaterfall(traceId) {
     const firstErr = data.events.find(ev => ['error','critical'].includes((ev.level || '').toLowerCase()));
     flowSetText('flowHeroStatus', data.has_error ? 'Errors found' : 'Clean trace');
     flowSetText('flowHeroHint', firstErr ? `First issue in ${firstErr.source || 'unknown'}` : `${serviceStats.length} service${serviceStats.length===1?'':'s'} involved`);
-    const side = document.getElementById('flowSideRail');
-    side.innerHTML = `<div class="flow-side-title">Service path</div>
+    flowSetDisplay('flowSideRail', 'block');
+    flowSetHtml('flowSideRail', `<div class="flow-side-title">Service path</div>
       <div class="flow-service-list">${serviceStats.map((s,idx) => `<div class="flow-service-node"><div class="flow-service-name">${escHtml(s.name)}</div><div class="flow-service-sub">${s.count} event${s.count===1?'':'s'}${s.errors?` · <span style="color:var(--red)">${s.errors} error${s.errors===1?'':'s'}</span>`:''}</div></div>`).join('')}</div>
-      <div class="flow-insight-card"><h4>Quick read</h4><p>${firstErr ? `The first visible failure appears in <strong>${escHtml(firstErr.source || 'unknown')}</strong> around <strong>+${Number(firstErr.offset_ms || 0).toFixed(0)}ms</strong>. Use the red rows on the right to inspect the exact log payload and message.` : `This trace looks healthy. Review the longest bar on the right to see which service contributed the most latency.`}</p></div>`;
+      <div class="flow-insight-card"><h4>Quick read</h4><p>${firstErr ? `The first visible failure appears in <strong>${escHtml(firstErr.source || 'unknown')}</strong> around <strong>+${Number(firstErr.offset_ms || 0).toFixed(0)}ms</strong>. Use the red rows on the right to inspect the exact log payload and message.` : `This trace looks healthy. Review the longest bar on the right to see which service contributed the most latency.`}</p></div>`);
     const header = `<div class="waterfall-header">
       <div><h3>Trace waterfall</h3><div class="waterfall-meta">Read top to bottom. Position shows <strong>when</strong> an event happened, bar length shows <strong>rough duration</strong>, and the service column shows <strong>where</strong> it came from.</div></div>
       <div class="waterfall-stats">
@@ -3189,15 +3194,17 @@ async function loadWaterfall(traceId) {
         ${openBtn}
       </div>`;
     }).join('');
-    wf.innerHTML = header + chips + scale + `<div class="waterfall-events">` + rows + `</div>`;
+    if (wf) wf.innerHTML = header + chips + scale + `<div class="waterfall-events">` + rows + `</div>`;
   } catch(e) {
     renderFlowSummary(null);
-    wf.innerHTML = `<div style="padding:20px;color:var(--red);font-size:12px">Error: ${e.message}</div>`;
+    flowSetDisplay('flowSideRail', 'none');
+    if (wf) wf.innerHTML = `<div style="padding:20px;color:var(--red);font-size:12px">Error: ${e.message}</div>`;
   }
 }
 
 function closeWaterfall() {
   flowSetDisplay('flowWaterfallWrap', 'none');
+  flowSetDisplay('flowSideRail', 'none');
   flowSetDisplay('flowTraceList', 'block');
   flowSetText('flowHeroStatus', 'Ready');
   flowSetText('flowHeroHint', 'Search a trace or event ID');
