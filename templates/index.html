@@ -600,46 +600,46 @@ html:not(.dark) .toast{box-shadow:0 8px 24px rgba(0,0,0,.15)}
   </div>
 
   <div class="nav-section">Workspace</div>
-  <div class="nav-item{% if active_section=='overview' %} active{% endif %}" onclick="showPage('overview')">
+  <div class="nav-item{% if active_section=='overview' %} active{% endif %}" onclick="showPage('overview')" data-tooltip="Overview">
     <span class="nav-icon"><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><rect x="1" y="1" width="6" height="6" rx="1.5" fill="currentColor" opacity=".9"/><rect x="9" y="1" width="6" height="6" rx="1.5" fill="currentColor" opacity=".9"/><rect x="1" y="9" width="6" height="6" rx="1.5" fill="currentColor" opacity=".9"/><rect x="9" y="9" width="6" height="6" rx="1.5" fill="currentColor" opacity=".9"/></svg></span><span class="nav-item-text">Overview</span>
   </div>
-  <div class="nav-item{% if active_section=='explorer' %} active{% endif %}" onclick="showPage('explorer')">
+  <div class="nav-item{% if active_section=='explorer' %} active{% endif %}" onclick="showPage('explorer')" data-tooltip="Log explorer">
     <span class="nav-icon"><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><rect x="1" y="3" width="14" height="1.5" rx=".75" fill="currentColor"/><rect x="1" y="7" width="10" height="1.5" rx=".75" fill="currentColor"/><rect x="1" y="11" width="12" height="1.5" rx=".75" fill="currentColor"/></svg></span><span class="nav-item-text">Log explorer</span> <span class="nav-badge nb-blue" id="nb-all">—</span>
   </div>
-  <div class="nav-item{% if active_section=='ingest' %} active{% endif %}" onclick="showPage('ingest')">
+  <div class="nav-item{% if active_section=='ingest' %} active{% endif %}" onclick="showPage('ingest')" data-tooltip="Ingest API">
     <span class="nav-icon"><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 2v9M4.5 7.5 8 11l3.5-3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><rect x="1" y="12.5" width="14" height="1.5" rx=".75" fill="currentColor"/></svg></span><span class="nav-item-text">Ingest API</span>
   </div>
 
   <div class="nav-section">Connectors</div>
-  <div class="nav-item{% if active_section=='integrations' %} active{% endif %}" onclick="showPage('integrations')">
+  <div class="nav-item{% if active_section=='integrations' %} active{% endif %}" onclick="showPage('integrations')" data-tooltip="Integrations">
     <span class="nav-icon"><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="3.5" cy="8" r="2" stroke="currentColor" stroke-width="1.4"/><circle cx="12.5" cy="8" r="2" stroke="currentColor" stroke-width="1.4"/><path d="M5.5 8h5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></span><span class="nav-item-text">Integrations</span>
   </div>
-  <div class="nav-item{% if active_section=='jobs' %} active{% endif %}" onclick="showPage('jobs')">
+  <div class="nav-item{% if active_section=='jobs' %} active{% endif %}" onclick="showPage('jobs')" data-tooltip="Ingestion jobs">
     <span class="nav-icon"><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M13.5 8A5.5 5.5 0 1 1 8 2.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M10 2h3.5v3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="nav-item-text">Ingestion jobs</span>
   </div>
 
   <div class="nav-section">Settings</div>
-  <div class="nav-item{% if active_section=='alerts' %} active{% endif %}" onclick="showPage('alerts')">
+  <div class="nav-item{% if active_section=='alerts' %} active{% endif %}" onclick="showPage('alerts')" data-tooltip="Alert rules">
     <span class="nav-icon"><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 1.5A4.5 4.5 0 0 0 3.5 6c0 3-1.5 4-1.5 4h12s-1.5-1-1.5-4A4.5 4.5 0 0 0 8 1.5Z" stroke="currentColor" stroke-width="1.3"/><path d="M9.2 13a1.5 1.5 0 0 1-2.4 0" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg></span><span class="nav-item-text">Alert rules</span> <span class="nav-badge nb-red" id="nb-alerts">—</span>
   </div>
-  <div class="nav-item{% if active_section=='users' %} active{% endif %}" onclick="showPage('users')">
+  <div class="nav-item{% if active_section=='users' %} active{% endif %}" onclick="showPage('users')" data-tooltip="Users & access">
     <span class="nav-icon"><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="6" cy="5" r="2.5" stroke="currentColor" stroke-width="1.3"/><path d="M1 13c0-2.76 2.24-5 5-5s5 2.24 5 5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><path d="M11 7.5a2 2 0 1 0 0-4M14.5 13c0-2-1.3-3.7-3-4.3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg></span><span class="nav-item-text">Users &amp; access</span>
   </div>
-  <div class="nav-item{% if active_section=='invites' %} active{% endif %}" onclick="showPage('invites')">
+  <div class="nav-item{% if active_section=='invites' %} active{% endif %}" onclick="showPage('invites')" data-tooltip="Invites">
     <span class="nav-icon"><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><rect x="1" y="3.5" width="14" height="10" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M1 5.5l7 4.5 7-4.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg></span><span class="nav-item-text">Invites</span>
   </div>
-  <div class="nav-item{% if active_section=='organization' %} active{% endif %}" onclick="showPage('organization')">
+  <div class="nav-item{% if active_section=='organization' %} active{% endif %}" onclick="showPage('organization')" data-tooltip="Organization">
     <span class="nav-icon"><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><rect x="5" y="1" width="6" height="4" rx="1" stroke="currentColor" stroke-width="1.3"/><rect x="1" y="11" width="5" height="4" rx="1" stroke="currentColor" stroke-width="1.3"/><rect x="10" y="11" width="5" height="4" rx="1" stroke="currentColor" stroke-width="1.3"/><path d="M8 5v2.5M4 11V9a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg></span><span class="nav-item-text">Organization</span>
   </div>
-  <div class="nav-item{% if active_section=='audit' %} active{% endif %}" onclick="showPage('audit')">
+  <div class="nav-item{% if active_section=='audit' %} active{% endif %}" onclick="showPage('audit')" data-tooltip="Audit trail">
     <span class="nav-icon"><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><rect x="2" y="1.5" width="12" height="13" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M5 5.5h6M5 8h6M5 10.5h3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg></span><span class="nav-item-text">Audit trail</span>
   </div>
 
   <div class="nav-section">Analyze</div>
-  <div class="nav-item{% if active_section=='flow' %} active{% endif %}" onclick="showPage('flow')">
+  <div class="nav-item{% if active_section=='flow' %} active{% endif %}" onclick="showPage('flow')" data-tooltip="Flow Analytics">
     <span class="nav-icon"><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="2.5" r="1.5" stroke="currentColor" stroke-width="1.3"/><circle cx="8" cy="8" r="1.5" stroke="currentColor" stroke-width="1.3"/><circle cx="8" cy="13.5" r="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M8 4v2M8 9.5v2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><path d="M4 8h2.5M9.5 8H12" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg></span><span class="nav-item-text">Flow Analytics</span>
   </div>
-  <div class="nav-item{% if active_section=='ai' %} active{% endif %}" onclick="showPage('ai')">
+  <div class="nav-item{% if active_section=='ai' %} active{% endif %}" onclick="showPage('ai')" data-tooltip="AI Intelligence">
     <span class="nav-icon"><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 1.5a4.5 4.5 0 0 1 4.5 4.5c0 1.8-1 3.3-2.5 4.1V12H6v-1.9A4.5 4.5 0 0 1 3.5 6 4.5 4.5 0 0 1 8 1.5Z" stroke="currentColor" stroke-width="1.3"/><path d="M6 13.5h4M6.5 15h3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg></span><span class="nav-item-text">AI Intelligence</span>
   </div>
 
@@ -713,12 +713,12 @@ html:not(.dark) .toast{box-shadow:0 8px 24px rgba(0,0,0,.15)}
 
       <!-- Stats -->
       <div class="stats-row" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr))">
-        <div class="stat-card" onclick="showPage('explorer')"><div class="stat-label">Total logs</div><div class="stat-val" id="st-total">—</div></div>
+        <div class="stat-card" onclick="showPage('explorer')" data-tooltip="Log explorer"><div class="stat-label">Total logs</div><div class="stat-val" id="st-total">—</div></div>
         <div class="stat-card" onclick="showExplorerFiltered('error')"><div class="stat-label">Errors</div><div class="stat-val red" id="st-errors">—</div></div>
         <div class="stat-card" onclick="showExplorerFiltered('warn')"><div class="stat-label">Warnings</div><div class="stat-val yellow" id="st-warnings">—</div></div>
         <div class="stat-card" onclick="showExplorerFiltered('success')"><div class="stat-label">Success</div><div class="stat-val green" id="st-success">—</div></div>
         <div class="stat-card"><div class="stat-label">Error rate</div><div class="stat-val red" id="st-errrate">—</div></div>
-        <div class="stat-card" onclick="showPage('ingest')"><div class="stat-label">Uploads</div><div class="stat-val" id="st-uploads">—</div></div>
+        <div class="stat-card" onclick="showPage('ingest')" data-tooltip="Ingest API"><div class="stat-label">Uploads</div><div class="stat-val" id="st-uploads">—</div></div>
         <div class="stat-card" title="Logs ingested in last 60 minutes"><div class="stat-label">Logs / hr</div><div class="stat-val blue" id="st-logs-hr">—</div></div>
         <div class="stat-card" title="System health score based on error rate"><div class="stat-label">Health</div><div class="stat-val green" id="st-health">—</div></div>
       </div>
@@ -1113,6 +1113,13 @@ Content-Type: application/json
         <h1>Flow Analytics</h1>
         <p>Visualise request traces as a waterfall — see exactly where latency or errors occur across services.</p>
       </div>
+
+      <div class="flow-reading-note">
+        <div style="font-size:18px;line-height:1">🧭</div>
+        <div><strong>How to read this:</strong> each row is one log event in order. The colored bar shows when that event happened relative to the first event, the bar length shows rough duration, and the source tells you which service or layer produced it.</div>
+      </div>
+
+      <div class="flow-summary-grid" id="flowSummaryGrid" style="display:none"></div>
 
       <!-- Search bar -->
       <div class="flow-search-bar">
@@ -3031,6 +3038,26 @@ async function loadFlowTraces() {
   }
 }
 
+function renderFlowSummary(data) {
+  const el = document.getElementById('flowSummaryGrid');
+  if (!el) return;
+  if (!data || !data.events || !data.events.length) {
+    el.style.display = 'none';
+    el.innerHTML = '';
+    return;
+  }
+  const services = [...new Set(data.events.map(ev => ev.source || 'unknown'))];
+  const firstErr = data.events.find(ev => ['error','critical'].includes((ev.level || '').toLowerCase()));
+  const kind = data.trace_kind === 'event_id' ? 'Event ID trace' : 'Correlation trace';
+  el.innerHTML = `
+    <div class="flow-summary-card"><div class="flow-summary-label">Trace type</div><div class="flow-summary-value">${kind}</div><div class="flow-summary-sub">${escHtml(data.trace_id || '')}</div></div>
+    <div class="flow-summary-card"><div class="flow-summary-label">Events</div><div class="flow-summary-value">${data.event_count}</div><div class="flow-summary-sub">ordered log points</div></div>
+    <div class="flow-summary-card"><div class="flow-summary-label">Services</div><div class="flow-summary-value">${services.length}</div><div class="flow-summary-sub">${services.slice(0,3).map(escHtml).join(', ')}${services.length>3?'…':''}</div></div>
+    <div class="flow-summary-card"><div class="flow-summary-label">Total span</div><div class="flow-summary-value">${(data.total_span_ms || 0).toFixed(0)} ms</div><div class="flow-summary-sub">first to last event</div></div>
+    <div class="flow-summary-card"><div class="flow-summary-label">Health</div><div class="flow-summary-value" style="color:${data.has_error?'var(--red)':'var(--green)'}">${data.has_error?'Errors found':'Clean trace'}</div><div class="flow-summary-sub">${firstErr ? 'first issue in ' + escHtml(firstErr.source || 'unknown') : 'no error-level events'}</div></div>`;
+  el.style.display = 'grid';
+}
+
 async function loadWaterfall(traceId) {
   document.getElementById('flowTraceList').style.display = 'none';
   document.getElementById('flowTraceCount').textContent = '';
@@ -3041,29 +3068,46 @@ async function loadWaterfall(traceId) {
   wf.innerHTML = '<div style="padding:24px;text-align:center;color:var(--text2);font-size:12px">Loading trace…</div>';
   try {
     const res = await apiFetch(`/api/traces/${encodeURIComponent(traceId)}`);
-    if (!res.ok) { const d = await res.json(); wf.innerHTML = `<div style="padding:20px;color:var(--red);font-size:12px">${d.error||'Not found'}</div>`; return; }
+    if (!res.ok) { const d = await res.json(); renderFlowSummary(null); wf.innerHTML = `<div style="padding:20px;color:var(--red);font-size:12px">${d.error||'Not found'}</div>`; return; }
     const data = await res.json();
-    const maxSpan = data.total_span_ms || 1;
+    renderFlowSummary(data);
+    const maxSpan = Math.max(data.total_span_ms || 0, ...data.events.map(ev => Number(ev.duration_ms || 0)), 1);
+    const serviceStats = Object.values(data.events.reduce((acc, ev) => {
+      const k = ev.source || 'unknown';
+      acc[k] = acc[k] || {name:k,count:0,errors:0};
+      acc[k].count += 1;
+      if (['error','critical'].includes((ev.level || '').toLowerCase())) acc[k].errors += 1;
+      return acc;
+    }, {})).sort((a,b)=>b.count-a.count);
     const header = `<div class="waterfall-header">
-      <h3>Trace waterfall <span style="font-family:var(--mono);color:var(--cyan);font-size:11px">${escHtml(traceId)}</span></h3>
+      <div><h3>Trace waterfall <span style="font-family:var(--mono);color:var(--cyan);font-size:11px">${escHtml(traceId)}</span></h3><div class="waterfall-meta">Read top to bottom. Bar position = when it happened. Bar size = how long it took.</div></div>
       <span class="waterfall-meta">${data.event_count} events · span ${maxSpan.toFixed(0)} ms ${data.has_error ? '· <span style="color:var(--red)">⚠ errors</span>' : '· <span style="color:var(--green)">✓ clean</span>'}</span>
     </div>`;
+    const chips = `<div class="waterfall-service-chips">${serviceStats.map(s => `<span class="waterfall-chip"><strong>${escHtml(s.name)}</strong> · ${s.count} event${s.count===1?'':'s'}${s.errors?` · <span style="color:var(--red)">${s.errors} error${s.errors===1?'':'s'}</span>`:''}</span>`).join('')}</div>`;
+    const scale = `<div class="waterfall-scale"><span>Status</span><span>Offset</span><span>Service</span><span>Timeline & message</span><span>Action</span></div>`;
     const rows = data.events.map(ev => {
-      const isErr = ['error','critical'].includes(ev.level);
-      const barPct = maxSpan > 0 ? Math.max(1, Math.round((ev.duration_ms||1) / maxSpan * 100)) : 2;
-      const barOff = maxSpan > 0 ? Math.round(ev.offset_ms / maxSpan * 100) : 0;
-      const lvlCls = ev.level || 'info';
-      return `<div class="waterfall-event">
-        <span class="wf-level ${lvlCls}">${escHtml(ev.level||'?')}</span>
-        <span class="wf-offset">+${ev.offset_ms}ms</span>
-        <span class="wf-source">${escHtml(ev.source||'—')}</span>
-        <span class="wf-bar-wrap"><span class="wf-bar${isErr?' err':''}" style="width:${barPct}%;margin-left:${Math.min(barOff,95)}%"></span></span>
-        <span class="wf-dur">${ev.duration_ms != null ? ev.duration_ms+'ms' : ''}</span>
-        <span class="wf-msg">${escHtml(ev.message||'')}</span>
+      const level = (ev.level || 'info').toLowerCase();
+      const isErr = ['error','critical'].includes(level);
+      const barPct = maxSpan > 0 ? Math.max(4, Math.round((Number(ev.duration_ms) || 1) / maxSpan * 100)) : 6;
+      const barOff = maxSpan > 0 ? Math.min(94, Math.round((Number(ev.offset_ms) || 0) / maxSpan * 100)) : 0;
+      const message = escHtml(ev.message || '');
+      const timeText = ev.timestamp ? fmtTs(ev.timestamp) : '—';
+      const openBtn = ev.id ? `<button class="wf-open-btn" onclick="event.stopPropagation(); openDetail(${Number(ev.id)})">Open log</button>` : `<span class="wf-open-btn" style="opacity:.6;cursor:default">No log</span>`;
+      return `<div class="waterfall-event" ${ev.id ? `onclick="openDetail(${Number(ev.id)})"` : ''}>
+        <span class="wf-level ${level}">${escHtml(level || '?')}</span>
+        <span class="wf-offset">+${Number(ev.offset_ms || 0).toFixed(0)}ms</span>
+        <span class="wf-source">${escHtml(ev.source || '—')}</span>
+        <div class="wf-main">
+          <div class="wf-top"><span class="wf-bar-wrap"><span class="wf-bar${isErr?' err':''}" style="width:${barPct}%;margin-left:${barOff}%"></span></span><span class="wf-dur">${ev.duration_ms != null ? ev.duration_ms + 'ms' : '—'}</span></div>
+          <div class="wf-msg">${message || 'No message'}</div>
+          <div class="wf-sub"><span class="wf-time-pill">${escHtml(timeText)}</span>${ev.event_id ? `<span class="wf-id-pill">event ${escHtml(ev.event_id)}</span>` : ''}</div>
+        </div>
+        ${openBtn}
       </div>`;
     }).join('');
-    wf.innerHTML = header + rows;
+    wf.innerHTML = header + chips + scale + rows;
   } catch(e) {
+    renderFlowSummary(null);
     wf.innerHTML = `<div style="padding:20px;color:var(--red);font-size:12px">Error: ${e.message}</div>`;
   }
 }
@@ -3073,6 +3117,7 @@ function closeWaterfall() {
   document.getElementById('flowTraceList').style.display = 'block';
   const q = document.getElementById('flowSearchInput').value.trim();
   document.getElementById('flowTraceCount').textContent = '';
+  renderFlowSummary(null);
   loadFlowTraces();
 }
 
@@ -3086,6 +3131,7 @@ showPage = function(name) {
     document.getElementById('flowWaterfallWrap').style.display = 'none';
     document.getElementById('flowSearchInput').value = '';
     document.getElementById('flowTraceCount').textContent = '';
+    renderFlowSummary(null);
   }
 };
 
