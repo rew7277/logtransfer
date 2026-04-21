@@ -10,16 +10,15 @@
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Syne:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Syne',sans-serif;background:#f0f2f5;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;-webkit-font-smoothing:antialiased}
-.card{background:#fff;border-radius:12px;box-shadow:0 4px 24px rgba(0,0,0,.08),0 1px 4px rgba(0,0,0,.04);width:100%;max-width:400px;padding:36px 40px}
-.logo{display:flex;align-items:center;justify-content:center;margin-bottom:24px}.logo img{height:42px;width:auto;display:block}
-.logo-icon{width:36px;height:36px;border-radius:8px;background:linear-gradient(135deg,#1f6feb,#39c5cf);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:14px}
-.logo-name{font-size:18px;font-weight:800;color:#0d1117;letter-spacing:-0.3px}
+body{font-family:'Syne',sans-serif;background:#f0f2f5;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;-webkit-font-smoothing:antialiased}
+.card{background:#fff;border-radius:18px;box-shadow:0 12px 40px rgba(15,23,42,.08),0 2px 10px rgba(15,23,42,.05);width:100%;max-width:460px;padding:36px 36px 28px}
+.logo{display:flex;align-items:center;justify-content:center;margin-bottom:24px}.logo img{height:44px;width:auto;display:block}.logo img{height:42px;width:auto;display:block}
+
 h1{font-size:20px;font-weight:700;text-align:center;margin-bottom:6px;color:#0d1117}
 .subtitle{font-size:13px;color:#656d76;text-align:center;margin-bottom:28px}
 .field{margin-bottom:16px}
-label{display:block;font-size:12px;font-weight:600;color:#424a53;margin-bottom:5px}
-input{width:100%;padding:9px 12px;background:#f6f8fa;border:1px solid #d0d7de;border-radius:7px;font-family:'Syne',sans-serif;font-size:13px;color:#0d1117;outline:none;transition:border-color .15s,box-shadow .15s}
+label{display:block;font-size:12px;font-weight:600;color:#424a53;margin-bottom:6px}
+input,select{width:100%;padding:11px 13px;background:#f8fafc;border:1px solid #d0d7de;border-radius:10px;font-family:'Syne',sans-serif;font-size:14px;color:#0d1117;outline:none;transition:border-color .15s,box-shadow .15s}
 input:focus{border-color:#1f6feb;box-shadow:0 0 0 3px rgba(31,111,235,.12);background:#fff}
 input::placeholder{color:#adb5bd}
 .pw-wrap{position:relative}
@@ -29,10 +28,10 @@ input::placeholder{color:#adb5bd}
 .forgot-row{text-align:right;margin-top:-10px;margin-bottom:16px}
 .forgot-row a{font-size:11px;color:#1f6feb;text-decoration:none;font-weight:600}
 .forgot-row a:hover{text-decoration:underline}
-.btn{width:100%;padding:10px;background:#1f6feb;border:none;border-radius:7px;color:#fff;font-family:'Syne',sans-serif;font-size:14px;font-weight:700;cursor:pointer;transition:all .15s;margin-top:4px}
-.btn:hover{background:#388bfd;transform:translateY(-1px);box-shadow:0 4px 12px rgba(31,111,235,.3)}
-.btn:active{transform:none}
-.btn:disabled{opacity:.6;cursor:not-allowed;transform:none;box-shadow:none}
+.btn,.btn-primary,button[type='submit']{width:100%;padding:12px 16px;background:#2563eb;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;transition:all .15s}.btn:hover,.btn-primary:hover,button[type='submit']:hover{background:#1d4ed8}
+.btn,.btn-primary,button[type='submit']{width:100%;padding:12px 16px;background:#2563eb;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;transition:all .15s}.btn:hover,.btn-primary:hover,button[type='submit']:hover{background:#1d4ed8}
+.btn,.btn-primary,button[type='submit']{width:100%;padding:12px 16px;background:#2563eb;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;transition:all .15s}.btn:hover,.btn-primary:hover,button[type='submit']:hover{background:#1d4ed8}
+.btn,.btn-primary,button[type='submit']{width:100%;padding:12px 16px;background:#2563eb;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;transition:all .15s}.btn:hover,.btn-primary:hover,button[type='submit']:hover{background:#1d4ed8}
 .msg{padding:10px 14px;border-radius:7px;font-size:12px;font-weight:500;margin-bottom:16px;display:none}
 .msg.error{background:#fff0f0;border:1px solid #ffcdd2;color:#c62828;display:block}
 .msg.success{background:#f0fff4;border:1px solid #c8e6c9;color:#2e7d32;display:block}
@@ -44,77 +43,16 @@ input::placeholder{color:#adb5bd}
 code{font-family:'IBM Plex Mono',monospace;font-size:11px}
 </style>
 </head>
+
 <body>
-<div class="card">
-  <div class="logo"><img src="/static/images/logo-primary.svg" alt="ObserveX"></div>
-    <span class="logo-name">ObserveX</span>
+  <div class="card">
+    <div class="logo"><img src="/static/images/logo-primary.svg" alt="ObserveX"></div>
+    <h1 style="font-size:28px;font-weight:800;text-align:center;margin-bottom:8px;color:#0f172a;line-height:1.15">Welcome back</h1>
+    <div class="subtitle" style="font-size:14px;color:#64748b;text-align:center;margin-bottom:24px">Sign in to your ObserveX workspace</div>
+    <form method="post"><div class="field"><label for="email">Email</label>
+    <input type="email" id="email" placeholder="you@company.com" autocomplete="email" required/></div><button type="submit">Sign in</button></form>
+    <div class="footer" style="text-align:center;margin-top:16px;font-size:13px;color:#64748b">Don&apos;t have a workspace? <a href="/create-account" style="color:#2563eb;text-decoration:none;font-weight:600">Create one free</a></div>
   </div>
-  <h1>Welcome back</h1>
-  <p class="subtitle">Sign in to your workspace</p>
-
-  <div class="msg" id="msg"></div>
-
-  <div class="field">
-    <label for="email">Email</label>
-    <input type="email" id="email" placeholder="you@company.com" autocomplete="email" required/>
-  </div>
-
-  <div class="field">
-    <label for="pw">Password</label>
-    <div class="pw-wrap">
-      <input type="password" id="pw" placeholder="Your password" autocomplete="current-password"
-             onkeydown="if(event.key==='Enter')doLogin()"/>
-      <button class="pw-toggle" type="button" onclick="togglePw()" title="Show/hide password">
-        <svg id="eyeIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
-        </svg>
-      </button>
-    </div>
-  </div>
-
-  <div class="forgot-row"><a href="/forgot-password">Forgot password?</a></div>
-
-  <button class="btn" id="submitBtn" onclick="doLogin()">Sign in</button>
-
-  <div class="link-row">
-    Don't have a workspace? <a href="/create-account">Create one free</a>
-  </div>
-
-</div>
-<script>
-function togglePw(){
-  const inp=document.getElementById('pw');
-  const ico=document.getElementById('eyeIcon');
-  if(inp.type==='password'){
-    inp.type='text';
-    ico.innerHTML='<path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/>';
-  }else{
-    inp.type='password';
-    ico.innerHTML='<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
-  }
-}
-function showMsg(text,type){
-  const el=document.getElementById('msg');
-  el.textContent=text;
-  el.className='msg '+type;
-}
-async function doLogin(){
-  const email=document.getElementById('email').value.trim();
-  const pw=document.getElementById('pw').value;
-  const btn=document.getElementById('submitBtn');
-  if(!email||!pw){showMsg('Please enter your email and password.','error');return;}
-  btn.disabled=true;btn.textContent='Signing in…';
-  try{
-    const res=await fetch('/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password:pw})});
-    const d=await res.json();
-    if(!res.ok){showMsg(d.error||'Login failed. Please try again.','error');btn.disabled=false;btn.textContent='Sign in';return;}
-    showMsg('Signed in! Redirecting…','success');
-    setTimeout(()=>{location.href=d.workspace_url||'/workspace';},400);
-  }catch(e){
-    showMsg('Network error. Please try again.','error');
-    btn.disabled=false;btn.textContent='Sign in';
-  }
-}
-</script>
 </body>
+
 </html>
