@@ -3011,21 +3011,48 @@ function api(url, method, body) {
 }
 
 async function apiFetch(url, options = {}) {
-  const opts = { ...options };
-  opts.method = opts.method || 'GET';
-  opts.credentials = opts.credentials || 'same-origin';
-  const headers = { 'Accept': 'application/json', ...(opts.headers || {}) };
+  const baseOpts = { ...options };
+  const method = String(baseOpts.method || 'GET').toUpperCase();
+  const retryableMethods = new Set(['GET', 'HEAD']);
+  const maxAttempts = retryableMethods.has(method) ? 3 : 2;
 
-  const hasJsonBody = opts.body && typeof opts.body === 'object' && !(opts.body instanceof FormData);
-  if (hasJsonBody) {
-    opts.body = JSON.stringify(opts.body);
-    if (!headers['Content-Type'] && !headers['content-type']) {
-      headers['Content-Type'] = 'application/json';
+  const buildOpts = () => {
+    const opts = { ...baseOpts };
+    opts.method = method;
+    opts.credentials = opts.credentials || 'same-origin';
+    opts.cache = opts.cache || 'no-store';
+    const headers = { 'Accept': 'application/json', ...(opts.headers || {}) };
+
+    const hasJsonBody = opts.body && typeof opts.body === 'object' && !(opts.body instanceof FormData);
+    if (hasJsonBody) {
+      opts.body = JSON.stringify(opts.body);
+      if (!headers['Content-Type'] && !headers['content-type']) {
+        headers['Content-Type'] = 'application/json';
+      }
+    }
+
+    opts.headers = headers;
+    return opts;
+  };
+
+  let lastError = null;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      const res = await fetch(url, buildOpts());
+      if ([502, 503, 504].includes(res.status) && attempt < maxAttempts) {
+        await new Promise(r => setTimeout(r, 350 * attempt));
+        continue;
+      }
+      return res;
+    } catch (err) {
+      lastError = err;
+      if (attempt < maxAttempts) {
+        await new Promise(r => setTimeout(r, 350 * attempt));
+        continue;
+      }
     }
   }
-
-  opts.headers = headers;
-  return fetch(url, opts);
+  throw lastError || new Error('Request failed');
 }
 
 function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
