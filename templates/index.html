@@ -70,7 +70,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
 
 /* ── SIDEBAR ── */
 .sidebar{width:var(--sidebar-w);flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:100;overflow-y:auto}
-.sidebar-brand{padding:16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+.sidebar-brand{padding:16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}.sidebar-brand img{height:28px;width:auto;display:block}
 .brand-icon{width:32px;height:32px;border-radius:6px;background:linear-gradient(135deg,var(--accent),var(--cyan));display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;color:#fff;flex-shrink:0}
 .brand-name{font-size:14px;font-weight:700;letter-spacing:-.3px}
 .brand-org{font-size:11px;color:var(--text2);font-family:var(--mono);font-weight:400}
@@ -641,9 +641,7 @@ html:not(.dark) .toast{box-shadow:0 8px 24px rgba(0,0,0,.15)}
 
 <!-- SIDEBAR -->
 <nav class="sidebar">
-  <div class="sidebar-brand">
-    <div class="sidebar-brand-content">
-      <div class="brand-icon">{{ user.logo_text[:2] }}</div>
+  <div class="sidebar-brand"><img src="/static/images/logo-primary.svg" alt="ObserveX"></div>
       <div>
         <div class="brand-name">ObserveX</div>
         <div class="brand-org">{{ user.org_name | lower }}</div>

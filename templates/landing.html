@@ -59,6 +59,8 @@ nav {
   display: flex; align-items: center; gap: 10px;
   font-weight: 800; font-size: 17px; color: var(--text); text-decoration: none;
 }
+.nav-logo img{height:34px;width:auto;display:block}
+@media(max-width:640px){.nav-logo img{height:28px}}
 .nav-logo-icon {
   width: 30px; height: 30px; border-radius: 7px;
   background: linear-gradient(135deg, var(--blue), var(--cyan));
@@ -353,10 +355,7 @@ footer a:hover { color: var(--text); }
 
 <!-- NAV -->
 <nav>
-  <a href="/" class="nav-logo">
-    <div class="nav-logo-icon">OX</div>
-    ObserveX
-  </a>
+  <a href="/" class="nav-logo"><img src="/static/images/logo-dark.svg" alt="ObserveX"></a>
   <div class="nav-links">
     <a href="#features" class="nav-link nav-link-ghost">Features</a>
     <a href="#integrations" class="nav-link nav-link-ghost">Integrations</a>
