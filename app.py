@@ -26,6 +26,7 @@ from typing import Any
 
 from flask import Flask, g, jsonify, redirect, render_template, request, session, url_for
 from werkzeug.security import check_password_hash, generate_password_hash
+from werkzeug.exceptions import RequestEntityTooLarge
 
 try:
     from flask_limiter import Limiter
@@ -90,7 +91,7 @@ DB_PATH  = DATA_DIR / "observex.db"
 
 # ─────────────────────────── Flask app ───────────────────────────────────────
 app = Flask(__name__)
-app.config["MAX_CONTENT_LENGTH"] = 50 * 1024 * 1024  # 50 MB file uploads
+app.config["MAX_CONTENT_LENGTH"] = int(os.environ.get("MAX_CONTENT_LENGTH_MB", "200")) * 1024 * 1024  # default 200 MB file uploads
 
 # SECURITY: Enforce a strong secret key — never fall back to a dev string.
 _secret_key = os.environ.get("SECRET_KEY", "").strip()
@@ -220,6 +221,12 @@ def _check_org_rate(org_id: int, limit: int) -> bool:
 
 # ─────────────────────────── Security helpers ────────────────────────────────
 
+
+
+@app.errorhandler(RequestEntityTooLarge)
+def handle_request_entity_too_large(_e):
+    max_mb = max(1, int((app.config.get("MAX_CONTENT_LENGTH") or 0) / (1024 * 1024)))
+    return jsonify({"error": f"Upload too large. Maximum allowed size is {max_mb} MB per request. Try a smaller file or upload files separately."}), 413
 def validate_password_strength(password: str) -> str | None:
     """Return an error message if password is too weak, else None."""
     if len(password) < 8:

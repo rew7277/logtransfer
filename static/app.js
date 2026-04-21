@@ -459,18 +459,49 @@ async function showLogDetail(id) {
 async function uploadFiles(files) {
   if (!files || !files.length) return;
   const statusEl = $('uploadStatus');
-  if (statusEl) statusEl.textContent = `Uploading ${files.length} file(s)…`;
-  toast(`Uploading ${files.length} file(s)…`);
+  const list = Array.from(files);
+  const totalBytes = list.reduce((sum, f) => sum + (f.size || 0), 0);
+  const maxBytes = 200 * 1024 * 1024;
+
+  if (totalBytes > maxBytes) {
+    const msg = `Selected files are too large (${(totalBytes / (1024 * 1024)).toFixed(1)} MB). Maximum upload size is 200 MB per request. Please upload smaller files or split them.`;
+    if (statusEl) statusEl.textContent = msg;
+    return toast(msg, true);
+  }
+
+  if (statusEl) statusEl.textContent = `Uploading ${list.length} file(s)…`;
+  toast(`Uploading ${list.length} file(s)…`);
 
   const fd = new FormData();
-  Array.from(files).forEach(f => fd.append('files', f));
-  const res  = await fetch('/api/upload', { method: 'POST', body: fd });
-  const data = await res.json();
+  list.forEach(f => fd.append('files', f));
+
+  let res;
+  try {
+    res = await fetch('/api/upload', { method: 'POST', body: fd, cache: 'no-store' });
+  } catch (_err) {
+    const msg = 'Upload failed due to a temporary network or gateway issue. Please try again.';
+    if (statusEl) statusEl.textContent = msg;
+    return toast(msg, true);
+  }
+
+  let data = {};
+  try {
+    data = await res.json();
+  } catch (_e) {
+    data = {};
+  }
 
   if (!res.ok) {
-    if (statusEl) statusEl.textContent = data.error || 'Upload failed.';
-    return toast(data.error || 'Upload failed', true);
+    let msg = data.error || 'Upload failed.';
+    if (res.status === 413) {
+      msg = data.error || 'Upload too large. Please use a smaller file or split the upload.';
+    } else if (res.status === 502 || res.status === 503 || res.status === 504) {
+      msg = 'Temporary gateway issue while uploading. Please retry in a moment.';
+    }
+    if (statusEl) statusEl.textContent = msg;
+    return toast(msg, true);
   }
+
   const skippedNote = data.skipped?.length ? ` (${data.skipped.length} file(s) skipped — binary/unsupported)` : '';
   if (statusEl) statusEl.textContent = `✓ ${data.files_uploaded} file(s) — ${formatNumber(data.summary.total)} records indexed.${skippedNote}`;
   if (data.skipped?.length) {
