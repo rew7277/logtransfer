@@ -774,6 +774,7 @@ def init_db() -> None:
     ensure_column(db, "alert_rules",    "threshold",        "threshold INTEGER NOT NULL DEFAULT 10")
     ensure_column(db, "alert_rules",    "alert_type",       "alert_type TEXT NOT NULL DEFAULT 'error_rate'")
     ensure_column(db, "alert_rules",    "slack_webhook_url","slack_webhook_url TEXT")
+    ensure_column(db, "uploads",        "source_type",      "source_type TEXT NOT NULL DEFAULT 'file'")
     ensure_column(db, "log_events",     "correlation_id",   "correlation_id TEXT")
     ensure_column(db, "log_events",     "status_code",      "status_code INTEGER")
     ensure_column(db, "log_events",     "duration_ms",      "duration_ms REAL")
@@ -2331,8 +2332,17 @@ def get_uploads():
     if error:
         return error
     db = get_db()
+
+    try:
+        cols = {row[1] for row in db.execute("PRAGMA table_info(uploads)").fetchall()}
+    except Exception:
+        cols = set()
+
+    record_expr = "record_count" if "record_count" in cols else ("total_records AS record_count" if "total_records" in cols else "0 AS record_count")
+    source_expr = "source_type" if "source_type" in cols else "'file' AS source_type"
+
     rows = db.execute(
-        "SELECT id, filename, record_count, source_type, created_at FROM uploads WHERE org_id = ? ORDER BY id DESC LIMIT 100",
+        f"SELECT id, filename, {record_expr}, {source_expr}, created_at FROM uploads WHERE org_id = ? ORDER BY id DESC LIMIT 100",
         (user["org_id"],)
     ).fetchall()
     return jsonify({"uploads": [dict(r) for r in rows]})

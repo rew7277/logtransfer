@@ -9,7 +9,8 @@ import os
 # For I/O-heavy Flask + SQLite: (2 × CPU cores) + 1 is a good starting point.
 # At 10k rps you'll need Railway's higher-tier instances (8+ vCPU) and
 # ultimately a migration from SQLite → PostgreSQL + Redis.
-workers     = int(os.environ.get("WEB_CONCURRENCY", multiprocessing.cpu_count() * 2 + 1))
+default_workers = min((multiprocessing.cpu_count() * 2) + 1, 4)
+workers     = int(os.environ.get("WEB_CONCURRENCY", default_workers))
 worker_class = "sync"          # Use "gevent" if you add greenlet support
 threads     = 1                # Only safe to increase with sync worker to 2-4
 timeout     = 120              # Increase if ingestion jobs can take longer
