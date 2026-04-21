@@ -3815,6 +3815,238 @@ def openapi_spec():
     return jsonify(spec)
 
 
+# ─────────────────────────── Flow Analytics ──────────────────────────────────
+
+@app.get("/api/traces")
+def list_traces():
+    """List distinct trace/correlation IDs with event counts and error flags."""
+    user, err = require_auth()
+    if err:
+        return err
+    org_id = user["org_id"]
+    db = get_db()
+    limit  = min(int(request.args.get("limit", 50)), 200)
+    q      = sanitize_input(request.args.get("q", ""), 100)
+    sql    = (
+        "SELECT correlation_id, COUNT(*) AS event_count, "
+        "  MAX(CASE WHEN level IN ('error','critical') THEN 1 ELSE 0 END) AS has_error, "
+        "  MIN(timestamp) AS started_at, MAX(timestamp) AS ended_at "
+        "FROM log_events "
+        "WHERE org_id=? AND correlation_id IS NOT NULL AND correlation_id != '' "
+    )
+    params: list = [org_id]
+    if q:
+        sql += " AND correlation_id LIKE ? "
+        params.append(f"%{q}%")
+    sql += " GROUP BY correlation_id ORDER BY started_at DESC LIMIT ?"
+    params.append(limit)
+    rows = db.execute(sql, params).fetchall()
+    return jsonify({"traces": [dict(r) for r in rows]})
+
+
+@app.get("/api/traces/<trace_id>")
+def get_trace(trace_id: str):
+    """Fetch all events for a trace_id and compute relative timing offsets (waterfall)."""
+    user, err = require_auth()
+    if err:
+        return err
+    org_id   = user["org_id"]
+    trace_id = sanitize_input(trace_id, 100)
+    db       = get_db()
+    rows = db.execute(
+        "SELECT id, timestamp, level, source, event_id, message, "
+        "       payload_json, correlation_id, status_code, duration_ms "
+        "FROM log_events "
+        "WHERE org_id=? AND correlation_id=? "
+        "ORDER BY timestamp ASC LIMIT 500",
+        (org_id, trace_id),
+    ).fetchall()
+    if not rows:
+        return jsonify({"error": "Trace not found or no events match."}), 404
+
+    events = [dict(r) for r in rows]
+    # Compute relative offsets from first event (ms)
+    try:
+        from datetime import datetime, timezone
+        def _ms(ts: str) -> float:
+            for fmt in ("%Y-%m-%dT%H:%M:%S.%f", "%Y-%m-%dT%H:%M:%S", "%Y-%m-%d %H:%M:%S.%f", "%Y-%m-%d %H:%M:%S"):
+                try:
+                    return datetime.strptime(ts[:26], fmt).replace(tzinfo=timezone.utc).timestamp() * 1000
+                except ValueError:
+                    continue
+            return 0.0
+        base_ms = _ms(events[0]["timestamp"])
+        for ev in events:
+            ev["offset_ms"] = round(_ms(ev["timestamp"]) - base_ms, 1)
+    except Exception:
+        for ev in events:
+            ev["offset_ms"] = 0
+    has_error = any(e.get("level") in ("error", "critical") for e in events)
+    total_span_ms = events[-1].get("offset_ms", 0) if events else 0
+    return jsonify({
+        "trace_id":     trace_id,
+        "event_count":  len(events),
+        "has_error":    has_error,
+        "total_span_ms": total_span_ms,
+        "events":       events,
+    })
+
+
+# ─────────────────────────── AI: RCA & Summarizer ────────────────────────────
+
+@app.post("/api/ai/rca")
+def ai_rca():
+    """AI Root Cause Analysis — accepts trace_id or list of log_ids."""
+    user, err = require_auth()
+    if err:
+        return err
+    if not os.environ.get("ANTHROPIC_API_KEY"):
+        return jsonify({"error": "ANTHROPIC_API_KEY not configured on server."}), 503
+
+    org_id  = user["org_id"]
+    payload = request_payload()
+    db      = get_db()
+
+    trace_id = sanitize_input(str(payload.get("trace_id", "")), 100)
+    log_ids  = payload.get("log_ids", [])
+
+    if trace_id:
+        rows = db.execute(
+            "SELECT id, timestamp, level, source, message, payload_json, status_code, duration_ms "
+            "FROM log_events WHERE org_id=? AND correlation_id=? ORDER BY timestamp ASC LIMIT 100",
+            (org_id, trace_id),
+        ).fetchall()
+    elif log_ids:
+        placeholders = ",".join("?" * len(log_ids[:50]))
+        rows = db.execute(
+            f"SELECT id, timestamp, level, source, message, payload_json, status_code, duration_ms "
+            f"FROM log_events WHERE org_id=? AND id IN ({placeholders}) ORDER BY timestamp ASC",
+            [org_id, *log_ids[:50]],
+        ).fetchall()
+    else:
+        return jsonify({"error": "Provide trace_id or log_ids."}), 400
+
+    if not rows:
+        return jsonify({"error": "No events found for the given trace/logs."}), 404
+
+    events = [dict(r) for r in rows]
+    log_block = "\n".join(
+        f"[{e['timestamp']}] [{e['level'].upper()}] [{e['source']}] {e['message']}"
+        + (f" | status={e['status_code']}" if e.get("status_code") else "")
+        + (f" | duration={e['duration_ms']}ms" if e.get("duration_ms") else "")
+        for e in events
+    )
+
+    prompt = f"""You are an expert SRE / backend engineer. Analyse the following log trace and return ONLY valid JSON — no markdown, no backticks, no extra text.
+
+Log events (chronological):
+{log_block}
+
+Return exactly this JSON structure:
+{{
+  "root_cause": "one concise sentence",
+  "culprit_service": "service name or 'unknown'",
+  "severity": "low|medium|high|critical",
+  "timeline": [
+    {{"time": "...", "event": "brief description"}}
+  ],
+  "fix_suggestion": "actionable fix in 1-2 sentences",
+  "confidence": "low|medium|high"
+}}"""
+
+    raw = _call_anthropic(prompt, max_tokens=800, system="You are an expert SRE. Return only valid JSON.")
+    # Strip markdown fences if model adds them
+    clean = raw.strip()
+    if clean.startswith("```"):
+        clean = "\n".join(clean.split("\n")[1:])
+    if clean.endswith("```"):
+        clean = clean.rsplit("```", 1)[0]
+    try:
+        import json as _json
+        result = _json.loads(clean.strip())
+    except Exception:
+        result = {"root_cause": raw, "culprit_service": "unknown", "severity": "unknown",
+                  "timeline": [], "fix_suggestion": "Review logs manually.", "confidence": "low"}
+
+    audit(org_id, user["id"], "ai_rca", "trace", trace_id or str(log_ids[:3]))
+    return jsonify({"ok": True, "rca": result, "event_count": len(events)})
+
+
+@app.post("/api/ai/summarize")
+def ai_summarize():
+    """AI log summarizer — condenses up to 500 log lines into bullet-point insights."""
+    user, err = require_auth()
+    if err:
+        return err
+    if not os.environ.get("ANTHROPIC_API_KEY"):
+        return jsonify({"error": "ANTHROPIC_API_KEY not configured on server."}), 503
+
+    org_id  = user["org_id"]
+    payload = request_payload()
+    db      = get_db()
+
+    from_ts = sanitize_input(str(payload.get("from_ts", "")), 30)
+    to_ts   = sanitize_input(str(payload.get("to_ts", "")), 30)
+    source  = sanitize_input(str(payload.get("source", "")), 100)
+    level   = sanitize_input(str(payload.get("level", "")), 20)
+
+    sql    = "SELECT timestamp, level, source, message FROM log_events WHERE org_id=?"
+    params: list = [org_id]
+    if from_ts:
+        sql += " AND timestamp >= ?"; params.append(from_ts)
+    if to_ts:
+        sql += " AND timestamp <= ?"; params.append(to_ts)
+    if source:
+        sql += " AND source=?"; params.append(source)
+    if level:
+        sql += " AND level=?"; params.append(level)
+    sql += " ORDER BY timestamp DESC LIMIT 500"
+
+    rows   = db.execute(sql, params).fetchall()
+    if not rows:
+        return jsonify({"error": "No logs found for the specified filters."}), 404
+
+    log_block = "\n".join(
+        f"[{r['timestamp']}] [{r['level'].upper()}] [{r['source']}] {r['message']}"
+        for r in rows
+    )
+
+    prompt = f"""You are an expert SRE. The following are log lines from an observability platform.
+Summarise them into exactly 5 concise bullet points. Each bullet should highlight a key pattern,
+anomaly, error trend, or insight. Return ONLY valid JSON — no markdown.
+
+Logs:
+{log_block[:12000]}
+
+Return:
+{{
+  "summary": [
+    "bullet 1",
+    "bullet 2",
+    "bullet 3",
+    "bullet 4",
+    "bullet 5"
+  ],
+  "top_error": "most frequent error message or 'none'",
+  "top_source": "most active source or 'unknown'",
+  "error_rate_pct": 0.0
+}}"""
+
+    raw = _call_anthropic(prompt, max_tokens=600, system="You are an expert SRE. Return only valid JSON.")
+    clean = raw.strip()
+    if clean.startswith("```"):
+        clean = "\n".join(clean.split("\n")[1:])
+    if clean.endswith("```"):
+        clean = clean.rsplit("```", 1)[0]
+    try:
+        import json as _json
+        result = _json.loads(clean.strip())
+    except Exception:
+        result = {"summary": [raw], "top_error": "unknown", "top_source": "unknown", "error_rate_pct": 0}
+
+    return jsonify({"ok": True, "result": result, "log_count": len(rows)})
+
+
 # ─────────────────────────── Startup ─────────────────────────────────────────
 
 if __name__ == "__main__":
