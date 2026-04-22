@@ -42,7 +42,8 @@ function applyOrgTheme() {
   if (!org) return;
 
   document.documentElement.style.setProperty('--primary', org.theme_color || '#4f7cff');
-  document.body.className = `theme-${org.theme_mode || 'white'}`;
+  const themeMode = (!org.theme_mode || org.theme_mode === 'white') ? 'dark' : org.theme_mode;
+  document.body.className = themeMode === 'dark' ? '' : `theme-${themeMode}`;
 
   $('orgName').textContent  = org.name;
   $('orgLogo').textContent  = org.logo_text;
@@ -57,7 +58,7 @@ function applyOrgTheme() {
     f.slug.value       = org.slug;
     f.logo_text.value  = org.logo_text;
     f.theme_color.value = org.theme_color;
-    f.theme_mode.value  = org.theme_mode || 'white';
+    f.theme_mode.value  = (!org.theme_mode || org.theme_mode === 'white') ? 'dark' : org.theme_mode;
     f.admin_only.checked = !!org.admin_only;
   }
 

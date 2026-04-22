@@ -10,7 +10,7 @@
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Syne:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
 <style>
 :root {
-  /* ── Light theme (default) ── */
+  /* ── Dark theme (default) ── */
   --bg: #f5f7fa;
   --surface: #ffffff;
   --surface2: #f0f2f5;
@@ -39,8 +39,8 @@
   --radius: 8px;
   --radius-sm: 5px;
 }
-/* ── Dark theme ── */
-html.dark {
+/* ── Light theme override ── */
+html.light {
   --bg: #080c10;
   --surface: #0d1117;
   --surface2: #161b22;
@@ -1806,20 +1806,20 @@ Authorization: Bearer oxk_your_key
 // ── THEME (persisted in localStorage, light = default) ──
 (function() {
   var saved = localStorage.getItem('oxTheme');
-  if (saved === 'dark') document.documentElement.classList.add('dark');
-  // light is default — no class needed
+  if (saved === 'light') document.documentElement.classList.add('light');
+  // dark is default — no class needed
 })();
 
 function toggleTheme() {
-  var isDark = document.documentElement.classList.toggle('dark');
-  localStorage.setItem('oxTheme', isDark ? 'dark' : 'light');
+  var isLight = document.documentElement.classList.toggle('light');
+  localStorage.setItem('oxTheme', isLight ? 'light' : 'dark');
   var btn = document.getElementById('themeToggleBtn');
-  if (btn) btn.textContent = isDark ? '☀️' : '🌙';
+  if (btn) btn.textContent = isLight ? '🌙' : '☀️';
 }
 
 function applyThemeIcon() {
   var btn = document.getElementById('themeToggleBtn');
-  if (btn) btn.textContent = document.documentElement.classList.contains('dark') ? '☀️' : '🌙';
+  if (btn) btn.textContent = document.documentElement.classList.contains('light') ? '🌙' : '☀️';
 }
 
 // ── SIDEBAR COLLAPSE (persisted in localStorage) ──

@@ -33,7 +33,7 @@ body{
     radial-gradient(circle at top right, rgba(139,92,246,.18), transparent 26%),
     radial-gradient(circle at bottom center, rgba(16,185,129,.09), transparent 22%),
     linear-gradient(180deg,#020617 0%,#0b1120 52%,#020617 100%);
-  display:flex;align-items:center;justify-content:center;padding:28px;overflow:hidden;
+  display:flex;align-items:center;justify-content:center;padding:18px;overflow-x:hidden;overflow-y:auto;
 }
 body:before{
   content:"";position:fixed;inset:0;pointer-events:none;opacity:.08;
@@ -45,14 +45,14 @@ body:after{
   background:radial-gradient(circle, rgba(34,211,238,.18), transparent 60%);filter:blur(12px);pointer-events:none;
 }
 .shell{
-  position:relative;width:100%;max-width:1220px;display:grid;grid-template-columns:1.08fr .92fr;gap:18px;z-index:1;
+  position:relative;width:min(100%,1280px);display:grid;grid-template-columns:minmax(0,1.02fr) minmax(420px,.98fr);gap:18px;z-index:1;align-items:stretch;
 }
 .glass{
   background:var(--panel);border:1px solid var(--panel-border);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);
   box-shadow:var(--shadow);border-radius:32px;overflow:hidden;
 }
 .hero{
-  position:relative;padding:42px 42px 34px;min-height:780px;display:flex;flex-direction:column;justify-content:space-between;
+  position:relative;padding:clamp(24px,3vw,40px);min-height:min(780px,calc(100dvh - 36px));display:flex;flex-direction:column;justify-content:space-between;overflow:auto;
   background:
     radial-gradient(circle at top right, rgba(34,211,238,.18), transparent 26%),
     radial-gradient(circle at top left, rgba(139,92,246,.18), transparent 24%),
@@ -78,7 +78,7 @@ body:after{
 @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(103,232,249,.6)}70%{box-shadow:0 0 0 10px rgba(103,232,249,0)}100%{box-shadow:0 0 0 0 rgba(103,232,249,0)}}
 .hero-copy{max-width:540px}
 .eyebrow{display:inline-flex;align-items:center;gap:10px;padding:8px 12px;border-radius:999px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.05);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:#c8d5ea;font-weight:700}
-.hero h1{margin:18px 0 16px;font:800 62px/.95 Syne,Inter,sans-serif;letter-spacing:-2px;max-width:560px}
+.hero h1{margin:18px 0 16px;font:800 clamp(42px,5vw,62px)/.95 Syne,Inter,sans-serif;letter-spacing:-2px;max-width:560px}
 .hero p{margin:0;color:#b9c8df;line-height:1.75;font-size:16px;max-width:470px}
 .feature-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:28px}
 .feature-card{padding:18px;border-radius:24px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09);transition:transform .22s ease,background .22s ease,border-color .22s ease}
@@ -93,8 +93,8 @@ body:after{
 .hero-footer{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-top:28px;color:#97aac6;font-size:13px}
 .footer-badges{display:flex;gap:10px;flex-wrap:wrap}
 .footer-badges span{padding:8px 12px;border-radius:999px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.05)}
-.card{padding:34px;display:flex;align-items:center;justify-content:center;min-height:780px}
-.card-inner{width:100%;max-width:470px;animation:slideUp .7s ease}
+.card{padding:clamp(20px,2.6vw,34px);display:flex;align-items:center;justify-content:center;min-height:min(780px,calc(100dvh - 36px));overflow:auto}
+.card-inner{width:100%;max-width:min(470px,100%);animation:slideUp .7s ease}
 .card-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:28px}
 .card-logo{display:flex;align-items:center;gap:12px}
 .card-logo img{height:42px;width:auto}
@@ -143,10 +143,19 @@ input::placeholder{color:#7e91ad}
 .link-row{margin-top:22px;text-align:center;font-size:13px;color:#8ea3c0}
 @keyframes slideUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
 @media(max-width:1100px){
+  body{padding:14px}
   .shell{grid-template-columns:1fr}
   .hero,.card{min-height:auto}
-  .hero{padding:34px}
-  .card{padding:24px}
+  .hero{padding:28px}
+  .card{padding:22px}
+}
+@media(max-height:860px){
+  .feature-grid{gap:10px;margin-top:18px}
+  .feature-card{padding:14px}
+  .metric-row{margin-top:18px}
+  .metric-card{padding:14px}
+  .hero-footer{margin-top:18px}
+  .card{align-items:flex-start}
 }
 @media(max-width:760px){
   body{padding:16px}

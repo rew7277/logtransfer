@@ -32,7 +32,7 @@ body{
     radial-gradient(circle at top right, rgba(139,92,246,.18), transparent 26%),
     radial-gradient(circle at bottom center, rgba(16,185,129,.09), transparent 22%),
     linear-gradient(180deg,#020617 0%,#0b1120 52%,#020617 100%);
-  display:flex;align-items:center;justify-content:center;padding:28px;overflow:hidden;
+  display:flex;align-items:center;justify-content:center;padding:18px;overflow-x:hidden;overflow-y:auto;
 }
 body:before{
   content:"";position:fixed;inset:0;pointer-events:none;opacity:.08;
@@ -46,7 +46,7 @@ body:after{
 .shell{position:relative;width:100%;max-width:1260px;display:grid;grid-template-columns:1fr 1.04fr;gap:18px;z-index:1}
 .glass{background:var(--panel);border:1px solid var(--panel-border);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);box-shadow:var(--shadow);border-radius:32px;overflow:hidden}
 .hero{
-  position:relative;padding:42px 42px 34px;min-height:820px;display:flex;flex-direction:column;justify-content:space-between;
+  position:relative;padding:clamp(24px,3vw,40px);min-height:min(820px,calc(100dvh - 36px));display:flex;flex-direction:column;justify-content:space-between;overflow:auto;
   background:
     radial-gradient(circle at top right, rgba(34,211,238,.18), transparent 26%),
     radial-gradient(circle at top left, rgba(139,92,246,.18), transparent 24%),
@@ -383,7 +383,7 @@ async function createWorkspace(){
     const res=await fetch('/register',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({organization_name:org_name,name,email,password,theme_mode:'white',role:'admin'})
+      body:JSON.stringify({organization_name:org_name,name,email,password,theme_mode:'dark',role:'admin'})
     });
     const data=await res.json();
     if(!res.ok){
