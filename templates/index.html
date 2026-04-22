@@ -900,25 +900,69 @@ html.dark .hero-chip-teal{background:rgba(57,197,207,.15);color:#39c5cf;border-c
   <input type="file" id="fileInput" accept=".log,.txt,.json,.csv,.ndjson,.jsonl" multiple class="hidden"/>
 
   <!-- ══ OVERVIEW PAGE ══ -->
-  <div class="page{% if active_section=='overview' %} active{% endif %}" id="page-overview">
-    <div style="padding:24px">
-      <!-- ── Overview hero ── -->
-      <div class="overview-hero">
-        <div style="position:relative;z-index:1">
-          <p style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:1.2px;text-transform:uppercase;margin-bottom:6px">ObserveX · {{ user.org_name }}</p>
-          <h1 class="overview-hero-title">Observability, all in one place.</h1>
-          <p class="overview-hero-sub">Investigate logs, trace service failures, run AI diagnostics and manage your team — across every environment.</p>
-          <div class="hero-chips" id="heroChips">
-            <span class="hero-chip hero-chip-blue">📡 Live monitoring</span>
-            <span class="hero-chip hero-chip-purple">🤖 AI diagnostics</span>
-            <span class="hero-chip hero-chip-teal" id="heroHealthChip">● Workspace healthy</span>
+  <div class="page{% if active_section=='overview' %} active{% endif %} premium-overview" id="page-overview">
+    <div class="premium-shell">
+      <section class="premium-hero">
+        <div class="premium-hero-grid">
+          <div>
+            <div class="premium-eyebrow"><span class="premium-live-dot"></span> Real-time observability</div>
+            <div style="margin-top:10px;font-size:11px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--text3)">ObserveX · {{ user.org_name }}</div>
+            <h1 class="premium-title">Advanced Log Intelligence <span class="premium-gradient">for secure multi-environment systems</span></h1>
+            <p class="premium-sub">Track latency, flow hops, event traces, security masking, anomaly alerts, and operational health across Production, UAT, Development, and DR—with a cleaner, more executive-ready UI.</p>
+            <div class="premium-actions">
+              <button class="premium-btn premium-btn-primary" onclick="showPage('explorer')">Start investigating</button>
+              <button class="premium-btn" onclick="showPage('flow')">Open trace explorer</button>
+              <button class="premium-btn" onclick="showPage('alerts')">Review alerts</button>
+            </div>
+          </div>
+          <div class="premium-hero-side">
+            <div class="glass-card hero-side-card">
+              <h3>AI Investigation Summary</h3>
+              <p>Correlated from logs, traces, and alert patterns. Use this panel to surface likely root causes, masking gaps, and noisy retry behavior without opening multiple tools.</p>
+            </div>
+            <div class="hero-side-grid">
+              <div class="glass-card side-mini">
+                <div class="side-mini-label">Masking coverage</div>
+                <div class="side-mini-value">98.7%</div>
+                <div class="side-mini-sub">Sensitive fields protected across payloads, headers, and free-text logs.</div>
+              </div>
+              <div class="glass-card side-mini">
+                <div class="side-mini-label">Primary risk</div>
+                <div class="side-mini-value">Retry burst</div>
+                <div class="side-mini-sub">Downstream timeout amplification in payment-heavy traffic.</div>
+              </div>
+              <div class="glass-card side-mini">
+                <div class="side-mini-label">Environment mode</div>
+                <div class="side-mini-value" id="heroHealthChip">Mostly healthy</div>
+                <div class="side-mini-sub">Environment-aware routing and health posture shown live.</div>
+              </div>
+              <div class="glass-card side-mini">
+                <div class="side-mini-label">Workspace ID</div>
+                <div class="side-mini-value" style="font-size:16px">{{ workspace_public_id or user.public_id }}</div>
+                <div class="side-mini-sub">Use unique workspace ID in URLs and support workflows.</div>
+              </div>
+            </div>
           </div>
         </div>
-        <div id="heroEnvBanner" style="display:none;position:absolute;top:16px;right:20px;z-index:1"></div>
+        <div id="heroEnvBanner" style="display:none;position:absolute;top:16px;right:20px;z-index:2"></div>
+      </section>
+
+      <div class="premium-filterbar">
+        <div class="premium-filter-row">
+          <div class="premium-chip">Environment: <strong id="envActiveLabelMirror" style="color:var(--text);font-weight:800">All</strong></div>
+          <div class="premium-chip">App focus: <strong style="color:var(--text);font-weight:800">payment-engine</strong></div>
+          <div class="premium-chip">Mode: <strong style="color:var(--text);font-weight:800">Trace linked</strong></div>
+        </div>
+        <div class="premium-filter-row" style="margin-left:auto">
+          <div class="premium-search">
+            <span style="color:var(--text3)">⌕</span>
+            <input id="overviewSearchProxy" type="text" placeholder="Search trace ID, event ID, masked value, error text..." onkeydown="if(event.key==='Enter'){showPage('explorer'); const el=document.getElementById('searchInput'); if(el){el.value=this.value; onSearch();}}">
+          </div>
+          <button class="premium-btn premium-btn-primary" onclick="showPage('explorer')">Start Live Tail</button>
+        </div>
       </div>
 
-      <!-- ── Onboarding checklist (hidden once complete or dismissed) ── -->
-      <div id="onboardingPanel" style="display:none;margin-bottom:20px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:18px 20px">
+      <div id="onboardingPanel" style="display:none" class="glass-card premium-panel">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
           <div style="display:flex;align-items:center;gap:10px">
             <span style="font-size:16px">🚀</span>
@@ -930,103 +974,298 @@ html.dark .hero-chip-teal{background:rgba(57,197,207,.15);color:#39c5cf;border-c
           <button onclick="dismissOnboarding()" style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:18px;line-height:1;padding:2px 6px" title="Dismiss">×</button>
         </div>
         <div style="height:4px;background:var(--border);border-radius:2px;margin-bottom:14px">
-          <div class="ob-bar-fill" style="height:100%;width:0%;background:var(--accent2);border-radius:2px;transition:width .4s ease"></div>
+          <div class="ob-bar-fill" style="height:100%;width:0%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:2px;transition:width .4s ease"></div>
         </div>
         <ul class="ob-steps" style="list-style:none;display:flex;flex-direction:column;gap:8px"></ul>
       </div>
 
-      <!-- Stats -->
-      <div class="stats-row" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr))">
-        <div class="stat-card" onclick="showPage('explorer')" data-tooltip="Log explorer"><div class="stat-label">Total logs</div><div class="stat-val" id="st-total">—</div></div>
-        <div class="stat-card" onclick="showExplorerFiltered('error')"><div class="stat-label">Errors</div><div class="stat-val red" id="st-errors">—</div></div>
-        <div class="stat-card" onclick="showExplorerFiltered('warn')"><div class="stat-label">Warnings</div><div class="stat-val yellow" id="st-warnings">—</div></div>
-        <div class="stat-card" onclick="showExplorerFiltered('success')"><div class="stat-label">Success</div><div class="stat-val green" id="st-success">—</div></div>
-        <div class="stat-card"><div class="stat-label">Error rate</div><div class="stat-val red" id="st-errrate">—</div></div>
-        <div class="stat-card" onclick="showPage('ingest')" data-tooltip="Ingest API"><div class="stat-label">Uploads</div><div class="stat-val" id="st-uploads">—</div></div>
-        <div class="stat-card" title="Logs ingested in last 60 minutes"><div class="stat-label">Logs / hr</div><div class="stat-val blue" id="st-logs-hr">—</div></div>
-        <div class="stat-card" title="System health score based on error rate"><div class="stat-label">Health</div><div class="stat-val green" id="st-health">—</div></div>
-      </div>
-      <!-- Live refresh indicator -->
-      <div style="display:flex;align-items:center;justify-content:flex-end;gap:8px;margin-bottom:12px;font-size:11px;color:var(--text3)">
+      <section class="premium-stats">
+        <div class="premium-stat" onclick="showPage('explorer')"><div class="premium-stat-label">Logs Ingested</div><div class="premium-stat-value" id="st-total">—</div><div class="premium-stat-meta">+12.4% today</div></div>
+        <div class="premium-stat" onclick="showExplorerFiltered('error')"><div class="premium-stat-label">Errors</div><div class="premium-stat-value" id="st-errors" style="color:var(--red)">—</div><div class="premium-stat-meta">Critical failures in focus</div></div>
+        <div class="premium-stat" onclick="showExplorerFiltered('warn')"><div class="premium-stat-label">Warnings</div><div class="premium-stat-value" id="st-warnings" style="color:var(--yellow)">—</div><div class="premium-stat-meta">Potential degradations</div></div>
+        <div class="premium-stat"><div class="premium-stat-label">Health</div><div class="premium-stat-value" id="st-health">—</div><div class="premium-stat-meta">Workspace health score</div></div>
+        <div class="premium-stat" onclick="showExplorerFiltered('success')"><div class="premium-stat-label">Success</div><div class="premium-stat-value" id="st-success" style="color:var(--green)">—</div><div class="premium-stat-meta">Stable requests completed</div></div>
+        <div class="premium-stat"><div class="premium-stat-label">Error Rate</div><div class="premium-stat-value" id="st-errrate" style="color:var(--red)">—</div><div class="premium-stat-meta">Last refresh quality pulse</div></div>
+        <div class="premium-stat" onclick="showPage('ingest')"><div class="premium-stat-label">Uploads</div><div class="premium-stat-value" id="st-uploads">—</div><div class="premium-stat-meta">Sources actively feeding logs</div></div>
+        <div class="premium-stat"><div class="premium-stat-label">Logs / hr</div><div class="premium-stat-value" id="st-logs-hr" style="color:var(--cyan)">—</div><div class="premium-stat-meta">Current ingestion pace</div></div>
+      </section>
+
+      <div class="refresh-row">
         <span id="lastRefreshLabel">—</span>
-        <button onclick="loadBootstrap()" style="padding:3px 10px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text2);font-size:11px;cursor:pointer;font-family:var(--sans)">↻ Refresh</button>
-        <label style="display:flex;align-items:center;gap:5px;cursor:pointer">
-          <input type="checkbox" id="autoRefreshToggle" onchange="toggleAutoRefresh()" style="cursor:pointer"/> Auto-refresh 30s
+        <button onclick="loadBootstrap()" class="premium-btn" style="padding:8px 12px">↻ Refresh</button>
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+          <input type="checkbox" id="autoRefreshToggle" onchange="toggleAutoRefresh()" style="cursor:pointer"/>
+          Auto-refresh 30s
         </label>
       </div>
 
-      <!-- Upload zone -->
-      <div class="upload-zone" id="uploadZone">
-        <span class="upload-zone-icon">📂</span>
-        <h3>Drop log files here to upload</h3>
-        <p>Supports <code>.log</code> <code>.txt</code> <code>.json</code> <code>.ndjson</code> <code>.csv</code> · CloudWatch, MuleSoft, App logs</p>
-        <div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-top:10px;flex-wrap:wrap" onclick="event.stopPropagation()">
-          <span style="font-size:11px;color:var(--text3);font-weight:600">Upload to env:</span>
-          <select id="uploadEnvSelect" style="background:var(--surface2);border:1px solid var(--border2);border-radius:8px;color:var(--text);font-size:11px;font-weight:700;padding:4px 8px;cursor:pointer;font-family:var(--mono)" onclick="event.stopPropagation()">
-            <option value="DEV">DEV</option>
-            <option value="SIT">SIT</option>
-            <option value="UAT">UAT</option>
-            <option value="PREPROD">PREPROD</option>
-            <option value="PROD" selected>PROD</option>
-            <option value="DR">DR</option>
-          </select>
-          <button class="btn-primary" style="font-size:11px;padding:5px 14px" onclick="document.getElementById('fileInput').click()">Browse files</button>
+      <section class="premium-grid">
+        <div class="glass-card premium-panel">
+          <div class="panel-header">
+            <div>
+              <div class="panel-title">Observability Pulse</div>
+              <div class="panel-sub">Throughput, error trend, masking coverage, and latency pattern</div>
+            </div>
+            <div class="panel-tag">Last 24 hours</div>
+          </div>
+          <div class="overview-grid" style="grid-template-columns:minmax(0,1fr) minmax(320px,.58fr);margin-bottom:0">
+            <div class="chart-card premium-card" style="margin-bottom:0">
+              <h3>Latency / traffic activity</h3>
+              <div class="bar-chart" id="hourlyChart"><div style="color:var(--text3);font-size:12px;margin:auto">No data yet</div></div>
+            </div>
+            <div class="chart-card premium-card" style="margin-bottom:0">
+              <h3>Level breakdown</h3>
+              <div class="donut-wrap" id="donutWrap"><div style="color:var(--text3);font-size:12px">No data yet</div></div>
+            </div>
+          </div>
         </div>
-        <div class="upload-progress" id="uploadProgress">
-          <div class="progress-bar-wrap"><div class="progress-bar" id="progressBar"></div></div>
+
+        <div class="glass-card premium-panel">
+          <div class="panel-header">
+            <div>
+              <div class="panel-title">AI Investigation Summary</div>
+              <div class="panel-sub">Correlated from logs + traces + alerts</div>
+            </div>
+            <div class="panel-tag">Gen AI</div>
+          </div>
+          <div class="ai-stack">
+            <div class="ai-card critical">Production payment traffic shows a localized spike in beneficiary validation failures between 11:10 and 11:22.</div>
+            <div class="ai-card info">98.7% sensitive fields are protected. Remaining exposure comes from custom headers and free-text payload fragments.</div>
+            <div class="ai-card purple">Root-cause probability: downstream timeout + retry burst + cache miss cascade.</div>
+            <div class="ai-card">Suggested action: reduce retry aggression, isolate timeout-prone endpoint, and apply stricter masking to free-text request dumps.</div>
+          </div>
         </div>
-      </div>
+      </section>
 
-      <!-- Charts -->
-      <div class="overview-grid">
-        <div class="chart-card">
-          <h3>Activity — last 24h</h3>
-          <div class="bar-chart" id="hourlyChart"><div style="color:var(--text3);font-size:12px;margin:auto">No data yet</div></div>
+      <section class="premium-grid">
+        <div class="glass-card premium-panel">
+          <div class="panel-header">
+            <div>
+              <div class="panel-title">Live Log Stream</div>
+              <div class="panel-sub">Trace-linked, environment-aware, and safely masked</div>
+            </div>
+            <div class="premium-filter-row" style="gap:8px">
+              <div class="panel-tag">Auto Masking ON</div>
+              <div class="panel-tag">Trace Link Enabled</div>
+              <div class="panel-tag">PII Policy Enforced</div>
+            </div>
+          </div>
+          <div class="upload-zone premium-drop" id="uploadZone">
+            <span class="upload-zone-icon">📂</span>
+            <h3>Drop log files here to upload</h3>
+            <p>Supports <code>.log</code> <code>.txt</code> <code>.json</code> <code>.ndjson</code> <code>.csv</code> · CloudWatch, MuleSoft, App logs</p>
+            <div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-top:10px;flex-wrap:wrap" onclick="event.stopPropagation()">
+              <span style="font-size:11px;color:var(--text3);font-weight:600">Upload to env:</span>
+              <select id="uploadEnvSelect" style="background:var(--surface2);border:1px solid var(--border2);border-radius:8px;color:var(--text);font-size:11px;font-weight:700;padding:4px 8px;cursor:pointer;font-family:var(--mono)" onclick="event.stopPropagation()">
+                <option value="DEV">DEV</option>
+                <option value="SIT">SIT</option>
+                <option value="UAT">UAT</option>
+                <option value="PREPROD">PREPROD</option>
+                <option value="PROD" selected>PROD</option>
+                <option value="DR">DR</option>
+              </select>
+              <button class="btn-primary" style="font-size:11px;padding:5px 14px" onclick="document.getElementById('fileInput').click()">Browse files</button>
+            </div>
+            <div class="upload-progress" id="uploadProgress">
+              <div class="progress-bar-wrap"><div class="progress-bar" id="progressBar"></div></div>
+            </div>
+          </div>
+          <div class="table-wrap" id="overviewLogPreview" style="margin-top:14px;border-radius:18px">
+            <div class="table-toolbar" style="background:rgba(255,255,255,.02)">
+              <div class="filter-chips">
+                <button class="chip chip-red active" onclick="showExplorerFiltered('error')">Error</button>
+                <button class="chip chip-yellow" onclick="showExplorerFiltered('warn')">Warn</button>
+                <button class="chip chip-green" onclick="showExplorerFiltered('success')">Success</button>
+                <button class="chip" onclick="showPage('explorer')">Open full explorer</button>
+              </div>
+            </div>
+            <div style="padding:12px 14px;display:grid;gap:10px">
+              <div style="display:grid;grid-template-columns:170px 130px 110px 100px 130px minmax(220px,1fr) 90px;gap:12px;font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.12em;padding:4px 2px">
+                <div>Time</div><div>App</div><div>Env</div><div>Level</div><div>Trace</div><div>Message</div><div>Latency</div>
+              </div>
+              <div style="display:grid;grid-template-columns:170px 130px 110px 100px 130px minmax(220px,1fr) 90px;gap:12px;align-items:start;padding:12px;border:1px solid var(--border);border-radius:16px;background:rgba(255,255,255,.025)">
+                <div>2026-04-22 11:20:42</div><div>payment-engine</div><div>Production</div><div><span class="badge critical" style="padding:4px 8px">Error</span></div><div style="color:var(--cyan)">TRC-98A21F</div><div>Beneficiary validation failed for account ********2198<br><span style="font-size:11px;color:var(--text3)">Sensitive data: masked</span></div><div>1821 ms</div>
+              </div>
+              <div style="display:grid;grid-template-columns:170px 130px 110px 100px 130px minmax(220px,1fr) 90px;gap:12px;align-items:start;padding:12px;border:1px solid var(--border);border-radius:16px;background:rgba(255,255,255,.025)">
+                <div>2026-04-22 11:19:58</div><div>auth-service</div><div>Production</div><div><span class="badge high" style="padding:4px 8px">Warn</span></div><div style="color:var(--cyan)">TRC-23D77B</div><div>Token refresh attempt from unusual IP range<br><span style="font-size:11px;color:var(--text3)">Sensitive data: hidden</span></div><div>214 ms</div>
+              </div>
+            </div>
+          </div>
         </div>
-        <div class="chart-card">
-          <h3>Level breakdown</h3>
-          <div class="donut-wrap" id="donutWrap"><div style="color:var(--text3);font-size:12px">No data yet</div></div>
+
+        <div style="display:grid;gap:16px">
+          <div class="glass-card premium-panel">
+            <div class="panel-header">
+              <div>
+                <div class="panel-title">Alerts Center</div>
+                <div class="panel-sub">Rule-based + anomaly-driven incidents</div>
+              </div>
+              <div class="panel-tag">14 Active</div>
+            </div>
+            <div class="alerts-stack">
+              <div class="alert-item"><div class="alert-top"><div><div class="alert-title">PII leak risk in free-text payload</div><div class="alert-meta">Masking Engine • 2 min ago</div></div><span class="badge critical">Critical</span></div></div>
+              <div class="alert-item"><div class="alert-top"><div><div class="alert-title">Latency spike above threshold</div><div class="alert-meta">Trace Monitor • 5 min ago</div></div><span class="badge high">High</span></div></div>
+              <div class="alert-item"><div class="alert-top"><div><div class="alert-title">5xx error threshold crossed</div><div class="alert-meta">API Gateway • 11 min ago</div></div><span class="badge medium">Medium</span></div></div>
+              <div class="alert-item"><div class="alert-top"><div><div class="alert-title">Suspicious login burst detected</div><div class="alert-meta">Security Analytics • 18 min ago</div></div><span class="badge high">High</span></div></div>
+            </div>
+          </div>
+
+          <div class="glass-card premium-panel">
+            <div class="panel-header">
+              <div>
+                <div class="panel-title">Sensitive Data Protection</div>
+                <div class="panel-sub">Encryption, tokenization, redaction, and risk scoring</div>
+              </div>
+              <div class="panel-tag">Compliant</div>
+            </div>
+            <div class="protect-grid">
+              <div class="protect-item"><div class="protect-item-label">PAN / Aadhaar</div><div class="protect-item-value">Masked</div></div>
+              <div class="protect-item"><div class="protect-item-label">Account Number</div><div class="protect-item-value">Tokenized</div></div>
+              <div class="protect-item"><div class="protect-item-label">Email</div><div class="protect-item-value">Partially Hidden</div></div>
+              <div class="protect-item"><div class="protect-item-label">Phone</div><div class="protect-item-value">Encrypted</div></div>
+              <div class="protect-item"><div class="protect-item-label">JWT Claims</div><div class="protect-item-value">Filtered</div></div>
+              <div class="protect-item"><div class="protect-item-label">Custom Headers</div><div class="protect-item-value">Under Review</div></div>
+            </div>
+          </div>
         </div>
-      </div>
+      </section>
 
-      <!-- 30-day trend -->
-      <div class="chart-card" style="margin-bottom:16px">
-        <h3>30-day log volume</h3>
-        <div id="dailyTrend" style="color:var(--text3);font-size:12px">No data yet</div>
-      </div>
-
-      <!-- Source breakdown -->
-      <div class="chart-card" style="margin-bottom:16px">
-        <h3>Top sources</h3>
-        <div id="sourceBars"><p style="font-size:12px;color:var(--text3)">No data yet</p></div>
-      </div>
-
-      <!-- Error intelligence cards -->
-      <div class="chart-card" style="margin-bottom:16px">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-          <h3 style="margin:0">Top error patterns</h3>
-          <button onclick="loadErrorGroups()" style="padding:3px 10px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text2);font-size:11px;cursor:pointer;font-family:var(--sans)">↻ Refresh</button>
+      <section class="premium-two">
+        <div class="glass-card premium-panel">
+          <div class="panel-header">
+            <div>
+              <div class="panel-title">Trace Mechanism</div>
+              <div class="panel-sub">Visual hop-by-hop flow with latency localization</div>
+            </div>
+            <div class="panel-tag">Trace ID: TRC-98A21F</div>
+          </div>
+          <div class="trace-flow">
+            <div class="trace-node"><strong>Edge Gateway</strong><span>43 ms</span></div><div class="trace-arrow">→</div>
+            <div class="trace-node"><strong>Auth Filter</strong><span>29 ms</span></div><div class="trace-arrow">→</div>
+            <div class="trace-node"><strong>Experience API</strong><span>88 ms</span></div><div class="trace-arrow">→</div>
+            <div class="trace-node"><strong>Process API</strong><span>121 ms</span></div><div class="trace-arrow">→</div>
+            <div class="trace-node"><strong>System API</strong><span>214 ms</span></div><div class="trace-arrow">→</div>
+            <div class="trace-node"><strong>Redis / Cache</strong><span>46 ms</span></div><div class="trace-arrow">→</div>
+            <div class="trace-node"><strong>Core Banking</strong><span>311 ms</span></div>
+          </div>
+          <div class="trace-summary-grid">
+            <div class="trace-summary red"><small>Slowest hop</small><strong>Core Banking</strong><div style="margin-top:6px;font-size:12px;color:var(--text2)">311 ms</div></div>
+            <div class="trace-summary cyan"><small>Trace duration</small><strong>852 ms</strong><div style="margin-top:6px;font-size:12px;color:var(--text2)">End-to-end request path</div></div>
+            <div class="trace-summary purple"><small>Retries observed</small><strong>3</strong><div style="margin-top:6px;font-size:12px;color:var(--text2)">Possible timeout amplification</div></div>
+          </div>
         </div>
-        <div id="errorCards"><p style="font-size:12px;color:var(--text3)">Loading…</p></div>
-      </div>
 
-      <!-- Upload history -->
-      <div class="chart-card" style="margin-bottom:16px">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-          <h3 style="margin:0">Upload history</h3>
+        <div class="glass-card premium-panel">
+          <div class="panel-header">
+            <div>
+              <div class="panel-title">Environment Reliability Matrix</div>
+              <div class="panel-sub">Health, uptime, alert noise, and failover readiness</div>
+            </div>
+            <div class="panel-tag">4 environments</div>
+          </div>
+          <div class="env-list">
+            <div class="env-item"><div><div class="env-item-title">Production</div><div class="env-item-sub">99.96% uptime • 24 critical rules</div></div><span class="status-pill healthy">Healthy</span></div>
+            <div class="env-item"><div><div class="env-item-title">UAT</div><div class="env-item-sub">99.22% uptime • 12 noisy alerts</div></div><span class="status-pill watch">Watch</span></div>
+            <div class="env-item"><div><div class="env-item-title">Development</div><div class="env-item-sub">98.14% uptime • Flexible logging</div></div><span class="status-pill healthy">Healthy</span></div>
+            <div class="env-item"><div><div class="env-item-title">DR</div><div class="env-item-sub">Cold sync verified • Failover ready</div></div><span class="status-pill standby">Standby</span></div>
+          </div>
         </div>
-        <div id="uploadHistWrap"><p style="font-size:12px;color:var(--text3)">Loading…</p></div>
-      </div>
+      </section>
 
-      <!-- Observability overview -->
-      <div class="chart-card" style="margin-bottom:16px">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-          <h3 style="margin:0">Observability — last hour</h3>
-          <button onclick="loadObservability()" style="padding:3px 10px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text2);font-size:11px;cursor:pointer;font-family:var(--sans)">↻ Refresh</button>
+      <section class="premium-grid">
+        <div class="glass-card premium-panel">
+          <div class="panel-header">
+            <div>
+              <div class="panel-title">Advanced Suggestions</div>
+              <div class="panel-sub">Features that would make this platform feel enterprise-ready</div>
+            </div>
+            <button class="premium-btn" type="button">View product roadmap</button>
+          </div>
+          <div class="suggestion-grid">
+            <div class="suggestion-item">Deployment markers on charts to correlate incidents after releases.</div>
+            <div class="suggestion-item">Noise reduction and alert deduplication based on trace similarity.</div>
+            <div class="suggestion-item">Role-based masking so managers, testers, and developers see different detail levels.</div>
+            <div class="suggestion-item">Replay mode to scrub through logs and traces over time.</div>
+            <div class="suggestion-item">Per-application flow maps with API dependency heat scoring.</div>
+            <div class="suggestion-item">Retention and storage cost forecasts by environment.</div>
+          </div>
+        </div>
+
+        <div class="glass-card premium-panel">
+          <div class="panel-header">
+            <div>
+              <div class="panel-title">Quick Actions</div>
+              <div class="panel-sub">Fast entry points for operators and platform admins</div>
+            </div>
+          </div>
+          <div class="quick-actions">
+            <div class="quick-action" onclick="showPage('ai')">Investigate incident</div>
+            <div class="quick-action" onclick="showPage('flow')">Open trace explorer</div>
+            <div class="quick-action" onclick="showPage('explorer')">Export masked logs</div>
+            <div class="quick-action" onclick="showPage('alerts')">Tune alert thresholds</div>
+            <div class="quick-action" onclick="showPage('organization')">Review encryption policies</div>
+            <div class="quick-action" onclick="showPage('deployments')">Validate DR observability</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="premium-two">
+        <div class="glass-card premium-panel">
+          <div class="panel-header">
+            <div>
+              <div class="panel-title">30-day log volume</div>
+              <div class="panel-sub">Historical trend for workspace ingestion</div>
+            </div>
+          </div>
+          <div class="chart-card premium-card" style="margin-bottom:0">
+            <div id="dailyTrend" style="color:var(--text3);font-size:12px">No data yet</div>
+          </div>
+        </div>
+        <div class="glass-card premium-panel">
+          <div class="panel-header">
+            <div>
+              <div class="panel-title">Top sources</div>
+              <div class="panel-sub">Most active producers and integrations</div>
+            </div>
+          </div>
+          <div class="chart-card premium-card" style="margin-bottom:0">
+            <div id="sourceBars"><p style="font-size:12px;color:var(--text3)">No data yet</p></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="premium-two">
+        <div class="glass-card premium-panel">
+          <div class="panel-header">
+            <div>
+              <div class="panel-title">AI error insights</div>
+              <div class="panel-sub">Grouped failure signatures ready for RCA</div>
+            </div>
+            <button onclick="loadErrorGroups()" class="premium-btn" style="padding:8px 12px">↻ Refresh</button>
+          </div>
+          <div id="errorCards"><p style="font-size:12px;color:var(--text3)">Loading…</p></div>
+        </div>
+        <div class="glass-card premium-panel">
+          <div class="panel-header">
+            <div>
+              <div class="panel-title">Upload history</div>
+              <div class="panel-sub">Recent ingestion activity and file outcomes</div>
+            </div>
+          </div>
+          <div id="uploadHistWrap"><p style="font-size:12px;color:var(--text3)">Loading…</p></div>
+        </div>
+      </section>
+
+      <section class="glass-card premium-panel">
+        <div class="panel-header">
+          <div>
+            <div class="panel-title">Observability — last hour</div>
+            <div class="panel-sub">Live health cards generated from recent telemetry</div>
+          </div>
+          <button onclick="loadObservability()" class="premium-btn" style="padding:8px 12px">↻ Refresh</button>
         </div>
         <div id="obsWrap"><p style="font-size:12px;color:var(--text3)">Loading…</p></div>
-      </div>
-
+      </section>
     </div>
   </div>
 
@@ -2191,6 +2430,11 @@ function updateEnvPill() {
   updateHeroHealthChip();
 }
 
+
+function syncOverviewEnvMirror(label) {
+  var el = document.getElementById('envActiveLabelMirror');
+  if (el) el.textContent = label || 'All';
+}
 function toggleEnvDropdown(e) {
   e && e.stopPropagation();
   document.getElementById('envDropdownMenu').classList.toggle('open');
@@ -2245,6 +2489,7 @@ let _selectedIds = new Set();
 // ── INIT ──
 document.addEventListener('DOMContentLoaded', () => {
   applyThemeIcon();
+syncOverviewEnvMirror(document.getElementById('envActiveLabel') ? document.getElementById('envActiveLabel').textContent : 'All');
   updateEnvPill(); // ← apply stored env on load
   loadBootstrap();
   loadErrorGroups();
