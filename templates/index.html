@@ -3818,7 +3818,7 @@ async function runSummarize() {
 const SEVERITY_COLOR = {critical:'#ef4444',error:'#f97316',warning:'#eab308',info:'#3b82f6'};
 const STATUS_BADGE = {
   firing: '<span style="background:#fee2e2;color:#b91c1c;font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;letter-spacing:.4px">FIRING</span>',
-  acknowledged: '<span style="background:#fef9c3;color:#854d0e;font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;letter-spacing:.4px">ACK'D</span>',
+  acknowledged: '<span style="background:#fef9c3;color:#854d0e;font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;letter-spacing:.4px">ACK&#39;D</span>',
   resolved: '<span style="background:#dcfce7;color:#166534;font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;letter-spacing:.4px">RESOLVED</span>',
 };
 
@@ -3888,10 +3888,6 @@ function fmtAge(ts) {
   if (diff < 3600) return Math.floor(diff/60) + 'm ago';
   if (diff < 86400) return Math.floor(diff/3600) + 'h ago';
   return Math.floor(diff/86400) + 'd ago';
-}
-
-function escHtml(s) {
-  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
 // ── Deployments ───────────────────────────────────────────────────────────────
