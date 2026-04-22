@@ -1004,23 +1004,23 @@ html.light .premium-kpi{background:#f8fbff;border-color:rgba(15,23,42,.08)}
           <div class="premium-hero-side">
             <div class="glass-card hero-side-card">
               <h3>AI Investigation Summary</h3>
-              <p>Correlated from logs, traces, and alert patterns. Use this panel to surface likely root causes, masking gaps, and noisy retry behavior without opening multiple tools.</p>
+              <p id="heroAiSummaryText">Loading workspace telemetry…</p>
             </div>
             <div class="hero-side-grid">
               <div class="glass-card side-mini">
                 <div class="side-mini-label">Masking coverage</div>
                 <div class="side-mini-value" id="heroMaskingCoverage">—</div>
-                <div class="side-mini-sub">Sensitive fields protected across payloads, headers, and free-text logs.</div>
+                <div class="side-mini-sub" id="heroMaskingSub">Waiting for recent uploads and log scans.</div>
               </div>
               <div class="glass-card side-mini">
                 <div class="side-mini-label">Primary risk</div>
                 <div class="side-mini-value" id="heroPrimaryRisk">—</div>
-                <div class="side-mini-sub">Downstream timeout amplification in payment-heavy traffic.</div>
+                <div class="side-mini-sub" id="heroPrimaryRiskSub">No live risk derived yet.</div>
               </div>
               <div class="glass-card side-mini">
                 <div class="side-mini-label">Environment mode</div>
-                <div class="side-mini-value" id="heroHealthChip">Mostly healthy</div>
-                <div class="side-mini-sub">Environment-aware routing and health posture shown live.</div>
+                <div class="side-mini-value" id="heroHealthChip">—</div>
+                <div class="side-mini-sub" id="heroHealthSub">Environment-aware routing and health posture shown live.</div>
               </div>
               <div class="glass-card side-mini">
                 <div class="side-mini-label">Workspace ID</div>
@@ -1036,7 +1036,7 @@ html.light .premium-kpi{background:#f8fbff;border-color:rgba(15,23,42,.08)}
       <div class="premium-filterbar">
         <div class="premium-filter-row">
           <div class="premium-chip">Environment: <strong id="envActiveLabelMirror" style="color:var(--text);font-weight:800">All</strong></div>
-          <div class="premium-chip">App focus: <strong id="appFocusValue" style="color:var(--text);font-weight:800">—</strong></div>
+          <div class="premium-chip">App focus: <strong id="overviewAppFocus" style="color:var(--text);font-weight:800">Loading…</strong></div>
           <div class="premium-chip">Mode: <strong style="color:var(--text);font-weight:800">Trace linked</strong></div>
         </div>
         <div class="premium-filter-row" style="margin-left:auto">
@@ -1114,9 +1114,7 @@ html.light .premium-kpi{background:#f8fbff;border-color:rgba(15,23,42,.08)}
             </div>
             <div class="panel-tag">Gen AI</div>
           </div>
-          <div class="ai-stack" id="overviewAiStack">
-            <div class="ai-card">Generating insights from ingested logs…</div>
-          </div>
+          <div class="ai-stack" id="overviewAiStack"></div>
         </div>
       </section>
 
@@ -1154,49 +1152,34 @@ html.light .premium-kpi{background:#f8fbff;border-color:rgba(15,23,42,.08)}
             </div>
           </div>
           <div class="table-wrap" id="overviewLogPreview" style="margin-top:14px;border-radius:18px">
-            <div class="table-toolbar" style="background:rgba(255,255,255,.02)">
-              <div class="filter-chips">
-                <button class="chip chip-red active" onclick="showExplorerFiltered('error')">Error</button>
-                <button class="chip chip-yellow" onclick="showExplorerFiltered('warn')">Warn</button>
-                <button class="chip chip-green" onclick="showExplorerFiltered('success')">Success</button>
-                <button class="chip" onclick="showPage('explorer')">Open full explorer</button>
-              </div>
-            </div>
-            <div style="padding:12px 14px;display:grid;gap:10px" id="overviewLogRowsWrap">
-              <div style="display:grid;grid-template-columns:170px 130px 110px 100px 130px minmax(220px,1fr) 90px;gap:12px;font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.12em;padding:4px 2px">
-                <div>Time</div><div>App</div><div>Env</div><div>Level</div><div>Trace</div><div>Message</div><div>Latency</div>
-              </div>
-              <div id="overviewLogRows"><div style="padding:12px;color:var(--text3);font-size:12px">Waiting for ingested logs…</div></div>
-            </div>
+            <div id="overviewRecentLogs"></div>
+          </div>
           </div>
         </div>
+      </section>
 
-        <div style="display:grid;gap:16px">
-          <div class="glass-card premium-panel">
-            <div class="panel-header">
-              <div>
-                <div class="panel-title">Alerts Center</div>
-                <div class="panel-sub">Rule-based + anomaly-driven incidents</div>
-              </div>
-              <div class="panel-tag" id="overviewAlertsTag">—</div>
-            </div>
-            <div class="alerts-stack" id="overviewAlertsStack">
-              <div class="alert-item"><div class="alert-top"><div><div class="alert-title">Waiting for live alert signals…</div><div class="alert-meta">Derived from ingested data</div></div><span class="badge medium">Live</span></div></div>
-            </div>
-          </div>
 
-          <div class="glass-card premium-panel">
-            <div class="panel-header">
-              <div>
-                <div class="panel-title">Sensitive Data Protection</div>
-                <div class="panel-sub">Encryption, tokenization, redaction, and risk scoring</div>
-              </div>
-              <div class="panel-tag">Compliant</div>
+      <section class="premium-grid">
+        <div class="glass-card premium-panel">
+          <div class="panel-header">
+            <div>
+              <div class="panel-title">Alerts Center</div>
+              <div class="panel-sub">Live incidents derived from alert rules, uploads, and grouped failures</div>
             </div>
-            <div class="protect-grid" id="protectionGrid">
-              <div class="protect-item"><div class="protect-item-label">Protection coverage</div><div class="protect-item-value">Scanning recent payloads…</div></div>
-            </div>
+            <div class="panel-tag">Dynamic</div>
           </div>
+          <div class="alerts-stack" id="overviewAlertsDynamic"></div>
+        </div>
+
+        <div class="glass-card premium-panel">
+          <div class="panel-header">
+            <div>
+              <div class="panel-title">Sensitive Data Protection</div>
+              <div class="panel-sub">Protection posture derived from recent ingested messages and payload scans</div>
+            </div>
+            <div class="panel-tag">Live scan</div>
+          </div>
+          <div class="protect-grid" id="overviewProtectionGrid"></div>
         </div>
       </section>
 
@@ -1207,14 +1190,9 @@ html.light .premium-kpi{background:#f8fbff;border-color:rgba(15,23,42,.08)}
               <div class="panel-title">Trace Mechanism</div>
               <div class="panel-sub">Visual hop-by-hop flow with latency localization</div>
             </div>
-            <div class="panel-tag" id="traceIdTag">Trace ID: —</div>
+            <div class="panel-tag">Trace ID: TRC-98A21F</div>
           </div>
-          <div class="trace-flow" id="traceFlowWrap">
-            <div class="trace-node"><strong>Derived flow</strong><span>Waiting for correlated telemetry…</span></div>
-          </div>
-          <div class="trace-summary-grid" id="traceSummaryGrid">
-            <div class="trace-summary cyan"><small>Trace duration</small><strong>—</strong><div style="margin-top:6px;font-size:12px;color:var(--text2)">End-to-end request path</div></div>
-          </div>
+          <div class="trace-flow" id="overviewTraceFlow"></div><div class="trace-summary-grid" id="overviewTraceSummary"></div>
         </div>
 
         <div class="glass-card premium-panel">
@@ -1223,11 +1201,9 @@ html.light .premium-kpi{background:#f8fbff;border-color:rgba(15,23,42,.08)}
               <div class="panel-title">Environment Reliability Matrix</div>
               <div class="panel-sub">Health, uptime, alert noise, and failover readiness</div>
             </div>
-            <div class="panel-tag" id="envMatrixTag">0 environments</div>
+            <div class="panel-tag">4 environments</div>
           </div>
-          <div class="env-list" id="envListWrap">
-            <div class="env-item"><div><div class="env-item-title">No environments yet</div><div class="env-item-sub">Upload logs or configure sources to populate live reliability signals.</div></div><span class="status-pill standby">Idle</span></div>
-          </div>
+          <div class="env-list" id="overviewEnvList"></div>
         </div>
       </section>
 
@@ -2487,7 +2463,6 @@ function updateEnvPill() {
   });
   // Update health chip in hero
   updateHeroHealthChip();
-  refreshOverviewLive();
 }
 
 
@@ -2743,99 +2718,7 @@ function applyBootstrap(d) {
   // ── Environment menu ──
   if (d.environments && d.environments.length) populateEnvMenu(d.environments);
   updateHeroHealthChip();
-  refreshOverviewLive();
-}
-
-
-
-async function refreshOverviewLive() {
-  try {
-    const r = await fetch(withEnv('/api/overview/live'));
-    if (!r.ok) return;
-    const d = await r.json();
-    renderOverviewLive(d);
-  } catch (e) {
-    console.error('overview live failed', e);
-  }
-}
-
-function renderOverviewLive(d) {
-  const appFocus = document.getElementById('appFocusValue');
-  if (appFocus) appFocus.textContent = d.app_focus || '—';
-  const hc = document.getElementById('heroMaskingCoverage');
-  if (hc) {
-    const covered = (d.protection || []).filter(x => !/Needs review|Not observed/i.test(x.value || '')).length;
-    const pct = d.protection && d.protection.length ? Math.round((covered / d.protection.length) * 100) : 0;
-    hc.textContent = pct ? pct + '%' : '—';
-  }
-  const risk = document.getElementById('heroPrimaryRisk');
-  if (risk) risk.textContent = (d.signals && d.signals[0] ? d.signals[0].title.slice(0, 28) : 'No active risk');
-
-  const ai = document.getElementById('overviewAiStack');
-  if (ai) {
-    ai.innerHTML = (d.ai_cards || []).map(card => `<div class="ai-card ${card.tone || ''}">${esc(card.text || '')}</div>`).join('') || '<div class="ai-card">No AI insights yet.</div>';
-  }
-
-  const logsWrap = document.getElementById('overviewLogRows');
-  if (logsWrap) {
-    const rows = d.latest_logs || [];
-    logsWrap.innerHTML = rows.length ? rows.map(row => {
-      const trace = row.correlation_id || row.request_id || row.event_id || '—';
-      const env = (row.environment_name || 'PROD');
-      const lvlCls = row.level === 'error' ? 'critical' : row.level === 'warn' ? 'high' : row.level === 'success' ? 'success' : 'medium';
-      const latency = row.duration_ms ? Math.round(row.duration_ms) + ' ms' : '—';
-      return `<div style="display:grid;grid-template-columns:170px 130px 110px 100px 130px minmax(220px,1fr) 90px;gap:12px;align-items:start;padding:12px;border:1px solid var(--border);border-radius:16px;background:rgba(255,255,255,.025)">
-        <div>${esc(row.timestamp || '—')}</div>
-        <div>${esc(row.source || 'unknown')}</div>
-        <div>${esc(env)}</div>
-        <div><span class="badge ${lvlCls}" style="padding:4px 8px">${esc((row.level || '').replace(/^./, c => c.toUpperCase()))}</span></div>
-        <div style="color:var(--cyan)">${esc(trace)}</div>
-        <div>${esc(row.message || '')}</div>
-        <div>${esc(latency)}</div>
-      </div>`;
-    }).join('') : '<div style="padding:12px;color:var(--text3);font-size:12px">No logs yet. Upload files or ingest events to populate this stream.</div>';
-  }
-
-  const alertsTag = document.getElementById('overviewAlertsTag');
-  if (alertsTag) alertsTag.textContent = `${(d.signals || []).length} active signals`;
-  const alertsWrap = document.getElementById('overviewAlertsStack');
-  if (alertsWrap) {
-    alertsWrap.innerHTML = (d.signals || []).length ? d.signals.map(sig => {
-      const cls = /critical/i.test(sig.severity||'') ? 'critical' : /high/i.test(sig.severity||'') ? 'high' : 'medium';
-      return `<div class="alert-item"><div class="alert-top"><div><div class="alert-title">${esc(sig.title || '')}</div><div class="alert-meta">${esc(sig.source || '')} • ${esc(sig.meta || '')}</div></div><span class="badge ${cls}">${esc(sig.severity || 'Live')}</span></div></div>`;
-    }).join('') : '<div class="alert-item"><div class="alert-top"><div><div class="alert-title">No active signals</div><div class="alert-meta">Derived from current uploads and alert rules</div></div><span class="badge success">Healthy</span></div></div>';
-  }
-
-  const prot = document.getElementById('protectionGrid');
-  if (prot) {
-    prot.innerHTML = (d.protection || []).map(item => `<div class="protect-item"><div class="protect-item-label">${esc(item.label || '')}</div><div class="protect-item-value">${esc(item.value || '')}</div></div>`).join('');
-  }
-
-  const traceId = document.getElementById('traceIdTag');
-  if (traceId) traceId.textContent = 'Trace ID: ' + (d.trace && d.trace.id ? d.trace.id : '—');
-  const traceFlow = document.getElementById('traceFlowWrap');
-  if (traceFlow) {
-    const nodes = d.trace && d.trace.nodes ? d.trace.nodes : [];
-    traceFlow.innerHTML = nodes.length ? nodes.map((n, idx) => `${idx ? '<div class="trace-arrow">→</div>' : ''}<div class="trace-node"><strong>${esc(n.name || 'service')}</strong><span>${esc(String(n.ms || 0))} ms</span></div>`).join('') : '<div class="trace-node"><strong>No correlated flow yet</strong><span>Ingest trace-linked logs to build this view.</span></div>';
-  }
-  const tsg = document.getElementById('traceSummaryGrid');
-  if (tsg) {
-    const slow = d.trace && d.trace.slowest ? d.trace.slowest : null;
-    tsg.innerHTML = `
-      <div class="trace-summary red"><small>Slowest hop</small><strong>${esc(slow ? slow.name : '—')}</strong><div style="margin-top:6px;font-size:12px;color:var(--text2)">${esc(slow ? String(slow.ms) + ' ms' : 'No data')}</div></div>
-      <div class="trace-summary cyan"><small>Trace duration</small><strong>${esc(d.trace ? String(d.trace.total_ms || 0) + ' ms' : '—')}</strong><div style="margin-top:6px;font-size:12px;color:var(--text2)">Derived from current telemetry</div></div>
-      <div class="trace-summary purple"><small>Error hops</small><strong>${esc(d.trace ? String(d.trace.retries || 0) : '0')}</strong><div style="margin-top:6px;font-size:12px;color:var(--text2)">Nodes flagged from the current flow</div></div>`;
-  }
-
-  const envTag = document.getElementById('envMatrixTag');
-  if (envTag) envTag.textContent = `${(d.env_matrix || []).length} environments`;
-  const envWrap = document.getElementById('envListWrap');
-  if (envWrap) {
-    envWrap.innerHTML = (d.env_matrix || []).length ? d.env_matrix.map(env => {
-      const cls = /healthy/i.test(env.status||'') ? 'healthy' : /watch/i.test(env.status||'') ? 'watch' : /critical/i.test(env.status||'') ? 'critical' : 'standby';
-      return `<div class="env-item"><div><div class="env-item-title">${esc(env.name || '')}</div><div class="env-item-sub">${esc(env.meta || '')}</div></div><span class="status-pill ${cls}">${esc(env.status || '')}</span></div>`;
-    }).join('') : '<div class="env-item"><div><div class="env-item-title">No environments yet</div><div class="env-item-sub">Upload logs or configure sources to populate live reliability signals.</div></div><span class="status-pill standby">Idle</span></div>';
-  }
+  loadOverviewLive();
 }
 
 // ── Onboarding checklist ──
@@ -2890,6 +2773,98 @@ function toggleAutoRefresh() {
   var on = document.getElementById('autoRefreshToggle').checked;
   if (_autoRefreshTimer) { clearInterval(_autoRefreshTimer); _autoRefreshTimer = null; }
   if (on) { _autoRefreshTimer = setInterval(loadBootstrap, 30000); }
+}
+
+
+async function loadOverviewLive() {
+  try {
+    const r = await fetch(withEnv('/api/overview/live'));
+    if (!r.ok) return;
+    const data = await r.json();
+    renderOverviewLive(data);
+  } catch (e) { console.error(e); }
+}
+
+function toneClass(tone) {
+  tone = (tone || '').toLowerCase();
+  if (tone.includes('error') || tone.includes('critical')) return 'critical';
+  if (tone.includes('warn') || tone.includes('high')) return 'info';
+  if (tone.includes('purple')) return 'purple';
+  return '';
+}
+
+function renderOverviewLive(data) {
+  setText('overviewAppFocus', data.app_focus || 'No source yet');
+  setText('heroMaskingCoverage', ((data.masking_coverage ?? 0).toFixed ? data.masking_coverage.toFixed(1) : data.masking_coverage) + '%');
+  setText('heroMaskingSub', `Derived from ${data.protection?.reduce((a,x)=>a+(x.hits||0),0) || 0} recent sensitive-field detections.`);
+  setText('heroPrimaryRisk', data.primary_risk || 'No active risk');
+  setText('heroPrimaryRiskSub', (data.alerts && data.alerts.length) ? `${data.alerts.length} live incident signals across current workspace.` : 'No live incidents derived from uploads or rules.');
+  setText('heroHealthChip', data.environment_mode || 'No data');
+  setText('heroHealthSub', (data.environments && data.environments.length) ? `${data.environments.length} environments observed from ingested logs.` : 'Waiting for environment activity.');
+  setText('heroAiSummaryText', (data.ai_insights && data.ai_insights[0]) ? data.ai_insights[0].text : 'Insights will appear as logs, uploads, and alerts arrive.');
+
+  const ai = document.getElementById('overviewAiStack');
+  if (ai) {
+    const items = data.ai_insights || [];
+    ai.innerHTML = items.length ? items.map(item => `<div class="ai-card ${toneClass(item.tone)}">${escapeHtml(item.text || '')}</div>`).join('') : '<div class="ai-card">No live insights yet. Upload logs or connect integrations to generate workspace-aware summaries.</div>';
+  }
+
+  const recent = document.getElementById('overviewRecentLogs');
+  if (recent) {
+    const logs = data.recent_logs || [];
+    if (!logs.length) {
+      recent.innerHTML = '<div class="empty-state" style="padding:26px 18px">No recent logs yet. Upload a file or send events through the ingest API.</div>';
+    } else {
+      recent.innerHTML = `
+        <div style="display:grid;grid-template-columns:170px 130px 110px 100px 130px minmax(220px,1fr) 90px;gap:12px;font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.12em;padding:4px 2px">
+          <div>Time</div><div>App</div><div>Env</div><div>Level</div><div>Trace</div><div>Message</div><div>Latency</div>
+        </div>
+        ${(logs).map(l => {
+          const trace = l.correlation_id || l.request_id || l.event_id || '—';
+          const lat = l.duration_ms ? `${Math.round(l.duration_ms)} ms` : '—';
+          const cls = (l.level || '').toLowerCase() === 'error' ? 'critical' : ((l.level || '').toLowerCase() === 'warn' ? 'high' : 'medium');
+          return `<div style="display:grid;grid-template-columns:170px 130px 110px 100px 130px minmax(220px,1fr) 90px;gap:12px;align-items:start;padding:12px;border:1px solid var(--border);border-radius:16px;background:rgba(255,255,255,.025)">
+            <div>${escapeHtml(l.timestamp || '')}</div><div>${escapeHtml(l.source || '')}</div><div>${escapeHtml(l.environment_name || 'PROD')}</div><div><span class="badge ${cls}" style="padding:4px 8px">${escapeHtml((l.level || '').toUpperCase())}</span></div><div style="color:var(--cyan)">${escapeHtml(trace)}</div><div>${escapeHtml(l.message || '')}</div><div>${escapeHtml(lat)}</div>
+          </div>`;
+        }).join('')}`;
+    }
+  }
+
+  const alerts = document.getElementById('overviewAlertsDynamic');
+  if (alerts) {
+    const items = data.alerts || [];
+    alerts.innerHTML = items.length ? items.map(a => `<div class="alert-item"><div class="alert-top"><div><div class="alert-title">${escapeHtml(a.title || '')}</div><div class="alert-meta">${escapeHtml(a.environment_name || 'ALL')} • ${escapeHtml(a.fired_at || '')}</div></div><span class="badge ${((a.severity||'').toLowerCase()==='critical')?'critical':(((a.severity||'').toLowerCase()==='high')?'high':'medium')}">${escapeHtml(a.severity || 'Info')}</span></div></div>`).join('') : '<div class="alert-item"><div class="alert-top"><div><div class="alert-title">No active incidents</div><div class="alert-meta">Derived from current uploads and alert rules</div></div><span class="badge success">Clear</span></div></div>';
+  }
+
+  const protection = document.getElementById('overviewProtectionGrid');
+  if (protection) {
+    const items = data.protection || [];
+    protection.innerHTML = items.map(p => `<div class="protect-item"><div class="protect-item-label">${escapeHtml(p.name)}</div><div class="protect-item-value">${escapeHtml(p.status)}</div><div style="margin-top:6px;font-size:11px;color:var(--text3)">${escapeHtml(String(p.protected || 0))}/${escapeHtml(String(p.hits || 0))} protected hits</div></div>`).join('');
+  }
+
+  const flow = document.getElementById('overviewTraceFlow');
+  if (flow) {
+    const nodes = (data.trace && data.trace.nodes) || [];
+    flow.innerHTML = nodes.map((n, idx) => `${idx ? '<div class="trace-arrow">→</div>' : ''}<div class="trace-node"><strong>${escapeHtml(n.name || '')}</strong><span>${escapeHtml(String(n.ms || 0))} ms</span></div>`).join('');
+  }
+  const traceTag = Array.from(document.querySelectorAll('#page-overview .panel-tag')).find(el => (el.textContent || '').includes('Trace ID'));
+  if (traceTag && data.trace) traceTag.textContent = `Trace ID: ${data.trace.trace_id || 'N/A'}`;
+  const tsum = document.getElementById('overviewTraceSummary');
+  if (tsum && data.trace) {
+    const slow = data.trace.slowest || {name:'N/A', ms:0};
+    tsum.innerHTML = `<div class="trace-summary red"><small>Slowest hop</small><strong>${escapeHtml(slow.name || 'N/A')}</strong><div style="margin-top:6px;font-size:12px;color:var(--text2)">${escapeHtml(String(slow.ms || 0))} ms</div></div>
+      <div class="trace-summary cyan"><small>Trace duration</small><strong>${escapeHtml(String(data.trace.duration || 0))} ms</strong><div style="margin-top:6px;font-size:12px;color:var(--text2)">Derived from average recent service durations</div></div>
+      <div class="trace-summary purple"><small>Observed services</small><strong>${escapeHtml(String((data.trace.nodes || []).length))}</strong><div style="margin-top:6px;font-size:12px;color:var(--text2)">Based on ingested activity in current scope</div></div>`;
+  }
+
+  const envList = document.getElementById('overviewEnvList');
+  if (envList) {
+    const envs = data.environments || [];
+    envList.innerHTML = envs.map(e => {
+      const cls = e.status === 'Healthy' ? 'healthy' : (e.status === 'Watch' ? 'watch' : 'standby');
+      return `<div class="env-item"><div><div class="env-item-title">${escapeHtml(e.name)}</div><div class="env-item-sub">${escapeHtml(String(e.total))} logs • ${escapeHtml(String(e.errors))} errors • avg ${escapeHtml(String(e.avg_ms))} ms • ${escapeHtml(String(e.incidents))} incidents</div></div><span class="status-pill ${cls}">${escapeHtml(e.status)}</span></div>`;
+    }).join('');
+  }
 }
 
 function setText(id, val) {

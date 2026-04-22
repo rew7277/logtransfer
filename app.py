@@ -2473,166 +2473,6 @@ def bootstrap():
         },
     })
 
-
-
-@app.get("/api/overview/live")
-def overview_live():
-    user, error = require_auth()
-    if error:
-        return error
-    db = get_db()
-    env = get_requested_environment()
-    params = [user["org_id"]]
-    env_clause = ""
-    if env != "ALL":
-        env_clause = " AND upper(coalesce(environment_name, 'PROD')) = ?"
-        params.append(env)
-
-    summary = dashboard_summary(user["org_id"])
-
-    latest_logs = [dict(r) for r in db.execute(
-        "SELECT id, timestamp, level, source, event_id, message, duration_ms, environment_name, correlation_id, request_id "
-        "FROM log_events WHERE org_id = ?" + env_clause + " ORDER BY timestamp DESC LIMIT 8",
-        params,
-    ).fetchall()]
-
-    err_groups = [dict(r) for r in db.execute(
-        "SELECT substr(message,1,140) AS pattern, COUNT(*) AS count, MAX(timestamp) AS last_seen, "
-        "GROUP_CONCAT(DISTINCT source) AS sources, level "
-        "FROM log_events WHERE org_id = ?" + env_clause + " AND level IN ('error','warn') "
-        "GROUP BY substr(message,1,140), level ORDER BY count DESC LIMIT 3",
-        params,
-    ).fetchall()]
-    for g in err_groups:
-        g['sources'] = [s for s in (g.get('sources') or '').split(',') if s]
-
-    top_source_row = db.execute(
-        "SELECT source, COUNT(*) AS count FROM log_events WHERE org_id = ?" + env_clause + " GROUP BY source ORDER BY count DESC LIMIT 1",
-        params,
-    ).fetchone()
-    app_focus = top_source_row['source'] if top_source_row else 'No source yet'
-
-    # Trace candidate: prefer a recent correlation/request ID, otherwise infer from slowest recent sources
-    trace_key = None
-    for row in latest_logs:
-        trace_key = row.get('correlation_id') or row.get('request_id') or row.get('event_id')
-        if trace_key:
-            break
-    trace_nodes = []
-    trace_total_ms = 0
-    if trace_key:
-        trace_rows = [dict(r) for r in db.execute(
-            "SELECT source, duration_ms, level, timestamp FROM log_events WHERE org_id = ? "
-            "AND (correlation_id = ? OR request_id = ? OR event_id = ?) ORDER BY timestamp ASC LIMIT 12",
-            (user['org_id'], trace_key, trace_key, trace_key),
-        ).fetchall()]
-        for r in trace_rows:
-            ms = int(float(r.get('duration_ms') or 0))
-            trace_total_ms += ms
-            trace_nodes.append({"name": r.get('source') or 'service', "ms": ms, "level": r.get('level')})
-    if not trace_nodes:
-        trace_rows = [dict(r) for r in db.execute(
-            "SELECT source, AVG(COALESCE(duration_ms,0)) AS avg_ms, COUNT(*) AS cnt FROM log_events "
-            "WHERE org_id = ?" + env_clause + " GROUP BY source ORDER BY avg_ms DESC, cnt DESC LIMIT 6",
-            params,
-        ).fetchall()]
-        for r in trace_rows:
-            ms = int(float(r.get('avg_ms') or 0))
-            trace_total_ms += ms
-            trace_nodes.append({"name": r.get('source') or 'service', "ms": ms, "level": 'info'})
-    slowest = max(trace_nodes, key=lambda x: x.get('ms',0)) if trace_nodes else None
-
-    # Protection scan from messages + payloads
-    scan_rows = db.execute(
-        "SELECT message, payload_json FROM log_events WHERE org_id = ?" + env_clause + " ORDER BY timestamp DESC LIMIT 200",
-        params,
-    ).fetchall()
-    joined = "\n".join(((r['message'] or '') + ' ' + (r['payload_json'] or '')) for r in scan_rows)
-    checks = {
-        'PAN / Aadhaar': ('Masked' if re.search(r'\b\d{4}[*xX-]{4,}\d{4}\b|[*]{4,}', joined) else 'Not observed'),
-        'Account Number': ('Tokenized' if re.search(r'account|acct|iban', joined, re.I) and re.search(r'[*xX]{4,}', joined) else 'Needs review'),
-        'Email': ('Partially Hidden' if re.search(r'[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+', joined) and re.search(r'[*xX]{2,}', joined) else 'Needs review'),
-        'Phone': ('Encrypted' if re.search(r'phone|mobile|msisdn', joined, re.I) else 'Not observed'),
-        'JWT Claims': ('Filtered' if re.search(r'jwt|bearer|authorization', joined, re.I) else 'Not observed'),
-        'Custom Headers': ('Under Review' if re.search(r'header|x-|authorization', joined, re.I) else 'Clean'),
-    }
-    protection = [{"label": k, "value": v} for k,v in checks.items()]
-
-    # Dynamic environment matrix
-    env_rows = [dict(r) for r in db.execute(
-        "SELECT upper(coalesce(environment_name, 'PROD')) AS env, COUNT(*) AS total, "
-        "SUM(CASE WHEN level='error' THEN 1 ELSE 0 END) AS errors, "
-        "SUM(CASE WHEN level='warn' THEN 1 ELSE 0 END) AS warns, "
-        "AVG(COALESCE(duration_ms,0)) AS avg_ms, MAX(timestamp) AS last_seen "
-        "FROM log_events WHERE org_id = ? GROUP BY upper(coalesce(environment_name, 'PROD')) ORDER BY total DESC",
-        (user['org_id'],),
-    ).fetchall()]
-    env_matrix=[]
-    for r in env_rows:
-        total = r.get('total') or 0
-        errors = r.get('errors') or 0
-        warns = r.get('warns') or 0
-        err_rate = (errors / total * 100) if total else 0
-        if r['env'] == 'DR':
-            status = 'Standby'
-        elif err_rate >= 20:
-            status = 'Critical'
-        elif err_rate >= 5 or warns:
-            status = 'Watch'
-        else:
-            status = 'Healthy'
-        env_matrix.append({
-            'name': r['env'],
-            'status': status,
-            'meta': f"{total} logs • {errors} errors • {int(float(r.get('avg_ms') or 0))} ms avg",
-            'last_seen': r.get('last_seen')
-        })
-
-    # Dynamic alerts/signals derived from grouped errors and config
-    signals=[]
-    for g in err_groups:
-        sev = 'Critical' if g.get('level') == 'error' and g.get('count',0) >= 5 else 'High' if g.get('level') == 'error' else 'Medium'
-        src = ', '.join(g.get('sources')[:2]) if g.get('sources') else 'Log pattern'
-        signals.append({
-            'title': g.get('pattern') or 'Recurring issue detected',
-            'severity': sev,
-            'source': src,
-            'meta': f"{g.get('count',0)} occurrences • last seen {g.get('last_seen') or 'recently'}"
-        })
-    if not signals:
-        cfg_alerts = [dict(r) for r in db.execute(
-            "SELECT name, severity, condition_text, status FROM alert_rules WHERE org_id=? ORDER BY id DESC LIMIT 4",
-            (user['org_id'],),
-        ).fetchall()]
-        for a in cfg_alerts:
-            signals.append({'title': a['name'], 'severity': str(a['severity']).upper(), 'source': a['status'], 'meta': a['condition_text']})
-
-    # AI summary derived from actual org data
-    ai_cards=[]
-    if err_groups:
-        g = err_groups[0]
-        ai_cards.append({"tone":"critical","text":f"Top recurring {g['level']} pattern: {g['pattern']} ({g['count']} hits)."})
-    ai_cards.append({"tone":"info","text":f"Most active source in the current view is {app_focus}."})
-    ai_cards.append({"tone":"purple","text":f"Current workspace error rate is {summary.get('error_rate',0)}% across {summary.get('totals',{}).get('logs',0)} ingested logs."})
-    uploads_count = summary.get('totals',{}).get('uploads',0)
-    ai_cards.append({"tone":"neutral","text":f"Uploads processed so far: {uploads_count}. Insights update automatically from ingested logs and source activity."})
-
-    return jsonify({
-        'app_focus': app_focus,
-        'latest_logs': latest_logs,
-        'signals': signals[:4],
-        'protection': protection,
-        'trace': {
-            'id': trace_key or 'derived-flow',
-            'nodes': trace_nodes,
-            'total_ms': trace_total_ms,
-            'slowest': slowest,
-            'retries': max(0, len([n for n in trace_nodes if n.get('level') == 'error']) - 1),
-        },
-        'env_matrix': env_matrix,
-        'ai_cards': ai_cards,
-    })
-
 @app.get("/api/logs")
 def get_logs():
     user, error = require_auth()
@@ -3714,6 +3554,189 @@ def demo_request():
     )
     db.commit()
     return jsonify({"message": "Demo request submitted successfully."})
+
+
+
+@app.get("/api/overview/live")
+def api_overview_live():
+    user, error = require_auth()
+    if error:
+        return error
+    db = get_db()
+    org_id = user["org_id"]
+    environment_name = get_requested_environment()
+    params = [org_id]
+    env_sql = ""
+    if environment_name != "ALL":
+        env_sql = " AND upper(coalesce(environment_name, 'PROD')) = ?"
+        params.append(environment_name)
+
+    recent_logs = [dict(r) for r in db.execute(
+        "SELECT id, timestamp, level, source, event_id, message, environment_name, correlation_id, request_id, duration_ms, status_code "
+        "FROM log_events WHERE org_id = ?" + env_sql + " ORDER BY timestamp DESC, id DESC LIMIT 6",
+        params,
+    ).fetchall()]
+
+    source_row = db.execute(
+        "SELECT source, COUNT(*) AS cnt FROM log_events WHERE org_id = ?" + env_sql + " GROUP BY source ORDER BY cnt DESC, source ASC LIMIT 1",
+        params,
+    ).fetchone()
+    app_focus = source_row["source"] if source_row and source_row["source"] else "No source yet"
+
+    grouped = [dict(r) for r in db.execute(
+        "SELECT substr(message,1,120) AS pattern, COUNT(*) AS count, level, GROUP_CONCAT(DISTINCT source) AS sources "
+        "FROM log_events WHERE org_id = ?" + env_sql + " AND level IN ('error','warn') "
+        "GROUP BY substr(message,1,120), level ORDER BY count DESC LIMIT 3",
+        params,
+    ).fetchall()]
+
+    incidents = [dict(r) for r in db.execute(
+        "SELECT title, severity, status, environment_name, fired_at FROM alert_incidents WHERE org_id = ?" +
+        (" AND upper(coalesce(environment_name, 'PROD')) = ?" if environment_name != "ALL" else "") +
+        " ORDER BY fired_at DESC LIMIT 4",
+        params,
+    ).fetchall()]
+
+    recent_uploads = db.execute(
+        "SELECT COUNT(*) AS cnt FROM uploads WHERE org_id = ?" + env_sql + " AND created_at >= ?",
+        params + [ (datetime.now(timezone.utc) - timedelta(days=7)).isoformat() ],
+    ).fetchone()[0]
+
+    protect_rows = db.execute(
+        "SELECT message, payload_json FROM log_events WHERE org_id = ?" + env_sql + " ORDER BY timestamp DESC LIMIT 800",
+        params,
+    ).fetchall()
+    sensitive_hits = {"PAN / Aadhaar": 0, "Account Number": 0, "Email": 0, "Phone": 0, "JWT Claims": 0, "Custom Headers": 0}
+    protected_hits = {k: 0 for k in sensitive_hits}
+    phone_re = re.compile(r"\b(?:\+?91[- ]?)?[6-9]\d{9}\b")
+    email_re = re.compile(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}")
+    acct_re = re.compile(r"\b\d{9,18}\b")
+    pan_re = re.compile(r"\b[A-Z]{5}[0-9]{4}[A-Z]\b")
+    aadhaar_re = re.compile(r"\b[2-9]\d{3}[\s\-]?\d{4}[\s\-]?\d{4}\b")
+    jwt_re = re.compile(r"eyJ[a-zA-Z0-9_\-]+\.[a-zA-Z0-9_\-]+\.[a-zA-Z0-9_\-]+")
+    for row in protect_rows:
+        txt = f"{row['message'] or ''} {row['payload_json'] or ''}"
+        lower = txt.lower()
+        if pan_re.search(txt) or aadhaar_re.search(txt) or '[REDACTED_PAN]' in txt or '[REDACTED_AADHAAR]' in txt:
+            sensitive_hits['PAN / Aadhaar'] += 1
+            if '[REDACTED_PAN]' in txt or '[REDACTED_AADHAAR]' in txt:
+                protected_hits['PAN / Aadhaar'] += 1
+        if acct_re.search(txt):
+            sensitive_hits['Account Number'] += 1
+            if 'masked' in lower or 'token' in lower or 'redacted' in lower:
+                protected_hits['Account Number'] += 1
+        if email_re.search(txt):
+            sensitive_hits['Email'] += 1
+            if 'redacted' in lower or 'hidden' in lower or 'masked' in lower:
+                protected_hits['Email'] += 1
+        if phone_re.search(txt):
+            sensitive_hits['Phone'] += 1
+            if 'redacted' in lower or 'hidden' in lower or 'masked' in lower:
+                protected_hits['Phone'] += 1
+        if jwt_re.search(txt) or 'jwt' in lower or 'authorization' in lower:
+            sensitive_hits['JWT Claims'] += 1
+            if '[REDACTED_JWT]' in txt or 'filtered' in lower or 'redacted' in lower:
+                protected_hits['JWT Claims'] += 1
+        if 'header' in lower or 'authorization' in lower or 'x-api-key' in lower:
+            sensitive_hits['Custom Headers'] += 1
+            if 'redacted' in lower or 'masked' in lower or 'filtered' in lower:
+                protected_hits['Custom Headers'] += 1
+    protection = []
+    total_sensitive = 0
+    total_protected = 0
+    for name, hits in sensitive_hits.items():
+        prot = protected_hits[name]
+        total_sensitive += hits
+        total_protected += prot
+        if hits == 0:
+            status = 'No hits seen'
+        elif prot >= hits:
+            status = 'Protected'
+        elif prot > 0:
+            status = 'Partially Protected'
+        else:
+            status = 'Needs Review'
+        protection.append({"name": name, "status": status, "hits": hits, "protected": prot})
+    masking_coverage = round((total_protected / total_sensitive) * 100, 1) if total_sensitive else 100.0
+
+    trace_rows = [dict(r) for r in db.execute(
+        "SELECT source, AVG(COALESCE(duration_ms,0)) AS avg_ms, COUNT(*) AS cnt FROM log_events WHERE org_id = ?" + env_sql + " GROUP BY source HAVING cnt > 0 ORDER BY avg_ms DESC, cnt DESC LIMIT 6",
+        params,
+    ).fetchall()]
+    trace_nodes = []
+    for r in trace_rows:
+        trace_nodes.append({"name": r["source"], "ms": int(r["avg_ms"] or 0), "count": r["cnt"]})
+    trace_rows_logs = recent_logs
+    trace_id = None
+    for r in trace_rows_logs:
+        trace_id = r.get('correlation_id') or r.get('request_id') or r.get('event_id')
+        if trace_id:
+            break
+    if not trace_nodes:
+        trace_nodes = [{"name": "No trace data yet", "ms": 0, "count": 0}]
+    slowest = trace_nodes[0]
+
+    env_rows = [dict(r) for r in db.execute(
+        "SELECT upper(coalesce(environment_name,'PROD')) AS env, COUNT(*) AS total, "
+        "SUM(CASE WHEN level='error' THEN 1 ELSE 0 END) AS errors, "
+        "AVG(COALESCE(duration_ms,0)) AS avg_ms "
+        "FROM log_events WHERE org_id = ? GROUP BY upper(coalesce(environment_name,'PROD')) ORDER BY total DESC",
+        [org_id],
+    ).fetchall()]
+    env_incident_rows = [dict(r) for r in db.execute(
+        "SELECT upper(coalesce(environment_name,'PROD')) AS env, COUNT(*) AS cnt FROM alert_incidents WHERE org_id = ? GROUP BY upper(coalesce(environment_name,'PROD'))",
+        [org_id],
+    ).fetchall()]
+    inc_map = {r['env']: r['cnt'] for r in env_incident_rows}
+    environments = []
+    for r in env_rows:
+        err_rate = round((r['errors'] or 0) / max(r['total'] or 1, 1) * 100, 1)
+        incidents_count = inc_map.get(r['env'], 0)
+        status = 'Healthy'
+        if err_rate >= 20 or incidents_count >= 3:
+            status = 'Critical'
+        elif err_rate >= 8 or incidents_count >= 1:
+            status = 'Watch'
+        environments.append({
+            "name": r['env'],
+            "total": r['total'],
+            "errors": r['errors'] or 0,
+            "avg_ms": int(r['avg_ms'] or 0),
+            "incidents": incidents_count,
+            "status": status,
+        })
+    if not environments:
+        environments = [{"name": environment_name, "total": 0, "errors": 0, "avg_ms": 0, "incidents": 0, "status": "No data"}]
+
+    insights = []
+    if grouped:
+        g0 = grouped[0]
+        srcs = ', '.join((g0.get('sources') or '').split(',')[:2]) if g0.get('sources') else 'multiple services'
+        insights.append({"tone": g0['level'], "text": f"Top active issue: {g0['pattern']} ({g0['count']} hits) across {srcs}."})
+    if recent_uploads:
+        insights.append({"tone": "info", "text": f"{recent_uploads} uploads were processed in the last 7 days for this workspace."})
+    insights.append({"tone": "info", "text": f"Masking coverage is {masking_coverage}% based on recent ingested logs and payload scans."})
+    if slowest and slowest.get('ms'):
+        insights.append({"tone": "purple", "text": f"Slowest active service path is {slowest['name']} averaging {slowest['ms']} ms."})
+
+    return jsonify({
+        "app_focus": app_focus,
+        "masking_coverage": masking_coverage,
+        "primary_risk": grouped[0]['pattern'] if grouped else 'No active risk detected',
+        "environment_mode": environments[0]['status'] if environments else 'No data',
+        "workspace_id": user.get('public_id') or '',
+        "recent_logs": recent_logs,
+        "alerts": incidents,
+        "protection": protection,
+        "trace": {
+            "trace_id": trace_id or 'N/A',
+            "nodes": trace_nodes,
+            "slowest": slowest,
+            "duration": sum(max(0, n.get('ms', 0)) for n in trace_nodes),
+        },
+        "environments": environments,
+        "ai_insights": insights,
+    })
 
 @app.get("/api/observability")
 def get_observability():
