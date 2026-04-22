@@ -798,6 +798,17 @@ html.dark .hero-chip-teal{background:rgba(57,197,207,.15);color:#39c5cf;border-c
     <span class="nav-icon"><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M13.5 8A5.5 5.5 0 1 1 8 2.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M10 2h3.5v3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="nav-item-text">Ingestion jobs</span>
   </div>
 
+  <div class="nav-section">Observability</div>
+  <div class="nav-item{% if active_section=='incidents' %} active{% endif %}" onclick="showPage('incidents')" data-tooltip="Incidents">
+    <span class="nav-icon"><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 2L14.5 13H1.5L8 2Z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/><path d="M8 6v3M8 11v.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span><span class="nav-item-text">Incidents</span> <span class="nav-badge nb-red" id="nb-incidents" style="display:none"></span>
+  </div>
+  <div class="nav-item{% if active_section=='deployments' %} active{% endif %}" onclick="showPage('deployments')" data-tooltip="Deployments">
+    <span class="nav-icon"><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 1.5l2.5 2.5L8 6.5 5.5 4 8 1.5Z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/><path d="M8 6.5V14" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><path d="M3 10l5 2 5-2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="nav-item-text">Deployments</span>
+  </div>
+  <div class="nav-item{% if active_section=='applications' %} active{% endif %}" onclick="showPage('applications')" data-tooltip="Applications">
+    <span class="nav-icon"><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><rect x="1" y="1.5" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.3"/><rect x="9" y="1.5" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.3"/><rect x="1" y="9.5" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.3"/><rect x="9" y="9.5" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.3"/></svg></span><span class="nav-item-text">Applications</span>
+  </div>
+
   <div class="nav-section">Settings</div>
   <div class="nav-item{% if active_section=='alerts' %} active{% endif %}" onclick="showPage('alerts')" data-tooltip="Alert rules">
     <span class="nav-icon"><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 1.5A4.5 4.5 0 0 0 3.5 6c0 3-1.5 4-1.5 4h12s-1.5-1-1.5-4A4.5 4.5 0 0 0 8 1.5Z" stroke="currentColor" stroke-width="1.3"/><path d="M9.2 13a1.5 1.5 0 0 1-2.4 0" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg></span><span class="nav-item-text">Alert rules</span> <span class="nav-badge nb-red" id="nb-alerts">—</span>
@@ -1436,7 +1447,133 @@ Content-Type: application/json
     </div>
   </div>
 
+  <!-- ══ INCIDENTS PAGE ══ -->
+  <div class="page{% if active_section=='incidents' %} active{% endif %}" id="page-incidents">
+    <div style="padding:24px">
+      <div class="page-header">
+        <h1>Incidents</h1>
+        <p>Track alert incidents from <strong>firing</strong> → <strong>acknowledged</strong> → <strong>resolved</strong>. Incidents are deduplicated by fingerprint within a 5-minute window.</p>
+      </div>
+      <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:center">
+        <select id="incidentStatusFilter" onchange="loadIncidents()" style="font-size:12px;padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);color:var(--text)">
+          <option value="">All statuses</option>
+          <option value="firing">🔴 Firing</option>
+          <option value="acknowledged">🟡 Acknowledged</option>
+          <option value="resolved">🟢 Resolved</option>
+        </select>
+        <select id="incidentEnvFilter" onchange="loadIncidents()" style="font-size:12px;padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);color:var(--text)">
+          <option value="">All environments</option>
+          <option value="PROD">PROD</option>
+          <option value="UAT">UAT</option>
+          <option value="DEV">DEV</option>
+        </select>
+        <button class="btn btn-sm" onclick="loadIncidents()">↻ Refresh</button>
+      </div>
+      <div id="incidentsTable" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden">
+        <div style="padding:32px;text-align:center;color:var(--text3)">Loading incidents…</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ DEPLOYMENTS PAGE ══ -->
+  <div class="page{% if active_section=='deployments' %} active{% endif %}" id="page-deployments">
+    <div style="padding:24px">
+      <div class="page-header">
+        <h1>Deployments</h1>
+        <p>Mark releases on your timeline. Deployment markers appear as vertical lines on the log timeseries chart so you can instantly spot error spikes that correlate with a release.</p>
+      </div>
+      <div style="display:flex;gap:10px;margin-bottom:16px;align-items:center;flex-wrap:wrap">
+        <button class="btn btn-primary btn-sm" onclick="openDeployModal()">+ Record deployment</button>
+        <select id="depEnvFilter" onchange="loadDeployments()" style="font-size:12px;padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);color:var(--text)">
+          <option value="">All environments</option>
+          <option value="PROD">PROD</option><option value="UAT">UAT</option><option value="DEV">DEV</option>
+        </select>
+        <button class="btn btn-sm" onclick="loadDeployments()">↻ Refresh</button>
+      </div>
+      <div id="deploymentsTable" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden">
+        <div style="padding:32px;text-align:center;color:var(--text3)">Loading deployments…</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ APPLICATIONS PAGE ══ -->
+  <div class="page{% if active_section=='applications' %} active{% endif %}" id="page-applications">
+    <div style="padding:24px">
+      <div class="page-header">
+        <h1>Applications</h1>
+        <p>Register your services with metadata — owner team, SLA tier, and on-call contact. This transforms ObserveX from a log bucket into an actual service map.</p>
+      </div>
+      <div style="display:flex;gap:10px;margin-bottom:16px;align-items:center">
+        <button class="btn btn-primary btn-sm" onclick="openAppModal()">+ New application</button>
+        <button class="btn btn-sm" onclick="loadApplications()">↻ Refresh</button>
+      </div>
+      <div id="applicationsGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px">
+        <div style="grid-column:1/-1;padding:32px;text-align:center;color:var(--text3)">Loading applications…</div>
+      </div>
+    </div>
+  </div>
+
 </div><!-- /main -->
+
+<!-- Deploy modal -->
+<div class="overlay" id="deployOverlay" onclick="closeDeployModal()" style="display:none;z-index:300"></div>
+<div class="log-modal" id="deployModal" style="display:none;z-index:301;max-width:460px">
+  <div class="log-modal-header">
+    <span class="log-modal-title">Record Deployment</span>
+    <button class="log-modal-close" onclick="closeDeployModal()"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 3l10 10M13 3 3 13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
+  </div>
+  <div class="log-modal-body" style="display:flex;flex-direction:column;gap:12px">
+    <label style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.6px">Version *</label>
+    <input id="depVersion" type="text" placeholder="e.g. v2.3.1 or commit abc1234" style="width:100%"/>
+    <label style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.6px">Environment</label>
+    <select id="depEnv" style="width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);color:var(--text)">
+      <option value="PROD">PROD</option><option value="UAT">UAT</option><option value="DEV">DEV</option>
+    </select>
+    <label style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.6px">Application (optional)</label>
+    <input id="depApp" type="text" placeholder="application slug, e.g. payment-engine" style="width:100%"/>
+    <label style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.6px">Description</label>
+    <input id="depDesc" type="text" placeholder="Optional release notes" style="width:100%"/>
+    <label style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.6px">Deployed by</label>
+    <input id="depBy" type="text" placeholder="Name or team" style="width:100%"/>
+    <div style="display:flex;gap:10px;margin-top:4px">
+      <button class="btn btn-primary" style="flex:1" onclick="submitDeployment()">Record</button>
+      <button class="btn" style="flex:1" onclick="closeDeployModal()">Cancel</button>
+    </div>
+    <div id="depError" style="color:var(--error);font-size:12px;display:none"></div>
+  </div>
+</div>
+
+<!-- App modal -->
+<div class="overlay" id="appModalOverlay" onclick="closeAppModal()" style="display:none;z-index:300"></div>
+<div class="log-modal" id="appModal" style="display:none;z-index:301;max-width:460px">
+  <div class="log-modal-header">
+    <span class="log-modal-title" id="appModalTitle">New Application</span>
+    <button class="log-modal-close" onclick="closeAppModal()"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 3l10 10M13 3 3 13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
+  </div>
+  <div class="log-modal-body" style="display:flex;flex-direction:column;gap:12px">
+    <input type="hidden" id="appEditId" value=""/>
+    <label style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.6px">Name *</label>
+    <input id="appName" type="text" placeholder="e.g. Payment Engine" style="width:100%"/>
+    <label style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.6px">Owner team</label>
+    <input id="appOwner" type="text" placeholder="e.g. Payments team" style="width:100%"/>
+    <label style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.6px">SLA tier</label>
+    <select id="appSla" style="width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);color:var(--text)">
+      <option value="critical">🔴 Critical</option>
+      <option value="high">🟠 High</option>
+      <option value="standard" selected>🟡 Standard</option>
+      <option value="low">🟢 Low</option>
+    </select>
+    <label style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.6px">On-call contact</label>
+    <input id="appContact" type="text" placeholder="email or phone" style="width:100%"/>
+    <label style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.6px">Description</label>
+    <input id="appDesc" type="text" placeholder="Brief description" style="width:100%"/>
+    <div style="display:flex;gap:10px;margin-top:4px">
+      <button class="btn btn-primary" style="flex:1" onclick="submitApp()">Save</button>
+      <button class="btn" style="flex:1" onclick="closeAppModal()">Cancel</button>
+    </div>
+    <div id="appError" style="color:var(--error);font-size:12px;display:none"></div>
+  </div>
+</div>
 
 <!-- DETAIL PANEL -->
 <div class="overlay" id="overlay" onclick="closeDetail()"></div>
@@ -2373,6 +2510,9 @@ function showPage(name) {
   });
   // Lazy-load logs when explorer opened
   if (name === 'explorer') { loadLogs(); loadSources(); }
+  if (name === 'incidents') { loadIncidents(); }
+  if (name === 'deployments') { loadDeployments(); }
+  if (name === 'applications') { loadApplications(); }
   history.replaceState(null, '', `/workspace/${WORKSPACE_ID}/${ORG_SLUG}/${name}`);
 }
 
@@ -3669,6 +3809,291 @@ async function runSummarize() {
     running.classList.remove('show');
   }
 }
+
+// ══════════════════════════════════════════════════════════════════════════════
+// V12  NEW FEATURE JS
+// ══════════════════════════════════════════════════════════════════════════════
+
+// ── Incidents ─────────────────────────────────────────────────────────────────
+const SEVERITY_COLOR = {critical:'#ef4444',error:'#f97316',warning:'#eab308',info:'#3b82f6'};
+const STATUS_BADGE = {
+  firing: '<span style="background:#fee2e2;color:#b91c1c;font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;letter-spacing:.4px">FIRING</span>',
+  acknowledged: '<span style="background:#fef9c3;color:#854d0e;font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;letter-spacing:.4px">ACK'D</span>',
+  resolved: '<span style="background:#dcfce7;color:#166534;font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;letter-spacing:.4px">RESOLVED</span>',
+};
+
+async function loadIncidents() {
+  const el = document.getElementById('incidentsTable');
+  const status = document.getElementById('incidentStatusFilter').value;
+  const env    = document.getElementById('incidentEnvFilter').value;
+  let url = '/api/incidents?limit=100';
+  if (status) url += '&status=' + encodeURIComponent(status);
+  if (env)    url += '&environment=' + encodeURIComponent(env);
+  try {
+    const res = await fetch(url, {credentials:'include'});
+    const rows = await res.json();
+    if (!Array.isArray(rows) || rows.length === 0) {
+      el.innerHTML = '<div style="padding:48px;text-align:center;color:var(--text3)">No incidents found.</div>';
+      document.getElementById('nb-incidents').style.display = 'none';
+      return;
+    }
+    const firing = rows.filter(r => r.status === 'firing').length;
+    const nb = document.getElementById('nb-incidents');
+    if (firing > 0) { nb.textContent = firing; nb.style.display = ''; }
+    else { nb.style.display = 'none'; }
+    el.innerHTML = `
+      <table style="width:100%;border-collapse:collapse;font-size:12px">
+        <thead><tr style="background:var(--surface2);text-align:left">
+          <th style="padding:10px 14px;color:var(--text3);font-weight:600">Status</th>
+          <th style="padding:10px 14px;color:var(--text3);font-weight:600">Severity</th>
+          <th style="padding:10px 14px;color:var(--text3);font-weight:600">Title</th>
+          <th style="padding:10px 14px;color:var(--text3);font-weight:600">Environment</th>
+          <th style="padding:10px 14px;color:var(--text3);font-weight:600">Fired</th>
+          <th style="padding:10px 14px;color:var(--text3);font-weight:600">Ack'd by</th>
+          <th style="padding:10px 14px;color:var(--text3);font-weight:600">Actions</th>
+        </tr></thead>
+        <tbody>
+          ${rows.map(r => `
+          <tr style="border-top:1px solid var(--border)">
+            <td style="padding:10px 14px">${STATUS_BADGE[r.status] || r.status}</td>
+            <td style="padding:10px 14px"><span style="color:${SEVERITY_COLOR[r.severity]||'var(--text)'};font-weight:600;font-size:11px">${(r.severity||'').toUpperCase()}</span></td>
+            <td style="padding:10px 14px;max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escHtml(r.title)}">${escHtml(r.title)}</td>
+            <td style="padding:10px 14px"><span style="background:var(--surface2);border-radius:4px;padding:2px 6px;font-size:11px">${escHtml(r.environment_name||'')}</span></td>
+            <td style="padding:10px 14px;color:var(--text3);white-space:nowrap">${fmtAge(r.fired_at)}</td>
+            <td style="padding:10px 14px;color:var(--text3)">${r.ack_by_name ? escHtml(r.ack_by_name) : '—'}</td>
+            <td style="padding:10px 14px">
+              ${r.status === 'firing' ? `<button class="btn btn-sm" onclick="resolveIncident(${r.id},'acknowledged')" style="margin-right:4px">Ack</button>` : ''}
+              ${r.status !== 'resolved' ? `<button class="btn btn-sm" onclick="resolveIncident(${r.id},'resolved')">Resolve</button>` : ''}
+            </td>
+          </tr>`).join('')}
+        </tbody>
+      </table>`;
+  } catch(e) { el.innerHTML = `<div style="padding:32px;color:var(--error)">Error: ${e.message}</div>`; }
+}
+
+async function resolveIncident(id, status) {
+  const res = await fetch(`/api/incidents/${id}`, {
+    method:'PUT', credentials:'include',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({status})
+  });
+  if (res.ok) loadIncidents();
+  else showToast('Failed to update incident', 'error');
+}
+
+function fmtAge(ts) {
+  if (!ts) return '—';
+  const diff = Math.floor((Date.now() - new Date(ts).getTime()) / 1000);
+  if (diff < 60) return diff + 's ago';
+  if (diff < 3600) return Math.floor(diff/60) + 'm ago';
+  if (diff < 86400) return Math.floor(diff/3600) + 'h ago';
+  return Math.floor(diff/86400) + 'd ago';
+}
+
+function escHtml(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── Deployments ───────────────────────────────────────────────────────────────
+async function loadDeployments() {
+  const el = document.getElementById('deploymentsTable');
+  const env = document.getElementById('depEnvFilter').value;
+  let url = '/api/deployments?limit=100';
+  if (env) url += '&environment=' + encodeURIComponent(env);
+  try {
+    const res = await fetch(url, {credentials:'include'});
+    const rows = await res.json();
+    if (!Array.isArray(rows) || rows.length === 0) {
+      el.innerHTML = '<div style="padding:48px;text-align:center;color:var(--text3)">No deployments recorded yet. Use the button above to mark your first release.</div>';
+      return;
+    }
+    const ENV_COLOR = {PROD:'#ef4444',UAT:'#f97316',DEV:'#22c55e'};
+    el.innerHTML = `
+      <table style="width:100%;border-collapse:collapse;font-size:12px">
+        <thead><tr style="background:var(--surface2);text-align:left">
+          <th style="padding:10px 14px;color:var(--text3);font-weight:600">Version</th>
+          <th style="padding:10px 14px;color:var(--text3);font-weight:600">Environment</th>
+          <th style="padding:10px 14px;color:var(--text3);font-weight:600">Application</th>
+          <th style="padding:10px 14px;color:var(--text3);font-weight:600">Deployed by</th>
+          <th style="padding:10px 14px;color:var(--text3);font-weight:600">When</th>
+          <th style="padding:10px 14px;color:var(--text3);font-weight:600">Notes</th>
+          <th style="padding:10px 14px;color:var(--text3);font-weight:600"></th>
+        </tr></thead>
+        <tbody>
+          ${rows.map(r => `
+          <tr style="border-top:1px solid var(--border)">
+            <td style="padding:10px 14px;font-weight:600;font-family:monospace">${escHtml(r.version)}</td>
+            <td style="padding:10px 14px"><span style="background:${ENV_COLOR[r.environment_name]||'#64748b'}22;color:${ENV_COLOR[r.environment_name]||'#64748b'};font-size:11px;font-weight:700;padding:2px 7px;border-radius:20px">${escHtml(r.environment_name)}</span></td>
+            <td style="padding:10px 14px;color:var(--text2)">${r.application_slug ? escHtml(r.application_slug) : '<span style="color:var(--text3)">—</span>'}</td>
+            <td style="padding:10px 14px;color:var(--text2)">${escHtml(r.deployed_by||'—')}</td>
+            <td style="padding:10px 14px;color:var(--text3);white-space:nowrap">${fmtAge(r.deployed_at)}</td>
+            <td style="padding:10px 14px;color:var(--text3);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(r.description||'—')}</td>
+            <td style="padding:10px 14px"><button class="btn btn-sm" onclick="deleteDeployment(${r.id})" style="color:var(--error)">✕</button></td>
+          </tr>`).join('')}
+        </tbody>
+      </table>`;
+  } catch(e) { el.innerHTML = `<div style="padding:32px;color:var(--error)">Error: ${e.message}</div>`; }
+}
+
+function openDeployModal() {
+  document.getElementById('depVersion').value = '';
+  document.getElementById('depApp').value = '';
+  document.getElementById('depDesc').value = '';
+  document.getElementById('depBy').value = '';
+  document.getElementById('depError').style.display = 'none';
+  document.getElementById('deployOverlay').style.display = '';
+  document.getElementById('deployModal').style.display = '';
+  document.getElementById('depVersion').focus();
+}
+function closeDeployModal() {
+  document.getElementById('deployOverlay').style.display = 'none';
+  document.getElementById('deployModal').style.display = 'none';
+}
+
+async function submitDeployment() {
+  const version = document.getElementById('depVersion').value.trim();
+  if (!version) { document.getElementById('depError').textContent = 'Version is required'; document.getElementById('depError').style.display = ''; return; }
+  const body = {
+    version,
+    environment_name: document.getElementById('depEnv').value,
+    application_slug: document.getElementById('depApp').value.trim(),
+    description: document.getElementById('depDesc').value.trim(),
+    deployed_by: document.getElementById('depBy').value.trim(),
+  };
+  const res = await fetch('/api/deployments', {method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  if (res.ok) { closeDeployModal(); loadDeployments(); showToast('Deployment recorded'); }
+  else { const d = await res.json(); document.getElementById('depError').textContent = d.error||'Error'; document.getElementById('depError').style.display = ''; }
+}
+
+async function deleteDeployment(id) {
+  if (!confirm('Delete this deployment record?')) return;
+  const res = await fetch(`/api/deployments/${id}`, {method:'DELETE',credentials:'include'});
+  if (res.ok) loadDeployments();
+}
+
+// ── Applications ──────────────────────────────────────────────────────────────
+const SLA_COLORS = {critical:'#ef4444',high:'#f97316',standard:'#3b82f6',low:'#22c55e'};
+const SLA_ICONS  = {critical:'🔴',high:'🟠',standard:'🟡',low:'🟢'};
+
+async function loadApplications() {
+  const el = document.getElementById('applicationsGrid');
+  try {
+    const res = await fetch('/api/applications', {credentials:'include'});
+    const apps = await res.json();
+    if (!Array.isArray(apps) || apps.length === 0) {
+      el.innerHTML = '<div style="grid-column:1/-1;padding:48px;text-align:center;color:var(--text3)">No applications registered yet.</div>';
+      return;
+    }
+    el.innerHTML = apps.map(a => `
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px;position:relative">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:10px">
+          <div>
+            <div style="font-weight:700;font-size:14px;color:var(--text)">${escHtml(a.name)}</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:2px;font-family:monospace">${escHtml(a.slug)}</div>
+          </div>
+          <span style="background:${SLA_COLORS[a.sla_tier]||'#64748b'}22;color:${SLA_COLORS[a.sla_tier]||'#64748b'};font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;white-space:nowrap">${SLA_ICONS[a.sla_tier]||''} ${(a.sla_tier||'standard').toUpperCase()}</span>
+        </div>
+        ${a.description ? `<div style="font-size:12px;color:var(--text2);margin-bottom:10px">${escHtml(a.description)}</div>` : ''}
+        <div style="display:flex;flex-direction:column;gap:5px;font-size:11px;color:var(--text3)">
+          ${a.owner_team ? `<div>👥 <strong>Team:</strong> ${escHtml(a.owner_team)}</div>` : ''}
+          ${a.on_call_contact ? `<div>📞 <strong>On-call:</strong> ${escHtml(a.on_call_contact)}</div>` : ''}
+        </div>
+        <div style="display:flex;gap:8px;margin-top:14px">
+          <button class="btn btn-sm" onclick='openEditAppModal(${JSON.stringify(a)})'>Edit</button>
+          <button class="btn btn-sm" onclick="deleteApp(${a.id})" style="color:var(--error)">Delete</button>
+        </div>
+      </div>`).join('');
+  } catch(e) { el.innerHTML = `<div style="grid-column:1/-1;padding:32px;color:var(--error)">Error: ${e.message}</div>`; }
+}
+
+function openAppModal() {
+  document.getElementById('appEditId').value = '';
+  document.getElementById('appModalTitle').textContent = 'New Application';
+  document.getElementById('appName').value = '';
+  document.getElementById('appOwner').value = '';
+  document.getElementById('appSla').value = 'standard';
+  document.getElementById('appContact').value = '';
+  document.getElementById('appDesc').value = '';
+  document.getElementById('appError').style.display = 'none';
+  document.getElementById('appModalOverlay').style.display = '';
+  document.getElementById('appModal').style.display = '';
+  document.getElementById('appName').focus();
+}
+function openEditAppModal(a) {
+  document.getElementById('appEditId').value = a.id;
+  document.getElementById('appModalTitle').textContent = 'Edit Application';
+  document.getElementById('appName').value = a.name || '';
+  document.getElementById('appOwner').value = a.owner_team || '';
+  document.getElementById('appSla').value = a.sla_tier || 'standard';
+  document.getElementById('appContact').value = a.on_call_contact || '';
+  document.getElementById('appDesc').value = a.description || '';
+  document.getElementById('appError').style.display = 'none';
+  document.getElementById('appModalOverlay').style.display = '';
+  document.getElementById('appModal').style.display = '';
+}
+function closeAppModal() {
+  document.getElementById('appModalOverlay').style.display = 'none';
+  document.getElementById('appModal').style.display = 'none';
+}
+
+async function submitApp() {
+  const name = document.getElementById('appName').value.trim();
+  if (!name) { document.getElementById('appError').textContent = 'Name is required'; document.getElementById('appError').style.display = ''; return; }
+  const editId = document.getElementById('appEditId').value;
+  const body = {
+    name,
+    owner_team:      document.getElementById('appOwner').value.trim(),
+    sla_tier:        document.getElementById('appSla').value,
+    on_call_contact: document.getElementById('appContact').value.trim(),
+    description:     document.getElementById('appDesc').value.trim(),
+  };
+  const url    = editId ? `/api/applications/${editId}` : '/api/applications';
+  const method = editId ? 'PUT' : 'POST';
+  const res = await fetch(url, {method, credentials:'include', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)});
+  if (res.ok) { closeAppModal(); loadApplications(); showToast(editId ? 'Application updated' : 'Application created'); }
+  else { const d = await res.json(); document.getElementById('appError').textContent = d.error||'Error'; document.getElementById('appError').style.display = ''; }
+}
+
+async function deleteApp(id) {
+  if (!confirm('Delete this application?')) return;
+  const res = await fetch(`/api/applications/${id}`, {method:'DELETE', credentials:'include'});
+  if (res.ok) loadApplications();
+  else showToast('Delete failed', 'error');
+}
+
+// ── Toast notification helper (fallback if not already defined) ───────────────
+if (typeof showToast === 'undefined') {
+  window.showToast = function(msg, type='success') {
+    let t = document.getElementById('__v12toast');
+    if (!t) {
+      t = document.createElement('div');
+      t.id = '__v12toast';
+      t.style.cssText = 'position:fixed;bottom:24px;right:24px;z-index:9999;padding:10px 18px;border-radius:8px;font-size:13px;font-weight:500;box-shadow:0 4px 16px rgba(0,0,0,.18);transition:opacity .3s';
+      document.body.appendChild(t);
+    }
+    t.textContent = msg;
+    t.style.background = type === 'error' ? '#ef4444' : '#22c55e';
+    t.style.color = '#fff';
+    t.style.opacity = '1';
+    clearTimeout(t._to);
+    t._to = setTimeout(() => { t.style.opacity = '0'; }, 3000);
+  };
+}
+
+// ── Bootstrap: load incident badge on page load ───────────────────────────────
+(async function initV12() {
+  try {
+    const res = await fetch('/api/incidents?status=firing&limit=100', {credentials:'include'});
+    if (res.ok) {
+      const rows = await res.json();
+      const nb = document.getElementById('nb-incidents');
+      if (nb && Array.isArray(rows) && rows.length > 0) {
+        nb.textContent = rows.length;
+        nb.style.display = '';
+      }
+    }
+  } catch(_) {}
+})();
 </script>
 </body>
 </html>

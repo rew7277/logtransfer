@@ -1,0 +1,171 @@
+ObserveX V12 — Feature Additions
+Generated from suggestions review session, April 2026
+════════════════════════════════════════════════════════
+
+━━━ SECURITY: Extended Secret Scanning ━━━━━━━━━━━━━━━━
+
+1. MASK_PATTERNS now redacts:
+   - AWS Access Key IDs  (AKIA…, ASIA…, AROA…, AIDA… + 16 chars)
+   - AWS Secret Access Keys  (aws_secret_access_key = <40-char base64>)
+   - PEM private keys  (-----BEGIN * PRIVATE KEY-----)
+   - Indian PAN numbers  (ABCDE1234F pattern)
+   - Indian Aadhaar numbers  (12-digit, optional spaces/hyphens)
+   - Credit card numbers  (13–16 digit)
+   - Generic API secrets/tokens in key=value form (≥16 chars)
+
+━━━ DATABASE: 8 New Tables ━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+2. applications           — org → env → application → logs grouping
+                            (name, slug, owner_team, sla_tier, on_call_contact)
+
+3. alert_incidents        — Alert lifecycle: firing → acknowledged → resolved
+                            Deduplication by fingerprint, acknowledged_by FK
+
+4. saved_views            — Full saved view (env + app + level + time + columns)
+                            Supports is_pinned flag for sidebar pinning
+
+5. deployment_events      — Release markers tied to env + application_slug
+                            Appear as vertical lines on timeline charts
+
+6. usage_events           — Daily metering: log ingestion volume per org
+                            Auto-populated by scheduler at 02:00 UTC
+
+7. on_call_schedules      — Simple rotation (user_id, start_at, end_at)
+                            GET /api/on-call returns current_on_call
+
+8. sampling_rules         — Drop low-value logs at ingest time
+                            (source_pattern, environment_name, level, sample_rate)
+                            Enforced in /ingest/json before DB write
+
+9. environment_permissions — Per-environment role gating + can_delete flag
+
+New columns on existing tables:
+  - alert_rules.route_environments    — CSV of envs that trigger this rule
+  - alert_rules.route_severities      — CSV of severities that trigger this rule
+  - alert_rules.pagerduty_key         — PagerDuty Events API v2 key
+  - environments.retention_days       — Per-environment override (NULL = org default)
+  - api_keys.rate_limit_per_min       — Per-key rate limit (0 = unlimited)
+  - log_events.application_id         — FK to applications table
+  - log_events.app_version            — Free-text version string at ingest time
+
+━━━ BACKEND: Logic & Routing ━━━━━━━━━━━━━━━━━━━━━━━━━
+
+10. Per-API-key rate limiting
+    _PER_KEY_RL in-process dict tracks (count, window_start) per key_id.
+    Checked in require_api_key() cache-hit path. Returns 429 with clear message.
+    Configurable via PUT /api/keys/<id>/rate-limit.
+
+11. Alert routing matrix (_route_alert_matches)
+    _fire_alert() now checks rule.route_environments + rule.route_severities
+    before firing. Non-matching env/severity combos are silently skipped.
+
+12. Alert deduplication by fingerprint (5-minute window)
+    _fire_alert() hashes tk+rule_id → 16-char fingerprint.
+    If an open incident with same fingerprint exists within 5 minutes,
+    the body is updated but no new notification is sent.
+
+13. Alert incidents created on every new _fire_alert() call
+    Rows inserted into alert_incidents with status='firing'.
+    PUT /api/incidents/<id> allows acknowledge / resolve transitions.
+
+14. PagerDuty Events API v2 integration
+    Fires for severity=critical or error if pagerduty_key is set on the rule.
+
+15. Per-environment retention tiers
+    Scheduler at 02:00 UTC now deletes per-environment with their own
+    retention_days overrides. Falls back to org default for unmatched envs.
+
+16. Daily usage snapshot
+    Scheduler at 02:00 UTC inserts a usage_events row with event_type=
+    'daily_log_snapshot' + current log count per org.
+
+17. Log sampling at ingest
+    /ingest/json loads sampling_rules and applies fnmatch + level + env
+    filtering before inserting — keeping only 1-in-N matching events.
+
+18. Ingest metering
+    /ingest/json inserts a usage_events row (event_type='api_ingest') per call.
+
+━━━ API: 18 New Endpoints ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Applications
+  GET  /api/applications              — list org's applications
+  POST /api/applications              — create (manager+)
+  PUT  /api/applications/<id>         — update (manager+)
+  DELETE /api/applications/<id>       — delete (admin)
+
+Incidents
+  GET  /api/incidents                 — list with status/env filters
+  PUT  /api/incidents/<id>            — acknowledge or resolve
+
+Saved Views
+  GET  /api/views                     — list pinned-first
+  POST /api/views                     — create
+  PUT  /api/views/<id>               — update name/config/pinned
+  DELETE /api/views/<id>             — delete
+
+Deployments
+  GET  /api/deployments              — list with env/app/since filters
+  POST /api/deployments              — record release (developer+)
+  DELETE /api/deployments/<id>       — delete (manager+)
+  GET  /api/deployments/timeseries   — marker data for chart overlay
+
+Usage
+  GET  /api/usage                    — monthly summary + key list (manager+)
+
+On-call
+  GET  /api/on-call                  — schedules + current_on_call
+  POST /api/on-call                  — create entry (manager+)
+  DELETE /api/on-call/<id>           — delete (manager+)
+
+Sampling rules
+  GET  /api/sampling-rules           — list rules
+  POST /api/sampling-rules           — create (admin)
+  DELETE /api/sampling-rules/<id>    — delete (admin)
+
+Environment permissions
+  GET  /api/environment-permissions  — list per-env overrides (manager+)
+  PUT  /api/environment-permissions  — upsert (admin)
+
+Environment retention
+  PUT  /api/environments/<id>/retention — set per-env retention_days (admin)
+
+API key rate limit
+  PUT  /api/keys/<id>/rate-limit     — set rate_limit_per_min (admin)
+
+━━━ FRONTEND: 3 New Pages + Modals ━━━━━━━━━━━━━━━━━━━
+
+19. Sidebar — "Observability" section added above "Settings":
+    • Incidents  (with live firing badge)
+    • Deployments
+    • Applications
+
+20. Incidents page
+    - Status filter (All / Firing / Acknowledged / Resolved)
+    - Environment filter
+    - Table with coloured status badges, severity, age, ack'd-by
+    - Inline Ack / Resolve buttons → PUT /api/incidents/<id>
+    - Auto-loads on page switch; refresh button
+
+21. Deployments page
+    - Environment filter
+    - Table with version, env badge, app slug, deployed-by, age, notes
+    - "Record deployment" modal → POST /api/deployments
+    - Delete button per row
+    - Auto-loads on page switch; refresh button
+
+22. Applications page
+    - Card grid: name, slug, SLA tier (coloured), owner team, on-call contact
+    - "New application" modal → POST /api/applications
+    - Edit / Delete per card
+    - Auto-loads on page switch; refresh button
+
+23. Incident badge in sidebar
+    - nb-incidents badge initialised on every page load via initV12()
+    - Updates after every loadIncidents() call
+
+━━━ FILES CHANGED ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  app.py              (+847 lines)
+  templates/index.html (+425 lines)
+  FIXES_APPLIED_V12.txt (this file)

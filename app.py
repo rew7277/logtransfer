@@ -146,11 +146,29 @@ HEADER_RE    = re.compile(r"^(TRACE|DEBUG|INFO|WARN|ERROR|FATAL)\s+\d{4}-\d{2}-\
 ROTATION_SUFFIX_RE = re.compile(r"(\.\d{4}-\d{2}-\d{2})+$|(\.\d+)$")
 
 MASK_PATTERNS = [
+    # JWTs
     (re.compile(r"eyJ[a-zA-Z0-9_\-]+\.[a-zA-Z0-9_\-]+\.[a-zA-Z0-9_\-]+"), "[REDACTED_JWT]"),
+    # Auth headers
     (re.compile(r"(?i)(authorization\s*[:=]\s*)(bearer|basic)\s+[A-Za-z0-9+/=._-]+"), r"\1\2 [REDACTED]"),
+    # Passwords in key=value form
     (re.compile(r"(?i)(password\s*[:=]\s*)[^\s,\"']+"), r"\1[REDACTED]"),
+    # Internal app IDs
     (re.compile(r"\bGLBCUST\d{8,}\b"), "GLBCUST[REDACTED]"),
     (re.compile(r"\bAPP-\d{4,}\b"), "APP-[REDACTED]"),
+    # AWS Access Key IDs (AKIA…)
+    (re.compile(r"\b(AKIA|ASIA|AROA|AIDA)[A-Z0-9]{16}\b"), "[REDACTED_AWS_KEY]"),
+    # AWS Secret Access Keys (40-char base64 after common labels)
+    (re.compile(r"(?i)(aws_secret_access_key\s*[:=]\s*)[A-Za-z0-9+/]{40}"), r"\1[REDACTED]"),
+    # Private key headers
+    (re.compile(r"-----BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY-----.*?-----END (RSA |EC |OPENSSH )?PRIVATE KEY-----", re.DOTALL), "[REDACTED_PRIVATE_KEY]"),
+    # Indian PAN (e.g. ABCDE1234F)
+    (re.compile(r"\b[A-Z]{5}[0-9]{4}[A-Z]\b"), "[REDACTED_PAN]"),
+    # Indian Aadhaar (12-digit, optional spaces/hyphens)
+    (re.compile(r"\b[2-9]\d{3}[\s\-]?\d{4}[\s\-]?\d{4}\b"), "[REDACTED_AADHAAR]"),
+    # Credit card numbers (13-16 digit with optional spaces/dashes)
+    (re.compile(r"\b(?:\d[ \-]?){13,16}\b"), "[REDACTED_CC]"),
+    # Generic API secrets / tokens in key=value
+    (re.compile(r"(?i)(secret|token|api_?key)\s*[:=]\s*[A-Za-z0-9_\-]{16,}"), r"\1=[REDACTED]"),
 ]
 
 VALID_ROLES  = {"admin", "manager", "developer", "tester"}
@@ -172,6 +190,25 @@ _BLOCKED_HOSTS = re.compile(
 _KEY_CACHE: dict[str, tuple[dict, float]] = {}
 _KEY_CACHE_LOCK = threading.Lock()
 _KEY_CACHE_TTL = 300  # seconds — revoked keys propagate within this window
+
+# Per-API-key rate limiting: {key_id: (request_count, window_start_epoch)}
+_PER_KEY_RL: dict[int, tuple[int, float]] = {}
+_PER_KEY_RL_LOCK = threading.Lock()
+
+def _check_per_key_rate(key_id: int, limit_per_min: int) -> bool:
+    """Return True if request is allowed, False if over limit. 0 = unlimited."""
+    if not limit_per_min:
+        return True
+    now = time.time()
+    with _PER_KEY_RL_LOCK:
+        count, window_start = _PER_KEY_RL.get(key_id, (0, now))
+        if now - window_start >= 60:
+            _PER_KEY_RL[key_id] = (1, now)
+            return True
+        if count >= limit_per_min:
+            return False
+        _PER_KEY_RL[key_id] = (count + 1, window_start)
+        return True
 
 def _cache_key_id(raw_key: str) -> str:
     return hashlib.sha256(raw_key.encode()).hexdigest()
@@ -786,6 +823,121 @@ def init_db() -> None:
 
         CREATE INDEX IF NOT EXISTS idx_sessions_user    ON user_sessions(user_id, revoked);
         CREATE INDEX IF NOT EXISTS idx_sessions_token   ON user_sessions(session_token);
+
+        -- ── V12 NEW TABLES ────────────────────────────────────────────────────
+
+        CREATE TABLE IF NOT EXISTS applications (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            org_id INTEGER NOT NULL,
+            name TEXT NOT NULL,
+            slug TEXT NOT NULL,
+            description TEXT NOT NULL DEFAULT '',
+            owner_team TEXT NOT NULL DEFAULT '',
+            sla_tier TEXT NOT NULL DEFAULT 'standard',
+            on_call_contact TEXT NOT NULL DEFAULT '',
+            created_at TEXT NOT NULL,
+            UNIQUE(org_id, slug),
+            FOREIGN KEY(org_id) REFERENCES organizations(id)
+        );
+        CREATE INDEX IF NOT EXISTS idx_applications_org ON applications(org_id);
+
+        CREATE TABLE IF NOT EXISTS alert_incidents (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            org_id INTEGER NOT NULL,
+            alert_rule_id INTEGER,
+            title TEXT NOT NULL,
+            body TEXT NOT NULL DEFAULT '',
+            severity TEXT NOT NULL DEFAULT 'warning',
+            status TEXT NOT NULL DEFAULT 'firing',
+            environment_name TEXT NOT NULL DEFAULT 'ALL',
+            fingerprint TEXT NOT NULL DEFAULT '',
+            acknowledged_by INTEGER,
+            acknowledged_at TEXT,
+            resolved_at TEXT,
+            fired_at TEXT NOT NULL,
+            FOREIGN KEY(org_id) REFERENCES organizations(id),
+            FOREIGN KEY(alert_rule_id) REFERENCES alert_rules(id),
+            FOREIGN KEY(acknowledged_by) REFERENCES users(id)
+        );
+        CREATE INDEX IF NOT EXISTS idx_incidents_org ON alert_incidents(org_id, fired_at DESC);
+        CREATE INDEX IF NOT EXISTS idx_incidents_fp  ON alert_incidents(org_id, fingerprint, fired_at DESC);
+
+        CREATE TABLE IF NOT EXISTS saved_views (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            org_id INTEGER NOT NULL,
+            user_id INTEGER NOT NULL,
+            name TEXT NOT NULL,
+            config_json TEXT NOT NULL DEFAULT '{}',
+            is_pinned INTEGER NOT NULL DEFAULT 0,
+            created_at TEXT NOT NULL,
+            FOREIGN KEY(org_id) REFERENCES organizations(id),
+            FOREIGN KEY(user_id) REFERENCES users(id)
+        );
+        CREATE INDEX IF NOT EXISTS idx_saved_views_org ON saved_views(org_id, user_id);
+
+        CREATE TABLE IF NOT EXISTS deployment_events (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            org_id INTEGER NOT NULL,
+            user_id INTEGER,
+            application_slug TEXT NOT NULL DEFAULT '',
+            environment_name TEXT NOT NULL DEFAULT 'PROD',
+            version TEXT NOT NULL,
+            description TEXT NOT NULL DEFAULT '',
+            deployed_by TEXT NOT NULL DEFAULT '',
+            deployed_at TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            FOREIGN KEY(org_id) REFERENCES organizations(id)
+        );
+        CREATE INDEX IF NOT EXISTS idx_deployments_org ON deployment_events(org_id, deployed_at DESC);
+
+        CREATE TABLE IF NOT EXISTS usage_events (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            org_id INTEGER NOT NULL,
+            event_type TEXT NOT NULL,
+            quantity INTEGER NOT NULL DEFAULT 1,
+            metadata_json TEXT NOT NULL DEFAULT '{}',
+            recorded_at TEXT NOT NULL,
+            FOREIGN KEY(org_id) REFERENCES organizations(id)
+        );
+        CREATE INDEX IF NOT EXISTS idx_usage_org ON usage_events(org_id, event_type, recorded_at DESC);
+
+        CREATE TABLE IF NOT EXISTS on_call_schedules (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            org_id INTEGER NOT NULL,
+            name TEXT NOT NULL,
+            user_id INTEGER NOT NULL,
+            contact TEXT NOT NULL DEFAULT '',
+            start_at TEXT NOT NULL,
+            end_at TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            FOREIGN KEY(org_id) REFERENCES organizations(id),
+            FOREIGN KEY(user_id) REFERENCES users(id)
+        );
+        CREATE INDEX IF NOT EXISTS idx_oncall_org ON on_call_schedules(org_id, start_at);
+
+        CREATE TABLE IF NOT EXISTS sampling_rules (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            org_id INTEGER NOT NULL,
+            source_pattern TEXT NOT NULL DEFAULT '*',
+            environment_name TEXT NOT NULL DEFAULT 'ALL',
+            level TEXT NOT NULL DEFAULT 'INFO',
+            sample_rate INTEGER NOT NULL DEFAULT 100,
+            created_at TEXT NOT NULL,
+            FOREIGN KEY(org_id) REFERENCES organizations(id)
+        );
+        CREATE INDEX IF NOT EXISTS idx_sampling_org ON sampling_rules(org_id);
+
+        CREATE TABLE IF NOT EXISTS environment_permissions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            org_id INTEGER NOT NULL,
+            environment_name TEXT NOT NULL,
+            min_role TEXT NOT NULL DEFAULT 'developer',
+            can_delete INTEGER NOT NULL DEFAULT 0,
+            created_at TEXT NOT NULL,
+            UNIQUE(org_id, environment_name),
+            FOREIGN KEY(org_id) REFERENCES organizations(id)
+        );
+        CREATE INDEX IF NOT EXISTS idx_env_perms_org ON environment_permissions(org_id);
         """
     )
 
@@ -840,6 +992,28 @@ def init_db() -> None:
     ensure_column(db, "log_events",     "environment_name", "environment_name TEXT NOT NULL DEFAULT 'PROD'")
     ensure_column(db, "alert_rules",    "latency_threshold_ms", "latency_threshold_ms INTEGER")
     ensure_column(db, "alert_rules",    "dead_source_minutes",  "dead_source_minutes INTEGER")
+    # V12: alert routing matrix
+    ensure_column(db, "alert_rules",    "route_environments",   "route_environments TEXT NOT NULL DEFAULT 'ALL'")
+    ensure_column(db, "alert_rules",    "route_severities",     "route_severities TEXT NOT NULL DEFAULT 'ALL'")
+    ensure_column(db, "alert_rules",    "pagerduty_key",        "pagerduty_key TEXT")
+    # V12: per-environment retention
+    ensure_column(db, "environments",   "retention_days",       "retention_days INTEGER")
+    # V12: per-API-key rate limiting
+    ensure_column(db, "api_keys",       "rate_limit_per_min",   "rate_limit_per_min INTEGER NOT NULL DEFAULT 0")
+    # V12: application_id on log_events
+    ensure_column(db, "log_events",     "application_id",       "application_id INTEGER")
+    ensure_column(db, "log_events",     "app_version",          "app_version TEXT")
+
+    # V12 indexes
+    for idx_sql in [
+        "CREATE INDEX IF NOT EXISTS idx_log_app_id       ON log_events(org_id, application_id)",
+        "CREATE INDEX IF NOT EXISTS idx_deployments_env  ON deployment_events(org_id, environment_name, deployed_at DESC)",
+        "CREATE INDEX IF NOT EXISTS idx_usage_org_month  ON usage_events(org_id, recorded_at DESC)",
+    ]:
+        try:
+            db.execute(idx_sql)
+        except Exception as exc:
+            logger.warning("V12 index skipped: %s", exc)
 
     # These indexes reference columns added via ensure_column above, so they must
     # come AFTER ensure_column — not inside the executescript block.
@@ -965,6 +1139,9 @@ def require_api_key(required_scope: str | None = None) -> tuple[dict[str, Any] |
             scopes = [s.strip() for s in (cached.get("scopes") or "ingest,read,admin").split(",")]
             if required_scope not in scopes:
                 return None, (jsonify({"error": f"API key missing required scope: '{required_scope}'."}), 403)
+        limit = cached.get("rate_limit_per_min", 0) or 0
+        if not _check_per_key_rate(cached["id"], limit):
+            return None, (jsonify({"error": "Per-key rate limit exceeded. Slow down requests or increase the key's rate limit."}), 429)
         return cached, None
 
     # 2. Cache miss: look up by prefix, then verify hash
@@ -1561,8 +1738,44 @@ def start_worker() -> None:
     consumer.start()
     logger.info("Ingestion worker pool started with %d threads", pool_size)
 
-def _fire_alert(conn: Any, org_id: int, rule: Any, subject: str, body: str, now_str: str, tk: str) -> None:
-    """Fire email + Slack for a rule and record in observability_fired."""
+def _route_alert_matches(rule: Any, environment_name: str, severity: str) -> bool:
+    """Check if a rule's routing matrix matches the current environment and severity."""
+    route_envs = (rule.get("route_environments") or "ALL").strip().upper() if hasattr(rule, "get") else "ALL"
+    route_sevs = (rule.get("route_severities")   or "ALL").strip().upper() if hasattr(rule, "get") else "ALL"
+    env_ok = route_envs == "ALL" or environment_name.upper() in [e.strip() for e in route_envs.split(",")]
+    sev_ok = route_sevs == "ALL" or severity.upper()         in [s.strip() for s in route_sevs.split(",")]
+    return env_ok and sev_ok
+
+
+def _fire_alert(conn: Any, org_id: int, rule: Any, subject: str, body: str, now_str: str, tk: str,
+                environment_name: str = "ALL", severity: str = "warning") -> None:
+    """Fire email + Slack for a rule, with routing matrix, deduplication, and incident tracking."""
+    # Routing matrix check — skip if this env/severity doesn't match the rule
+    if not _route_alert_matches(rule, environment_name, severity):
+        return
+
+    rule_id = rule["id"] if hasattr(rule, "keys") and "id" in rule.keys() else None
+
+    # Deduplication: group by fingerprint within a 5-minute window
+    fp = hashlib.sha256(f"{tk}:{rule_id}".encode()).hexdigest()[:16]
+    window_5m = (datetime.now(timezone.utc) - timedelta(minutes=5)).strftime("%Y-%m-%dT%H:%M:%S")
+    existing_incident = conn.execute(
+        "SELECT id, status FROM alert_incidents WHERE org_id=? AND fingerprint=? AND fired_at>=? LIMIT 1",
+        (org_id, fp, window_5m),
+    ).fetchone()
+    if existing_incident:
+        # Incident already open — bump body but don't re-notify
+        conn.execute(
+            "UPDATE alert_incidents SET body=?, fired_at=? WHERE id=?",
+            (body[:4000], now_str, existing_incident["id"]),
+        )
+        conn.execute(
+            "INSERT INTO observability_fired (org_id, alert_rule_id, trigger_key, fired_at) VALUES (?,?,?,?)",
+            (org_id, rule_id, tk, now_str),
+        )
+        return
+
+    # New incident — notify and record
     email_to   = (rule["notify_email"]     or "").strip() if "notify_email"     in rule.keys() else ""
     slack_hook = (rule["slack_webhook_url"] or "").strip() if "slack_webhook_url" in rule.keys() else ""
     if email_to:
@@ -1575,9 +1788,32 @@ def _fire_alert(conn: Any, org_id: int, rule: Any, subject: str, body: str, now_
             send_slack_message(slack_hook, f":rotating_light: *{subject}*\n{body}")
         except Exception as exc:
             logger.error("Alert Slack failed org=%d: %s", org_id, exc)
+    # PagerDuty (if key present)
+    pd_key = (rule.get("pagerduty_key") or "").strip() if hasattr(rule, "get") else ""
+    if pd_key and severity.lower() in ("critical", "error"):
+        try:
+            import urllib.request as _ur
+            pd_payload = json.dumps({
+                "routing_key": pd_key,
+                "event_action": "trigger",
+                "payload": {"summary": subject, "severity": "critical", "source": "ObserveX"},
+            }).encode()
+            req = _ur.Request("https://events.pagerduty.com/v2/enqueue",
+                              data=pd_payload, headers={"Content-Type": "application/json"})
+            _ur.urlopen(req, timeout=5)
+        except Exception as exc:
+            logger.error("PagerDuty notify failed org=%d: %s", org_id, exc)
+
+    # Record incident
+    conn.execute(
+        """INSERT INTO alert_incidents
+           (org_id, alert_rule_id, title, body, severity, status, environment_name, fingerprint, fired_at)
+           VALUES (?,?,?,?,?,?,?,?,?)""",
+        (org_id, rule_id, subject[:500], body[:4000], severity, "firing", environment_name, fp, now_str),
+    )
     conn.execute(
         "INSERT INTO observability_fired (org_id, alert_rule_id, trigger_key, fired_at) VALUES (?,?,?,?)",
-        (org_id, rule["id"] if hasattr(rule, "keys") and "id" in rule.keys() else None, tk, now_str),
+        (org_id, rule_id, tk, now_str),
     )
 
 
@@ -1852,21 +2088,56 @@ def scheduler_tick() -> None:
                 except Exception as exc:
                     logger.error("Weekly digest failed for org %d: %s", org_id, exc)
 
-        # ── 8. Nightly log retention — 02:00 UTC ─────────────────────────────
+        # ── 8. Nightly log retention — 02:00 UTC (per-environment tiers) ───────
         if now_dt.hour == 2:
             for org_row in orgs:
-                retention_days = org_row["retention_days"] or 90
-                cutoff = (now_dt - timedelta(days=retention_days)).strftime("%Y-%m-%dT%H:%M:%S")
+                org_default_retention = org_row["retention_days"] or 90
+                # Fetch per-environment overrides
+                env_retentions = conn.execute(
+                    "SELECT name, retention_days FROM environments WHERE org_id=? AND retention_days IS NOT NULL",
+                    (org_row["id"],),
+                ).fetchall()
+                env_map = {r["name"].upper(): r["retention_days"] for r in env_retentions}
                 try:
-                    deleted = conn.execute(
-                        "DELETE FROM log_events WHERE org_id=? AND timestamp<?",
-                        (org_row["id"], cutoff),
+                    # Delete with per-environment retention
+                    envs_in_org = conn.execute(
+                        "SELECT DISTINCT environment_name FROM log_events WHERE org_id=?",
+                        (org_row["id"],),
+                    ).fetchall()
+                    total_deleted = 0
+                    for env_row in envs_in_org:
+                        env_name = (env_row["environment_name"] or "PROD").upper()
+                        days = env_map.get(env_name, org_default_retention)
+                        cutoff = (now_dt - timedelta(days=days)).strftime("%Y-%m-%dT%H:%M:%S")
+                        deleted = conn.execute(
+                            "DELETE FROM log_events WHERE org_id=? AND environment_name=? AND timestamp<?",
+                            (org_row["id"], env_row["environment_name"], cutoff),
+                        ).rowcount
+                        total_deleted += deleted
+                    # Fallback: catch events with no environment_name
+                    cutoff_default = (now_dt - timedelta(days=org_default_retention)).strftime("%Y-%m-%dT%H:%M:%S")
+                    deleted_fallback = conn.execute(
+                        "DELETE FROM log_events WHERE org_id=? AND (environment_name IS NULL OR environment_name='') AND timestamp<?",
+                        (org_row["id"], cutoff_default),
                     ).rowcount
-                    if deleted:
-                        logger.info("Retention: deleted %d log events for org %d (>%d days)",
-                                    deleted, org_row["id"], retention_days)
+                    total_deleted += deleted_fallback
+                    if total_deleted:
+                        logger.info("Retention: deleted %d log events for org %d (per-env tiers)",
+                                    total_deleted, org_row["id"])
                 except Exception as exc:
                     logger.error("Retention deletion failed for org %d: %s", org_row["id"], exc)
+            # Record daily usage snapshot
+            try:
+                for org_row in orgs:
+                    log_count = conn.execute(
+                        "SELECT COUNT(*) FROM log_events WHERE org_id=?", (org_row["id"],)
+                    ).fetchone()[0]
+                    conn.execute(
+                        "INSERT INTO usage_events (org_id, event_type, quantity, metadata_json, recorded_at) VALUES (?,?,?,?,?)",
+                        (org_row["id"], "daily_log_snapshot", log_count, "{}", now_str),
+                    )
+            except Exception as exc:
+                logger.warning("Usage snapshot failed: %s", exc)
 
         conn.commit()
     finally:
@@ -3031,6 +3302,31 @@ def ingest_json():
 
     db  = get_db()
     now = iso_now()
+
+    # ── Sampling rules: drop low-priority logs according to org rules ─────────
+    sampling_rules_rows = db.execute(
+        "SELECT source_pattern, environment_name, level, sample_rate FROM sampling_rules WHERE org_id=?",
+        (org_id,),
+    ).fetchall()
+    import fnmatch as _fnmatch, random as _random
+    _sample_counter: dict[str, int] = {}
+    def _should_keep(r: dict) -> bool:
+        lvl = (r.get("level") or "INFO").upper()
+        src = r.get("source") or ""
+        env = r.get("environment_name") or "PROD"
+        for sr in sampling_rules_rows:
+            env_match = sr["environment_name"].upper() in ("ALL", env.upper())
+            lvl_match = sr["level"].upper() == lvl
+            src_match = _fnmatch.fnmatch(src, sr["source_pattern"]) if sr["source_pattern"] != "*" else True
+            if env_match and lvl_match and src_match:
+                rate = sr["sample_rate"] or 100
+                key  = f"{src}:{env}:{lvl}"
+                cnt  = _sample_counter.get(key, 0) + 1
+                _sample_counter[key] = cnt
+                return (cnt % rate) == 1  # keep every Nth
+        return True  # no rule matches — keep all
+    records = [r for r in records if _should_keep(r)]
+
     cur = db.execute(
         "INSERT INTO uploads (org_id, user_id, filename, total_records, environment_name, created_at) VALUES (?, ?, ?, ?, ?, ?)",
         (org_id, user_id, "api-ingest.json", len(records), now),
@@ -3049,6 +3345,15 @@ def ingest_json():
         rows_to_insert,
     )
     db.commit()
+    # Metering: track ingest volume
+    try:
+        db.execute(
+            "INSERT INTO usage_events (org_id, event_type, quantity, metadata_json, recorded_at) VALUES (?,?,?,?,?)",
+            (org_id, "api_ingest", len(records), "{}", now),
+        )
+        db.commit()
+    except Exception:
+        pass
     audit(org_id, user_id, "api_ingest_json", "upload", str(upload_id), {"records": len(records)})
     return jsonify({"ok": True, "ingested": len(records), "upload_id": upload_id, "summary": summarize(records)}), 201
 
@@ -4255,6 +4560,548 @@ Return:
 
     return jsonify({"ok": True, "result": result, "log_count": len(rows)})
 
+
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# V12  NEW ENDPOINTS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+# ── Applications ─────────────────────────────────────────────────────────────
+
+@app.get("/api/applications")
+def list_applications():
+    user, err = require_auth()
+    if err: return err
+    db = get_db()
+    rows = db.execute(
+        "SELECT * FROM applications WHERE org_id=? ORDER BY name", (user["org_id"],)
+    ).fetchall()
+    return jsonify([dict(r) for r in rows])
+
+
+@app.post("/api/applications")
+def create_application():
+    user, err = require_role("manager")
+    if err: return err
+    p = request_payload()
+    name = sanitize_input(p.get("name", ""), 120)
+    if not name:
+        return jsonify({"error": "name is required"}), 400
+    slug = slugify(name)
+    desc  = sanitize_input(p.get("description", ""), 500)
+    owner = sanitize_input(p.get("owner_team", ""), 120)
+    sla   = p.get("sla_tier", "standard")
+    if sla not in ("critical", "high", "standard", "low"):
+        sla = "standard"
+    contact = sanitize_input(p.get("on_call_contact", ""), 200)
+    now = iso_now()
+    db = get_db()
+    try:
+        db.execute(
+            "INSERT INTO applications (org_id, name, slug, description, owner_team, sla_tier, on_call_contact, created_at) VALUES (?,?,?,?,?,?,?,?)",
+            (user["org_id"], name, slug, desc, owner, sla, contact, now),
+        )
+        db.commit()
+        row = db.execute("SELECT * FROM applications WHERE org_id=? AND slug=?", (user["org_id"], slug)).fetchone()
+        audit(user["org_id"], user["id"], "create_application", "application", slug)
+        return jsonify(dict(row)), 201
+    except Exception as exc:
+        if "UNIQUE" in str(exc):
+            return jsonify({"error": "An application with that name already exists."}), 409
+        return jsonify({"error": str(exc)}), 500
+
+
+@app.put("/api/applications/<int:app_id>")
+def update_application(app_id: int):
+    user, err = require_role("manager")
+    if err: return err
+    p = request_payload()
+    db = get_db()
+    row = db.execute("SELECT * FROM applications WHERE id=? AND org_id=?", (app_id, user["org_id"])).fetchone()
+    if not row:
+        return jsonify({"error": "Application not found"}), 404
+    name    = sanitize_input(p.get("name", row["name"]), 120)
+    desc    = sanitize_input(p.get("description", row["description"]), 500)
+    owner   = sanitize_input(p.get("owner_team", row["owner_team"]), 120)
+    sla     = p.get("sla_tier", row["sla_tier"])
+    contact = sanitize_input(p.get("on_call_contact", row["on_call_contact"]), 200)
+    db.execute(
+        "UPDATE applications SET name=?, description=?, owner_team=?, sla_tier=?, on_call_contact=? WHERE id=?",
+        (name, desc, owner, sla, contact, app_id),
+    )
+    db.commit()
+    return jsonify({"ok": True})
+
+
+@app.delete("/api/applications/<int:app_id>")
+def delete_application(app_id: int):
+    user, err = require_role("admin")
+    if err: return err
+    db = get_db()
+    db.execute("DELETE FROM applications WHERE id=? AND org_id=?", (app_id, user["org_id"]))
+    db.commit()
+    return jsonify({"ok": True})
+
+
+# ── Alert Incidents ───────────────────────────────────────────────────────────
+
+@app.get("/api/incidents")
+def list_incidents():
+    user, err = require_auth()
+    if err: return err
+    db = get_db()
+    status_filter = request.args.get("status", "")
+    env_filter    = request.args.get("environment", "")
+    limit         = min(int(request.args.get("limit", 50)), 200)
+    conditions    = ["ai.org_id=?"]
+    params: list  = [user["org_id"]]
+    if status_filter:
+        conditions.append("ai.status=?")
+        params.append(status_filter)
+    if env_filter and env_filter.upper() != "ALL":
+        conditions.append("ai.environment_name=?")
+        params.append(env_filter)
+    where = " AND ".join(conditions)
+    rows = db.execute(
+        f"""SELECT ai.*, u.name AS ack_by_name
+            FROM alert_incidents ai
+            LEFT JOIN users u ON u.id = ai.acknowledged_by
+            WHERE {where}
+            ORDER BY ai.fired_at DESC LIMIT ?""",
+        (*params, limit),
+    ).fetchall()
+    return jsonify([dict(r) for r in rows])
+
+
+@app.put("/api/incidents/<int:incident_id>")
+def update_incident(incident_id: int):
+    user, err = require_auth()
+    if err: return err
+    p = request_payload()
+    new_status = p.get("status", "")
+    if new_status not in ("acknowledged", "resolved"):
+        return jsonify({"error": "status must be acknowledged or resolved"}), 400
+    db = get_db()
+    row = db.execute("SELECT * FROM alert_incidents WHERE id=? AND org_id=?", (incident_id, user["org_id"])).fetchone()
+    if not row:
+        return jsonify({"error": "Incident not found"}), 404
+    now = iso_now()
+    if new_status == "acknowledged":
+        db.execute(
+            "UPDATE alert_incidents SET status='acknowledged', acknowledged_by=?, acknowledged_at=? WHERE id=?",
+            (user["id"], now, incident_id),
+        )
+    else:
+        db.execute(
+            "UPDATE alert_incidents SET status='resolved', resolved_at=? WHERE id=?",
+            (now, incident_id),
+        )
+    db.commit()
+    audit(user["org_id"], user["id"], f"incident_{new_status}", "alert_incident", str(incident_id))
+    return jsonify({"ok": True, "status": new_status})
+
+
+# ── Saved Views ───────────────────────────────────────────────────────────────
+
+@app.get("/api/views")
+def list_views():
+    user, err = require_auth()
+    if err: return err
+    db = get_db()
+    rows = db.execute(
+        "SELECT * FROM saved_views WHERE org_id=? ORDER BY is_pinned DESC, name",
+        (user["org_id"],),
+    ).fetchall()
+    return jsonify([dict(r) for r in rows])
+
+
+@app.post("/api/views")
+def create_view():
+    user, err = require_auth()
+    if err: return err
+    p = request_payload()
+    name = sanitize_input(p.get("name", ""), 120)
+    if not name:
+        return jsonify({"error": "name is required"}), 400
+    config = p.get("config", {})
+    if not isinstance(config, dict):
+        return jsonify({"error": "config must be an object"}), 400
+    is_pinned = 1 if p.get("is_pinned") else 0
+    now = iso_now()
+    db = get_db()
+    db.execute(
+        "INSERT INTO saved_views (org_id, user_id, name, config_json, is_pinned, created_at) VALUES (?,?,?,?,?,?)",
+        (user["org_id"], user["id"], name, json.dumps(config), is_pinned, now),
+    )
+    db.commit()
+    row = db.execute(
+        "SELECT * FROM saved_views WHERE org_id=? AND user_id=? ORDER BY id DESC LIMIT 1",
+        (user["org_id"], user["id"]),
+    ).fetchone()
+    return jsonify(dict(row)), 201
+
+
+@app.put("/api/views/<int:view_id>")
+def update_view(view_id: int):
+    user, err = require_auth()
+    if err: return err
+    p = request_payload()
+    db = get_db()
+    row = db.execute("SELECT * FROM saved_views WHERE id=? AND org_id=?", (view_id, user["org_id"])).fetchone()
+    if not row:
+        return jsonify({"error": "View not found"}), 404
+    name      = sanitize_input(p.get("name", row["name"]), 120)
+    config    = p.get("config", json.loads(row["config_json"]))
+    is_pinned = 1 if p.get("is_pinned", bool(row["is_pinned"])) else 0
+    db.execute(
+        "UPDATE saved_views SET name=?, config_json=?, is_pinned=? WHERE id=?",
+        (name, json.dumps(config), is_pinned, view_id),
+    )
+    db.commit()
+    return jsonify({"ok": True})
+
+
+@app.delete("/api/views/<int:view_id>")
+def delete_view(view_id: int):
+    user, err = require_auth()
+    if err: return err
+    db = get_db()
+    db.execute("DELETE FROM saved_views WHERE id=? AND org_id=?", (view_id, user["org_id"]))
+    db.commit()
+    return jsonify({"ok": True})
+
+
+# ── Deployment Events ─────────────────────────────────────────────────────────
+
+@app.get("/api/deployments")
+def list_deployments():
+    user, err = require_auth()
+    if err: return err
+    db = get_db()
+    env_filter = request.args.get("environment", "")
+    app_filter = request.args.get("application", "")
+    since      = request.args.get("since", "")
+    limit      = min(int(request.args.get("limit", 50)), 200)
+    conditions = ["org_id=?"]
+    params: list = [user["org_id"]]
+    if env_filter and env_filter.upper() != "ALL":
+        conditions.append("environment_name=?")
+        params.append(env_filter)
+    if app_filter:
+        conditions.append("application_slug=?")
+        params.append(app_filter)
+    if since:
+        conditions.append("deployed_at>=?")
+        params.append(since)
+    where = " AND ".join(conditions)
+    rows = db.execute(
+        f"SELECT * FROM deployment_events WHERE {where} ORDER BY deployed_at DESC LIMIT ?",
+        (*params, limit),
+    ).fetchall()
+    return jsonify([dict(r) for r in rows])
+
+
+@app.post("/api/deployments")
+def create_deployment():
+    user, err = require_role("developer")
+    if err: return err
+    p = request_payload()
+    version = sanitize_input(p.get("version", ""), 100)
+    if not version:
+        return jsonify({"error": "version is required"}), 400
+    env  = sanitize_input(p.get("environment_name", "PROD"), 50)
+    app_slug = sanitize_input(p.get("application_slug", ""), 100)
+    desc     = sanitize_input(p.get("description", ""), 500)
+    deployed_by = sanitize_input(p.get("deployed_by", user.get("name", "")), 120)
+    deployed_at = p.get("deployed_at", iso_now())
+    now = iso_now()
+    db = get_db()
+    db.execute(
+        """INSERT INTO deployment_events
+           (org_id, user_id, application_slug, environment_name, version, description, deployed_by, deployed_at, created_at)
+           VALUES (?,?,?,?,?,?,?,?,?)""",
+        (user["org_id"], user["id"], app_slug, env, version, desc, deployed_by, deployed_at, now),
+    )
+    db.commit()
+    row = db.execute(
+        "SELECT * FROM deployment_events WHERE org_id=? ORDER BY id DESC LIMIT 1", (user["org_id"],)
+    ).fetchone()
+    audit(user["org_id"], user["id"], "create_deployment", "deployment", version, {"env": env, "app": app_slug})
+    return jsonify(dict(row)), 201
+
+
+@app.delete("/api/deployments/<int:dep_id>")
+def delete_deployment(dep_id: int):
+    user, err = require_role("manager")
+    if err: return err
+    db = get_db()
+    db.execute("DELETE FROM deployment_events WHERE id=? AND org_id=?", (dep_id, user["org_id"]))
+    db.commit()
+    return jsonify({"ok": True})
+
+
+# ── Usage Metering ────────────────────────────────────────────────────────────
+
+@app.get("/api/usage")
+def get_usage():
+    user, err = require_role("manager")
+    if err: return err
+    db = get_db()
+    since = request.args.get("since", (datetime.now(timezone.utc) - timedelta(days=30)).strftime("%Y-%m-%dT%H:%M:%S"))
+    # Aggregate by event_type
+    rows = db.execute(
+        """SELECT event_type, SUM(quantity) AS total, COUNT(*) AS events,
+                  MIN(recorded_at) AS first_at, MAX(recorded_at) AS last_at
+           FROM usage_events WHERE org_id=? AND recorded_at>=?
+           GROUP BY event_type ORDER BY total DESC""",
+        (user["org_id"], since),
+    ).fetchall()
+    # Current log count
+    log_count = db.execute(
+        "SELECT COUNT(*) FROM log_events WHERE org_id=?", (user["org_id"],)
+    ).fetchone()[0]
+    # API key usage summary
+    keys = db.execute(
+        "SELECT id, name, prefix, last_used_at FROM api_keys WHERE org_id=? AND status='active'",
+        (user["org_id"],),
+    ).fetchall()
+    return jsonify({
+        "summary": [dict(r) for r in rows],
+        "current_log_count": log_count,
+        "api_keys": [dict(k) for k in keys],
+        "since": since,
+    })
+
+
+# ── On-Call Schedules ─────────────────────────────────────────────────────────
+
+@app.get("/api/on-call")
+def list_on_call():
+    user, err = require_auth()
+    if err: return err
+    db = get_db()
+    rows = db.execute(
+        """SELECT oc.*, u.name AS user_name, u.email AS user_email
+           FROM on_call_schedules oc
+           JOIN users u ON u.id = oc.user_id
+           WHERE oc.org_id=? ORDER BY oc.start_at DESC LIMIT 50""",
+        (user["org_id"],),
+    ).fetchall()
+    now = iso_now()
+    current = db.execute(
+        """SELECT oc.*, u.name AS user_name, u.email AS user_email
+           FROM on_call_schedules oc
+           JOIN users u ON u.id = oc.user_id
+           WHERE oc.org_id=? AND oc.start_at<=? AND oc.end_at>=?
+           ORDER BY oc.start_at DESC LIMIT 1""",
+        (user["org_id"], now, now),
+    ).fetchone()
+    return jsonify({
+        "schedules": [dict(r) for r in rows],
+        "current_on_call": dict(current) if current else None,
+    })
+
+
+@app.post("/api/on-call")
+def create_on_call():
+    user, err = require_role("manager")
+    if err: return err
+    p = request_payload()
+    user_id  = p.get("user_id")
+    name     = sanitize_input(p.get("name", ""), 120)
+    contact  = sanitize_input(p.get("contact", ""), 200)
+    start_at = p.get("start_at", "")
+    end_at   = p.get("end_at", "")
+    if not all([user_id, name, start_at, end_at]):
+        return jsonify({"error": "user_id, name, start_at, end_at are required"}), 400
+    db = get_db()
+    # Verify user belongs to org
+    u_row = db.execute("SELECT id FROM users WHERE id=? AND org_id=?", (user_id, user["org_id"])).fetchone()
+    if not u_row:
+        return jsonify({"error": "User not found in this organisation"}), 404
+    now = iso_now()
+    db.execute(
+        "INSERT INTO on_call_schedules (org_id, name, user_id, contact, start_at, end_at, created_at) VALUES (?,?,?,?,?,?,?)",
+        (user["org_id"], name, user_id, contact, start_at, end_at, now),
+    )
+    db.commit()
+    return jsonify({"ok": True}), 201
+
+
+@app.delete("/api/on-call/<int:oc_id>")
+def delete_on_call(oc_id: int):
+    user, err = require_role("manager")
+    if err: return err
+    db = get_db()
+    db.execute("DELETE FROM on_call_schedules WHERE id=? AND org_id=?", (oc_id, user["org_id"]))
+    db.commit()
+    return jsonify({"ok": True})
+
+
+# ── Sampling Rules ────────────────────────────────────────────────────────────
+
+@app.get("/api/sampling-rules")
+def list_sampling_rules():
+    user, err = require_auth()
+    if err: return err
+    db = get_db()
+    rows = db.execute(
+        "SELECT * FROM sampling_rules WHERE org_id=? ORDER BY id DESC", (user["org_id"],)
+    ).fetchall()
+    return jsonify([dict(r) for r in rows])
+
+
+@app.post("/api/sampling-rules")
+def create_sampling_rule():
+    user, err = require_role("admin")
+    if err: return err
+    p = request_payload()
+    source_pat = sanitize_input(p.get("source_pattern", "*"), 200)
+    env_name   = sanitize_input(p.get("environment_name", "ALL"), 50)
+    level      = p.get("level", "INFO").upper()
+    if level not in ("DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"):
+        level = "INFO"
+    rate = int(p.get("sample_rate", 100))
+    rate = max(1, min(rate, 10000))
+    now = iso_now()
+    db = get_db()
+    db.execute(
+        "INSERT INTO sampling_rules (org_id, source_pattern, environment_name, level, sample_rate, created_at) VALUES (?,?,?,?,?,?)",
+        (user["org_id"], source_pat, env_name, level, rate, now),
+    )
+    db.commit()
+    return jsonify({"ok": True}), 201
+
+
+@app.delete("/api/sampling-rules/<int:rule_id>")
+def delete_sampling_rule(rule_id: int):
+    user, err = require_role("admin")
+    if err: return err
+    db = get_db()
+    db.execute("DELETE FROM sampling_rules WHERE id=? AND org_id=?", (rule_id, user["org_id"]))
+    db.commit()
+    return jsonify({"ok": True})
+
+
+# ── Environment Permissions ───────────────────────────────────────────────────
+
+@app.get("/api/environment-permissions")
+def list_env_permissions():
+    user, err = require_role("manager")
+    if err: return err
+    db = get_db()
+    rows = db.execute(
+        "SELECT * FROM environment_permissions WHERE org_id=? ORDER BY environment_name",
+        (user["org_id"],),
+    ).fetchall()
+    return jsonify([dict(r) for r in rows])
+
+
+@app.put("/api/environment-permissions")
+def upsert_env_permission():
+    user, err = require_role("admin")
+    if err: return err
+    p = request_payload()
+    env_name  = sanitize_input(p.get("environment_name", ""), 50)
+    min_role  = p.get("min_role", "developer")
+    can_delete = 1 if p.get("can_delete") else 0
+    if not env_name:
+        return jsonify({"error": "environment_name is required"}), 400
+    if min_role not in VALID_ROLES:
+        return jsonify({"error": f"min_role must be one of {sorted(VALID_ROLES)}"}), 400
+    now = iso_now()
+    db = get_db()
+    db.execute(
+        """INSERT INTO environment_permissions (org_id, environment_name, min_role, can_delete, created_at)
+           VALUES (?,?,?,?,?)
+           ON CONFLICT(org_id, environment_name) DO UPDATE
+           SET min_role=excluded.min_role, can_delete=excluded.can_delete""",
+        (user["org_id"], env_name, min_role, can_delete, now),
+    )
+    db.commit()
+    audit(user["org_id"], user["id"], "set_env_permission", "environment", env_name,
+          {"min_role": min_role, "can_delete": bool(can_delete)})
+    return jsonify({"ok": True})
+
+
+# ── Environment Retention Tiers ───────────────────────────────────────────────
+
+@app.put("/api/environments/<int:env_id>/retention")
+def set_env_retention(env_id: int):
+    user, err = require_role("admin")
+    if err: return err
+    p = request_payload()
+    days = p.get("retention_days")
+    if days is not None:
+        try:
+            days = int(days)
+            if not 1 <= days <= 3650:
+                raise ValueError
+        except (ValueError, TypeError):
+            return jsonify({"error": "retention_days must be 1–3650"}), 400
+    db = get_db()
+    row = db.execute("SELECT * FROM environments WHERE id=? AND org_id=?", (env_id, user["org_id"])).fetchone()
+    if not row:
+        return jsonify({"error": "Environment not found"}), 404
+    db.execute("UPDATE environments SET retention_days=? WHERE id=?", (days, env_id))
+    db.commit()
+    audit(user["org_id"], user["id"], "set_env_retention", "environment", str(env_id), {"retention_days": days})
+    return jsonify({"ok": True, "retention_days": days})
+
+
+# ── API Key Rate Limit Management ─────────────────────────────────────────────
+
+@app.put("/api/keys/<int:key_id>/rate-limit")
+def set_key_rate_limit(key_id: int):
+    user, err = require_role("admin")
+    if err: return err
+    p = request_payload()
+    try:
+        limit = int(p.get("rate_limit_per_min", 0))
+        if limit < 0:
+            raise ValueError
+    except (ValueError, TypeError):
+        return jsonify({"error": "rate_limit_per_min must be a non-negative integer"}), 400
+    db = get_db()
+    row = db.execute("SELECT * FROM api_keys WHERE id=? AND org_id=?", (key_id, user["org_id"])).fetchone()
+    if not row:
+        return jsonify({"error": "API key not found"}), 404
+    db.execute("UPDATE api_keys SET rate_limit_per_min=? WHERE id=?", (limit, key_id))
+    db.commit()
+    # Invalidate cache so new limit is picked up immediately
+    _invalidate_cached_key(row["prefix"])
+    audit(user["org_id"], user["id"], "set_key_rate_limit", "api_key", str(key_id), {"rate_limit_per_min": limit})
+    return jsonify({"ok": True, "rate_limit_per_min": limit})
+
+
+# ── Timeseries with deployment markers ───────────────────────────────────────
+# Augment the existing /api/logs/timeseries response with deployments
+
+@app.get("/api/deployments/timeseries")
+def deployments_for_timeseries():
+    """Return deployment markers in the same time window as the log timeseries chart."""
+    user, err = require_auth()
+    if err: return err
+    db = get_db()
+    since = request.args.get("since", (datetime.now(timezone.utc) - timedelta(hours=24)).strftime("%Y-%m-%dT%H:%M:%S"))
+    until = request.args.get("until", iso_now())
+    env   = request.args.get("environment", "")
+    app_sl = request.args.get("application", "")
+    conditions = ["org_id=?", "deployed_at>=?", "deployed_at<=?"]
+    params: list = [user["org_id"], since, until]
+    if env and env.upper() != "ALL":
+        conditions.append("environment_name=?")
+        params.append(env)
+    if app_sl:
+        conditions.append("application_slug=?")
+        params.append(app_sl)
+    where = " AND ".join(conditions)
+    rows = db.execute(
+        f"SELECT id, application_slug, environment_name, version, description, deployed_by, deployed_at FROM deployment_events WHERE {where} ORDER BY deployed_at ASC",
+        params,
+    ).fetchall()
+    return jsonify([dict(r) for r in rows])
 
 # ─────────────────────────── Startup ─────────────────────────────────────────
 
