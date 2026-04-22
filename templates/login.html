@@ -4,7 +4,7 @@
 <link rel="icon" type="image/svg+xml" href="/static/images/favicon.svg">
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<meta name="description" content="Sign in to your ObserveX workspace — log management, traces, alerts, and AI-powered observability."/>
+<meta name="description" content="Sign in to your ObserveX workspace — log management, traces, alerts, PII masking, and AI-powered observability."/>
 <meta property="og:title" content="Sign in — ObserveX"/>
 <meta property="og:type" content="website"/>
 <title>Sign in · ObserveX</title>
@@ -48,14 +48,14 @@ body:after{
   background:radial-gradient(circle, rgba(34,211,238,.18), transparent 60%);filter:blur(12px);pointer-events:none;
 }
 .shell{
-  position:relative;width:min(100%,1280px);display:grid;grid-template-columns:minmax(0,1.02fr) minmax(420px,.98fr);gap:18px;z-index:1;align-items:stretch;
+  position:relative;width:min(100%,1300px);display:grid;grid-template-columns:minmax(0,1.08fr) minmax(420px,.92fr);gap:18px;z-index:1;align-items:stretch;
 }
 .glass{
   background:var(--panel);border:1px solid var(--panel-border);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);
   box-shadow:var(--shadow);border-radius:32px;overflow:hidden;
 }
 .hero{
-  position:relative;padding:clamp(24px,3vw,40px);min-height:min(780px,calc(100dvh - 36px));display:flex;flex-direction:column;justify-content:space-between;overflow:auto;
+  position:relative;padding:clamp(24px,3vw,40px);min-height:min(820px,calc(100dvh - 36px));display:flex;flex-direction:column;justify-content:space-between;overflow:auto;
   background:
     radial-gradient(circle at top right, rgba(34,211,238,.18), transparent 26%),
     radial-gradient(circle at top left, rgba(139,92,246,.18), transparent 24%),
@@ -79,24 +79,64 @@ body:after{
 }
 .live-dot{width:8px;height:8px;border-radius:50%;background:#67e8f9;box-shadow:0 0 0 0 rgba(103,232,249,.6);animation:pulse 2s infinite}
 @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(103,232,249,.6)}70%{box-shadow:0 0 0 10px rgba(103,232,249,0)}100%{box-shadow:0 0 0 0 rgba(103,232,249,0)}}
-.hero-copy{max-width:540px}
 .eyebrow{display:inline-flex;align-items:center;gap:10px;padding:8px 12px;border-radius:999px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.05);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:#c8d5ea;font-weight:700}
-.hero h1{margin:18px 0 16px;font:800 clamp(42px,5vw,62px)/.95 Syne,Inter,sans-serif;letter-spacing:-2px;max-width:560px}
-.hero p{margin:0;color:#b9c8df;line-height:1.75;font-size:16px;max-width:470px}
-.feature-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:28px}
-.feature-card{padding:18px;border-radius:24px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09);transition:transform .22s ease,background .22s ease,border-color .22s ease}
+.hero h1{margin:18px 0 16px;font:800 clamp(38px,4.5vw,58px)/.95 Syne,Inter,sans-serif;letter-spacing:-2px;max-width:560px}
+.hero p{margin:0;color:#b9c8df;line-height:1.75;font-size:15px;max-width:470px}
+
+/* Live Dashboard Preview Strip */
+.dashboard-strip{margin-top:24px;border-radius:24px;border:1px solid rgba(255,255,255,.09);background:rgba(255,255,255,.04);overflow:hidden}
+.strip-header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid rgba(255,255,255,.07);font-size:11px}
+.strip-title{font-weight:700;color:#c8d8f0;text-transform:uppercase;letter-spacing:.14em}
+.strip-env{display:flex;gap:6px}
+.env-pill{padding:4px 10px;border-radius:999px;font-size:10px;font-weight:700;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.04);color:#9fb0ca}
+.env-pill.active{background:rgba(34,197,94,.12);border-color:rgba(74,222,128,.2);color:#86efac}
+.strip-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:0}
+.sstat{padding:14px 16px;border-right:1px solid rgba(255,255,255,.06)}
+.sstat:last-child{border-right:none}
+.sstat-val{font-size:22px;font-weight:800;letter-spacing:-1px}
+.sstat-label{font-size:10px;color:#7e90ac;text-transform:uppercase;letter-spacing:.12em;margin-top:4px}
+.sstat-meta{font-size:10px;margin-top:3px}
+.sstat-meta.up{color:#67e8f9}
+.sstat-meta.warn{color:#fb923c}
+.sstat-meta.ok{color:#4ade80}
+
+/* Alert preview bar */
+.alert-bar{padding:10px 16px;border-top:1px solid rgba(255,255,255,.07);display:flex;align-items:center;gap:10px;font-size:11px}
+.alert-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.alert-dot.critical{background:#fb7185}
+.alert-dot.high{background:#fb923c}
+.alert-text{color:#c0cedf;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.alert-badge-sm{padding:3px 8px;border-radius:999px;font-size:10px;font-weight:700;flex-shrink:0}
+.alert-badge-sm.critical{background:rgba(251,113,133,.18);color:#fda4af}
+.alert-badge-sm.high{background:rgba(251,146,60,.18);color:#fdba74}
+
+/* Trace preview */
+.trace-bar{padding:12px 16px;border-top:1px solid rgba(255,255,255,.07)}
+.trace-label{font-size:10px;color:#7e90ac;text-transform:uppercase;letter-spacing:.12em;margin-bottom:8px;font-weight:700}
+.trace-nodes{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.tnode{padding:5px 10px;border-radius:10px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);font-size:10px;color:#bfd0e8}
+.tnode.slow{border-color:rgba(251,113,133,.3);color:#fda4af;background:rgba(244,63,94,.08)}
+.tarrow{color:#67e8f9;font-size:11px}
+
+/* Feature grid */
+.feature-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:20px}
+.feature-card{padding:16px;border-radius:22px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09);transition:transform .22s ease,background .22s ease,border-color .22s ease}
 .feature-card:hover{transform:translateY(-3px);background:rgba(255,255,255,.08);border-color:rgba(34,211,238,.22)}
-.feature-kicker{font-size:11px;text-transform:uppercase;letter-spacing:.16em;color:#8fdfff;font-weight:700;margin-bottom:10px}
-.feature-card strong{display:block;font-size:16px;margin-bottom:8px}
-.feature-card span{display:block;font-size:13px;line-height:1.65;color:#afc0d8}
-.metric-row{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:24px}
-.metric-card{padding:18px;border-radius:24px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09)}
-.metric-card .value{font-size:29px;font-weight:800;letter-spacing:-1px}
-.metric-card .label{margin-top:6px;font-size:12px;color:#9fb0ca;text-transform:uppercase;letter-spacing:.14em}
-.hero-footer{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-top:28px;color:#97aac6;font-size:13px}
-.footer-badges{display:flex;gap:10px;flex-wrap:wrap}
-.footer-badges span{padding:8px 12px;border-radius:999px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.05)}
-.card{padding:clamp(20px,2.6vw,34px);display:flex;align-items:center;justify-content:center;min-height:min(780px,calc(100dvh - 36px));overflow:auto}
+.feature-kicker{font-size:11px;text-transform:uppercase;letter-spacing:.16em;color:#8fdfff;font-weight:700;margin-bottom:8px}
+.feature-card strong{display:block;font-size:14px;margin-bottom:6px}
+.feature-card span{display:block;font-size:12px;line-height:1.65;color:#afc0d8}
+
+/* Bottom section */
+.metric-row{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:20px}
+.metric-card{padding:16px;border-radius:22px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09)}
+.metric-card .value{font-size:26px;font-weight:800;letter-spacing:-1px}
+.metric-card .label{margin-top:6px;font-size:11px;color:#9fb0ca;text-transform:uppercase;letter-spacing:.14em}
+.hero-footer{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-top:20px;color:#97aac6;font-size:12px}
+.footer-badges{display:flex;gap:8px;flex-wrap:wrap}
+.footer-badges span{padding:7px 11px;border-radius:999px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.05);font-size:11px}
+
+/* Sign-in card */
+.card{padding:clamp(20px,2.6vw,34px);display:flex;align-items:center;justify-content:center;min-height:min(820px,calc(100dvh - 36px));overflow:auto}
 .card-inner{width:100%;max-width:min(470px,100%);animation:slideUp .7s ease}
 .card-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:28px}
 .card-logo{display:flex;align-items:center;gap:12px}
@@ -144,20 +184,31 @@ input::placeholder{color:#7e91ad}
 .alt-btn:hover{background:rgba(255,255,255,.08);transform:translateY(-1px)}
 .help-links{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:18px;font-size:12px;color:#8ea3c0}
 .link-row{margin-top:22px;text-align:center;font-size:13px;color:#8ea3c0}
+
+/* Session restore chip */
+.session-chip{display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:20px;background:rgba(34,211,238,.06);border:1px solid rgba(34,211,238,.14);margin-bottom:22px;cursor:pointer;transition:.18s}
+.session-chip:hover{background:rgba(34,211,238,.1)}
+.session-avatar{width:36px;height:36px;border-radius:12px;background:linear-gradient(135deg,rgba(34,211,238,.2),rgba(139,92,246,.2));display:grid;place-items:center;font-size:13px;font-weight:800;color:#a5f3fc;flex-shrink:0}
+.session-info{flex:1;min-width:0}
+.session-name{font-size:13px;font-weight:700;color:#e0eeff}
+.session-meta{font-size:11px;color:#8fb0d0;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.session-arrow{color:#67e8f9;font-size:16px;flex-shrink:0}
+
 @keyframes slideUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
-@media(max-width:1100px){
+@media(max-width:1140px){
   body{padding:14px}
   .shell{grid-template-columns:1fr}
   .hero,.card{min-height:auto}
   .hero{padding:28px}
   .card{padding:22px}
 }
-@media(max-height:860px){
-  .feature-grid{gap:10px;margin-top:18px}
-  .feature-card{padding:14px}
-  .metric-row{margin-top:18px}
-  .metric-card{padding:14px}
-  .hero-footer{margin-top:18px}
+@media(max-height:900px){
+  .feature-grid{gap:8px;margin-top:16px}
+  .feature-card{padding:12px}
+  .metric-row{margin-top:16px}
+  .metric-card{padding:12px}
+  .hero-footer{margin-top:14px}
+  .dashboard-strip{margin-top:16px}
   .card{align-items:flex-start}
 }
 @media(max-width:760px){
@@ -185,36 +236,97 @@ input::placeholder{color:#7e91ad}
         <div class="eyebrow">advanced observability platform</div>
         <h1>Welcome back to the control room.</h1>
         <p>
-          Sign in to investigate traces, follow request hops across services, monitor environment health,
-          and review masked logs with a cleaner premium operator experience.
+          Investigate traces, follow request hops, review masked logs, monitor environment health, and act on
+          AI-summarised root-cause findings — all from one premium operator surface.
         </p>
+      </div>
 
-        <div class="feature-grid">
-          <div class="feature-card">
-            <div class="feature-kicker">Trace Explorer</div>
-            <strong>Follow request paths instantly</strong>
-            <span>Jump from edge gateway to system APIs, cache layers, and downstream dependencies with full context.</span>
+      <!-- Live Dashboard Preview Strip -->
+      <div class="dashboard-strip">
+        <div class="strip-header">
+          <span class="strip-title">Platform Status · Live</span>
+          <div class="strip-env">
+            <span class="env-pill active">Production ✓</span>
+            <span class="env-pill">UAT</span>
+            <span class="env-pill">DEV</span>
+            <span class="env-pill">DR</span>
           </div>
-          <div class="feature-card">
-            <div class="feature-kicker">Sensitive Data Shield</div>
-            <strong>Mask risky values automatically</strong>
-            <span>Keep account numbers, headers, tokens, and user identifiers protected without losing debugging clarity.</span>
+        </div>
+        <div class="strip-stats">
+          <div class="sstat">
+            <div class="sstat-val" style="background:linear-gradient(90deg,#22d3ee,#38bdf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent">48.2M</div>
+            <div class="sstat-label">Logs Ingested</div>
+            <div class="sstat-meta up">+12.4% today</div>
           </div>
-          <div class="feature-card">
-            <div class="feature-kicker">Environment Lens</div>
-            <strong>Switch between PROD, UAT, DEV, and DR</strong>
-            <span>Compare health, alert volume, latency, and deployment behavior by environment from one surface.</span>
+          <div class="sstat">
+            <div class="sstat-val" style="background:linear-gradient(90deg,#34d399,#2dd4bf);-webkit-background-clip:text;-webkit-text-fill-color:transparent">1.28M</div>
+            <div class="sstat-label">Masked Fields</div>
+            <div class="sstat-meta ok">98.7% protected</div>
           </div>
-          <div class="feature-card">
-            <div class="feature-kicker">AI RCA</div>
-            <strong>Turn noisy events into actions</strong>
-            <span>Let AI summarize likely causes, failure clusters, retry storms, and risky traffic patterns in plain English.</span>
+          <div class="sstat">
+            <div class="sstat-val" style="background:linear-gradient(90deg,#a78bfa,#c084fc);-webkit-background-clip:text;-webkit-text-fill-color:transparent">286ms</div>
+            <div class="sstat-label">Trace Latency</div>
+            <div class="sstat-meta up">−31ms improved</div>
+          </div>
+          <div class="sstat">
+            <div class="sstat-val" style="background:linear-gradient(90deg,#fb7185,#f97316);-webkit-background-clip:text;-webkit-text-fill-color:transparent">14</div>
+            <div class="sstat-label">Open Alerts</div>
+            <div class="sstat-meta warn">3 critical active</div>
+          </div>
+        </div>
+        <!-- Alert preview -->
+        <div class="alert-bar">
+          <span class="alert-dot critical"></span>
+          <span class="alert-text">PII leak risk in free-text payload · Masking Engine · 2 min ago</span>
+          <span class="alert-badge-sm critical">Critical</span>
+        </div>
+        <div class="alert-bar" style="border-top:1px solid rgba(255,255,255,.05)">
+          <span class="alert-dot high"></span>
+          <span class="alert-text">Latency spike above threshold · Trace Monitor · 5 min ago</span>
+          <span class="alert-badge-sm high">High</span>
+        </div>
+        <!-- Trace preview -->
+        <div class="trace-bar">
+          <div class="trace-label">Latest Trace · TRC-98A21F · payment-engine</div>
+          <div class="trace-nodes">
+            <span class="tnode">Edge Gateway <span style="color:#67e8f9">43ms</span></span>
+            <span class="tarrow">→</span>
+            <span class="tnode">Auth Filter <span style="color:#67e8f9">29ms</span></span>
+            <span class="tarrow">→</span>
+            <span class="tnode">Experience API <span style="color:#67e8f9">88ms</span></span>
+            <span class="tarrow">→</span>
+            <span class="tnode">Process API <span style="color:#67e8f9">121ms</span></span>
+            <span class="tarrow">→</span>
+            <span class="tnode slow">Core Banking <span>311ms ⚠</span></span>
           </div>
         </div>
       </div>
     </div>
 
     <div>
+      <div class="feature-grid">
+        <div class="feature-card">
+          <div class="feature-kicker">Trace Explorer</div>
+          <strong>Follow request paths instantly</strong>
+          <span>Jump from edge gateway to system APIs, cache layers, and downstream dependencies with full context.</span>
+        </div>
+        <div class="feature-card">
+          <div class="feature-kicker">Sensitive Data Shield</div>
+          <strong>Mask risky values automatically</strong>
+          <span>Keep account numbers, headers, tokens, and identifiers protected without losing debugging clarity.</span>
+        </div>
+        <div class="feature-card">
+          <div class="feature-kicker">Environment Lens</div>
+          <strong>Switch between PROD, UAT, DEV, and DR</strong>
+          <span>Compare health, alert volume, latency, and deployment behavior by environment from one surface.</span>
+        </div>
+        <div class="feature-card">
+          <div class="feature-kicker">AI RCA Co-Pilot</div>
+          <strong>Turn noisy events into actions</strong>
+          <span>AI summarizes failure clusters, retry storms, and risky traffic patterns in plain English instantly.</span>
+        </div>
+      </div>
+
       <div class="metric-row">
         <div class="metric-card">
           <div class="value">48.2M</div>
@@ -250,9 +362,19 @@ input::placeholder{color:#7e91ad}
       </div>
 
       <h2>Welcome back</h2>
-      <p class="sub">Sign in to your workspace and continue investigating logs, traces, alerts, and environment health.</p>
+      <p class="sub">Sign in to investigate logs, traces, alerts, and environment health across Production, UAT, Development, and DR.</p>
 
       <div class="msg" id="msg"></div>
+
+      <!-- Last session chip (shown if previous session found) -->
+      <div class="session-chip" id="sessionChip" style="display:none" onclick="fillLastSession()">
+        <div class="session-avatar" id="sessionInitial">?</div>
+        <div class="session-info">
+          <div class="session-name" id="sessionName">Continue session</div>
+          <div class="session-meta" id="sessionMeta">Last active · click to fill</div>
+        </div>
+        <span class="session-arrow">→</span>
+      </div>
 
       <div class="form-shell">
         <div class="field">
@@ -277,7 +399,7 @@ input::placeholder{color:#7e91ad}
 
         <button class="btn" id="submitBtn" onclick="doLogin()">Sign in to workspace</button>
 
-        <div class="divider">or continue</div>
+        <div class="divider">or continue with</div>
         <div class="alt-actions">
           <a class="alt-btn" href="/documentation">View docs</a>
           <a class="alt-btn" href="/pricing">Explore plans</a>
@@ -293,6 +415,34 @@ input::placeholder{color:#7e91ad}
   </main>
 </div>
 <script>
+// Restore last session chip
+(function(){
+  try{
+    const saved=localStorage.getItem('ox_last_session');
+    if(saved){
+      const d=JSON.parse(saved);
+      const chip=document.getElementById('sessionChip');
+      const initEl=document.getElementById('sessionInitial');
+      const nameEl=document.getElementById('sessionName');
+      const metaEl=document.getElementById('sessionMeta');
+      if(d.name&&d.email){
+        initEl.textContent=d.name.charAt(0).toUpperCase();
+        nameEl.textContent='Continue as '+d.name.split(' ')[0];
+        metaEl.textContent=d.email+' · Last active: '+d.org;
+        chip.style.display='flex';
+        window._lastEmail=d.email;
+      }
+    }
+  }catch(e){}
+})();
+
+function fillLastSession(){
+  if(window._lastEmail){
+    document.getElementById('email').value=window._lastEmail;
+    document.getElementById('pw').focus();
+  }
+}
+
 function togglePw(){
   const inp=document.getElementById('pw');
   const btn=document.getElementById('togglePwBtn');
@@ -313,12 +463,16 @@ async function doLogin(){
   const email=document.getElementById('email').value.trim();
   const pw=document.getElementById('pw').value;
   const btn=document.getElementById('submitBtn');
+  const remember=document.getElementById('rememberMe').checked;
   if(!email||!pw){showMsg('Please enter your email and password.','error');return;}
   btn.disabled=true;btn.textContent='Signing in…';
   try{
     const res=await fetch('/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password:pw})});
     const d=await res.json();
     if(!res.ok){showMsg(d.error||'Login failed. Please try again.','error');btn.disabled=false;btn.textContent='Sign in to workspace';return;}
+    if(remember&&d.name){
+      try{localStorage.setItem('ox_last_session',JSON.stringify({email,name:d.name||email,org:d.org_name||'ObserveX'}));}catch(e){}
+    }
     showMsg('Signed in successfully. Redirecting to your workspace…','success');
     setTimeout(()=>{location.href=d.workspace_url||'/workspace';},450);
   }catch(e){

@@ -4,7 +4,7 @@
 <link rel="icon" type="image/svg+xml" href="/static/images/favicon.svg">
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<meta name="description" content="Create your ObserveX workspace — log management, traces, alerts, and AI root cause analysis for your team."/>
+<meta name="description" content="Create your ObserveX workspace — log management, traces, alerts, PII masking, and AI root cause analysis for your team."/>
 <meta property="og:title" content="Create Workspace — ObserveX"/>
 <meta property="og:type" content="website"/>
 <title>Create Workspace · ObserveX</title>
@@ -46,10 +46,10 @@ body:after{
   content:"";position:fixed;left:-120px;bottom:-120px;width:320px;height:320px;border-radius:50%;
   background:radial-gradient(circle, rgba(139,92,246,.2), transparent 60%);filter:blur(12px);pointer-events:none;
 }
-.shell{position:relative;width:100%;max-width:1260px;display:grid;grid-template-columns:1fr 1.04fr;gap:18px;z-index:1}
+.shell{position:relative;width:100%;max-width:1300px;display:grid;grid-template-columns:1fr 1.08fr;gap:18px;z-index:1}
 .glass{background:var(--panel);border:1px solid var(--panel-border);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);box-shadow:var(--shadow);border-radius:32px;overflow:hidden}
 .hero{
-  position:relative;padding:clamp(24px,3vw,40px);min-height:min(820px,calc(100dvh - 36px));display:flex;flex-direction:column;justify-content:space-between;overflow:auto;
+  position:relative;padding:clamp(24px,3vw,40px);min-height:min(860px,calc(100dvh - 36px));display:flex;flex-direction:column;justify-content:space-between;overflow:auto;
   background:
     radial-gradient(circle at top right, rgba(34,211,238,.18), transparent 26%),
     radial-gradient(circle at top left, rgba(139,92,246,.18), transparent 24%),
@@ -64,64 +64,115 @@ body:after{
 .live-dot{width:8px;height:8px;border-radius:50%;background:#c4b5fd;box-shadow:0 0 0 0 rgba(196,181,253,.6);animation:pulse 2s infinite}
 @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(196,181,253,.6)}70%{box-shadow:0 0 0 10px rgba(196,181,253,0)}100%{box-shadow:0 0 0 0 rgba(196,181,253,0)}}
 .eyebrow{display:inline-flex;align-items:center;gap:10px;padding:8px 12px;border-radius:999px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.05);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:#c8d5ea;font-weight:700}
-.hero h1{margin:18px 0 16px;font:800 60px/.95 Syne,Inter,sans-serif;letter-spacing:-2px;max-width:580px}
-.hero p{margin:0;color:#b9c8df;line-height:1.75;font-size:16px;max-width:500px}
-.story-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:28px}
-.story-card{padding:18px;border-radius:24px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09);transition:transform .22s ease,background .22s ease,border-color .22s ease}
-.story-card:hover{transform:translateY(-3px);background:rgba(255,255,255,.08);border-color:rgba(139,92,246,.24)}
-.story-kicker{font-size:11px;text-transform:uppercase;letter-spacing:.16em;color:#d4b5ff;font-weight:700;margin-bottom:10px}
-.story-card strong{display:block;font-size:16px;margin-bottom:8px}
-.story-card span{display:block;font-size:13px;line-height:1.65;color:#afc0d8}
-.setup-track{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:24px}
-.setup-step{padding:18px;border-radius:24px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09)}
-.setup-step .num{width:32px;height:32px;border-radius:12px;display:grid;place-items:center;background:rgba(34,211,238,.12);color:#bff6ff;font-weight:800;margin-bottom:12px}
-.setup-step strong{display:block;margin-bottom:6px}
-.setup-step span{font-size:13px;color:#aebfd7;line-height:1.6}
-.hero-footer{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-top:28px;color:#97aac6;font-size:13px}
-.footer-badges{display:flex;gap:10px;flex-wrap:wrap}
-.footer-badges span{padding:8px 12px;border-radius:999px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.05)}
-.card{padding:34px;display:flex;align-items:center;justify-content:center;min-height:820px}
-.card-inner{width:100%;max-width:520px;animation:slideUp .7s ease}
-.card-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:28px}
+.hero h1{margin:18px 0 16px;font:800 clamp(38px,4.5vw,56px)/.95 Syne,Inter,sans-serif;letter-spacing:-2px;max-width:580px}
+.hero p{margin:0;color:#b9c8df;line-height:1.75;font-size:15px;max-width:500px}
+
+/* Feature dashboard grid */
+.capability-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:22px}
+.cap-card{padding:16px;border-radius:22px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09);transition:transform .22s ease,background .22s ease,border-color .22s ease}
+.cap-card:hover{transform:translateY(-3px);background:rgba(255,255,255,.08);border-color:rgba(139,92,246,.24)}
+.cap-kicker{font-size:11px;text-transform:uppercase;letter-spacing:.16em;color:#d4b5ff;font-weight:700;margin-bottom:8px}
+.cap-card strong{display:block;font-size:14px;margin-bottom:6px}
+.cap-card span{display:block;font-size:12px;line-height:1.65;color:#afc0d8}
+
+/* Masking protection showcase */
+.masking-panel{margin-top:20px;border-radius:22px;border:1px solid rgba(255,255,255,.09);background:rgba(255,255,255,.04);overflow:hidden}
+.masking-header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid rgba(255,255,255,.07)}
+.masking-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.14em;color:#c8d8f0}
+.masking-status{padding:4px 10px;border-radius:999px;font-size:10px;font-weight:700;background:rgba(34,197,94,.12);border:1px solid rgba(74,222,128,.2);color:#86efac}
+.masking-grid{display:grid;grid-template-columns:repeat(3,1fr)}
+.mfield{padding:12px 14px;border-right:1px solid rgba(255,255,255,.06);border-bottom:1px solid rgba(255,255,255,.06)}
+.mfield:nth-child(3n){border-right:none}
+.mfield:nth-last-child(-n+3){border-bottom:none}
+.mfield-name{font-size:10px;color:#7e90ac;text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px}
+.mfield-status{font-size:11px;font-weight:700}
+.mfield-status.masked{color:#67e8f9}
+.mfield-status.tokenized{color:#c4b5fd}
+.mfield-status.hidden{color:#a3e635}
+.mfield-status.encrypted{color:#34d399}
+.mfield-status.filtered{color:#fb923c}
+.mfield-status.review{color:#f472b6}
+
+/* Environment health row */
+.env-health{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:20px}
+.env-card{padding:14px;border-radius:18px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);text-align:center}
+.env-name{font-size:11px;font-weight:700;color:#c8d8f0;margin-bottom:6px;text-transform:uppercase;letter-spacing:.1em}
+.env-badge{display:inline-block;padding:3px 10px;border-radius:999px;font-size:10px;font-weight:700;margin-bottom:6px}
+.env-badge.healthy{background:rgba(34,197,94,.12);border:1px solid rgba(74,222,128,.18);color:#86efac}
+.env-badge.watch{background:rgba(234,179,8,.12);border:1px solid rgba(250,204,21,.18);color:#fde68a}
+.env-badge.standby{background:rgba(139,92,246,.12);border:1px solid rgba(167,139,250,.18);color:#c4b5fd}
+.env-uptime{font-size:10px;color:#7e90ac}
+
+/* Setup track */
+.setup-track{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:6px}
+.setup-step{padding:16px;border-radius:22px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09)}
+.setup-step .num{width:30px;height:30px;border-radius:10px;display:grid;place-items:center;background:rgba(34,211,238,.12);color:#bff6ff;font-weight:800;margin-bottom:10px;font-size:13px}
+.setup-step strong{display:block;margin-bottom:5px;font-size:13px}
+.setup-step span{font-size:12px;color:#aebfd7;line-height:1.6}
+.hero-footer{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-top:18px;color:#97aac6;font-size:12px}
+.footer-badges{display:flex;gap:8px;flex-wrap:wrap}
+.footer-badges span{padding:7px 11px;border-radius:999px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.05);font-size:11px}
+
+/* Form card */
+.card{padding:clamp(20px,2.6vw,34px);display:flex;align-items:flex-start;justify-content:center;min-height:min(860px,calc(100dvh - 36px));overflow:auto}
+.card-inner{width:100%;max-width:min(530px,100%);animation:slideUp .7s ease;padding-top:8px}
+.card-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:24px}
 .card-logo{display:flex;align-items:center;gap:12px}.card-logo img{height:42px;width:auto}.card-logo span{font-weight:700;color:#dbeafe}
 .card-badge{padding:8px 12px;border-radius:999px;border:1px solid rgba(34,211,238,.2);background:rgba(34,211,238,.1);font-size:12px;color:#cffafe;font-weight:700}
-.card h2{margin:0;font:800 38px/1 Syne,Inter,sans-serif;letter-spacing:-1px}
-.sub{margin:12px 0 0;color:var(--muted);font-size:14px;line-height:1.7}
-.msg{display:none;padding:14px 16px;border-radius:16px;font-size:12px;font-weight:700;margin:22px 0 0}
+.card h2{margin:0;font:800 36px/1 Syne,Inter,sans-serif;letter-spacing:-1px}
+.sub{margin:10px 0 0;color:var(--muted);font-size:14px;line-height:1.7}
+.msg{display:none;padding:14px 16px;border-radius:16px;font-size:12px;font-weight:700;margin:18px 0 0}
 .msg.error{display:block;background:rgba(244,63,94,.12);border:1px solid rgba(251,113,133,.22);color:#fecdd3}
 .msg.success{display:block;background:rgba(34,197,94,.12);border:1px solid rgba(74,222,128,.22);color:#bbf7d0}
-.form-shell{margin-top:26px;padding:24px;border-radius:28px;background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.08)}
-.field{margin-bottom:18px}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-label{display:block;font-size:12px;font-weight:700;color:#d1def3;margin-bottom:8px;letter-spacing:.04em}
+.form-shell{margin-top:22px;padding:22px;border-radius:28px;background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.08)}
+.field{margin-bottom:16px}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+label{display:block;font-size:12px;font-weight:700;color:#d1def3;margin-bottom:7px;letter-spacing:.04em}
 .input-wrap{position:relative}
 input,select{
-  width:100%;padding:15px 16px;background:var(--input-bg);border:1px solid var(--input-border);border-radius:18px;
+  width:100%;padding:14px 16px;background:var(--input-bg);border:1px solid var(--input-border);border-radius:18px;
   font:14px Inter,Arial,sans-serif;color:#f8fbff;outline:none;transition:border-color .18s,box-shadow .18s,background .18s,transform .18s;
 }
 input:focus,select:focus{border-color:rgba(34,211,238,.5);box-shadow:0 0 0 5px rgba(34,211,238,.11);background:rgba(255,255,255,.08);transform:translateY(-1px)}
 input::placeholder{color:#7e91ad}
+select option{background:#0b1120;color:#e5eefc}
 .pw-wrap{position:relative}.pw-wrap input{padding-right:54px}
 .pw-toggle{position:absolute;right:12px;top:50%;transform:translateY(-50%);width:34px;height:34px;border-radius:12px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.05);color:#9fb0ca;cursor:pointer;transition:.18s;display:grid;place-items:center;font-size:15px}
 .pw-toggle:hover{color:#fff;background:rgba(255,255,255,.08)}
-.strength-box{margin-top:10px;padding:12px 14px;border-radius:18px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08)}
-.strength-bar{height:6px;background:rgba(255,255,255,.08);border-radius:999px;overflow:hidden}.strength-fill{height:100%;width:0;transition:all .25s}
-.strength-meta{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:10px;font-size:11px;color:#8ea3c0}
-.checks{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;font-size:12px;color:#8ea3c0}
-.checks span{padding:8px 10px;border-radius:12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06)}
+.strength-box{margin-top:8px;padding:12px 14px;border-radius:16px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08)}
+.strength-bar{height:5px;background:rgba(255,255,255,.08);border-radius:999px;overflow:hidden}.strength-fill{height:100%;width:0;transition:all .25s}
+.strength-meta{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:8px;font-size:11px;color:#8ea3c0}
+.checks{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:8px;font-size:11px;color:#8ea3c0}
+.checks span{padding:7px 10px;border-radius:10px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06)}
 .checks .ok{color:#b9fbc0;border-color:rgba(74,222,128,.18);background:rgba(34,197,94,.08)}
-.meta-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:4px}
-.note-box{margin-top:6px;padding:14px 16px;border-radius:18px;background:rgba(34,211,238,.08);border:1px solid rgba(34,211,238,.14);font-size:12px;line-height:1.75;color:#cceef7}
-.btn{width:100%;padding:15px 18px;margin-top:18px;border:0;border-radius:18px;background:linear-gradient(135deg,#22d3ee 0%,#38bdf8 32%,#6366f1 100%);color:#05111f;font:800 14px Inter,Arial,sans-serif;cursor:pointer;transition:transform .18s,box-shadow .18s,filter .18s;box-shadow:0 16px 34px rgba(34,211,238,.2)}
+
+/* Environment + workspace type selector with icon badges */
+.env-selector-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:8px}
+.env-sel-btn{padding:10px 8px;border-radius:14px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.04);color:#9fb0ca;font-size:11px;font-weight:700;text-align:center;cursor:pointer;transition:.18s;text-transform:uppercase;letter-spacing:.08em}
+.env-sel-btn:hover{background:rgba(255,255,255,.08)}
+.env-sel-btn.selected{border-color:rgba(34,211,238,.4);background:rgba(34,211,238,.1);color:#a5f3fc}
+.env-dot{display:block;width:6px;height:6px;border-radius:50%;margin:0 auto 5px;background:rgba(255,255,255,.2)}
+.env-sel-btn.selected .env-dot{background:#22d3ee;box-shadow:0 0 6px rgba(34,211,238,.6)}
+
+/* Masking policy preview */
+.masking-preview{margin-top:12px;padding:14px 16px;border-radius:18px;background:rgba(34,211,238,.06);border:1px solid rgba(34,211,238,.12);font-size:12px;line-height:1.75;color:#cceef7}
+.masking-preview strong{color:#67e8f9;display:block;margin-bottom:4px}
+
+/* Meta grid */
+.meta-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.note-box{margin-top:4px;padding:14px 16px;border-radius:18px;background:rgba(139,92,246,.07);border:1px solid rgba(139,92,246,.14);font-size:12px;line-height:1.75;color:#e2d9f7}
+.note-box strong{color:#c4b5fd;display:block;margin-bottom:4px}
+.btn{width:100%;padding:15px 18px;margin-top:16px;border:0;border-radius:18px;background:linear-gradient(135deg,#22d3ee 0%,#38bdf8 32%,#6366f1 100%);color:#05111f;font:800 14px Inter,Arial,sans-serif;cursor:pointer;transition:transform .18s,box-shadow .18s,filter .18s;box-shadow:0 16px 34px rgba(34,211,238,.2)}
 .btn:hover{transform:translateY(-2px);filter:saturate(1.06);box-shadow:0 20px 40px rgba(34,211,238,.26)}
 .btn:disabled{opacity:.72;cursor:not-allowed;transform:none}
-.terms-row{display:flex;align-items:flex-start;gap:10px;margin-top:18px;font-size:12px;color:#9fb0ca;line-height:1.6}.terms-row input{width:auto;accent-color:#22d3ee;margin-top:3px}
+.terms-row{display:flex;align-items:flex-start;gap:10px;margin-top:16px;font-size:12px;color:#9fb0ca;line-height:1.6}.terms-row input{width:auto;accent-color:#22d3ee;margin-top:3px}
 .terms-row a,.link-row a,.help-links a{color:#7dd3fc;text-decoration:none;font-weight:700}
 .terms-row a:hover,.link-row a:hover,.help-links a:hover{text-decoration:underline}
-.help-links{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:18px;font-size:12px;color:#8ea3c0}
-.link-row{margin-top:22px;text-align:center;font-size:13px;color:#8ea3c0}
+.help-links{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:16px;font-size:12px;color:#8ea3c0}
+.link-row{margin-top:20px;text-align:center;font-size:13px;color:#8ea3c0}
+.section-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.14em;color:#8ea3c0;margin-bottom:10px;margin-top:4px}
 @keyframes slideUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
-@media(max-width:1120px){.shell{grid-template-columns:1fr}.hero,.card{min-height:auto}.hero{padding:34px}.card{padding:24px}}
-@media(max-width:760px){body{padding:16px}.hero{display:none}.card{padding:20px}.card-inner{max-width:none}.card h2{font-size:32px}.form-shell{padding:18px}.grid2,.meta-grid,.checks,.story-grid,.setup-track{grid-template-columns:1fr}.help-links{flex-direction:column;align-items:flex-start}}
+@media(max-width:1140px){.shell{grid-template-columns:1fr}.hero,.card{min-height:auto}.hero{padding:34px}.card{padding:24px}}
+@media(max-width:760px){body{padding:16px}.hero{display:none}.card{padding:20px}.card-inner{max-width:none}.card h2{font-size:30px}.form-shell{padding:18px}.grid2,.meta-grid,.checks,.capability-grid,.setup-track,.env-health,.masking-grid{grid-template-columns:1fr}.help-links{flex-direction:column;align-items:flex-start}.env-selector-grid{grid-template-columns:repeat(2,1fr)}}
 </style>
 </head>
 <body>
@@ -133,35 +184,76 @@ input::placeholder{color:#7e91ad}
         <div class="live-chip"><span class="live-dot"></span> Guided workspace setup</div>
       </div>
 
-      <div class="hero-copy">
+      <div>
         <div class="eyebrow">launch your observability cockpit</div>
         <h1>Create a workspace your whole team can operate from.</h1>
         <p>
           Bring together logs, traces, alerts, environment filters, sensitive-data masking, and AI investigation
-          workflows in one premium control surface.
+          workflows in one premium control surface — ready in minutes.
         </p>
+      </div>
 
-        <div class="story-grid">
-          <div class="story-card">
-            <div class="story-kicker">Environment Ready</div>
-            <strong>Separate PROD, UAT, DEV, and DR views</strong>
-            <span>Organize monitoring by environment so operations teams can isolate issues faster and reduce confusion.</span>
-          </div>
-          <div class="story-card">
-            <div class="story-kicker">Alert Intelligence</div>
-            <strong>Reduce noise before incidents escalate</strong>
-            <span>Use thresholds, anomaly detection, and AI summaries to focus only on what needs action.</span>
-          </div>
-          <div class="story-card">
-            <div class="story-kicker">Secure by Design</div>
-            <strong>Protect sensitive fields automatically</strong>
-            <span>Mask tokens, account values, identities, and risky headers without breaking troubleshooting flow.</span>
-          </div>
-          <div class="story-card">
-            <div class="story-kicker">Trace-Aware UX</div>
-            <strong>Move from event to request path instantly</strong>
-            <span>Correlate logs to traces and follow service hops with clearer latency and failure attribution.</span>
-          </div>
+      <!-- Capability cards -->
+      <div class="capability-grid">
+        <div class="cap-card">
+          <div class="cap-kicker">Environment Lens</div>
+          <strong>PROD, UAT, DEV &amp; DR — one view</strong>
+          <span>Organize monitoring by environment. Isolate production incidents without contaminating UAT or dev noise.</span>
+        </div>
+        <div class="cap-card">
+          <div class="cap-kicker">Alert Intelligence</div>
+          <strong>Rule-based + AI anomaly detection</strong>
+          <span>Reduce noise with thresholds, deduplication, and AI summaries that focus only on what needs action.</span>
+        </div>
+        <div class="cap-card">
+          <div class="cap-kicker">Sensitive Data Shield</div>
+          <strong>Mask &amp; tokenize automatically</strong>
+          <span>PAN, Aadhaar, account numbers, JWTs, and emails — protected without breaking debugging clarity.</span>
+        </div>
+        <div class="cap-card">
+          <div class="cap-kicker">AI RCA Co-Pilot</div>
+          <strong>Instant root-cause summaries</strong>
+          <span>Correlate logs, traces, and alerts into plain-English incident summaries with suggested next actions.</span>
+        </div>
+      </div>
+
+      <!-- Masking protection matrix -->
+      <div class="masking-panel">
+        <div class="masking-header">
+          <span class="masking-title">Sensitive Data Protection · Default Policy</span>
+          <span class="masking-status">Compliant · 98.7% covered</span>
+        </div>
+        <div class="masking-grid">
+          <div class="mfield"><div class="mfield-name">PAN / Aadhaar</div><div class="mfield-status masked">Masked</div></div>
+          <div class="mfield"><div class="mfield-name">Account Number</div><div class="mfield-status tokenized">Tokenized</div></div>
+          <div class="mfield"><div class="mfield-name">Email Address</div><div class="mfield-status hidden">Partially Hidden</div></div>
+          <div class="mfield"><div class="mfield-name">Phone Number</div><div class="mfield-status encrypted">Encrypted</div></div>
+          <div class="mfield"><div class="mfield-name">JWT Claims</div><div class="mfield-status filtered">Filtered</div></div>
+          <div class="mfield"><div class="mfield-name">Custom Headers</div><div class="mfield-status review">Under Review</div></div>
+        </div>
+      </div>
+
+      <!-- Environment health -->
+      <div class="env-health">
+        <div class="env-card">
+          <div class="env-name">Production</div>
+          <div class="env-badge healthy">Healthy</div>
+          <div class="env-uptime">99.96% uptime</div>
+        </div>
+        <div class="env-card">
+          <div class="env-name">UAT</div>
+          <div class="env-badge watch">Watch</div>
+          <div class="env-uptime">99.22% uptime</div>
+        </div>
+        <div class="env-card">
+          <div class="env-name">Development</div>
+          <div class="env-badge healthy">Healthy</div>
+          <div class="env-uptime">98.14% uptime</div>
+        </div>
+        <div class="env-card">
+          <div class="env-name">DR</div>
+          <div class="env-badge standby">Standby</div>
+          <div class="env-uptime">Cold sync verified</div>
         </div>
       </div>
     </div>
@@ -206,11 +298,13 @@ input::placeholder{color:#7e91ad}
       </div>
 
       <h2>Launch your workspace</h2>
-      <p class="sub">Set up your organization and start monitoring logs, traces, alerts, and environment health from one place.</p>
+      <p class="sub">Set up your organization and start monitoring logs, traces, alerts, masking, and environment health from one place.</p>
 
       <div class="msg" id="msg"></div>
 
       <div class="form-shell">
+
+        <!-- Organization -->
         <div class="field">
           <label for="organization_name">Organization name</label>
           <div class="input-wrap">
@@ -218,6 +312,7 @@ input::placeholder{color:#7e91ad}
           </div>
         </div>
 
+        <!-- Name + Email -->
         <div class="grid2">
           <div class="field">
             <label for="name">Your name</label>
@@ -233,27 +328,56 @@ input::placeholder{color:#7e91ad}
           </div>
         </div>
 
+        <!-- Workspace Mode -->
         <div class="meta-grid">
           <div class="field">
             <label for="workspaceType">Workspace mode</label>
-            <select id="workspaceType">
-              <option>Enterprise Observability</option>
-              <option>Developer Sandbox</option>
-              <option>Security Analytics</option>
+            <select id="workspaceType" onchange="updateMaskingNote()">
+              <option value="enterprise">Enterprise Observability</option>
+              <option value="sandbox">Developer Sandbox</option>
+              <option value="security">Security Analytics</option>
+              <option value="fintech">FinTech Compliance</option>
             </select>
           </div>
           <div class="field">
-            <label for="primaryEnv">Primary environment</label>
-            <select id="primaryEnv">
-              <option>Production</option>
-              <option>UAT</option>
-              <option>Development</option>
-              <option>DR</option>
+            <label for="teamSize">Team size</label>
+            <select id="teamSize">
+              <option>1–5 members</option>
+              <option>6–20 members</option>
+              <option>21–100 members</option>
+              <option>100+ members</option>
             </select>
           </div>
         </div>
 
+        <!-- Environment selector -->
         <div class="field">
+          <label>Primary environment <span style="font-weight:400;color:#7e90ac">(select all you'll monitor)</span></label>
+          <div class="env-selector-grid" id="envGrid">
+            <div class="env-sel-btn selected" onclick="toggleEnv(this,'production')">
+              <span class="env-dot"></span>Production
+            </div>
+            <div class="env-sel-btn" onclick="toggleEnv(this,'uat')">
+              <span class="env-dot"></span>UAT
+            </div>
+            <div class="env-sel-btn" onclick="toggleEnv(this,'development')">
+              <span class="env-dot"></span>Development
+            </div>
+            <div class="env-sel-btn" onclick="toggleEnv(this,'dr')">
+              <span class="env-dot"></span>DR
+            </div>
+          </div>
+        </div>
+
+        <!-- Masking policy note -->
+        <div class="masking-preview" id="maskingNote">
+          <strong>🛡 Masking policy: Enterprise Observability defaults</strong>
+          PAN/Aadhaar masked · Account numbers tokenized · JWTs filtered · Email partially hidden · Custom headers flagged for review.
+          Full masking rules configurable per application after workspace creation.
+        </div>
+
+        <!-- Password -->
+        <div class="field" style="margin-top:16px">
           <label for="password">Password</label>
           <div class="pw-wrap">
             <input type="password" id="password" name="password" placeholder="At least 8 characters" autocomplete="new-password" oninput="checkStrength(this.value)">
@@ -274,9 +398,10 @@ input::placeholder{color:#7e91ad}
           </div>
         </div>
 
+        <!-- Admin note -->
         <div class="note-box">
-          Your first user will be created as the workspace admin. You can later add more members, split environments,
-          define alert policies, and configure masking rules per application or source.
+          <strong>ℹ Admin workspace created</strong>
+          Your account will be the workspace admin. After setup you can invite team members, define role-based masking visibility, configure alert thresholds per environment, and set retention policies per source.
         </div>
 
         <label class="terms-row">
@@ -284,7 +409,7 @@ input::placeholder{color:#7e91ad}
           <span>I agree to the platform terms and understand this workspace will start with secure defaults for alerts, access, and sensitive data visibility.</span>
         </label>
 
-        <button class="btn" id="submitBtn" onclick="createWorkspace()">Create workspace and continue</button>
+        <button class="btn" id="submitBtn" onclick="createWorkspace()">Create workspace and continue →</button>
       </div>
 
       <div class="help-links">
@@ -296,16 +421,37 @@ input::placeholder{color:#7e91ad}
   </main>
 </div>
 <script>
+// Environment toggle
+const selectedEnvs = new Set(['production']);
+function toggleEnv(el, env){
+  if(el.classList.contains('selected')){
+    if(selectedEnvs.size===1){return;}
+    el.classList.remove('selected');
+    selectedEnvs.delete(env);
+  } else {
+    el.classList.add('selected');
+    selectedEnvs.add(env);
+  }
+}
+
+// Masking note per workspace mode
+const maskingNotes = {
+  enterprise: '<strong>🛡 Masking policy: Enterprise Observability defaults</strong>PAN/Aadhaar masked · Account numbers tokenized · JWTs filtered · Email partially hidden · Custom headers flagged for review.',
+  sandbox: '<strong>🔧 Masking policy: Developer Sandbox (relaxed)</strong>Basic PII masking active. Sensitive fields visible to workspace admin. Ideal for non-production debugging without strict compliance rules.',
+  security: '<strong>🔒 Masking policy: Security Analytics (strict)</strong>All PII masked · Full JWT claim filtering · Suspicious IP patterns flagged · Audit log for all access · SOC2-aligned defaults.',
+  fintech: '<strong>🏦 Masking policy: FinTech Compliance (maximum)</strong>PAN/Aadhaar · Account · Phone · Email · IFSC all masked. Tokenization for payment fields. RBI/DPDP-aligned defaults applied automatically.'
+};
+function updateMaskingNote(){
+  const val = document.getElementById('workspaceType').value;
+  document.getElementById('maskingNote').innerHTML = maskingNotes[val] || maskingNotes.enterprise;
+}
+
+// Password visibility
 function togglePw(){
   const inp=document.getElementById('password');
   const btn=document.getElementById('togglePwBtn');
-  if(inp.type==='password'){
-    inp.type='text';
-    btn.textContent='🙈';
-  }else{
-    inp.type='password';
-    btn.textContent='👁';
-  }
+  if(inp.type==='password'){inp.type='text';btn.textContent='🙈';}
+  else{inp.type='password';btn.textContent='👁';}
 }
 
 function setCheck(id, ok){
@@ -318,45 +464,19 @@ function checkStrength(pw){
   const fill=document.getElementById('strengthFill');
   const lbl=document.getElementById('strengthLabel');
   const scoreText=document.getElementById('strengthScore');
-
-  const checks=[
-    pw.length>=8,
-    /[A-Z]/.test(pw),
-    /[0-9]/.test(pw),
-    /[^A-Za-z0-9]/.test(pw)
-  ];
-  setCheck('c1',checks[0]);
-  setCheck('c2',checks[1]);
-  setCheck('c3',checks[2]);
-  setCheck('c4',checks[3]);
-
+  const checks=[pw.length>=8,/[A-Z]/.test(pw),/[0-9]/.test(pw),/[^A-Za-z0-9]/.test(pw)];
+  setCheck('c1',checks[0]);setCheck('c2',checks[1]);setCheck('c3',checks[2]);setCheck('c4',checks[3]);
   let score=0;
   if(pw.length>=8) score++;
   if(pw.length>=12) score++;
   if(/[A-Z]/.test(pw)) score++;
   if(/[0-9]/.test(pw)) score++;
   if(/[^A-Za-z0-9]/.test(pw)) score++;
-
-  const levels=[
-    {w:'10%',c:'#ef4444',t:'Too weak'},
-    {w:'28%',c:'#f97316',t:'Weak'},
-    {w:'52%',c:'#facc15',t:'Fair'},
-    {w:'78%',c:'#22c55e',t:'Strong'},
-    {w:'100%',c:'#06b6d4',t:'Very strong'}
-  ];
-
-  if(!pw){
-    fill.style.width='0';
-    lbl.textContent='Choose a strong password';
-    scoreText.textContent='0 / 5 checks';
-    return;
-  }
-
+  const levels=[{w:'10%',c:'#ef4444',t:'Too weak'},{w:'28%',c:'#f97316',t:'Weak'},{w:'52%',c:'#facc15',t:'Fair'},{w:'78%',c:'#22c55e',t:'Strong'},{w:'100%',c:'#06b6d4',t:'Very strong'}];
+  if(!pw){fill.style.width='0';lbl.textContent='Choose a strong password';scoreText.textContent='0 / 5 checks';return;}
   const level=levels[Math.min(Math.max(score-1,0),4)];
-  fill.style.width=level.w;
-  fill.style.background=level.c;
-  lbl.textContent=level.t;
-  lbl.style.color=level.c;
+  fill.style.width=level.w;fill.style.background=level.c;
+  lbl.textContent=level.t;lbl.style.color=level.c;
   scoreText.textContent=score+' / 5 checks';
 }
 
@@ -373,10 +493,13 @@ async function createWorkspace(){
   const email=document.getElementById('email').value.trim();
   const password=document.getElementById('password').value;
   const agreeTerms=document.getElementById('agreeTerms').checked;
+  const workspaceType=document.getElementById('workspaceType').value;
+  const teamSize=document.getElementById('teamSize').value;
+  const environments=Array.from(selectedEnvs);
 
   if(!org_name){showMsg('Organization name is required.','error');return;}
   if(!name){showMsg('Your name is required.','error');return;}
-  if(!email||!email.includes('@')){showMsg('A valid email is required.','error');return;}
+  if(!email||!email.includes('@')){showMsg('A valid work email is required.','error');return;}
   if(!password||password.length<8){showMsg('Password must be at least 8 characters.','error');return;}
   if(!agreeTerms){showMsg('Please accept the terms to continue.','error');return;}
 
@@ -386,19 +509,21 @@ async function createWorkspace(){
     const res=await fetch('/register',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({organization_name:org_name,name,email,password,theme_mode:'dark',role:'admin'})
+      body:JSON.stringify({organization_name:org_name,name,email,password,theme_mode:'dark',role:'admin',workspace_type:workspaceType,team_size:teamSize,environments})
     });
     const data=await res.json();
     if(!res.ok){
       showMsg(data.error||'Registration failed. Please try again.','error');
-      btn.disabled=false;btn.textContent='Create workspace and continue';
+      btn.disabled=false;btn.textContent='Create workspace and continue →';
       return;
     }
+    // Save session for login page chip
+    try{localStorage.setItem('ox_last_session',JSON.stringify({email,name,org:org_name}));}catch(e){}
     showMsg('Workspace created successfully. Redirecting to your dashboard…','success');
     setTimeout(()=>{window.location.href=data.workspace_url||('/workspace/'+data.slug);},850);
   }catch(e){
     showMsg('Network error: '+e.message,'error');
-    btn.disabled=false;btn.textContent='Create workspace and continue';
+    btn.disabled=false;btn.textContent='Create workspace and continue →';
   }
 }
 
