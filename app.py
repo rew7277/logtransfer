@@ -172,8 +172,8 @@ MASK_PATTERNS = [
 ]
 
 VALID_ROLES  = {"admin", "manager", "developer", "tester"}
-VALID_THEMES = {"white"}
-DEFAULT_THEME_COLORS = {"white": "#2563eb"}
+VALID_THEMES = {"white", "dark"}
+DEFAULT_THEME_COLORS = {"white": "#2563eb", "dark": "#22d3ee"}
 
 # SSRF protection: block private/loopback ranges in test_api
 _BLOCKED_HOSTS = re.compile(
@@ -556,7 +556,7 @@ def init_db() -> None:
             name TEXT NOT NULL,
             slug TEXT NOT NULL UNIQUE,
             theme_color TEXT NOT NULL DEFAULT '#5b8cff',
-            theme_mode TEXT NOT NULL DEFAULT 'white',
+            theme_mode TEXT NOT NULL DEFAULT 'dark',
             logo_text TEXT NOT NULL DEFAULT 'VX',
             admin_only INTEGER NOT NULL DEFAULT 0,
             created_at TEXT NOT NULL
@@ -970,7 +970,7 @@ def init_db() -> None:
         except Exception as exc:
             logger.warning("FTS5 setup skipped: %s", exc)
 
-    ensure_column(db, "organizations", "theme_mode",       "theme_mode TEXT NOT NULL DEFAULT 'white'")
+    ensure_column(db, "organizations", "theme_mode",       "theme_mode TEXT NOT NULL DEFAULT 'dark'")
     ensure_column(db, "organizations", "admin_only",        "admin_only INTEGER NOT NULL DEFAULT 0")
     ensure_column(db, "organizations", "retention_days",    "retention_days INTEGER NOT NULL DEFAULT 90")
     ensure_column(db, "ingestion_jobs", "integration_id",   "integration_id INTEGER")
@@ -1044,7 +1044,7 @@ def init_db() -> None:
         admin_password = os.environ.get("SEED_ADMIN_PASSWORD") or secrets.token_urlsafe(16)
         db.execute(
             "INSERT INTO organizations (name, slug, theme_color, theme_mode, logo_text, admin_only, created_at, public_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-            (seed_slug.capitalize(), seed_slug, DEFAULT_THEME_COLORS["white"], "white", seed_slug[:2].upper(), 0, now, generate_workspace_public_id()),
+            (seed_slug.capitalize(), seed_slug, DEFAULT_THEME_COLORS["dark"], "dark", seed_slug[:2].upper(), 0, now, generate_workspace_public_id()),
         )
         org_id = db.execute("SELECT id FROM organizations WHERE slug = ?", (seed_slug,)).fetchone()[0]
         db.execute(
@@ -2279,7 +2279,7 @@ def register_org_and_admin():
     email      = sanitize_input(payload.get("email") or "").lower()
     password   = payload.get("password") or ""
     role       = sanitize_input(payload.get("role") or "admin").lower()
-    theme_mode = sanitize_input(payload.get("theme_mode") or "white").lower()
+    theme_mode = sanitize_input(payload.get("theme_mode") or "dark").lower()
     slug       = slugify(payload.get("organization_slug") or org_name)
 
     if not org_name or not admin_name or not email or not password:
@@ -2287,7 +2287,7 @@ def register_org_and_admin():
     if role != "admin":
         return jsonify({"error": "Workspace creator must be an admin."}), 400
     if theme_mode not in VALID_THEMES:
-        theme_mode = "white"
+        theme_mode = "dark"
 
     # Validate password strength
     pw_error = validate_password_strength(password)
@@ -3013,9 +3013,9 @@ def update_org():
         return error
     payload    = request_payload()
     slug       = slugify(payload.get("slug") or user["slug"])
-    theme_mode = sanitize_input(payload.get("theme_mode") or user["theme_mode"] or "white", 20).lower()
+    theme_mode = sanitize_input(payload.get("theme_mode") or user["theme_mode"] or "dark", 20).lower()
     if theme_mode not in VALID_THEMES:
-        theme_mode = "white"
+        theme_mode = "dark"
     theme_color = payload.get("theme_color") or DEFAULT_THEME_COLORS[theme_mode]
     db = get_db()
     if db.execute("SELECT id FROM organizations WHERE slug = ? AND id != ?", (slug, user["org_id"])).fetchone():
