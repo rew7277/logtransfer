@@ -1,0 +1,164 @@
+ObserveX V14 — Design Audit & Premium Fixes
+Comprehensive audit and resolution, April 2026
+════════════════════════════════════════════════════════
+
+━━━ AUDIT SCOPE ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Full design audit of all 8 public-facing templates.
+15 formatting, branding, consistency, and professional
+issues identified and resolved. No app.py changes.
+
+━━━ ISSUES FOUND & FIXED ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+FIX 1 — CRITICAL: Pricing page used plain text div logo
+─────────────────────────────────────────────────────
+Symptom:  <div class="logo">ObserveX</div> instead of
+          the SVG brand asset used on every other page.
+Fix:      Replaced with <img src="/static/images/logo-dark.svg">
+          in both nav and footer of pricing.html.
+File:     templates/pricing.html
+
+FIX 2 — CRITICAL: Pricing page font stack mismatch
+─────────────────────────────────────────────────────
+Symptom:  pricing.html used -apple-system, BlinkMacSystemFont,
+          "Segoe UI" (system fonts) — completely different
+          from Syne + IBM Plex Mono used across all other pages.
+Fix:      Replaced with Syne + IBM Plex Mono, loaded from
+          Google Fonts, matching landing, login, dashboard.
+File:     templates/pricing.html
+
+FIX 3 — CRITICAL: Pricing page theme mismatch
+─────────────────────────────────────────────────────
+Symptom:  pricing.html used GitHub-gray #0d1117 background —
+          completely inconsistent with the dark blue #080c14
+          used across the rest of the product.
+Fix:      Full dark-blue premium redesign using unified
+          CSS tokens (--bg, --surface, --border, --blue,
+          --cyan, --green, --muted) matching landing.html.
+File:     templates/pricing.html
+
+FIX 4 — Pricing page nav missing links
+─────────────────────────────────────────────────────
+Symptom:  Pricing nav only had Docs / Sign in / Start free.
+          Missing Features and Integrations anchor links,
+          and no way to return to the home page from the logo.
+Fix:      Added /#features, /#integrations links. Logo now
+          wraps in <a href="/"> for brand nav consistency.
+File:     templates/pricing.html
+
+FIX 5 — CRITICAL: Domain inconsistency (observex.io vs .in)
+─────────────────────────────────────────────────────
+Symptom:  pricing.html used sales@observex.io for the
+          Enterprise CTA and FAQ, while landing.html uses
+          yourapp.observex.in throughout. Inconsistent domain
+          looks unprofessional and confuses prospects.
+Fix:      All email/domain references in pricing.html updated
+          to observex.in (sales@observex.in).
+File:     templates/pricing.html
+
+FIX 6 — CRITICAL: Status page bright white in dark product
+─────────────────────────────────────────────────────
+Symptom:  status_page.html used #f6f8fa (white) background,
+          system fonts, and zero branding — looked like a
+          completely different product.
+Fix:      Full dark-theme rebuild (#080c14 bg) with SVG logo,
+          Syne font, smart icon (✅/⚠️/❌) based on title
+          content, branded card, back navigation.
+File:     templates/status_page.html
+
+FIX 7 — "ObserveX Prime" inconsistent branding
+─────────────────────────────────────────────────────
+Symptom:  login.html, forgot_password.html, reset_password.html
+          all displayed "ObserveX Prime" as a label or badge.
+          "ObserveX Prime" is not a defined product tier and
+          conflicts with the "ObserveX" brand used everywhere else.
+Fix:      Removed from all three files. login.html now shows
+          "Secure workspace" as the badge. Forgot/Reset show
+          "Account recovery" and "Secure reset" respectively.
+Files:    templates/login.html
+          templates/forgot_password.html
+          templates/reset_password.html
+
+FIX 8 — Forgot password had no hero panel
+─────────────────────────────────────────────────────
+Symptom:  forgot_password.html was a single-column card with
+          no left-side hero panel — inconsistent with login.html
+          and create_account.html which both use a split-panel
+          layout (hero + form glass card).
+Fix:      Rebuilt as a full split-panel layout with hero showing
+          4 security detail cards (expiry, audit, privacy, support).
+          Added email validation before submission, improved
+          footer with links to sign-in and create-account.
+File:     templates/forgot_password.html
+
+FIX 9 — Reset password had no hero panel
+─────────────────────────────────────────────────────
+Symptom:  Same single-column issue as forgot_password.html.
+          No password strength indicator despite being the
+          password-setting form.
+Fix:      Rebuilt as split-panel with security-focused hero
+          (password rules, link expiry, audit info). Added
+          real-time password strength meter (5-level scoring:
+          Weak / Fair / Good / Strong / Excellent) with color-
+          coded bar. Added confirm-password field with match
+          validation before submission. Added show/hide toggle.
+File:     templates/reset_password.html
+
+FIX 10 — Landing page footer used "OX" text fallback
+─────────────────────────────────────────────────────
+Symptom:  Footer used <div class="nav-logo-icon">OX</div> —
+          a plain text abbreviation — instead of the SVG logo
+          used in the nav and on every other page.
+Fix:      Replaced with <img src="/static/images/logo-dark.svg">.
+File:     templates/landing.html
+
+FIX 11 — Landing stats strip had informal placeholders
+─────────────────────────────────────────────────────
+Symptom:  Stats strip showed "✦ AI" and "∞" as stat values —
+          emoji and mathematical symbols look unprofessional
+          on a premium enterprise SaaS platform.
+Fix:      "✦ AI" → "Claude" with label "AI-powered RCA"
+          "∞" → "50 GB+" with label "Log capacity / workspace"
+File:     templates/landing.html
+
+FIX 12 — All public pages missing SEO meta tags
+─────────────────────────────────────────────────────
+Symptom:  No <meta name="description"> or Open Graph
+          <meta property="og:*"> tags on any public page.
+          Bad for search indexing and social sharing.
+Fix:      Added description + og:title + og:type + og:description
+          to: landing.html, login.html, pricing.html,
+          forgot_password.html, reset_password.html,
+          create_account.html, status_page.html.
+Files:    All public-facing templates
+
+FIX 13 — meta theme-color inconsistency
+─────────────────────────────────────────────────────
+Symptom:  landing.html and pricing.html had theme-color #2563eb
+          (bright blue), while the actual page background is
+          #080c14 (near-black). On mobile this makes the browser
+          chrome flash blue then go dark — jarring.
+Fix:      Unified theme-color to #080c14 across all dark pages.
+Files:    templates/landing.html, templates/pricing.html
+
+━━━ FILES CHANGED (PUBLIC TEMPLATES) ━━━━━━━━━━━━━━━━━━
+
+  templates/pricing.html          (full premium rebuild)
+  templates/status_page.html      (full dark-theme rebuild)
+  templates/forgot_password.html  (hero panel + security cards)
+  templates/reset_password.html   (hero panel + strength meter)
+  templates/login.html            (badge fix, SEO tags)
+  templates/landing.html          (footer logo, stats, SEO tags)
+  templates/create_account.html   (SEO tags, brand cleanup)
+  FIXES_APPLIED_V14.txt           (this file)
+
+━━━ UNCHANGED ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  templates/index.html            (dashboard — no issues)
+  templates/documentation.html    (no issues)
+  templates/workspace_dnd_upgrade.html (no issues)
+  templates/accept_invite.html    (no issues)
+  app.py                          (no changes)
+  static/                         (no changes)
+  railway.toml / gunicorn.conf.py (no changes)
+  requirements.txt                (no changes)

@@ -2,107 +2,127 @@
 <html lang="en">
 <head>
 <link rel="icon" type="image/svg+xml" href="/static/images/favicon.svg">
-<meta name="theme-color" content="#2563eb">
+<meta name="theme-color" content="#080c14">
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
+<meta name="description" content="ObserveX pricing — transparent plans for indie developers, growing teams, and enterprises. Log ingestion, AI RCA, alerts, S3 integration, and more."/>
+<meta property="og:title" content="Pricing — ObserveX Log Management"/>
+<meta property="og:description" content="Simple, transparent pricing. Start free, upgrade when ready. Built for Indian teams."/>
+<meta property="og:type" content="website"/>
 <title>Pricing — ObserveX</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet"/>
 <style>
-*{box-sizing:border-box;margin:0;padding:0}
-:root{
-  --bg:#0d1117;--surface:#161b22;--surface2:#1c2128;--border:#30363d;
-  --text:#e6edf3;--text2:#8b949e;--text3:#656d76;
-  --accent:#4f9cf9;--accent2:#58a6ff;--green:#3fb950;--red:#f85149;
-  --yellow:#d29922;--purple:#bc8cff;--radius:12px;
-}
-body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
-nav{display:flex;align-items:center;justify-content:space-between;padding:0 40px;height:60px;border-bottom:1px solid var(--border);background:rgba(13,17,23,.9);backdrop-filter:blur(12px);position:sticky;top:0;z-index:100}
-.logo{font-size:18px;font-weight:800;color:var(--accent2);letter-spacing:-.3px}
-.nav-links{display:flex;align-items:center;gap:28px}
-.nav-links a{color:var(--text2);text-decoration:none;font-size:14px;font-weight:500;transition:color .15s}
-.nav-links a:hover{color:var(--text)}
-.nav-cta{background:var(--accent2);color:#0d1117!important;border-radius:8px;padding:7px 18px!important;font-weight:700!important}
-.nav-cta:hover{background:#79c0ff!important;color:#0d1117!important}
-.hero{text-align:center;padding:72px 24px 48px}
-.hero-badge{display:inline-block;background:rgba(79,156,249,.1);border:1px solid rgba(79,156,249,.25);color:var(--accent2);font-size:12px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;border-radius:20px;padding:5px 16px;margin-bottom:20px}
-.hero h1{font-size:clamp(32px,5vw,52px);font-weight:800;line-height:1.15;letter-spacing:-.8px;margin-bottom:16px}
-.hero h1 span{background:linear-gradient(135deg,#4f9cf9,#bc8cff);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-.hero p{font-size:17px;color:var(--text2);max-width:500px;margin:0 auto 32px;line-height:1.6}
-.billing-toggle{display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:48px}
-.toggle-label{font-size:14px;font-weight:500;color:var(--text2)}
-.toggle-wrap{position:relative;display:inline-flex;background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:3px}
-.toggle-wrap button{border:none;background:none;padding:5px 16px;border-radius:16px;font-size:13px;font-weight:600;cursor:pointer;color:var(--text2);transition:all .2s}
-.toggle-wrap button.active{background:var(--accent2);color:#0d1117}
-.badge-save{background:rgba(63,185,80,.15);border:1px solid rgba(63,185,80,.3);color:var(--green);font-size:11px;font-weight:700;border-radius:10px;padding:2px 9px;letter-spacing:.3px}
-.plans{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px;max-width:1060px;margin:0 auto 72px;padding:0 24px}
-.plan{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:32px 28px;position:relative;transition:border-color .2s,box-shadow .2s}
-.plan:hover{border-color:rgba(79,156,249,.4);box-shadow:0 0 40px rgba(79,156,249,.06)}
-.plan.popular{border-color:var(--accent2);box-shadow:0 0 40px rgba(88,166,255,.1)}
-.plan-badge{position:absolute;top:-13px;left:50%;transform:translateX(-50%);background:var(--accent2);color:#0d1117;font-size:11px;font-weight:800;letter-spacing:.8px;text-transform:uppercase;border-radius:12px;padding:3px 14px;white-space:nowrap}
-.plan-name{font-size:13px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--text3);margin-bottom:12px}
-.plan-price{display:flex;align-items:flex-end;gap:4px;margin-bottom:8px}
-.plan-price .currency{font-size:22px;font-weight:700;color:var(--text2);line-height:1.6}
-.plan-price .amount{font-size:48px;font-weight:800;line-height:1;letter-spacing:-2px}
-.plan-price .period{font-size:14px;color:var(--text2);margin-bottom:8px}
-.plan-tagline{font-size:13px;color:var(--text2);margin-bottom:28px;line-height:1.5}
-.plan-divider{height:1px;background:var(--border);margin-bottom:22px}
+:root{--bg:#080c14;--surface:#0d1420;--surface2:#131c2e;--border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.12);--blue:#3b82f6;--blue2:#60a5fa;--cyan:#22d3ee;--green:#4ade80;--amber:#fbbf24;--red:#f87171;--purple:#a78bfa;--text:#f0f4ff;--muted:#8898b3;--muted2:#5a6e8a;--mono:'IBM Plex Mono',monospace;--sans:'Syne',sans-serif}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.025;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")}
+nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:0 40px;height:60px;background:rgba(8,12,20,.85);backdrop-filter:blur(16px);border-bottom:1px solid var(--border)}
+.nav-logo{display:flex;align-items:center;gap:10px;text-decoration:none}
+.nav-logo img{height:32px;width:auto;display:block}
+.nav-links{display:flex;align-items:center;gap:6px}
+.nav-link{padding:7px 14px;border-radius:7px;font-size:13px;font-weight:600;text-decoration:none;transition:all .15s}
+.nl-ghost{color:var(--muted)}.nl-ghost:hover{color:var(--text);background:rgba(255,255,255,.06)}
+.nl-primary{background:var(--blue);color:#fff}.nl-primary:hover{background:#2563eb;transform:translateY(-1px);box-shadow:0 4px 16px rgba(59,130,246,.4)}
+.nl-outline{border:1px solid var(--border2);color:var(--text)}.nl-outline:hover{background:rgba(255,255,255,.06)}
+.hero{padding:120px 24px 60px;text-align:center;position:relative;z-index:1}
+.hero-glow{position:absolute;top:0;left:50%;transform:translateX(-50%);width:600px;height:300px;pointer-events:none;background:radial-gradient(ellipse,rgba(59,130,246,.15) 0%,rgba(34,211,238,.06) 50%,transparent 75%)}
+.hero-badge{display:inline-flex;align-items:center;gap:6px;padding:5px 14px;border-radius:999px;border:1px solid rgba(59,130,246,.3);background:rgba(59,130,246,.08);font-family:var(--mono);font-size:11px;font-weight:500;color:var(--blue2);margin-bottom:24px}
+.badge-dot{width:6px;height:6px;border-radius:50%;background:var(--cyan);box-shadow:0 0 8px var(--cyan);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.8)}}
+.hero h1{font-size:clamp(34px,5vw,54px);font-weight:800;line-height:1.1;letter-spacing:-1.5px;margin-bottom:16px}
+.hero h1 span{background:linear-gradient(135deg,var(--blue2),var(--cyan));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.hero p{font-size:17px;color:var(--muted);max-width:500px;margin:0 auto 36px;line-height:1.7}
+.billing-toggle{display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:60px;position:relative;z-index:1}
+.toggle-label{font-size:14px;font-weight:500;color:var(--muted)}
+.toggle-wrap{position:relative;display:inline-flex;background:var(--surface2);border:1px solid var(--border2);border-radius:999px;padding:3px}
+.toggle-wrap button{border:none;background:none;padding:6px 18px;border-radius:999px;font-size:13px;font-weight:600;font-family:var(--sans);cursor:pointer;color:var(--muted);transition:all .2s}
+.toggle-wrap button.active{background:var(--blue);color:#fff;box-shadow:0 4px 12px rgba(59,130,246,.3)}
+.badge-save{background:rgba(74,222,128,.12);border:1px solid rgba(74,222,128,.25);color:var(--green);font-size:11px;font-weight:700;font-family:var(--mono);border-radius:999px;padding:3px 10px}
+.plans-wrap{max-width:1080px;margin:0 auto;padding:0 24px 80px;position:relative;z-index:1}
+.plans{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:16px}
+.plan{background:var(--surface);border:1px solid var(--border2);border-radius:16px;padding:32px 28px;position:relative;transition:border-color .2s,box-shadow .2s,transform .2s}
+.plan:hover{border-color:var(--blue);box-shadow:0 0 48px rgba(59,130,246,.1);transform:translateY(-2px)}
+.plan.popular{border-color:var(--blue);box-shadow:0 0 48px rgba(59,130,246,.12)}
+.plan-badge{position:absolute;top:-13px;left:50%;transform:translateX(-50%);background:var(--blue);color:#fff;font-size:10px;font-weight:700;font-family:var(--mono);letter-spacing:1px;text-transform:uppercase;border-radius:999px;padding:4px 14px;white-space:nowrap}
+.plan-name{font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:14px}
+.plan-price{display:flex;align-items:flex-end;gap:3px;margin-bottom:8px}
+.plan-price .currency{font-size:20px;font-weight:700;color:var(--muted);line-height:1.8}
+.plan-price .amount{font-size:52px;font-weight:800;line-height:1;letter-spacing:-2px}
+.plan-price .period{font-size:14px;color:var(--muted);margin-bottom:10px}
+.plan-tagline{font-size:13px;color:var(--muted);margin-bottom:28px;line-height:1.6}
+.plan-divider{height:1px;background:var(--border);margin-bottom:24px}
 .plan-features{list-style:none;margin-bottom:32px}
-.plan-features li{display:flex;align-items:flex-start;gap:10px;font-size:13px;color:var(--text2);padding:5px 0;line-height:1.5}
-.plan-features li .check{color:var(--green);font-size:14px;flex-shrink:0;margin-top:1px}
-.plan-features li .dash{color:var(--text3);font-size:14px;flex-shrink:0;margin-top:1px}
+.plan-features li{display:flex;align-items:flex-start;gap:10px;font-size:13px;color:var(--muted);padding:5px 0;line-height:1.5}
+.plan-features li .check{color:var(--green);flex-shrink:0;margin-top:1px}
+.plan-features li .dash{color:var(--muted2);flex-shrink:0;margin-top:1px}
 .plan-features li strong{color:var(--text)}
-.plan-cta{display:block;width:100%;padding:12px;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;border:none;text-align:center;text-decoration:none;transition:all .2s}
-.plan-cta.primary{background:var(--accent2);color:#0d1117}
-.plan-cta.primary:hover{background:#79c0ff}
-.plan-cta.outline{background:transparent;color:var(--text);border:1px solid var(--border)}
-.plan-cta.outline:hover{border-color:var(--accent2);color:var(--accent2)}
-.plan-cta.enterprise{background:linear-gradient(135deg,rgba(188,140,255,.15),rgba(79,156,249,.15));color:var(--text);border:1px solid rgba(188,140,255,.3)}
-.plan-cta.enterprise:hover{border-color:var(--purple)}
-.compare-section{max-width:860px;margin:0 auto 72px;padding:0 24px}
-.compare-section h2{text-align:center;font-size:28px;font-weight:800;margin-bottom:8px;letter-spacing:-.4px}
-.compare-section .sub{text-align:center;color:var(--text2);font-size:15px;margin-bottom:36px}
-.compare-table{width:100%;border-collapse:separate;border-spacing:0;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;font-size:13px}
-.compare-table th{padding:14px 18px;text-align:center;font-size:12px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--text2);background:var(--surface2);border-bottom:1px solid var(--border)}
+.plan-cta{display:block;width:100%;padding:13px;border-radius:10px;font-size:14px;font-weight:700;font-family:var(--sans);cursor:pointer;border:none;text-align:center;text-decoration:none;transition:all .2s}
+.cta-primary{background:var(--blue);color:#fff}.cta-primary:hover{background:#2563eb;box-shadow:0 8px 24px rgba(59,130,246,.35)}
+.cta-outline{background:transparent;color:var(--text);border:1px solid var(--border2)}.cta-outline:hover{border-color:var(--blue);color:var(--blue2)}
+.cta-enterprise{background:linear-gradient(135deg,rgba(167,139,250,.12),rgba(59,130,246,.12));color:var(--text);border:1px solid rgba(167,139,250,.25)}.cta-enterprise:hover{border-color:var(--purple)}
+.annual-price{display:none}.annual .annual-price{display:inline}.annual .monthly-price{display:none}
+.compare-wrap{max-width:900px;margin:0 auto 80px;padding:0 24px;position:relative;z-index:1}
+.section-tag{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:11px;font-weight:500;color:var(--cyan);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:16px}
+.section-tag::before{content:'//';color:var(--muted2)}
+.compare-wrap h2{font-size:32px;font-weight:800;letter-spacing:-.8px;margin-bottom:8px}
+.compare-wrap .sub{font-size:15px;color:var(--muted);margin-bottom:36px}
+.compare-table{width:100%;border-collapse:separate;border-spacing:0;background:var(--surface);border:1px solid var(--border2);border-radius:14px;overflow:hidden;font-size:13px}
+.compare-table th{padding:14px 18px;text-align:center;font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--muted);background:var(--surface2);border-bottom:1px solid var(--border2)}
 .compare-table th:first-child{text-align:left}
-.compare-table td{padding:12px 18px;border-bottom:1px solid var(--border);color:var(--text2);text-align:center}
+.compare-table td{padding:12px 18px;border-bottom:1px solid var(--border);color:var(--muted);text-align:center}
 .compare-table td:first-child{text-align:left;color:var(--text);font-weight:500}
 .compare-table tr:last-child td{border-bottom:none}
 .compare-table tr:hover td{background:rgba(255,255,255,.02)}
-.tick{color:var(--green);font-size:15px}.cross{color:var(--text3);font-size:15px}
-.highlight-col{background:rgba(79,156,249,.04)}
-.section-row td{background:var(--bg);font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--text3);padding:8px 18px}
-.faq-section{max-width:660px;margin:0 auto 80px;padding:0 24px}
-.faq-section h2{text-align:center;font-size:28px;font-weight:800;margin-bottom:36px;letter-spacing:-.4px}
-.faq-item{border:1px solid var(--border);border-radius:10px;margin-bottom:10px;overflow:hidden}
+.tick{color:var(--green)}.cross{color:var(--muted2)}
+.hl-col{background:rgba(59,130,246,.04) !important}
+.section-row td{background:var(--bg) !important;font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;color:var(--muted2);padding:8px 18px}
+.faq-wrap{max-width:680px;margin:0 auto 80px;padding:0 24px;position:relative;z-index:1}
+.faq-wrap h2{font-size:32px;font-weight:800;letter-spacing:-.8px;margin-bottom:36px;text-align:center}
+.faq-item{border:1px solid var(--border2);border-radius:12px;margin-bottom:8px;overflow:hidden;background:var(--surface);transition:border-color .15s}
+.faq-item.open{border-color:rgba(59,130,246,.3)}
 .faq-q{padding:18px 20px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;font-size:14px;font-weight:600;user-select:none;transition:background .15s}
-.faq-q:hover{background:var(--surface2)}.faq-q .arrow{font-size:12px;color:var(--text2);transition:transform .2s}
+.faq-q:hover{background:var(--surface2)}
+.faq-q .arrow{font-size:11px;color:var(--muted);transition:transform .2s}
 .faq-item.open .faq-q .arrow{transform:rotate(180deg)}
-.faq-a{display:none;padding:0 20px 18px;font-size:13px;color:var(--text2);line-height:1.7}
+.faq-a{display:none;padding:0 20px 18px;font-size:13px;color:var(--muted);line-height:1.75}
 .faq-item.open .faq-a{display:block}
-.footer-cta{text-align:center;padding:64px 24px;border-top:1px solid var(--border)}
-.footer-cta h2{font-size:32px;font-weight:800;margin-bottom:12px;letter-spacing:-.4px}
-.footer-cta p{color:var(--text2);font-size:16px;margin-bottom:32px}
+.footer-cta{text-align:center;padding:80px 24px;background:linear-gradient(180deg,transparent 0%,rgba(59,130,246,.05) 50%,transparent 100%);border-top:1px solid var(--border);position:relative;z-index:1}
+.footer-cta h2{font-size:clamp(28px,4vw,44px);font-weight:800;letter-spacing:-.8px;margin-bottom:12px}
+.footer-cta p{font-size:16px;color:var(--muted);margin-bottom:36px}
 .cta-group{display:flex;justify-content:center;gap:12px;flex-wrap:wrap}
-.btn-primary{background:var(--accent2);color:#0d1117;padding:13px 32px;border-radius:10px;font-weight:700;font-size:15px;text-decoration:none;transition:background .2s}
-.btn-primary:hover{background:#79c0ff}
-.btn-ghost{border:1px solid var(--border);color:var(--text);padding:13px 32px;border-radius:10px;font-weight:600;font-size:15px;text-decoration:none;transition:all .2s}
-.btn-ghost:hover{border-color:var(--accent2);color:var(--accent2)}
-.annual-price{display:none}.annual .annual-price{display:inline}.annual .monthly-price{display:none}
+.btn-lg{display:inline-flex;align-items:center;gap:8px;padding:13px 28px;border-radius:9px;font-family:var(--sans);font-size:15px;font-weight:700;text-decoration:none;transition:all .2s;cursor:pointer;border:none}
+.btn-blue{background:var(--blue);color:#fff}.btn-blue:hover{background:#2563eb;transform:translateY(-2px);box-shadow:0 8px 28px rgba(59,130,246,.4)}
+.btn-ghost{background:rgba(255,255,255,.06);color:var(--text);border:1px solid var(--border2)}.btn-ghost:hover{background:rgba(255,255,255,.1);transform:translateY(-2px)}
+footer{border-top:1px solid var(--border);padding:28px 40px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;font-size:12px;color:var(--muted);position:relative;z-index:1}
+footer a{color:var(--muted);text-decoration:none}
+footer a:hover{color:var(--text)}
+.footer-logo img{height:26px;width:auto;display:block}
+.footer-links{display:flex;gap:20px}
+@media(max-width:640px){nav{padding:0 16px}.hero{padding:100px 20px 48px}.plans{grid-template-columns:1fr}.billing-toggle{flex-wrap:wrap}footer{flex-direction:column;align-items:flex-start;padding:24px 20px}.footer-links{flex-wrap:wrap;gap:12px}}
 </style>
 </head>
 <body>
 <nav>
-  <div class="logo">ObserveX</div>
+  <a href="/" class="nav-logo"><img src="/static/images/logo-dark.svg" alt="ObserveX"></a>
   <div class="nav-links">
-    <a href="/documentation">Docs</a>
-    <a href="/login">Sign in</a>
-    <a href="/create-account" class="nav-cta">Start free</a>
+    <a href="/#features" class="nav-link nl-ghost">Features</a>
+    <a href="/#integrations" class="nav-link nl-ghost">Integrations</a>
+    <a href="/documentation" class="nav-link nl-ghost">Docs</a>
+    <a href="/login" class="nav-link nl-outline">Sign in</a>
+    <a href="/create-account" class="nav-link nl-primary">Start free</a>
   </div>
 </nav>
-<div class="hero">
-  <div class="hero-badge">Simple, transparent pricing</div>
+
+<div class="hero" style="position:relative;">
+  <div class="hero-glow"></div>
+  <div class="hero-badge"><span class="badge-dot"></span>Simple, transparent pricing</div>
   <h1>Log smarter.<br><span>Scale without surprises.</span></h1>
   <p>One platform for logs, traces, alerts, and AI-powered root cause analysis. Start free, upgrade when ready.</p>
 </div>
+
 <div class="billing-toggle">
   <span class="toggle-label">Monthly</span>
   <div class="toggle-wrap">
@@ -111,121 +131,137 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:0 40px
   </div>
   <span class="badge-save">Save 20%</span>
 </div>
-<div class="plans">
-  <div class="plan">
-    <div class="plan-name">Starter</div>
-    <div class="plan-price"><span class="currency">₹</span><span class="amount monthly-price">999</span><span class="amount annual-price">799</span><span class="period">/mo</span></div>
-    <div class="plan-tagline">For indie devs and early-stage startups getting their first apps into production.</div>
-    <div class="plan-divider"></div>
-    <ul class="plan-features">
-      <li><span class="check">✓</span><span><strong>5 GB</strong> log retention / month</span></li>
-      <li><span class="check">✓</span><span><strong>3 days</strong> log history</span></li>
-      <li><span class="check">✓</span><span><strong>3</strong> sources / integrations</span></li>
-      <li><span class="check">✓</span><span><strong>10</strong> alert rules</span></li>
-      <li><span class="check">✓</span><span>Log explorer &amp; search</span></li>
-      <li><span class="check">✓</span><span>Email alerts</span></li>
-      <li><span class="check">✓</span><span>REST ingest API</span></li>
-      <li><span class="dash">–</span><span>AI Root Cause Analysis</span></li>
-      <li><span class="dash">–</span><span>Flow Analytics (trace waterfall)</span></li>
-      <li><span class="dash">–</span><span>SSO / Google login</span></li>
-    </ul>
-    <a href="/create-account" class="plan-cta outline">Get started free</a>
-  </div>
-  <div class="plan popular">
-    <div class="plan-badge">Most Popular</div>
-    <div class="plan-name">Pro</div>
-    <div class="plan-price"><span class="currency">₹</span><span class="amount monthly-price">3,999</span><span class="amount annual-price">3,199</span><span class="period">/mo</span></div>
-    <div class="plan-tagline">For growing teams shipping fast who need real-time observability and AI insights.</div>
-    <div class="plan-divider"></div>
-    <ul class="plan-features">
-      <li><span class="check">✓</span><span><strong>50 GB</strong> log retention / month</span></li>
-      <li><span class="check">✓</span><span><strong>30 days</strong> log history</span></li>
-      <li><span class="check">✓</span><span><strong>Unlimited</strong> sources</span></li>
-      <li><span class="check">✓</span><span><strong>Unlimited</strong> alert rules</span></li>
-      <li><span class="check">✓</span><span>Slack &amp; webhook alerts</span></li>
-      <li><span class="check">✓</span><span><strong>AI RCA</strong> — root cause analysis</span></li>
-      <li><span class="check">✓</span><span><strong>Flow Analytics</strong> — trace waterfall</span></li>
-      <li><span class="check">✓</span><span>AI log summarizer</span></li>
-      <li><span class="check">✓</span><span>S3 / GCS log ingestion jobs</span></li>
-      <li><span class="check">✓</span><span>API key management</span></li>
-    </ul>
-    <a href="/create-account" class="plan-cta primary">Start Pro trial →</a>
-  </div>
-  <div class="plan">
-    <div class="plan-name">Enterprise</div>
-    <div class="plan-price"><span class="amount" style="font-size:36px;letter-spacing:-.5px">Custom</span></div>
-    <div class="plan-tagline">For large teams and regulated industries that need SLAs, SSO, and dedicated support.</div>
-    <div class="plan-divider"></div>
-    <ul class="plan-features">
-      <li><span class="check">✓</span><span><strong>Unlimited</strong> log volume</span></li>
-      <li><span class="check">✓</span><span><strong>1 year</strong> log history</span></li>
-      <li><span class="check">✓</span><span>Everything in Pro</span></li>
-      <li><span class="check">✓</span><span><strong>SSO</strong> — Google / SAML 2.0</span></li>
-      <li><span class="check">✓</span><span>IP whitelisting</span></li>
-      <li><span class="check">✓</span><span>Audit trail &amp; compliance export</span></li>
-      <li><span class="check">✓</span><span>Role-based access control</span></li>
-      <li><span class="check">✓</span><span>Dedicated Slack support</span></li>
-      <li><span class="check">✓</span><span>Custom SLA &amp; uptime guarantee</span></li>
-      <li><span class="check">✓</span><span>On-prem / private cloud option</span></li>
-    </ul>
-    <a href="mailto:sales@observex.io" class="plan-cta enterprise">Talk to sales →</a>
+
+<div class="plans-wrap">
+  <div class="plans">
+    <div class="plan">
+      <div class="plan-name">Starter</div>
+      <div class="plan-price"><span class="currency">₹</span><span class="amount monthly-price">999</span><span class="amount annual-price">799</span><span class="period">/mo</span></div>
+      <div class="plan-tagline">For indie developers and early-stage startups getting their first apps into production.</div>
+      <div class="plan-divider"></div>
+      <ul class="plan-features">
+        <li><span class="check">✓</span><span><strong>5 GB</strong> log retention / month</span></li>
+        <li><span class="check">✓</span><span><strong>3 days</strong> log history</span></li>
+        <li><span class="check">✓</span><span><strong>3</strong> sources / integrations</span></li>
+        <li><span class="check">✓</span><span><strong>10</strong> alert rules</span></li>
+        <li><span class="check">✓</span><span>Log explorer &amp; full-text search</span></li>
+        <li><span class="check">✓</span><span>Email alerts</span></li>
+        <li><span class="check">✓</span><span>REST ingest API</span></li>
+        <li><span class="dash">—</span><span>AI Root Cause Analysis</span></li>
+        <li><span class="dash">—</span><span>Flow Analytics (trace waterfall)</span></li>
+        <li><span class="dash">—</span><span>SSO / SAML</span></li>
+      </ul>
+      <a href="/create-account" class="plan-cta cta-outline">Get started free</a>
+    </div>
+    <div class="plan popular">
+      <div class="plan-badge">Most Popular</div>
+      <div class="plan-name">Pro</div>
+      <div class="plan-price"><span class="currency">₹</span><span class="amount monthly-price">3,999</span><span class="amount annual-price">3,199</span><span class="period">/mo</span></div>
+      <div class="plan-tagline">For growing teams shipping fast who need real-time observability and AI insights.</div>
+      <div class="plan-divider"></div>
+      <ul class="plan-features">
+        <li><span class="check">✓</span><span><strong>50 GB</strong> log retention / month</span></li>
+        <li><span class="check">✓</span><span><strong>30 days</strong> log history</span></li>
+        <li><span class="check">✓</span><span><strong>Unlimited</strong> sources</span></li>
+        <li><span class="check">✓</span><span><strong>Unlimited</strong> alert rules</span></li>
+        <li><span class="check">✓</span><span>Slack &amp; webhook alerts</span></li>
+        <li><span class="check">✓</span><span><strong>AI RCA</strong> — root cause analysis</span></li>
+        <li><span class="check">✓</span><span><strong>Flow Analytics</strong> — trace waterfall</span></li>
+        <li><span class="check">✓</span><span>AI log summarizer &amp; query builder</span></li>
+        <li><span class="check">✓</span><span>S3 / GCS scheduled ingestion jobs</span></li>
+        <li><span class="check">✓</span><span>API key management with scopes</span></li>
+      </ul>
+      <a href="/create-account" class="plan-cta cta-primary">Start Pro trial →</a>
+    </div>
+    <div class="plan">
+      <div class="plan-name">Enterprise</div>
+      <div class="plan-price"><span class="amount" style="font-size:38px;letter-spacing:-.5px">Custom</span></div>
+      <div class="plan-tagline">For large teams and regulated industries that need SLAs, SSO, and dedicated support.</div>
+      <div class="plan-divider"></div>
+      <ul class="plan-features">
+        <li><span class="check">✓</span><span><strong>Unlimited</strong> log volume</span></li>
+        <li><span class="check">✓</span><span><strong>1 year</strong> log history</span></li>
+        <li><span class="check">✓</span><span>Everything in Pro</span></li>
+        <li><span class="check">✓</span><span><strong>SSO</strong> — Google / SAML 2.0</span></li>
+        <li><span class="check">✓</span><span>IP whitelisting</span></li>
+        <li><span class="check">✓</span><span>Audit trail &amp; compliance export</span></li>
+        <li><span class="check">✓</span><span>Role-based access control</span></li>
+        <li><span class="check">✓</span><span>Dedicated Slack support channel</span></li>
+        <li><span class="check">✓</span><span>Custom SLA &amp; uptime guarantee</span></li>
+        <li><span class="check">✓</span><span>On-prem / private cloud option</span></li>
+      </ul>
+      <a href="mailto:sales@observex.in" class="plan-cta cta-enterprise">Talk to sales →</a>
+    </div>
   </div>
 </div>
-<div class="compare-section">
+
+<div class="compare-wrap">
+  <div class="section-tag">Compare plans</div>
   <h2>Full feature comparison</h2>
   <p class="sub">Everything you get across all plans, side by side.</p>
   <table class="compare-table">
-    <thead><tr><th>Feature</th><th>Starter</th><th class="highlight-col">Pro</th><th>Enterprise</th></tr></thead>
+    <thead><tr><th>Feature</th><th>Starter</th><th class="hl-col">Pro</th><th>Enterprise</th></tr></thead>
     <tbody>
       <tr class="section-row"><td colspan="4">Core Logging</td></tr>
-      <tr><td>Log retention</td><td>3 days</td><td class="highlight-col">30 days</td><td>1 year</td></tr>
-      <tr><td>Log volume / mo</td><td>5 GB</td><td class="highlight-col">50 GB</td><td>Unlimited</td></tr>
-      <tr><td>Sources &amp; integrations</td><td>3</td><td class="highlight-col">Unlimited</td><td>Unlimited</td></tr>
-      <tr><td>Log search &amp; explorer</td><td><span class="tick">✓</span></td><td class="highlight-col"><span class="tick">✓</span></td><td><span class="tick">✓</span></td></tr>
-      <tr><td>Log export (CSV/NDJSON)</td><td><span class="tick">✓</span></td><td class="highlight-col"><span class="tick">✓</span></td><td><span class="tick">✓</span></td></tr>
+      <tr><td>Log retention</td><td>3 days</td><td class="hl-col">30 days</td><td>1 year</td></tr>
+      <tr><td>Log volume / month</td><td>5 GB</td><td class="hl-col">50 GB</td><td>Unlimited</td></tr>
+      <tr><td>Sources &amp; integrations</td><td>3</td><td class="hl-col">Unlimited</td><td>Unlimited</td></tr>
+      <tr><td>Log search &amp; explorer</td><td><span class="tick">✓</span></td><td class="hl-col"><span class="tick">✓</span></td><td><span class="tick">✓</span></td></tr>
+      <tr><td>Log export (CSV / NDJSON)</td><td><span class="tick">✓</span></td><td class="hl-col"><span class="tick">✓</span></td><td><span class="tick">✓</span></td></tr>
       <tr class="section-row"><td colspan="4">Alerts &amp; Monitoring</td></tr>
-      <tr><td>Alert rules</td><td>10</td><td class="highlight-col">Unlimited</td><td>Unlimited</td></tr>
-      <tr><td>Email alerts</td><td><span class="tick">✓</span></td><td class="highlight-col"><span class="tick">✓</span></td><td><span class="tick">✓</span></td></tr>
-      <tr><td>Slack &amp; webhook alerts</td><td><span class="cross">—</span></td><td class="highlight-col"><span class="tick">✓</span></td><td><span class="tick">✓</span></td></tr>
-      <tr><td>PagerDuty / OpsGenie</td><td><span class="cross">—</span></td><td class="highlight-col"><span class="cross">—</span></td><td><span class="tick">✓</span></td></tr>
+      <tr><td>Alert rules</td><td>10</td><td class="hl-col">Unlimited</td><td>Unlimited</td></tr>
+      <tr><td>Email alerts</td><td><span class="tick">✓</span></td><td class="hl-col"><span class="tick">✓</span></td><td><span class="tick">✓</span></td></tr>
+      <tr><td>Slack &amp; webhook alerts</td><td><span class="cross">—</span></td><td class="hl-col"><span class="tick">✓</span></td><td><span class="tick">✓</span></td></tr>
+      <tr><td>PagerDuty / OpsGenie</td><td><span class="cross">—</span></td><td class="hl-col"><span class="cross">—</span></td><td><span class="tick">✓</span></td></tr>
       <tr class="section-row"><td colspan="4">AI Features</td></tr>
-      <tr><td>AI Root Cause Analysis</td><td><span class="cross">—</span></td><td class="highlight-col"><span class="tick">✓</span></td><td><span class="tick">✓</span></td></tr>
-      <tr><td>Flow Analytics (trace waterfall)</td><td><span class="cross">—</span></td><td class="highlight-col"><span class="tick">✓</span></td><td><span class="tick">✓</span></td></tr>
-      <tr><td>AI log summarizer</td><td><span class="cross">—</span></td><td class="highlight-col"><span class="tick">✓</span></td><td><span class="tick">✓</span></td></tr>
-      <tr><td>AI query builder (NL → filters)</td><td><span class="cross">—</span></td><td class="highlight-col"><span class="tick">✓</span></td><td><span class="tick">✓</span></td></tr>
+      <tr><td>AI Root Cause Analysis</td><td><span class="cross">—</span></td><td class="hl-col"><span class="tick">✓</span></td><td><span class="tick">✓</span></td></tr>
+      <tr><td>Flow Analytics (trace waterfall)</td><td><span class="cross">—</span></td><td class="hl-col"><span class="tick">✓</span></td><td><span class="tick">✓</span></td></tr>
+      <tr><td>AI log summarizer</td><td><span class="cross">—</span></td><td class="hl-col"><span class="tick">✓</span></td><td><span class="tick">✓</span></td></tr>
+      <tr><td>AI query builder (NL → filters)</td><td><span class="cross">—</span></td><td class="hl-col"><span class="tick">✓</span></td><td><span class="tick">✓</span></td></tr>
       <tr class="section-row"><td colspan="4">Security &amp; Access</td></tr>
-      <tr><td>API keys with scopes</td><td><span class="tick">✓</span></td><td class="highlight-col"><span class="tick">✓</span></td><td><span class="tick">✓</span></td></tr>
-      <tr><td>2FA / TOTP</td><td><span class="tick">✓</span></td><td class="highlight-col"><span class="tick">✓</span></td><td><span class="tick">✓</span></td></tr>
-      <tr><td>Audit trail</td><td><span class="cross">—</span></td><td class="highlight-col"><span class="tick">✓</span></td><td><span class="tick">✓</span></td></tr>
-      <tr><td>SSO (Google / SAML)</td><td><span class="cross">—</span></td><td class="highlight-col"><span class="cross">—</span></td><td><span class="tick">✓</span></td></tr>
-      <tr><td>IP whitelisting</td><td><span class="cross">—</span></td><td class="highlight-col"><span class="cross">—</span></td><td><span class="tick">✓</span></td></tr>
-      <tr><td>Custom SLA</td><td><span class="cross">—</span></td><td class="highlight-col"><span class="cross">—</span></td><td><span class="tick">✓</span></td></tr>
+      <tr><td>API keys with scopes</td><td><span class="tick">✓</span></td><td class="hl-col"><span class="tick">✓</span></td><td><span class="tick">✓</span></td></tr>
+      <tr><td>2FA / TOTP</td><td><span class="tick">✓</span></td><td class="hl-col"><span class="tick">✓</span></td><td><span class="tick">✓</span></td></tr>
+      <tr><td>Audit trail</td><td><span class="cross">—</span></td><td class="hl-col"><span class="tick">✓</span></td><td><span class="tick">✓</span></td></tr>
+      <tr><td>SSO (Google / SAML)</td><td><span class="cross">—</span></td><td class="hl-col"><span class="cross">—</span></td><td><span class="tick">✓</span></td></tr>
+      <tr><td>IP whitelisting</td><td><span class="cross">—</span></td><td class="hl-col"><span class="cross">—</span></td><td><span class="tick">✓</span></td></tr>
+      <tr><td>Custom SLA</td><td><span class="cross">—</span></td><td class="hl-col"><span class="cross">—</span></td><td><span class="tick">✓</span></td></tr>
     </tbody>
   </table>
 </div>
-<div class="faq-section">
+
+<div class="faq-wrap">
+  <div class="section-tag" style="justify-content:center;display:flex">FAQ</div>
   <h2>Frequently asked questions</h2>
   <div class="faq-item"><div class="faq-q" onclick="toggleFaq(this)">Is there a free trial? <span class="arrow">▼</span></div><div class="faq-a">Yes — you can start on the Starter plan with no credit card required. The Pro plan includes a 14-day free trial when you sign up with a workspace email.</div></div>
   <div class="faq-item"><div class="faq-q" onclick="toggleFaq(this)">What counts as a "log event"? <span class="arrow">▼</span></div><div class="faq-a">Each line ingested via the REST API, file upload, S3 job, or webhook counts as one event. Structured JSON objects count as one event regardless of payload size.</div></div>
   <div class="faq-item"><div class="faq-q" onclick="toggleFaq(this)">Can I upgrade or downgrade anytime? <span class="arrow">▼</span></div><div class="faq-a">Yes. You can upgrade instantly and get prorated credit. Downgrades take effect at your next billing cycle — no data is deleted immediately.</div></div>
-  <div class="faq-item"><div class="faq-q" onclick="toggleFaq(this)">Do you support on-prem deployment? <span class="arrow">▼</span></div><div class="faq-a">On-premises and private cloud deployments are available under the Enterprise plan. Contact sales@observex.io for a custom quote and deployment guide.</div></div>
-  <div class="faq-item"><div class="faq-q" onclick="toggleFaq(this)">Which payment methods are accepted? <span class="arrow">▼</span></div><div class="faq-a">We accept UPI, credit/debit cards (Visa, Mastercard, RuPay), and net banking via Razorpay. Enterprise customers can pay via invoice (NEFT/IMPS).</div></div>
+  <div class="faq-item"><div class="faq-q" onclick="toggleFaq(this)">Do you support on-prem deployment? <span class="arrow">▼</span></div><div class="faq-a">On-premises and private cloud deployments are available under the Enterprise plan. Contact sales@observex.in for a custom quote and deployment guide.</div></div>
+  <div class="faq-item"><div class="faq-q" onclick="toggleFaq(this)">Which payment methods are accepted? <span class="arrow">▼</span></div><div class="faq-a">We accept UPI, credit/debit cards (Visa, Mastercard, RuPay), and net banking via Razorpay. Enterprise customers can pay via invoice (NEFT / IMPS).</div></div>
   <div class="faq-item"><div class="faq-q" onclick="toggleFaq(this)">Is my data safe? <span class="arrow">▼</span></div><div class="faq-a">All data is encrypted at rest (AES-256) and in transit (TLS 1.3). We never sell or share your log data. Enterprise plans include dedicated data residency options.</div></div>
 </div>
+
 <div class="footer-cta">
   <h2>Ready to get full visibility?</h2>
-  <p>Join hundreds of teams shipping with confidence using ObserveX.</p>
+  <p>Join teams shipping with confidence using ObserveX.</p>
   <div class="cta-group">
-    <a href="/create-account" class="btn-primary">Start for free →</a>
-    <a href="mailto:sales@observex.io" class="btn-ghost">Talk to sales</a>
+    <a href="/create-account" class="btn-lg btn-blue"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>Start for free</a>
+    <a href="mailto:sales@observex.in" class="btn-lg btn-ghost">Talk to sales</a>
   </div>
 </div>
+
+<footer>
+  <div class="footer-logo"><img src="/static/images/logo-dark.svg" alt="ObserveX"></div>
+  <div class="footer-links">
+    <a href="/">Home</a>
+    <a href="/documentation">Documentation</a>
+    <a href="/login">Sign in</a>
+    <a href="/create-account">Create workspace</a>
+    <a href="/health">Status</a>
+  </div>
+</footer>
+
 <script>
-function setBilling(mode){
-  document.body.classList.toggle('annual',mode==='annual');
-  document.getElementById('btn-monthly').classList.toggle('active',mode==='monthly');
-  document.getElementById('btn-annual').classList.toggle('active',mode==='annual');
-}
+function setBilling(mode){document.body.classList.toggle('annual',mode==='annual');document.getElementById('btn-monthly').classList.toggle('active',mode==='monthly');document.getElementById('btn-annual').classList.toggle('active',mode==='annual')}
 function toggleFaq(el){el.closest('.faq-item').classList.toggle('open')}
 </script>
 </body>
