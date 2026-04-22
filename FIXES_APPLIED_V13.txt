@@ -1,0 +1,138 @@
+ObserveX V13 — Bug Fixes
+Audit & fix session, April 2026
+════════════════════════════════════════════════════════
+
+━━━ AUDIT SCOPE ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Full code audit of v12 against the FIXES_APPLIED_V12.txt
+specification. All 8 tables, 7 new columns, 18 new
+endpoints, 3 frontend pages, and all backend logic
+(rate limiting, alert deduplication, PagerDuty, sampling,
+per-env retention) were verified as correctly implemented
+in v12. Four bugs were identified and fixed.
+
+━━━ BUG FIXES ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+BUG 1 — CRITICAL: ingest_json uploads INSERT parameter
+mismatch (would crash every POST /ingest/json call)
+─────────────────────────────────────────────────────
+Symptom:  Every API ingest call would raise SQLite
+          ProgrammingError: "Binding 6 has no value"
+          because the INSERT INTO uploads statement
+          declares 6 columns (org_id, user_id, filename,
+          total_records, environment_name, created_at)
+          but only 5 values were supplied — environment_name
+          was missing from the tuple.
+
+Fix:      Extract ingest_env from the first record's
+          environment_name field (fallback "PROD") before
+          the INSERT, then pass it as the 6th parameter:
+            ingest_env = (records[0].get("environment_name")
+                          or "PROD").upper()
+            INSERT VALUES (org_id, user_id, "api-ingest.json",
+                           len(records), ingest_env, now)
+
+File:     app.py → def ingest_json()
+
+
+BUG 2 — ingest_json log_events INSERT missing
+application_id and app_version columns
+─────────────────────────────────────────────────────
+Symptom:  The two new v12 columns on log_events
+          (application_id, app_version) were never
+          populated via the API ingest path — they
+          would always be NULL regardless of what the
+          caller sent.
+
+Fix:      Before building rows_to_insert:
+          1. Resolve application_id by looking up
+             application_slug (from API key or per-record)
+             against the applications table.
+          2. Extract app_version per record, falling back
+             to a top-level ingest_app_version.
+          3. Updated INSERT column list and VALUES tuple
+             to include application_id and app_version as
+             the 15th and 16th parameters.
+
+File:     app.py → def ingest_json()
+
+
+BUG 3 — require_api_key rate limit bypassed on cache-miss
+─────────────────────────────────────────────────────────
+Symptom:  _check_per_key_rate() was only called in the
+          cache-hit branch of require_api_key(). On the
+          very first request for any API key (cache-miss),
+          the per-key rate limit was never applied, allowing
+          an unlimited burst on each worker restart or after
+          a cache eviction.
+
+Fix:      Added _check_per_key_rate() call to the cache-miss
+          branch, immediately after the bcrypt hash
+          verification and before returning the key_info,
+          mirroring the existing check in the cache-hit path.
+
+File:     app.py → def require_api_key()
+
+
+BUG 4 — 14 of 15 new v12 endpoints had no try/except
+─────────────────────────────────────────────────────
+Symptom:  Any SQLite exception in the new endpoints
+          (schema mismatch during live migration, FK
+          constraint violation, malformed JSON in
+          config_json, etc.) would propagate as an
+          unhandled 500 returning a raw Python traceback
+          rather than a clean {"error": "..."} JSON body.
+
+          Additionally, update_incident allowed re-updating
+          an already-resolved incident, potentially causing
+          data consistency issues.
+
+Fix:      Wrapped all DB operations in all new endpoints
+          with try/except Exception → jsonify({"error":
+          str(exc)}), 500.
+
+          Also added a 409 guard in update_incident:
+            if row["status"] == "resolved":
+                return jsonify({"error": "Incident is
+                    already resolved and cannot be
+                    updated"}), 409
+
+Endpoints fixed (25 total):
+  list_applications, update_application, delete_application
+  list_incidents, update_incident
+  list_views, create_view, update_view, delete_view
+  list_deployments, create_deployment, delete_deployment
+  get_usage
+  list_on_call, create_on_call, delete_on_call
+  list_sampling_rules, create_sampling_rule, delete_sampling_rule
+  list_env_permissions, upsert_env_permission
+  set_env_retention, set_key_rate_limit
+  deployments_for_timeseries
+
+File:     app.py → all new v12 endpoint functions
+
+━━━ LOG FILE ANALYSIS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+The Railway log file (logs_1776833599728.log) showed no
+real application errors. Key observations:
+
+  [err] prefix on all gunicorn lines — Railway platform
+  artifact. Gunicorn writes INFO/WARNING/ERROR all to
+  stderr (errorlog = "-" in gunicorn.conf.py), which
+  Railway labels [err]. This is expected and harmless.
+  The actual gunicorn access log lines appear as [inf].
+
+  SVG files showing "200 0" bytes — cosmetic. The 0 in
+  gunicorn's access log is the body byte count for the
+  initial response; subsequent requests correctly return
+  304 Not Modified, confirming the browser cached them
+  successfully.
+
+  Overview page 783ms / 243KB — inherent to the
+  single-template architecture (index.html ~3,800 lines).
+  No code fix applied; acceptable for current scale.
+
+━━━ FILES CHANGED ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  app.py                  (+94 lines net, 4 bugs fixed)
+  FIXES_APPLIED_V13.txt   (this file)

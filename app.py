@@ -1165,6 +1165,10 @@ def require_api_key(required_scope: str | None = None) -> tuple[dict[str, Any] |
                 scopes = [s.strip() for s in (key_info.get("scopes") or "ingest,read,admin").split(",")]
                 if required_scope not in scopes:
                     return None, (jsonify({"error": f"API key missing required scope: '{required_scope}'."}), 403)
+            # Apply per-key rate limit on cache-miss path too
+            limit = key_info.get("rate_limit_per_min", 0) or 0
+            if not _check_per_key_rate(key_info["id"], limit):
+                return None, (jsonify({"error": "Per-key rate limit exceeded. Slow down requests or increase the key's rate limit."}), 429)
             return key_info, None
 
     return None, (jsonify({"error": "Invalid or revoked API key."}), 401)
@@ -3327,21 +3331,42 @@ def ingest_json():
         return True  # no rule matches — keep all
     records = [r for r in records if _should_keep(r)]
 
+    # Resolve environment from request payload (first record wins, fallback to PROD)
+    ingest_env = (records[0].get("environment_name") or "PROD").upper() if records else "PROD"
+    # Resolve application_id from slug if provided
+    ingest_app_slug = key_row.get("application_slug") or ""
+    ingest_app_id: int | None = None
+    if ingest_app_slug:
+        app_row = db.execute(
+            "SELECT id FROM applications WHERE org_id=? AND slug=?",
+            (org_id, ingest_app_slug),
+        ).fetchone()
+        if app_row:
+            ingest_app_id = app_row["id"]
+    ingest_app_version = (records[0].get("app_version") or "") if records else ""
+
     cur = db.execute(
         "INSERT INTO uploads (org_id, user_id, filename, total_records, environment_name, created_at) VALUES (?, ?, ?, ?, ?, ?)",
-        (org_id, user_id, "api-ingest.json", len(records), now),
+        (org_id, user_id, "api-ingest.json", len(records), ingest_env, now),
     )
     upload_id = cur.lastrowid
     rows_to_insert = []
     for r in records:
         sf = extract_structured_fields(r.get("payload") or {})
+        r_env = (r.get("environment_name") or ingest_env).upper()
+        r_app_ver = r.get("app_version") or ingest_app_version
         rows_to_insert.append((
             org_id, upload_id, r["timestamp"], r["level"], r["source"],
-            r.get("event_id") or "", r["message"], json.dumps(r.get("payload", {})), now,
+            r.get("event_id") or "", r["message"], json.dumps(r.get("payload", {})), r_env, now,
             sf.get("status_code"), sf.get("duration_ms"), sf.get("req_user_id"), sf.get("request_id"),
+            ingest_app_id, r_app_ver,
         ))
     db.executemany(
-        "INSERT INTO log_events (org_id, upload_id, timestamp, level, source, event_id, message, payload_json, environment_name, created_at, status_code, duration_ms, req_user_id, request_id) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+        """INSERT INTO log_events
+           (org_id, upload_id, timestamp, level, source, event_id, message, payload_json,
+            environment_name, created_at, status_code, duration_ms, req_user_id, request_id,
+            application_id, app_version)
+           VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
         rows_to_insert,
     )
     db.commit()
@@ -4573,11 +4598,14 @@ Return:
 def list_applications():
     user, err = require_auth()
     if err: return err
-    db = get_db()
-    rows = db.execute(
-        "SELECT * FROM applications WHERE org_id=? ORDER BY name", (user["org_id"],)
-    ).fetchall()
-    return jsonify([dict(r) for r in rows])
+    try:
+        db = get_db()
+        rows = db.execute(
+            "SELECT * FROM applications WHERE org_id=? ORDER BY name", (user["org_id"],)
+        ).fetchall()
+        return jsonify([dict(r) for r in rows])
+    except Exception as exc:
+        return jsonify({"error": str(exc)}), 500
 
 
 @app.post("/api/applications")
@@ -4617,31 +4645,37 @@ def update_application(app_id: int):
     user, err = require_role("manager")
     if err: return err
     p = request_payload()
-    db = get_db()
-    row = db.execute("SELECT * FROM applications WHERE id=? AND org_id=?", (app_id, user["org_id"])).fetchone()
-    if not row:
-        return jsonify({"error": "Application not found"}), 404
-    name    = sanitize_input(p.get("name", row["name"]), 120)
-    desc    = sanitize_input(p.get("description", row["description"]), 500)
-    owner   = sanitize_input(p.get("owner_team", row["owner_team"]), 120)
-    sla     = p.get("sla_tier", row["sla_tier"])
-    contact = sanitize_input(p.get("on_call_contact", row["on_call_contact"]), 200)
-    db.execute(
-        "UPDATE applications SET name=?, description=?, owner_team=?, sla_tier=?, on_call_contact=? WHERE id=?",
-        (name, desc, owner, sla, contact, app_id),
-    )
-    db.commit()
-    return jsonify({"ok": True})
+    try:
+        db = get_db()
+        row = db.execute("SELECT * FROM applications WHERE id=? AND org_id=?", (app_id, user["org_id"])).fetchone()
+        if not row:
+            return jsonify({"error": "Application not found"}), 404
+        name    = sanitize_input(p.get("name", row["name"]), 120)
+        desc    = sanitize_input(p.get("description", row["description"]), 500)
+        owner   = sanitize_input(p.get("owner_team", row["owner_team"]), 120)
+        sla     = p.get("sla_tier", row["sla_tier"])
+        contact = sanitize_input(p.get("on_call_contact", row["on_call_contact"]), 200)
+        db.execute(
+            "UPDATE applications SET name=?, description=?, owner_team=?, sla_tier=?, on_call_contact=? WHERE id=?",
+            (name, desc, owner, sla, contact, app_id),
+        )
+        db.commit()
+        return jsonify({"ok": True})
+    except Exception as exc:
+        return jsonify({"error": str(exc)}), 500
 
 
 @app.delete("/api/applications/<int:app_id>")
 def delete_application(app_id: int):
     user, err = require_role("admin")
     if err: return err
-    db = get_db()
-    db.execute("DELETE FROM applications WHERE id=? AND org_id=?", (app_id, user["org_id"]))
-    db.commit()
-    return jsonify({"ok": True})
+    try:
+        db = get_db()
+        db.execute("DELETE FROM applications WHERE id=? AND org_id=?", (app_id, user["org_id"]))
+        db.commit()
+        return jsonify({"ok": True})
+    except Exception as exc:
+        return jsonify({"error": str(exc)}), 500
 
 
 # ── Alert Incidents ───────────────────────────────────────────────────────────
@@ -4650,28 +4684,31 @@ def delete_application(app_id: int):
 def list_incidents():
     user, err = require_auth()
     if err: return err
-    db = get_db()
-    status_filter = request.args.get("status", "")
-    env_filter    = request.args.get("environment", "")
-    limit         = min(int(request.args.get("limit", 50)), 200)
-    conditions    = ["ai.org_id=?"]
-    params: list  = [user["org_id"]]
-    if status_filter:
-        conditions.append("ai.status=?")
-        params.append(status_filter)
-    if env_filter and env_filter.upper() != "ALL":
-        conditions.append("ai.environment_name=?")
-        params.append(env_filter)
-    where = " AND ".join(conditions)
-    rows = db.execute(
-        f"""SELECT ai.*, u.name AS ack_by_name
-            FROM alert_incidents ai
-            LEFT JOIN users u ON u.id = ai.acknowledged_by
-            WHERE {where}
-            ORDER BY ai.fired_at DESC LIMIT ?""",
-        (*params, limit),
-    ).fetchall()
-    return jsonify([dict(r) for r in rows])
+    try:
+        db = get_db()
+        status_filter = request.args.get("status", "")
+        env_filter    = request.args.get("environment", "")
+        limit         = min(int(request.args.get("limit", 50)), 200)
+        conditions    = ["ai.org_id=?"]
+        params: list  = [user["org_id"]]
+        if status_filter:
+            conditions.append("ai.status=?")
+            params.append(status_filter)
+        if env_filter and env_filter.upper() != "ALL":
+            conditions.append("ai.environment_name=?")
+            params.append(env_filter)
+        where = " AND ".join(conditions)
+        rows = db.execute(
+            f"""SELECT ai.*, u.name AS ack_by_name
+                FROM alert_incidents ai
+                LEFT JOIN users u ON u.id = ai.acknowledged_by
+                WHERE {where}
+                ORDER BY ai.fired_at DESC LIMIT ?""",
+            (*params, limit),
+        ).fetchall()
+        return jsonify([dict(r) for r in rows])
+    except Exception as exc:
+        return jsonify({"error": str(exc)}), 500
 
 
 @app.put("/api/incidents/<int:incident_id>")
@@ -4682,24 +4719,29 @@ def update_incident(incident_id: int):
     new_status = p.get("status", "")
     if new_status not in ("acknowledged", "resolved"):
         return jsonify({"error": "status must be acknowledged or resolved"}), 400
-    db = get_db()
-    row = db.execute("SELECT * FROM alert_incidents WHERE id=? AND org_id=?", (incident_id, user["org_id"])).fetchone()
-    if not row:
-        return jsonify({"error": "Incident not found"}), 404
-    now = iso_now()
-    if new_status == "acknowledged":
-        db.execute(
-            "UPDATE alert_incidents SET status='acknowledged', acknowledged_by=?, acknowledged_at=? WHERE id=?",
-            (user["id"], now, incident_id),
-        )
-    else:
-        db.execute(
-            "UPDATE alert_incidents SET status='resolved', resolved_at=? WHERE id=?",
-            (now, incident_id),
-        )
-    db.commit()
-    audit(user["org_id"], user["id"], f"incident_{new_status}", "alert_incident", str(incident_id))
-    return jsonify({"ok": True, "status": new_status})
+    try:
+        db = get_db()
+        row = db.execute("SELECT * FROM alert_incidents WHERE id=? AND org_id=?", (incident_id, user["org_id"])).fetchone()
+        if not row:
+            return jsonify({"error": "Incident not found"}), 404
+        if row["status"] == "resolved":
+            return jsonify({"error": "Incident is already resolved and cannot be updated"}), 409
+        now = iso_now()
+        if new_status == "acknowledged":
+            db.execute(
+                "UPDATE alert_incidents SET status='acknowledged', acknowledged_by=?, acknowledged_at=? WHERE id=?",
+                (user["id"], now, incident_id),
+            )
+        else:
+            db.execute(
+                "UPDATE alert_incidents SET status='resolved', resolved_at=? WHERE id=?",
+                (now, incident_id),
+            )
+        db.commit()
+        audit(user["org_id"], user["id"], f"incident_{new_status}", "alert_incident", str(incident_id))
+        return jsonify({"ok": True, "status": new_status})
+    except Exception as exc:
+        return jsonify({"error": str(exc)}), 500
 
 
 # ── Saved Views ───────────────────────────────────────────────────────────────
@@ -4708,12 +4750,15 @@ def update_incident(incident_id: int):
 def list_views():
     user, err = require_auth()
     if err: return err
-    db = get_db()
-    rows = db.execute(
-        "SELECT * FROM saved_views WHERE org_id=? ORDER BY is_pinned DESC, name",
-        (user["org_id"],),
-    ).fetchall()
-    return jsonify([dict(r) for r in rows])
+    try:
+        db = get_db()
+        rows = db.execute(
+            "SELECT * FROM saved_views WHERE org_id=? ORDER BY is_pinned DESC, name",
+            (user["org_id"],),
+        ).fetchall()
+        return jsonify([dict(r) for r in rows])
+    except Exception as exc:
+        return jsonify({"error": str(exc)}), 500
 
 
 @app.post("/api/views")
@@ -4729,17 +4774,20 @@ def create_view():
         return jsonify({"error": "config must be an object"}), 400
     is_pinned = 1 if p.get("is_pinned") else 0
     now = iso_now()
-    db = get_db()
-    db.execute(
-        "INSERT INTO saved_views (org_id, user_id, name, config_json, is_pinned, created_at) VALUES (?,?,?,?,?,?)",
-        (user["org_id"], user["id"], name, json.dumps(config), is_pinned, now),
-    )
-    db.commit()
-    row = db.execute(
-        "SELECT * FROM saved_views WHERE org_id=? AND user_id=? ORDER BY id DESC LIMIT 1",
-        (user["org_id"], user["id"]),
-    ).fetchone()
-    return jsonify(dict(row)), 201
+    try:
+        db = get_db()
+        db.execute(
+            "INSERT INTO saved_views (org_id, user_id, name, config_json, is_pinned, created_at) VALUES (?,?,?,?,?,?)",
+            (user["org_id"], user["id"], name, json.dumps(config), is_pinned, now),
+        )
+        db.commit()
+        row = db.execute(
+            "SELECT * FROM saved_views WHERE org_id=? AND user_id=? ORDER BY id DESC LIMIT 1",
+            (user["org_id"], user["id"]),
+        ).fetchone()
+        return jsonify(dict(row)), 201
+    except Exception as exc:
+        return jsonify({"error": str(exc)}), 500
 
 
 @app.put("/api/views/<int:view_id>")
@@ -4747,29 +4795,35 @@ def update_view(view_id: int):
     user, err = require_auth()
     if err: return err
     p = request_payload()
-    db = get_db()
-    row = db.execute("SELECT * FROM saved_views WHERE id=? AND org_id=?", (view_id, user["org_id"])).fetchone()
-    if not row:
-        return jsonify({"error": "View not found"}), 404
-    name      = sanitize_input(p.get("name", row["name"]), 120)
-    config    = p.get("config", json.loads(row["config_json"]))
-    is_pinned = 1 if p.get("is_pinned", bool(row["is_pinned"])) else 0
-    db.execute(
-        "UPDATE saved_views SET name=?, config_json=?, is_pinned=? WHERE id=?",
-        (name, json.dumps(config), is_pinned, view_id),
-    )
-    db.commit()
-    return jsonify({"ok": True})
+    try:
+        db = get_db()
+        row = db.execute("SELECT * FROM saved_views WHERE id=? AND org_id=?", (view_id, user["org_id"])).fetchone()
+        if not row:
+            return jsonify({"error": "View not found"}), 404
+        name      = sanitize_input(p.get("name", row["name"]), 120)
+        config    = p.get("config", json.loads(row["config_json"]))
+        is_pinned = 1 if p.get("is_pinned", bool(row["is_pinned"])) else 0
+        db.execute(
+            "UPDATE saved_views SET name=?, config_json=?, is_pinned=? WHERE id=?",
+            (name, json.dumps(config), is_pinned, view_id),
+        )
+        db.commit()
+        return jsonify({"ok": True})
+    except Exception as exc:
+        return jsonify({"error": str(exc)}), 500
 
 
 @app.delete("/api/views/<int:view_id>")
 def delete_view(view_id: int):
     user, err = require_auth()
     if err: return err
-    db = get_db()
-    db.execute("DELETE FROM saved_views WHERE id=? AND org_id=?", (view_id, user["org_id"]))
-    db.commit()
-    return jsonify({"ok": True})
+    try:
+        db = get_db()
+        db.execute("DELETE FROM saved_views WHERE id=? AND org_id=?", (view_id, user["org_id"]))
+        db.commit()
+        return jsonify({"ok": True})
+    except Exception as exc:
+        return jsonify({"error": str(exc)}), 500
 
 
 # ── Deployment Events ─────────────────────────────────────────────────────────
@@ -4778,28 +4832,31 @@ def delete_view(view_id: int):
 def list_deployments():
     user, err = require_auth()
     if err: return err
-    db = get_db()
-    env_filter = request.args.get("environment", "")
-    app_filter = request.args.get("application", "")
-    since      = request.args.get("since", "")
-    limit      = min(int(request.args.get("limit", 50)), 200)
-    conditions = ["org_id=?"]
-    params: list = [user["org_id"]]
-    if env_filter and env_filter.upper() != "ALL":
-        conditions.append("environment_name=?")
-        params.append(env_filter)
-    if app_filter:
-        conditions.append("application_slug=?")
-        params.append(app_filter)
-    if since:
-        conditions.append("deployed_at>=?")
-        params.append(since)
-    where = " AND ".join(conditions)
-    rows = db.execute(
-        f"SELECT * FROM deployment_events WHERE {where} ORDER BY deployed_at DESC LIMIT ?",
-        (*params, limit),
-    ).fetchall()
-    return jsonify([dict(r) for r in rows])
+    try:
+        db = get_db()
+        env_filter = request.args.get("environment", "")
+        app_filter = request.args.get("application", "")
+        since      = request.args.get("since", "")
+        limit      = min(int(request.args.get("limit", 50)), 200)
+        conditions = ["org_id=?"]
+        params: list = [user["org_id"]]
+        if env_filter and env_filter.upper() != "ALL":
+            conditions.append("environment_name=?")
+            params.append(env_filter)
+        if app_filter:
+            conditions.append("application_slug=?")
+            params.append(app_filter)
+        if since:
+            conditions.append("deployed_at>=?")
+            params.append(since)
+        where = " AND ".join(conditions)
+        rows = db.execute(
+            f"SELECT * FROM deployment_events WHERE {where} ORDER BY deployed_at DESC LIMIT ?",
+            (*params, limit),
+        ).fetchall()
+        return jsonify([dict(r) for r in rows])
+    except Exception as exc:
+        return jsonify({"error": str(exc)}), 500
 
 
 @app.post("/api/deployments")
@@ -4816,29 +4873,35 @@ def create_deployment():
     deployed_by = sanitize_input(p.get("deployed_by", user.get("name", "")), 120)
     deployed_at = p.get("deployed_at", iso_now())
     now = iso_now()
-    db = get_db()
-    db.execute(
-        """INSERT INTO deployment_events
-           (org_id, user_id, application_slug, environment_name, version, description, deployed_by, deployed_at, created_at)
-           VALUES (?,?,?,?,?,?,?,?,?)""",
-        (user["org_id"], user["id"], app_slug, env, version, desc, deployed_by, deployed_at, now),
-    )
-    db.commit()
-    row = db.execute(
-        "SELECT * FROM deployment_events WHERE org_id=? ORDER BY id DESC LIMIT 1", (user["org_id"],)
-    ).fetchone()
-    audit(user["org_id"], user["id"], "create_deployment", "deployment", version, {"env": env, "app": app_slug})
-    return jsonify(dict(row)), 201
+    try:
+        db = get_db()
+        db.execute(
+            """INSERT INTO deployment_events
+               (org_id, user_id, application_slug, environment_name, version, description, deployed_by, deployed_at, created_at)
+               VALUES (?,?,?,?,?,?,?,?,?)""",
+            (user["org_id"], user["id"], app_slug, env, version, desc, deployed_by, deployed_at, now),
+        )
+        db.commit()
+        row = db.execute(
+            "SELECT * FROM deployment_events WHERE org_id=? ORDER BY id DESC LIMIT 1", (user["org_id"],)
+        ).fetchone()
+        audit(user["org_id"], user["id"], "create_deployment", "deployment", version, {"env": env, "app": app_slug})
+        return jsonify(dict(row)), 201
+    except Exception as exc:
+        return jsonify({"error": str(exc)}), 500
 
 
 @app.delete("/api/deployments/<int:dep_id>")
 def delete_deployment(dep_id: int):
     user, err = require_role("manager")
     if err: return err
-    db = get_db()
-    db.execute("DELETE FROM deployment_events WHERE id=? AND org_id=?", (dep_id, user["org_id"]))
-    db.commit()
-    return jsonify({"ok": True})
+    try:
+        db = get_db()
+        db.execute("DELETE FROM deployment_events WHERE id=? AND org_id=?", (dep_id, user["org_id"]))
+        db.commit()
+        return jsonify({"ok": True})
+    except Exception as exc:
+        return jsonify({"error": str(exc)}), 500
 
 
 # ── Usage Metering ────────────────────────────────────────────────────────────
@@ -4847,31 +4910,31 @@ def delete_deployment(dep_id: int):
 def get_usage():
     user, err = require_role("manager")
     if err: return err
-    db = get_db()
-    since = request.args.get("since", (datetime.now(timezone.utc) - timedelta(days=30)).strftime("%Y-%m-%dT%H:%M:%S"))
-    # Aggregate by event_type
-    rows = db.execute(
-        """SELECT event_type, SUM(quantity) AS total, COUNT(*) AS events,
-                  MIN(recorded_at) AS first_at, MAX(recorded_at) AS last_at
-           FROM usage_events WHERE org_id=? AND recorded_at>=?
-           GROUP BY event_type ORDER BY total DESC""",
-        (user["org_id"], since),
-    ).fetchall()
-    # Current log count
-    log_count = db.execute(
-        "SELECT COUNT(*) FROM log_events WHERE org_id=?", (user["org_id"],)
-    ).fetchone()[0]
-    # API key usage summary
-    keys = db.execute(
-        "SELECT id, name, prefix, last_used_at FROM api_keys WHERE org_id=? AND status='active'",
-        (user["org_id"],),
-    ).fetchall()
-    return jsonify({
-        "summary": [dict(r) for r in rows],
-        "current_log_count": log_count,
-        "api_keys": [dict(k) for k in keys],
-        "since": since,
-    })
+    try:
+        db = get_db()
+        since = request.args.get("since", (datetime.now(timezone.utc) - timedelta(days=30)).strftime("%Y-%m-%dT%H:%M:%S"))
+        rows = db.execute(
+            """SELECT event_type, SUM(quantity) AS total, COUNT(*) AS events,
+                      MIN(recorded_at) AS first_at, MAX(recorded_at) AS last_at
+               FROM usage_events WHERE org_id=? AND recorded_at>=?
+               GROUP BY event_type ORDER BY total DESC""",
+            (user["org_id"], since),
+        ).fetchall()
+        log_count = db.execute(
+            "SELECT COUNT(*) FROM log_events WHERE org_id=?", (user["org_id"],)
+        ).fetchone()[0]
+        keys = db.execute(
+            "SELECT id, name, prefix, last_used_at FROM api_keys WHERE org_id=? AND status='active'",
+            (user["org_id"],),
+        ).fetchall()
+        return jsonify({
+            "summary": [dict(r) for r in rows],
+            "current_log_count": log_count,
+            "api_keys": [dict(k) for k in keys],
+            "since": since,
+        })
+    except Exception as exc:
+        return jsonify({"error": str(exc)}), 500
 
 
 # ── On-Call Schedules ─────────────────────────────────────────────────────────
@@ -4880,27 +4943,30 @@ def get_usage():
 def list_on_call():
     user, err = require_auth()
     if err: return err
-    db = get_db()
-    rows = db.execute(
-        """SELECT oc.*, u.name AS user_name, u.email AS user_email
-           FROM on_call_schedules oc
-           JOIN users u ON u.id = oc.user_id
-           WHERE oc.org_id=? ORDER BY oc.start_at DESC LIMIT 50""",
-        (user["org_id"],),
-    ).fetchall()
-    now = iso_now()
-    current = db.execute(
-        """SELECT oc.*, u.name AS user_name, u.email AS user_email
-           FROM on_call_schedules oc
-           JOIN users u ON u.id = oc.user_id
-           WHERE oc.org_id=? AND oc.start_at<=? AND oc.end_at>=?
-           ORDER BY oc.start_at DESC LIMIT 1""",
-        (user["org_id"], now, now),
-    ).fetchone()
-    return jsonify({
-        "schedules": [dict(r) for r in rows],
-        "current_on_call": dict(current) if current else None,
-    })
+    try:
+        db = get_db()
+        rows = db.execute(
+            """SELECT oc.*, u.name AS user_name, u.email AS user_email
+               FROM on_call_schedules oc
+               JOIN users u ON u.id = oc.user_id
+               WHERE oc.org_id=? ORDER BY oc.start_at DESC LIMIT 50""",
+            (user["org_id"],),
+        ).fetchall()
+        now = iso_now()
+        current = db.execute(
+            """SELECT oc.*, u.name AS user_name, u.email AS user_email
+               FROM on_call_schedules oc
+               JOIN users u ON u.id = oc.user_id
+               WHERE oc.org_id=? AND oc.start_at<=? AND oc.end_at>=?
+               ORDER BY oc.start_at DESC LIMIT 1""",
+            (user["org_id"], now, now),
+        ).fetchone()
+        return jsonify({
+            "schedules": [dict(r) for r in rows],
+            "current_on_call": dict(current) if current else None,
+        })
+    except Exception as exc:
+        return jsonify({"error": str(exc)}), 500
 
 
 @app.post("/api/on-call")
@@ -4915,28 +4981,33 @@ def create_on_call():
     end_at   = p.get("end_at", "")
     if not all([user_id, name, start_at, end_at]):
         return jsonify({"error": "user_id, name, start_at, end_at are required"}), 400
-    db = get_db()
-    # Verify user belongs to org
-    u_row = db.execute("SELECT id FROM users WHERE id=? AND org_id=?", (user_id, user["org_id"])).fetchone()
-    if not u_row:
-        return jsonify({"error": "User not found in this organisation"}), 404
-    now = iso_now()
-    db.execute(
-        "INSERT INTO on_call_schedules (org_id, name, user_id, contact, start_at, end_at, created_at) VALUES (?,?,?,?,?,?,?)",
-        (user["org_id"], name, user_id, contact, start_at, end_at, now),
-    )
-    db.commit()
-    return jsonify({"ok": True}), 201
+    try:
+        db = get_db()
+        u_row = db.execute("SELECT id FROM users WHERE id=? AND org_id=?", (user_id, user["org_id"])).fetchone()
+        if not u_row:
+            return jsonify({"error": "User not found in this organisation"}), 404
+        now = iso_now()
+        db.execute(
+            "INSERT INTO on_call_schedules (org_id, name, user_id, contact, start_at, end_at, created_at) VALUES (?,?,?,?,?,?,?)",
+            (user["org_id"], name, user_id, contact, start_at, end_at, now),
+        )
+        db.commit()
+        return jsonify({"ok": True}), 201
+    except Exception as exc:
+        return jsonify({"error": str(exc)}), 500
 
 
 @app.delete("/api/on-call/<int:oc_id>")
 def delete_on_call(oc_id: int):
     user, err = require_role("manager")
     if err: return err
-    db = get_db()
-    db.execute("DELETE FROM on_call_schedules WHERE id=? AND org_id=?", (oc_id, user["org_id"]))
-    db.commit()
-    return jsonify({"ok": True})
+    try:
+        db = get_db()
+        db.execute("DELETE FROM on_call_schedules WHERE id=? AND org_id=?", (oc_id, user["org_id"]))
+        db.commit()
+        return jsonify({"ok": True})
+    except Exception as exc:
+        return jsonify({"error": str(exc)}), 500
 
 
 # ── Sampling Rules ────────────────────────────────────────────────────────────
@@ -4945,11 +5016,14 @@ def delete_on_call(oc_id: int):
 def list_sampling_rules():
     user, err = require_auth()
     if err: return err
-    db = get_db()
-    rows = db.execute(
-        "SELECT * FROM sampling_rules WHERE org_id=? ORDER BY id DESC", (user["org_id"],)
-    ).fetchall()
-    return jsonify([dict(r) for r in rows])
+    try:
+        db = get_db()
+        rows = db.execute(
+            "SELECT * FROM sampling_rules WHERE org_id=? ORDER BY id DESC", (user["org_id"],)
+        ).fetchall()
+        return jsonify([dict(r) for r in rows])
+    except Exception as exc:
+        return jsonify({"error": str(exc)}), 500
 
 
 @app.post("/api/sampling-rules")
@@ -4965,23 +5039,29 @@ def create_sampling_rule():
     rate = int(p.get("sample_rate", 100))
     rate = max(1, min(rate, 10000))
     now = iso_now()
-    db = get_db()
-    db.execute(
-        "INSERT INTO sampling_rules (org_id, source_pattern, environment_name, level, sample_rate, created_at) VALUES (?,?,?,?,?,?)",
-        (user["org_id"], source_pat, env_name, level, rate, now),
-    )
-    db.commit()
-    return jsonify({"ok": True}), 201
+    try:
+        db = get_db()
+        db.execute(
+            "INSERT INTO sampling_rules (org_id, source_pattern, environment_name, level, sample_rate, created_at) VALUES (?,?,?,?,?,?)",
+            (user["org_id"], source_pat, env_name, level, rate, now),
+        )
+        db.commit()
+        return jsonify({"ok": True}), 201
+    except Exception as exc:
+        return jsonify({"error": str(exc)}), 500
 
 
 @app.delete("/api/sampling-rules/<int:rule_id>")
 def delete_sampling_rule(rule_id: int):
     user, err = require_role("admin")
     if err: return err
-    db = get_db()
-    db.execute("DELETE FROM sampling_rules WHERE id=? AND org_id=?", (rule_id, user["org_id"]))
-    db.commit()
-    return jsonify({"ok": True})
+    try:
+        db = get_db()
+        db.execute("DELETE FROM sampling_rules WHERE id=? AND org_id=?", (rule_id, user["org_id"]))
+        db.commit()
+        return jsonify({"ok": True})
+    except Exception as exc:
+        return jsonify({"error": str(exc)}), 500
 
 
 # ── Environment Permissions ───────────────────────────────────────────────────
@@ -4990,12 +5070,15 @@ def delete_sampling_rule(rule_id: int):
 def list_env_permissions():
     user, err = require_role("manager")
     if err: return err
-    db = get_db()
-    rows = db.execute(
-        "SELECT * FROM environment_permissions WHERE org_id=? ORDER BY environment_name",
-        (user["org_id"],),
-    ).fetchall()
-    return jsonify([dict(r) for r in rows])
+    try:
+        db = get_db()
+        rows = db.execute(
+            "SELECT * FROM environment_permissions WHERE org_id=? ORDER BY environment_name",
+            (user["org_id"],),
+        ).fetchall()
+        return jsonify([dict(r) for r in rows])
+    except Exception as exc:
+        return jsonify({"error": str(exc)}), 500
 
 
 @app.put("/api/environment-permissions")
@@ -5011,18 +5094,21 @@ def upsert_env_permission():
     if min_role not in VALID_ROLES:
         return jsonify({"error": f"min_role must be one of {sorted(VALID_ROLES)}"}), 400
     now = iso_now()
-    db = get_db()
-    db.execute(
-        """INSERT INTO environment_permissions (org_id, environment_name, min_role, can_delete, created_at)
-           VALUES (?,?,?,?,?)
-           ON CONFLICT(org_id, environment_name) DO UPDATE
-           SET min_role=excluded.min_role, can_delete=excluded.can_delete""",
-        (user["org_id"], env_name, min_role, can_delete, now),
-    )
-    db.commit()
-    audit(user["org_id"], user["id"], "set_env_permission", "environment", env_name,
-          {"min_role": min_role, "can_delete": bool(can_delete)})
-    return jsonify({"ok": True})
+    try:
+        db = get_db()
+        db.execute(
+            """INSERT INTO environment_permissions (org_id, environment_name, min_role, can_delete, created_at)
+               VALUES (?,?,?,?,?)
+               ON CONFLICT(org_id, environment_name) DO UPDATE
+               SET min_role=excluded.min_role, can_delete=excluded.can_delete""",
+            (user["org_id"], env_name, min_role, can_delete, now),
+        )
+        db.commit()
+        audit(user["org_id"], user["id"], "set_env_permission", "environment", env_name,
+              {"min_role": min_role, "can_delete": bool(can_delete)})
+        return jsonify({"ok": True})
+    except Exception as exc:
+        return jsonify({"error": str(exc)}), 500
 
 
 # ── Environment Retention Tiers ───────────────────────────────────────────────
@@ -5040,14 +5126,17 @@ def set_env_retention(env_id: int):
                 raise ValueError
         except (ValueError, TypeError):
             return jsonify({"error": "retention_days must be 1–3650"}), 400
-    db = get_db()
-    row = db.execute("SELECT * FROM environments WHERE id=? AND org_id=?", (env_id, user["org_id"])).fetchone()
-    if not row:
-        return jsonify({"error": "Environment not found"}), 404
-    db.execute("UPDATE environments SET retention_days=? WHERE id=?", (days, env_id))
-    db.commit()
-    audit(user["org_id"], user["id"], "set_env_retention", "environment", str(env_id), {"retention_days": days})
-    return jsonify({"ok": True, "retention_days": days})
+    try:
+        db = get_db()
+        row = db.execute("SELECT * FROM environments WHERE id=? AND org_id=?", (env_id, user["org_id"])).fetchone()
+        if not row:
+            return jsonify({"error": "Environment not found"}), 404
+        db.execute("UPDATE environments SET retention_days=? WHERE id=?", (days, env_id))
+        db.commit()
+        audit(user["org_id"], user["id"], "set_env_retention", "environment", str(env_id), {"retention_days": days})
+        return jsonify({"ok": True, "retention_days": days})
+    except Exception as exc:
+        return jsonify({"error": str(exc)}), 500
 
 
 # ── API Key Rate Limit Management ─────────────────────────────────────────────
@@ -5063,16 +5152,18 @@ def set_key_rate_limit(key_id: int):
             raise ValueError
     except (ValueError, TypeError):
         return jsonify({"error": "rate_limit_per_min must be a non-negative integer"}), 400
-    db = get_db()
-    row = db.execute("SELECT * FROM api_keys WHERE id=? AND org_id=?", (key_id, user["org_id"])).fetchone()
-    if not row:
-        return jsonify({"error": "API key not found"}), 404
-    db.execute("UPDATE api_keys SET rate_limit_per_min=? WHERE id=?", (limit, key_id))
-    db.commit()
-    # Invalidate cache so new limit is picked up immediately
-    _invalidate_cached_key(row["prefix"])
-    audit(user["org_id"], user["id"], "set_key_rate_limit", "api_key", str(key_id), {"rate_limit_per_min": limit})
-    return jsonify({"ok": True, "rate_limit_per_min": limit})
+    try:
+        db = get_db()
+        row = db.execute("SELECT * FROM api_keys WHERE id=? AND org_id=?", (key_id, user["org_id"])).fetchone()
+        if not row:
+            return jsonify({"error": "API key not found"}), 404
+        db.execute("UPDATE api_keys SET rate_limit_per_min=? WHERE id=?", (limit, key_id))
+        db.commit()
+        _invalidate_cached_key(row["prefix"])
+        audit(user["org_id"], user["id"], "set_key_rate_limit", "api_key", str(key_id), {"rate_limit_per_min": limit})
+        return jsonify({"ok": True, "rate_limit_per_min": limit})
+    except Exception as exc:
+        return jsonify({"error": str(exc)}), 500
 
 
 # ── Timeseries with deployment markers ───────────────────────────────────────
@@ -5083,25 +5174,28 @@ def deployments_for_timeseries():
     """Return deployment markers in the same time window as the log timeseries chart."""
     user, err = require_auth()
     if err: return err
-    db = get_db()
-    since = request.args.get("since", (datetime.now(timezone.utc) - timedelta(hours=24)).strftime("%Y-%m-%dT%H:%M:%S"))
-    until = request.args.get("until", iso_now())
-    env   = request.args.get("environment", "")
-    app_sl = request.args.get("application", "")
-    conditions = ["org_id=?", "deployed_at>=?", "deployed_at<=?"]
-    params: list = [user["org_id"], since, until]
-    if env and env.upper() != "ALL":
-        conditions.append("environment_name=?")
-        params.append(env)
-    if app_sl:
-        conditions.append("application_slug=?")
-        params.append(app_sl)
-    where = " AND ".join(conditions)
-    rows = db.execute(
-        f"SELECT id, application_slug, environment_name, version, description, deployed_by, deployed_at FROM deployment_events WHERE {where} ORDER BY deployed_at ASC",
-        params,
-    ).fetchall()
-    return jsonify([dict(r) for r in rows])
+    try:
+        db = get_db()
+        since = request.args.get("since", (datetime.now(timezone.utc) - timedelta(hours=24)).strftime("%Y-%m-%dT%H:%M:%S"))
+        until = request.args.get("until", iso_now())
+        env   = request.args.get("environment", "")
+        app_sl = request.args.get("application", "")
+        conditions = ["org_id=?", "deployed_at>=?", "deployed_at<=?"]
+        params: list = [user["org_id"], since, until]
+        if env and env.upper() != "ALL":
+            conditions.append("environment_name=?")
+            params.append(env)
+        if app_sl:
+            conditions.append("application_slug=?")
+            params.append(app_sl)
+        where = " AND ".join(conditions)
+        rows = db.execute(
+            f"SELECT id, application_slug, environment_name, version, description, deployed_by, deployed_at FROM deployment_events WHERE {where} ORDER BY deployed_at ASC",
+            params,
+        ).fetchall()
+        return jsonify([dict(r) for r in rows])
+    except Exception as exc:
+        return jsonify({"error": str(exc)}), 500
 
 # ─────────────────────────── Startup ─────────────────────────────────────────
 
