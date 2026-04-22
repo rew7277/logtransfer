@@ -1,71 +1,297 @@
 <!DOCTYPE html>
-<html lang="en"><head>
+<html lang="en">
+<head>
 <link rel="icon" type="image/svg+xml" href="/static/images/favicon.svg">
-<meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Sign in · ObserveX</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Syne:wght@600;700;800&display=swap" rel="stylesheet"/>
 <style>
-*{box-sizing:border-box}body{margin:0;min-height:100vh;font-family:Inter,Arial,sans-serif;background:radial-gradient(circle at top,#f8fbff 0%,#eef2f7 52%,#e8edf5 100%);display:flex;align-items:center;justify-content:center;padding:24px;color:#0f172a}
-.shell{width:100%;max-width:980px;display:grid;grid-template-columns:1.05fr .95fr;border-radius:28px;overflow:hidden;background:#fff;box-shadow:0 24px 80px rgba(15,23,42,.12),0 8px 24px rgba(15,23,42,.06);border:1px solid rgba(148,163,184,.18)}
-.hero{position:relative;padding:44px;background:linear-gradient(145deg,#071226 0%,#0f172a 48%,#13284d 100%);color:#e5eefc;display:flex;flex-direction:column;justify-content:space-between;overflow:hidden}
-.hero:before{content:"";position:absolute;inset:0;background:linear-gradient(rgba(255,255,255,.05) 1px, transparent 1px),linear-gradient(90deg, rgba(255,255,255,.05) 1px, transparent 1px);background-size:34px 34px;opacity:.30}
+:root{
+  --bg:#020617;
+  --panel:rgba(8,15,34,.72);
+  --panel-soft:rgba(255,255,255,.06);
+  --panel-border:rgba(255,255,255,.1);
+  --text:#e5eefc;
+  --muted:#9fb0ca;
+  --input-bg:rgba(255,255,255,.06);
+  --input-border:rgba(148,163,184,.22);
+  --accent:#22d3ee;
+  --accent-2:#8b5cf6;
+  --success:#22c55e;
+  --danger:#fb7185;
+  --shadow:0 30px 80px rgba(0,0,0,.42);
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0;min-height:100vh;font-family:Inter,Arial,sans-serif;color:var(--text);
+  background:
+    radial-gradient(circle at top left, rgba(34,211,238,.16), transparent 22%),
+    radial-gradient(circle at top right, rgba(139,92,246,.18), transparent 26%),
+    radial-gradient(circle at bottom center, rgba(16,185,129,.09), transparent 22%),
+    linear-gradient(180deg,#020617 0%,#0b1120 52%,#020617 100%);
+  display:flex;align-items:center;justify-content:center;padding:28px;overflow:hidden;
+}
+body:before{
+  content:"";position:fixed;inset:0;pointer-events:none;opacity:.08;
+  background-image:linear-gradient(rgba(255,255,255,.13) 1px, transparent 1px),linear-gradient(90deg, rgba(255,255,255,.13) 1px, transparent 1px);
+  background-size:36px 36px;
+}
+body:after{
+  content:"";position:fixed;inset:auto -140px -140px auto;width:320px;height:320px;border-radius:50%;
+  background:radial-gradient(circle, rgba(34,211,238,.18), transparent 60%);filter:blur(12px);pointer-events:none;
+}
+.shell{
+  position:relative;width:100%;max-width:1220px;display:grid;grid-template-columns:1.08fr .92fr;gap:18px;z-index:1;
+}
+.glass{
+  background:var(--panel);border:1px solid var(--panel-border);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);
+  box-shadow:var(--shadow);border-radius:32px;overflow:hidden;
+}
+.hero{
+  position:relative;padding:42px 42px 34px;min-height:780px;display:flex;flex-direction:column;justify-content:space-between;
+  background:
+    radial-gradient(circle at top right, rgba(34,211,238,.18), transparent 26%),
+    radial-gradient(circle at top left, rgba(139,92,246,.18), transparent 24%),
+    linear-gradient(145deg, rgba(4,11,29,.95) 0%, rgba(9,20,41,.92) 52%, rgba(18,39,76,.92) 100%);
+}
+.hero:before{
+  content:"";position:absolute;inset:0;opacity:.22;
+  background-image:linear-gradient(rgba(255,255,255,.09) 1px, transparent 1px),linear-gradient(90deg, rgba(255,255,255,.09) 1px, transparent 1px);
+  background-size:34px 34px;
+}
+.hero:after{
+  content:"";position:absolute;right:-100px;top:-100px;width:260px;height:260px;border-radius:50%;
+  background:radial-gradient(circle, rgba(34,211,238,.24), transparent 64%);filter:blur(14px);
+}
 .hero > *{position:relative;z-index:1}
-.hero img{height:44px;width:auto;display:block;margin-bottom:26px}
-.hero h1{margin:0 0 14px;font:800 40px/1.02 Syne,Inter,sans-serif;letter-spacing:-1.2px;max-width:360px}
-.hero p{margin:0;color:#b8c6dd;line-height:1.7;max-width:400px}
-.points{display:grid;gap:12px;margin-top:28px}
-.point{display:flex;gap:10px;font-size:14px;color:#d7e3f7;align-items:flex-start}
-.dot{width:10px;height:10px;border-radius:999px;background:linear-gradient(135deg,#8b5cf6,#22d3ee);margin-top:6px;flex:0 0 10px}
-.foot{font-size:13px;color:#9fb0ca}
-.card{padding:42px 40px 34px;display:flex;flex-direction:column;justify-content:center}
-.logo{display:flex;justify-content:center;margin-bottom:18px} .logo img{height:44px;width:auto}
-h2{margin:0 0 8px;font:800 30px/1.1 Syne,Inter,sans-serif;text-align:center;letter-spacing:-.6px}
-.sub{margin:0 0 28px;text-align:center;color:#64748b;font-size:14px}
-.field{margin-bottom:16px}
-label{display:block;font-size:12px;font-weight:700;color:#334155;margin-bottom:6px}
-input{width:100%;padding:12px 14px;background:#f8fafc;border:1px solid #d7deea;border-radius:12px;font:14px Inter,Arial,sans-serif;color:#0f172a;outline:none;transition:border-color .15s,box-shadow .15s,background .15s}
-input:focus{border-color:#2563eb;box-shadow:0 0 0 4px rgba(37,99,235,.12);background:#fff}
-input::placeholder{color:#94a3b8}
-.pw-wrap{position:relative} .pw-wrap input{padding-right:42px}
-.pw-toggle{position:absolute;right:12px;top:50%;transform:translateY(-50%);border:0;background:none;color:#94a3b8;cursor:pointer}
-.forgot-row{text-align:right;margin-top:-6px;margin-bottom:16px} .forgot-row a{color:#2563eb;text-decoration:none;font-weight:700}
-.forgot-row a:hover,.link-row a:hover{text-decoration:underline}
-.btn{width:100%;padding:13px 16px;margin-top:6px;border:0;border-radius:12px;background:linear-gradient(135deg,#2563eb,#3b82f6);color:#fff;font:800 14px Inter,Arial,sans-serif;cursor:pointer;transition:all .15s}
-.btn:hover{transform:translateY(-1px);box-shadow:0 12px 24px rgba(37,99,235,.24);background:linear-gradient(135deg,#1d4ed8,#2563eb)}
-.msg{display:none;padding:12px 14px;border-radius:12px;font-size:12px;font-weight:700;margin-bottom:16px}
-.msg.error{display:block;background:#fff1f2;border:1px solid #fecdd3;color:#be123c}
-.msg.success{display:block;background:#f0fdf4;border:1px solid #bbf7d0;color:#15803d}
-.link-row{margin-top:18px;text-align:center;font-size:13px;color:#64748b} .link-row a{color:#2563eb;text-decoration:none;font-weight:700}
-@media(max-width:900px){.shell{grid-template-columns:1fr}.hero{display:none}.card{padding:34px 24px 28px}}
-</style></head><body>
+.brand-row{display:flex;align-items:center;justify-content:space-between;gap:14px}
+.brand-row img{height:46px;width:auto;display:block}
+.live-chip{
+  display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border-radius:999px;
+  background:rgba(34,211,238,.1);border:1px solid rgba(34,211,238,.18);font-size:12px;color:#c7f5ff;font-weight:700;
+}
+.live-dot{width:8px;height:8px;border-radius:50%;background:#67e8f9;box-shadow:0 0 0 0 rgba(103,232,249,.6);animation:pulse 2s infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(103,232,249,.6)}70%{box-shadow:0 0 0 10px rgba(103,232,249,0)}100%{box-shadow:0 0 0 0 rgba(103,232,249,0)}}
+.hero-copy{max-width:540px}
+.eyebrow{display:inline-flex;align-items:center;gap:10px;padding:8px 12px;border-radius:999px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.05);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:#c8d5ea;font-weight:700}
+.hero h1{margin:18px 0 16px;font:800 62px/.95 Syne,Inter,sans-serif;letter-spacing:-2px;max-width:560px}
+.hero p{margin:0;color:#b9c8df;line-height:1.75;font-size:16px;max-width:470px}
+.feature-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:28px}
+.feature-card{padding:18px;border-radius:24px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09);transition:transform .22s ease,background .22s ease,border-color .22s ease}
+.feature-card:hover{transform:translateY(-3px);background:rgba(255,255,255,.08);border-color:rgba(34,211,238,.22)}
+.feature-kicker{font-size:11px;text-transform:uppercase;letter-spacing:.16em;color:#8fdfff;font-weight:700;margin-bottom:10px}
+.feature-card strong{display:block;font-size:16px;margin-bottom:8px}
+.feature-card span{display:block;font-size:13px;line-height:1.65;color:#afc0d8}
+.metric-row{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:24px}
+.metric-card{padding:18px;border-radius:24px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09)}
+.metric-card .value{font-size:29px;font-weight:800;letter-spacing:-1px}
+.metric-card .label{margin-top:6px;font-size:12px;color:#9fb0ca;text-transform:uppercase;letter-spacing:.14em}
+.hero-footer{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-top:28px;color:#97aac6;font-size:13px}
+.footer-badges{display:flex;gap:10px;flex-wrap:wrap}
+.footer-badges span{padding:8px 12px;border-radius:999px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.05)}
+.card{padding:34px;display:flex;align-items:center;justify-content:center;min-height:780px}
+.card-inner{width:100%;max-width:470px;animation:slideUp .7s ease}
+.card-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:28px}
+.card-logo{display:flex;align-items:center;gap:12px}
+.card-logo img{height:42px;width:auto}
+.card-logo span{font-weight:700;color:#dbeafe}
+.card-badge{padding:8px 12px;border-radius:999px;border:1px solid rgba(139,92,246,.2);background:rgba(139,92,246,.1);font-size:12px;color:#dfcbff;font-weight:700}
+.card h2{margin:0;font:800 38px/1 Syne,Inter,sans-serif;letter-spacing:-1px}
+.sub{margin:12px 0 0;color:var(--muted);font-size:14px;line-height:1.7}
+.msg{display:none;padding:14px 16px;border-radius:16px;font-size:12px;font-weight:700;margin:22px 0 0}
+.msg.error{display:block;background:rgba(244,63,94,.12);border:1px solid rgba(251,113,133,.22);color:#fecdd3}
+.msg.success{display:block;background:rgba(34,197,94,.12);border:1px solid rgba(74,222,128,.22);color:#bbf7d0}
+.form-shell{margin-top:26px;padding:24px;border-radius:28px;background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.08)}
+.field{margin-bottom:18px}
+label{display:block;font-size:12px;font-weight:700;color:#d1def3;margin-bottom:8px;letter-spacing:.04em}
+.input-wrap{position:relative}
+input{
+  width:100%;padding:15px 16px;background:var(--input-bg);border:1px solid var(--input-border);border-radius:18px;
+  font:14px Inter,Arial,sans-serif;color:#f8fbff;outline:none;transition:border-color .18s,box-shadow .18s,background .18s,transform .18s;
+}
+input:focus{border-color:rgba(34,211,238,.5);box-shadow:0 0 0 5px rgba(34,211,238,.11);background:rgba(255,255,255,.08);transform:translateY(-1px)}
+input::placeholder{color:#7e91ad}
+.pw-wrap{position:relative}
+.pw-wrap input{padding-right:54px}
+.pw-toggle{
+  position:absolute;right:12px;top:50%;transform:translateY(-50%);width:34px;height:34px;border-radius:12px;border:1px solid rgba(255,255,255,.08);
+  background:rgba(255,255,255,.05);color:#9fb0ca;cursor:pointer;transition:.18s;display:grid;place-items:center;font-size:15px
+}
+.pw-toggle:hover{color:#fff;background:rgba(255,255,255,.08)}
+.inline-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:-4px 0 18px}
+.checkbox-line{display:flex;align-items:center;gap:10px;font-size:13px;color:#9fb0ca}
+.checkbox-line input{width:auto;accent-color:#22d3ee}
+.inline-row a,.link-row a,.help-links a{color:#7dd3fc;text-decoration:none;font-weight:700}
+.inline-row a:hover,.link-row a:hover,.help-links a:hover{text-decoration:underline}
+.btn{
+  width:100%;padding:15px 18px;margin-top:8px;border:0;border-radius:18px;
+  background:linear-gradient(135deg,#22d3ee 0%,#38bdf8 32%,#6366f1 100%);color:#05111f;font:800 14px Inter,Arial,sans-serif;cursor:pointer;
+  transition:transform .18s,box-shadow .18s,filter .18s;box-shadow:0 16px 34px rgba(34,211,238,.2)
+}
+.btn:hover{transform:translateY(-2px);filter:saturate(1.06);box-shadow:0 20px 40px rgba(34,211,238,.26)}
+.btn:disabled{opacity:.72;cursor:not-allowed;transform:none}
+.divider{display:flex;align-items:center;gap:12px;margin:18px 0;color:#7890af;font-size:11px;text-transform:uppercase;letter-spacing:.16em}
+.divider:before,.divider:after{content:"";flex:1;height:1px;background:rgba(255,255,255,.08)}
+.alt-actions{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.alt-btn{padding:13px 14px;border-radius:16px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.04);color:#d7e3f7;font-weight:700;font-size:13px;text-align:center;text-decoration:none;transition:.18s}
+.alt-btn:hover{background:rgba(255,255,255,.08);transform:translateY(-1px)}
+.help-links{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:18px;font-size:12px;color:#8ea3c0}
+.link-row{margin-top:22px;text-align:center;font-size:13px;color:#8ea3c0}
+@keyframes slideUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+@media(max-width:1100px){
+  .shell{grid-template-columns:1fr}
+  .hero,.card{min-height:auto}
+  .hero{padding:34px}
+  .card{padding:24px}
+}
+@media(max-width:760px){
+  body{padding:16px}
+  .hero{display:none}
+  .card{padding:20px}
+  .card-inner{max-width:none}
+  .card h2{font-size:32px}
+  .form-shell{padding:18px}
+  .alt-actions{grid-template-columns:1fr}
+  .help-links{flex-direction:column;align-items:flex-start}
+}
+</style>
+</head>
+<body>
 <div class="shell">
-<aside class="hero">
-<div>
-<img src="/static/images/logo-dark.svg" alt="ObserveX">
-<h1>Welcome back to ObserveX</h1>
-<p>Sign in to investigate logs faster, trace failures across services, and turn noisy events into clear actions.</p>
-<div class="points">
-<div class="point"><span class="dot"></span><span>Search logs and event IDs instantly</span></div>
-<div class="point"><span class="dot"></span><span>Follow request traces across services</span></div>
-<div class="point"><span class="dot"></span><span>Use AI to explain issues in plain English</span></div>
-</div></div><div class="foot">AI observability for modern teams</div></aside>
-<main class="card">
-<div class="logo"><img src="/static/images/logo-primary.svg" alt="ObserveX"></div>
-<h2>Welcome back</h2><p class="sub">Sign in to your ObserveX workspace</p>
-<div class="msg" id="msg"></div>
-<div class="field"><label for="email">Email</label><input type="email" id="email" placeholder="you@company.com" autocomplete="email" required></div>
-<div class="field"><label for="pw">Password</label><div class="pw-wrap"><input type="password" id="pw" placeholder="Your password" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"><button class="pw-toggle" type="button" onclick="togglePw()" title="Show/hide password">👁</button></div></div>
-<div class="forgot-row"><a href="/forgot-password">Forgot password?</a></div>
-<button class="btn" id="submitBtn" onclick="doLogin()">Sign in</button>
-<div class="link-row">Don&apos;t have a workspace? <a href="/create-account">Create one free</a></div>
-</main></div>
+  <aside class="hero glass">
+    <div>
+      <div class="brand-row">
+        <img src="/static/images/logo-dark.svg" alt="ObserveX">
+        <div class="live-chip"><span class="live-dot"></span> Live incident intelligence</div>
+      </div>
+
+      <div class="hero-copy">
+        <div class="eyebrow">advanced observability platform</div>
+        <h1>Welcome back to the control room.</h1>
+        <p>
+          Sign in to investigate traces, follow request hops across services, monitor environment health,
+          and review masked logs with a cleaner premium operator experience.
+        </p>
+
+        <div class="feature-grid">
+          <div class="feature-card">
+            <div class="feature-kicker">Trace Explorer</div>
+            <strong>Follow request paths instantly</strong>
+            <span>Jump from edge gateway to system APIs, cache layers, and downstream dependencies with full context.</span>
+          </div>
+          <div class="feature-card">
+            <div class="feature-kicker">Sensitive Data Shield</div>
+            <strong>Mask risky values automatically</strong>
+            <span>Keep account numbers, headers, tokens, and user identifiers protected without losing debugging clarity.</span>
+          </div>
+          <div class="feature-card">
+            <div class="feature-kicker">Environment Lens</div>
+            <strong>Switch between PROD, UAT, DEV, and DR</strong>
+            <span>Compare health, alert volume, latency, and deployment behavior by environment from one surface.</span>
+          </div>
+          <div class="feature-card">
+            <div class="feature-kicker">AI RCA</div>
+            <strong>Turn noisy events into actions</strong>
+            <span>Let AI summarize likely causes, failure clusters, retry storms, and risky traffic patterns in plain English.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="metric-row">
+        <div class="metric-card">
+          <div class="value">48.2M</div>
+          <div class="label">Logs Ingested</div>
+        </div>
+        <div class="metric-card">
+          <div class="value">98.7%</div>
+          <div class="label">Masking Coverage</div>
+        </div>
+        <div class="metric-card">
+          <div class="value">286ms</div>
+          <div class="label">Trace Latency</div>
+        </div>
+      </div>
+      <div class="hero-footer">
+        <span>Built for API teams, observability engineers, and modern platform ops.</span>
+        <div class="footer-badges">
+          <span>AI Insights</span>
+          <span>Trace Linked</span>
+          <span>Enterprise Ready</span>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <main class="card glass">
+    <div class="card-inner">
+      <div class="card-head">
+        <div class="card-logo">
+          <img src="/static/images/logo-primary.svg" alt="ObserveX">
+          <span>ObserveX Prime</span>
+        </div>
+        <div class="card-badge">Secure sign in</div>
+      </div>
+
+      <h2>Welcome back</h2>
+      <p class="sub">Sign in to your workspace and continue investigating logs, traces, alerts, and environment health.</p>
+
+      <div class="msg" id="msg"></div>
+
+      <div class="form-shell">
+        <div class="field">
+          <label for="email">Work email</label>
+          <div class="input-wrap">
+            <input type="email" id="email" placeholder="you@company.com" autocomplete="email" required>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="pw">Password</label>
+          <div class="pw-wrap">
+            <input type="password" id="pw" placeholder="Enter your password" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+            <button class="pw-toggle" id="togglePwBtn" type="button" onclick="togglePw()" title="Show or hide password">👁</button>
+          </div>
+        </div>
+
+        <div class="inline-row">
+          <label class="checkbox-line"><input type="checkbox" id="rememberMe"> Keep me signed in</label>
+          <a href="/forgot-password">Forgot password?</a>
+        </div>
+
+        <button class="btn" id="submitBtn" onclick="doLogin()">Sign in to workspace</button>
+
+        <div class="divider">or continue</div>
+        <div class="alt-actions">
+          <a class="alt-btn" href="/documentation">View docs</a>
+          <a class="alt-btn" href="/pricing">Explore plans</a>
+        </div>
+      </div>
+
+      <div class="help-links">
+        <span>Protected with masking-aware audit controls and environment-safe access.</span>
+        <a href="/status">System status</a>
+      </div>
+      <div class="link-row">Don&apos;t have a workspace? <a href="/create-account">Create one free</a></div>
+    </div>
+  </main>
+</div>
 <script>
 function togglePw(){
   const inp=document.getElementById('pw');
-  const btn=document.querySelector('.pw-toggle');
-  if(inp.type==='password'){inp.type='text';btn.textContent='🙈';}
-  else{inp.type='password';btn.textContent='👁';}
+  const btn=document.getElementById('togglePwBtn');
+  if(inp.type==='password'){
+    inp.type='text';
+    btn.textContent='🙈';
+  }else{
+    inp.type='password';
+    btn.textContent='👁';
+  }
 }
 function showMsg(text,type){
   const el=document.getElementById('msg');
@@ -81,12 +307,14 @@ async function doLogin(){
   try{
     const res=await fetch('/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password:pw})});
     const d=await res.json();
-    if(!res.ok){showMsg(d.error||'Login failed. Please try again.','error');btn.disabled=false;btn.textContent='Sign in';return;}
-    showMsg('Signed in! Redirecting…','success');
-    setTimeout(()=>{location.href=d.workspace_url||'/workspace';},400);
+    if(!res.ok){showMsg(d.error||'Login failed. Please try again.','error');btn.disabled=false;btn.textContent='Sign in to workspace';return;}
+    showMsg('Signed in successfully. Redirecting to your workspace…','success');
+    setTimeout(()=>{location.href=d.workspace_url||'/workspace';},450);
   }catch(e){
     showMsg('Network error. Please try again.','error');
-    btn.disabled=false;btn.textContent='Sign in';
+    btn.disabled=false;btn.textContent='Sign in to workspace';
   }
 }
-</script></body></html>
+</script>
+</body>
+</html>

@@ -1,106 +1,366 @@
 <!DOCTYPE html>
-<html lang="en"><head>
+<html lang="en">
+<head>
 <link rel="icon" type="image/svg+xml" href="/static/images/favicon.svg">
-<meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Create Workspace · ObserveX</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Syne:wght@600;700;800&display=swap" rel="stylesheet"/>
 <style>
-*{box-sizing:border-box}body{margin:0;min-height:100vh;font-family:Inter,Arial,sans-serif;background:radial-gradient(circle at top,#f8fbff 0%,#eef2f7 52%,#e8edf5 100%);display:flex;align-items:center;justify-content:center;padding:24px;color:#0f172a}
-.shell{width:100%;max-width:1080px;display:grid;grid-template-columns:1fr 1.04fr;border-radius:28px;overflow:hidden;background:#fff;box-shadow:0 24px 80px rgba(15,23,42,.12),0 8px 24px rgba(15,23,42,.06);border:1px solid rgba(148,163,184,.18)}
-.hero{position:relative;padding:44px;background:linear-gradient(145deg,#071226 0%,#0f172a 48%,#13284d 100%);color:#e5eefc;display:flex;flex-direction:column;justify-content:space-between;overflow:hidden}
-.hero:before{content:"";position:absolute;inset:0;background:linear-gradient(rgba(255,255,255,.05) 1px, transparent 1px),linear-gradient(90deg, rgba(255,255,255,.05) 1px, transparent 1px);background-size:34px 34px;opacity:.30}
+:root{
+  --bg:#020617;
+  --panel:rgba(8,15,34,.72);
+  --panel-soft:rgba(255,255,255,.06);
+  --panel-border:rgba(255,255,255,.1);
+  --text:#e5eefc;
+  --muted:#9fb0ca;
+  --input-bg:rgba(255,255,255,.06);
+  --input-border:rgba(148,163,184,.22);
+  --accent:#22d3ee;
+  --accent-2:#8b5cf6;
+  --success:#22c55e;
+  --danger:#fb7185;
+  --shadow:0 30px 80px rgba(0,0,0,.42);
+}
+*{box-sizing:border-box}
+body{
+  margin:0;min-height:100vh;font-family:Inter,Arial,sans-serif;color:var(--text);
+  background:
+    radial-gradient(circle at top left, rgba(34,211,238,.16), transparent 22%),
+    radial-gradient(circle at top right, rgba(139,92,246,.18), transparent 26%),
+    radial-gradient(circle at bottom center, rgba(16,185,129,.09), transparent 22%),
+    linear-gradient(180deg,#020617 0%,#0b1120 52%,#020617 100%);
+  display:flex;align-items:center;justify-content:center;padding:28px;overflow:hidden;
+}
+body:before{
+  content:"";position:fixed;inset:0;pointer-events:none;opacity:.08;
+  background-image:linear-gradient(rgba(255,255,255,.13) 1px, transparent 1px),linear-gradient(90deg, rgba(255,255,255,.13) 1px, transparent 1px);
+  background-size:36px 36px;
+}
+body:after{
+  content:"";position:fixed;left:-120px;bottom:-120px;width:320px;height:320px;border-radius:50%;
+  background:radial-gradient(circle, rgba(139,92,246,.2), transparent 60%);filter:blur(12px);pointer-events:none;
+}
+.shell{position:relative;width:100%;max-width:1260px;display:grid;grid-template-columns:1fr 1.04fr;gap:18px;z-index:1}
+.glass{background:var(--panel);border:1px solid var(--panel-border);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);box-shadow:var(--shadow);border-radius:32px;overflow:hidden}
+.hero{
+  position:relative;padding:42px 42px 34px;min-height:820px;display:flex;flex-direction:column;justify-content:space-between;
+  background:
+    radial-gradient(circle at top right, rgba(34,211,238,.18), transparent 26%),
+    radial-gradient(circle at top left, rgba(139,92,246,.18), transparent 24%),
+    linear-gradient(145deg, rgba(4,11,29,.95) 0%, rgba(9,20,41,.92) 52%, rgba(18,39,76,.92) 100%);
+}
+.hero:before{content:"";position:absolute;inset:0;opacity:.22;background-image:linear-gradient(rgba(255,255,255,.09) 1px, transparent 1px),linear-gradient(90deg, rgba(255,255,255,.09) 1px, transparent 1px);background-size:34px 34px}
+.hero:after{content:"";position:absolute;right:-100px;top:-100px;width:260px;height:260px;border-radius:50%;background:radial-gradient(circle, rgba(34,211,238,.24), transparent 64%);filter:blur(14px)}
 .hero > *{position:relative;z-index:1}
-.hero img{height:44px;width:auto;display:block;margin-bottom:26px}
-.hero h1{margin:0 0 14px;font:800 40px/1.02 Syne,Inter,sans-serif;letter-spacing:-1.2px;max-width:380px}
-.hero p{margin:0;color:#b8c6dd;line-height:1.7;max-width:420px}
-.points{display:grid;gap:12px;margin-top:28px}
-.point{display:flex;gap:10px;font-size:14px;color:#d7e3f7;align-items:flex-start}
-.dot{width:10px;height:10px;border-radius:999px;background:linear-gradient(135deg,#8b5cf6,#22d3ee);margin-top:6px;flex:0 0 10px}
-.foot{font-size:13px;color:#9fb0ca}
-.card{padding:40px 38px 32px;display:flex;flex-direction:column;justify-content:center}
-.logo{display:flex;justify-content:center;margin-bottom:18px} .logo img{height:44px;width:auto}
-h2{margin:0 0 8px;font:800 30px/1.1 Syne,Inter,sans-serif;text-align:center;letter-spacing:-.6px}
-.sub{margin:0 0 26px;text-align:center;color:#64748b;font-size:14px}
-.field{margin-bottom:14px} .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-label{display:block;font-size:12px;font-weight:700;color:#334155;margin-bottom:6px}
-input,select{width:100%;padding:12px 14px;background:#f8fafc;border:1px solid #d7deea;border-radius:12px;font:14px Inter,Arial,sans-serif;color:#0f172a;outline:none;transition:border-color .15s,box-shadow .15s,background .15s}
-input:focus,select:focus{border-color:#2563eb;box-shadow:0 0 0 4px rgba(37,99,235,.12);background:#fff}
-input::placeholder{color:#94a3b8}
-.pw-wrap{position:relative} .pw-wrap input{padding-right:42px}
-.pw-toggle{position:absolute;right:12px;top:50%;transform:translateY(-50%);border:0;background:none;color:#94a3b8;cursor:pointer}
-.strength-bar{height:4px;background:#e5e7eb;border-radius:999px;overflow:hidden;margin-top:8px} .strength-fill{height:100%;width:0;transition:all .25s}
-.strength-label{margin-top:5px;font-size:11px;color:#94a3b8}
-.btn{width:100%;padding:13px 16px;margin-top:8px;border:0;border-radius:12px;background:linear-gradient(135deg,#2563eb,#3b82f6);color:#fff;font:800 14px Inter,Arial,sans-serif;cursor:pointer;transition:all .15s}
-.btn:hover{transform:translateY(-1px);box-shadow:0 12px 24px rgba(37,99,235,.24);background:linear-gradient(135deg,#1d4ed8,#2563eb)}
-.msg{display:none;padding:12px 14px;border-radius:12px;font-size:12px;font-weight:700;margin-bottom:16px}
-.msg.error{display:block;background:#fff1f2;border:1px solid #fecdd3;color:#be123c}
-.msg.success{display:block;background:#f0fdf4;border:1px solid #bbf7d0;color:#15803d}
-.link-row{margin-top:18px;text-align:center;font-size:13px;color:#64748b} .link-row a{color:#2563eb;text-decoration:none;font-weight:700} .link-row a:hover{text-decoration:underline}
-@media(max-width:900px){.shell{grid-template-columns:1fr}.hero{display:none}.card{padding:34px 24px 28px}.grid2{grid-template-columns:1fr}}
-</style></head><body>
+.brand-row{display:flex;align-items:center;justify-content:space-between;gap:14px}
+.brand-row img{height:46px;width:auto;display:block}
+.live-chip{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border-radius:999px;background:rgba(139,92,246,.1);border:1px solid rgba(139,92,246,.18);font-size:12px;color:#e8dcff;font-weight:700}
+.live-dot{width:8px;height:8px;border-radius:50%;background:#c4b5fd;box-shadow:0 0 0 0 rgba(196,181,253,.6);animation:pulse 2s infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(196,181,253,.6)}70%{box-shadow:0 0 0 10px rgba(196,181,253,0)}100%{box-shadow:0 0 0 0 rgba(196,181,253,0)}}
+.eyebrow{display:inline-flex;align-items:center;gap:10px;padding:8px 12px;border-radius:999px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.05);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:#c8d5ea;font-weight:700}
+.hero h1{margin:18px 0 16px;font:800 60px/.95 Syne,Inter,sans-serif;letter-spacing:-2px;max-width:580px}
+.hero p{margin:0;color:#b9c8df;line-height:1.75;font-size:16px;max-width:500px}
+.story-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:28px}
+.story-card{padding:18px;border-radius:24px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09);transition:transform .22s ease,background .22s ease,border-color .22s ease}
+.story-card:hover{transform:translateY(-3px);background:rgba(255,255,255,.08);border-color:rgba(139,92,246,.24)}
+.story-kicker{font-size:11px;text-transform:uppercase;letter-spacing:.16em;color:#d4b5ff;font-weight:700;margin-bottom:10px}
+.story-card strong{display:block;font-size:16px;margin-bottom:8px}
+.story-card span{display:block;font-size:13px;line-height:1.65;color:#afc0d8}
+.setup-track{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:24px}
+.setup-step{padding:18px;border-radius:24px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09)}
+.setup-step .num{width:32px;height:32px;border-radius:12px;display:grid;place-items:center;background:rgba(34,211,238,.12);color:#bff6ff;font-weight:800;margin-bottom:12px}
+.setup-step strong{display:block;margin-bottom:6px}
+.setup-step span{font-size:13px;color:#aebfd7;line-height:1.6}
+.hero-footer{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-top:28px;color:#97aac6;font-size:13px}
+.footer-badges{display:flex;gap:10px;flex-wrap:wrap}
+.footer-badges span{padding:8px 12px;border-radius:999px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.05)}
+.card{padding:34px;display:flex;align-items:center;justify-content:center;min-height:820px}
+.card-inner{width:100%;max-width:520px;animation:slideUp .7s ease}
+.card-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:28px}
+.card-logo{display:flex;align-items:center;gap:12px}.card-logo img{height:42px;width:auto}.card-logo span{font-weight:700;color:#dbeafe}
+.card-badge{padding:8px 12px;border-radius:999px;border:1px solid rgba(34,211,238,.2);background:rgba(34,211,238,.1);font-size:12px;color:#cffafe;font-weight:700}
+.card h2{margin:0;font:800 38px/1 Syne,Inter,sans-serif;letter-spacing:-1px}
+.sub{margin:12px 0 0;color:var(--muted);font-size:14px;line-height:1.7}
+.msg{display:none;padding:14px 16px;border-radius:16px;font-size:12px;font-weight:700;margin:22px 0 0}
+.msg.error{display:block;background:rgba(244,63,94,.12);border:1px solid rgba(251,113,133,.22);color:#fecdd3}
+.msg.success{display:block;background:rgba(34,197,94,.12);border:1px solid rgba(74,222,128,.22);color:#bbf7d0}
+.form-shell{margin-top:26px;padding:24px;border-radius:28px;background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.08)}
+.field{margin-bottom:18px}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+label{display:block;font-size:12px;font-weight:700;color:#d1def3;margin-bottom:8px;letter-spacing:.04em}
+.input-wrap{position:relative}
+input,select{
+  width:100%;padding:15px 16px;background:var(--input-bg);border:1px solid var(--input-border);border-radius:18px;
+  font:14px Inter,Arial,sans-serif;color:#f8fbff;outline:none;transition:border-color .18s,box-shadow .18s,background .18s,transform .18s;
+}
+input:focus,select:focus{border-color:rgba(34,211,238,.5);box-shadow:0 0 0 5px rgba(34,211,238,.11);background:rgba(255,255,255,.08);transform:translateY(-1px)}
+input::placeholder{color:#7e91ad}
+.pw-wrap{position:relative}.pw-wrap input{padding-right:54px}
+.pw-toggle{position:absolute;right:12px;top:50%;transform:translateY(-50%);width:34px;height:34px;border-radius:12px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.05);color:#9fb0ca;cursor:pointer;transition:.18s;display:grid;place-items:center;font-size:15px}
+.pw-toggle:hover{color:#fff;background:rgba(255,255,255,.08)}
+.strength-box{margin-top:10px;padding:12px 14px;border-radius:18px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08)}
+.strength-bar{height:6px;background:rgba(255,255,255,.08);border-radius:999px;overflow:hidden}.strength-fill{height:100%;width:0;transition:all .25s}
+.strength-meta{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:10px;font-size:11px;color:#8ea3c0}
+.checks{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;font-size:12px;color:#8ea3c0}
+.checks span{padding:8px 10px;border-radius:12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06)}
+.checks .ok{color:#b9fbc0;border-color:rgba(74,222,128,.18);background:rgba(34,197,94,.08)}
+.meta-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:4px}
+.note-box{margin-top:6px;padding:14px 16px;border-radius:18px;background:rgba(34,211,238,.08);border:1px solid rgba(34,211,238,.14);font-size:12px;line-height:1.75;color:#cceef7}
+.btn{width:100%;padding:15px 18px;margin-top:18px;border:0;border-radius:18px;background:linear-gradient(135deg,#22d3ee 0%,#38bdf8 32%,#6366f1 100%);color:#05111f;font:800 14px Inter,Arial,sans-serif;cursor:pointer;transition:transform .18s,box-shadow .18s,filter .18s;box-shadow:0 16px 34px rgba(34,211,238,.2)}
+.btn:hover{transform:translateY(-2px);filter:saturate(1.06);box-shadow:0 20px 40px rgba(34,211,238,.26)}
+.btn:disabled{opacity:.72;cursor:not-allowed;transform:none}
+.terms-row{display:flex;align-items:flex-start;gap:10px;margin-top:18px;font-size:12px;color:#9fb0ca;line-height:1.6}.terms-row input{width:auto;accent-color:#22d3ee;margin-top:3px}
+.terms-row a,.link-row a,.help-links a{color:#7dd3fc;text-decoration:none;font-weight:700}
+.terms-row a:hover,.link-row a:hover,.help-links a:hover{text-decoration:underline}
+.help-links{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:18px;font-size:12px;color:#8ea3c0}
+.link-row{margin-top:22px;text-align:center;font-size:13px;color:#8ea3c0}
+@keyframes slideUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+@media(max-width:1120px){.shell{grid-template-columns:1fr}.hero,.card{min-height:auto}.hero{padding:34px}.card{padding:24px}}
+@media(max-width:760px){body{padding:16px}.hero{display:none}.card{padding:20px}.card-inner{max-width:none}.card h2{font-size:32px}.form-shell{padding:18px}.grid2,.meta-grid,.checks,.story-grid,.setup-track{grid-template-columns:1fr}.help-links{flex-direction:column;align-items:flex-start}}
+</style>
+</head>
+<body>
 <div class="shell">
-<aside class="hero">
-<div>
-<img src="/static/images/logo-dark.svg" alt="ObserveX">
-<h1>Create your ObserveX workspace</h1>
-<p>Start monitoring logs, tracing failures, and using AI-assisted diagnostics from one clean workspace.</p>
-<div class="points">
-<div class="point"><span class="dot"></span><span>Centralized log explorer and filtering</span></div>
-<div class="point"><span class="dot"></span><span>Trace request paths across services</span></div>
-<div class="point"><span class="dot"></span><span>Invite your team and manage access easily</span></div>
-</div></div><div class="foot">Set up in minutes. Scale with confidence.</div></aside>
-<main class="card">
-<div class="logo"><img src="/static/images/logo-primary.svg" alt="ObserveX"></div>
-<h2>Create workspace</h2><p class="sub">Start managing your logs with ObserveX</p>
-<div class="msg" id="msg"></div>
-<div class="field"><label for="organization_name">Organization name</label><input type="text" id="organization_name" name="organization_name" placeholder="e.g. Acme Corp" autocomplete="organization" required></div>
-<div class="grid2">
-<div class="field"><label for="name">Your name</label><input type="text" id="name" name="name" placeholder="Full name" autocomplete="name" required></div>
-<div class="field"><label for="email">Work email</label><input type="email" id="email" name="email" placeholder="you@company.com" autocomplete="email" required></div>
+  <aside class="hero glass">
+    <div>
+      <div class="brand-row">
+        <img src="/static/images/logo-dark.svg" alt="ObserveX">
+        <div class="live-chip"><span class="live-dot"></span> Guided workspace setup</div>
+      </div>
+
+      <div class="hero-copy">
+        <div class="eyebrow">launch your observability cockpit</div>
+        <h1>Create a workspace your whole team can operate from.</h1>
+        <p>
+          Bring together logs, traces, alerts, environment filters, sensitive-data masking, and AI investigation
+          workflows in one premium control surface.
+        </p>
+
+        <div class="story-grid">
+          <div class="story-card">
+            <div class="story-kicker">Environment Ready</div>
+            <strong>Separate PROD, UAT, DEV, and DR views</strong>
+            <span>Organize monitoring by environment so operations teams can isolate issues faster and reduce confusion.</span>
+          </div>
+          <div class="story-card">
+            <div class="story-kicker">Alert Intelligence</div>
+            <strong>Reduce noise before incidents escalate</strong>
+            <span>Use thresholds, anomaly detection, and AI summaries to focus only on what needs action.</span>
+          </div>
+          <div class="story-card">
+            <div class="story-kicker">Secure by Design</div>
+            <strong>Protect sensitive fields automatically</strong>
+            <span>Mask tokens, account values, identities, and risky headers without breaking troubleshooting flow.</span>
+          </div>
+          <div class="story-card">
+            <div class="story-kicker">Trace-Aware UX</div>
+            <strong>Move from event to request path instantly</strong>
+            <span>Correlate logs to traces and follow service hops with clearer latency and failure attribution.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="setup-track">
+        <div class="setup-step">
+          <div class="num">1</div>
+          <strong>Create your org</strong>
+          <span>Set up the company workspace and prepare your environment structure.</span>
+        </div>
+        <div class="setup-step">
+          <div class="num">2</div>
+          <strong>Invite the team</strong>
+          <span>Add admins, developers, testers, and managers with role-based access later.</span>
+        </div>
+        <div class="setup-step">
+          <div class="num">3</div>
+          <strong>Start ingesting logs</strong>
+          <span>Connect sources, route events, and begin observing traces, metrics, and alerts.</span>
+        </div>
+      </div>
+      <div class="hero-footer">
+        <span>Designed for modern API teams, platform engineering, and security-conscious operations.</span>
+        <div class="footer-badges">
+          <span>Multi Environment</span>
+          <span>Masking First</span>
+          <span>Fast Onboarding</span>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <main class="card glass">
+    <div class="card-inner">
+      <div class="card-head">
+        <div class="card-logo">
+          <img src="/static/images/logo-primary.svg" alt="ObserveX">
+          <span>ObserveX Prime</span>
+        </div>
+        <div class="card-badge">Create workspace</div>
+      </div>
+
+      <h2>Launch your workspace</h2>
+      <p class="sub">Set up your organization and start monitoring logs, traces, alerts, and environment health from one place.</p>
+
+      <div class="msg" id="msg"></div>
+
+      <div class="form-shell">
+        <div class="field">
+          <label for="organization_name">Organization name</label>
+          <div class="input-wrap">
+            <input type="text" id="organization_name" name="organization_name" placeholder="e.g. Five Star Business Finance" autocomplete="organization" required>
+          </div>
+        </div>
+
+        <div class="grid2">
+          <div class="field">
+            <label for="name">Your name</label>
+            <div class="input-wrap">
+              <input type="text" id="name" name="name" placeholder="Full name" autocomplete="name" required>
+            </div>
+          </div>
+          <div class="field">
+            <label for="email">Work email</label>
+            <div class="input-wrap">
+              <input type="email" id="email" name="email" placeholder="you@company.com" autocomplete="email" required>
+            </div>
+          </div>
+        </div>
+
+        <div class="meta-grid">
+          <div class="field">
+            <label for="workspaceType">Workspace mode</label>
+            <select id="workspaceType">
+              <option>Enterprise Observability</option>
+              <option>Developer Sandbox</option>
+              <option>Security Analytics</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="primaryEnv">Primary environment</label>
+            <select id="primaryEnv">
+              <option>Production</option>
+              <option>UAT</option>
+              <option>Development</option>
+              <option>DR</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="password">Password</label>
+          <div class="pw-wrap">
+            <input type="password" id="password" name="password" placeholder="At least 8 characters" autocomplete="new-password" oninput="checkStrength(this.value)">
+            <button class="pw-toggle" id="togglePwBtn" type="button" onclick="togglePw()" title="Show or hide password">👁</button>
+          </div>
+          <div class="strength-box">
+            <div class="strength-bar"><div class="strength-fill" id="strengthFill"></div></div>
+            <div class="strength-meta">
+              <span id="strengthLabel">Choose a strong password</span>
+              <span id="strengthScore">0 / 5 checks</span>
+            </div>
+            <div class="checks" id="pwChecks">
+              <span id="c1">8+ characters</span>
+              <span id="c2">Uppercase letter</span>
+              <span id="c3">Number</span>
+              <span id="c4">Special character</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="note-box">
+          Your first user will be created as the workspace admin. You can later add more members, split environments,
+          define alert policies, and configure masking rules per application or source.
+        </div>
+
+        <label class="terms-row">
+          <input type="checkbox" id="agreeTerms">
+          <span>I agree to the platform terms and understand this workspace will start with secure defaults for alerts, access, and sensitive data visibility.</span>
+        </label>
+
+        <button class="btn" id="submitBtn" onclick="createWorkspace()">Create workspace and continue</button>
+      </div>
+
+      <div class="help-links">
+        <span>Need help before setup? Review docs, onboarding guidance, and platform status.</span>
+        <a href="/documentation">Documentation</a>
+      </div>
+      <div class="link-row">Already have a workspace? <a href="/login">Sign in</a></div>
+    </div>
+  </main>
 </div>
-<div class="field"><label for="password">Password</label><div class="pw-wrap"><input type="password" id="password" name="password" placeholder="At least 8 characters" autocomplete="new-password" oninput="checkStrength(this.value)"><button class="pw-toggle" type="button" onclick="togglePw()" title="Show/hide password">👁</button></div><div class="strength-bar"><div class="strength-fill" id="strengthFill"></div></div><div class="strength-label" id="strengthLabel"></div></div>
-<button class="btn" id="submitBtn" onclick="createWorkspace()">Create workspace</button>
-<div class="link-row">Already have a workspace? <a href="/login">Sign in</a></div>
-</main></div>
 <script>
 function togglePw(){
   const inp=document.getElementById('password');
-  const ico=document.getElementById('eyeIcon');
+  const btn=document.getElementById('togglePwBtn');
   if(inp.type==='password'){
     inp.type='text';
-    ico.innerHTML='<path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/>';
+    btn.textContent='🙈';
   }else{
     inp.type='password';
-    ico.innerHTML='<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
+    btn.textContent='👁';
   }
+}
+
+function setCheck(id, ok){
+  const el=document.getElementById(id);
+  if(!el) return;
+  el.className=ok ? 'ok' : '';
 }
 
 function checkStrength(pw){
   const fill=document.getElementById('strengthFill');
   const lbl=document.getElementById('strengthLabel');
-  if(!pw){fill.style.width='0';lbl.textContent='';return;}
-  let score=0;
-  if(pw.length>=8)score++;
-  if(pw.length>=12)score++;
-  if(/[A-Z]/.test(pw))score++;
-  if(/[0-9]/.test(pw))score++;
-  if(/[^A-Za-z0-9]/.test(pw))score++;
-  const levels=[
-    {w:'20%',c:'#ef4444',t:'Too weak'},
-    {w:'40%',c:'#f97316',t:'Weak'},
-    {w:'60%',c:'#eab308',t:'Fair'},
-    {w:'80%',c:'#22c55e',t:'Strong'},
-    {w:'100%',c:'#10b981',t:'Very strong'}
+  const scoreText=document.getElementById('strengthScore');
+
+  const checks=[
+    pw.length>=8,
+    /[A-Z]/.test(pw),
+    /[0-9]/.test(pw),
+    /[^A-Za-z0-9]/.test(pw)
   ];
-  const l=levels[Math.min(score-1,4)]||levels[0];
-  fill.style.width=l.w;fill.style.background=l.c;
-  lbl.textContent=l.t;lbl.style.color=l.c;
+  setCheck('c1',checks[0]);
+  setCheck('c2',checks[1]);
+  setCheck('c3',checks[2]);
+  setCheck('c4',checks[3]);
+
+  let score=0;
+  if(pw.length>=8) score++;
+  if(pw.length>=12) score++;
+  if(/[A-Z]/.test(pw)) score++;
+  if(/[0-9]/.test(pw)) score++;
+  if(/[^A-Za-z0-9]/.test(pw)) score++;
+
+  const levels=[
+    {w:'10%',c:'#ef4444',t:'Too weak'},
+    {w:'28%',c:'#f97316',t:'Weak'},
+    {w:'52%',c:'#facc15',t:'Fair'},
+    {w:'78%',c:'#22c55e',t:'Strong'},
+    {w:'100%',c:'#06b6d4',t:'Very strong'}
+  ];
+
+  if(!pw){
+    fill.style.width='0';
+    lbl.textContent='Choose a strong password';
+    scoreText.textContent='0 / 5 checks';
+    return;
+  }
+
+  const level=levels[Math.min(Math.max(score-1,0),4)];
+  fill.style.width=level.w;
+  fill.style.background=level.c;
+  lbl.textContent=level.t;
+  lbl.style.color=level.c;
+  scoreText.textContent=score+' / 5 checks';
 }
 
 function showMsg(text,type){
   const el=document.getElementById('msg');
-  el.textContent=text;el.className='msg '+type;
+  el.textContent=text;
+  el.className='msg '+type;
 }
 
 async function createWorkspace(){
@@ -109,13 +369,15 @@ async function createWorkspace(){
   const name=document.getElementById('name').value.trim();
   const email=document.getElementById('email').value.trim();
   const password=document.getElementById('password').value;
+  const agreeTerms=document.getElementById('agreeTerms').checked;
 
   if(!org_name){showMsg('Organization name is required.','error');return;}
   if(!name){showMsg('Your name is required.','error');return;}
   if(!email||!email.includes('@')){showMsg('A valid email is required.','error');return;}
   if(!password||password.length<8){showMsg('Password must be at least 8 characters.','error');return;}
+  if(!agreeTerms){showMsg('Please accept the terms to continue.','error');return;}
 
-  btn.disabled=true;btn.textContent='Creating…';
+  btn.disabled=true;btn.textContent='Creating workspace…';
 
   try{
     const res=await fetch('/register',{
@@ -126,15 +388,18 @@ async function createWorkspace(){
     const data=await res.json();
     if(!res.ok){
       showMsg(data.error||'Registration failed. Please try again.','error');
-      btn.disabled=false;btn.textContent='Create workspace';return;
+      btn.disabled=false;btn.textContent='Create workspace and continue';
+      return;
     }
-    showMsg('Workspace created! Redirecting to your dashboard…','success');
-    setTimeout(()=>{window.location.href=data.workspace_url||('/workspace/'+data.slug);},1000);
+    showMsg('Workspace created successfully. Redirecting to your dashboard…','success');
+    setTimeout(()=>{window.location.href=data.workspace_url||('/workspace/'+data.slug);},850);
   }catch(e){
     showMsg('Network error: '+e.message,'error');
-    btn.disabled=false;btn.textContent='Create workspace';
+    btn.disabled=false;btn.textContent='Create workspace and continue';
   }
 }
 
 document.addEventListener('keydown',e=>{if(e.key==='Enter')createWorkspace();});
-</script></body></html>
+</script>
+</body>
+</html>
