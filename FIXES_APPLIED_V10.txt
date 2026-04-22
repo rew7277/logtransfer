@@ -1,0 +1,2 @@
+Fixed remaining malformed SQL string in observability hourly query.
+Rewrote dynamic environment SQL into explicit variables for stability.

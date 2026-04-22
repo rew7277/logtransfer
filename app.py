@@ -3246,9 +3246,14 @@ def get_observability():
     error_rate   = round((error_count / total * 100), 1) if total else 0.0
 
     since_24h = (datetime.now(timezone.utc) - timedelta(hours=24)).strftime("%Y-%m-%dT%H:%M:%S")
-    hour_rows = db.execute(
+    hour_sql = (
         "SELECT strftime('%Y-%m-%dT%H:00:00', timestamp) as hour, level, COUNT(*) as cnt "
-        ("FROM log_events WHERE org_id=? AND timestamp>=?" + (" AND upper(coalesce(environment_name, 'PROD'))=?" if environment_name != "ALL" else "") + " GROUP BY hour, level ORDER BY hour"),
+        "FROM log_events WHERE org_id=? AND timestamp>=?"
+        + (" AND upper(coalesce(environment_name, 'PROD'))=?" if environment_name != "ALL" else "")
+        + " GROUP BY hour, level ORDER BY hour"
+    )
+    hour_rows = db.execute(
+        hour_sql,
         ([org_id, since_24h] + ([environment_name] if environment_name != "ALL" else [])),
     ).fetchall()
     hourly: dict[str, dict[str, int]] = {}
