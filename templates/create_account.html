@@ -2,155 +2,126 @@
 <html lang="en">
 <head>
 <link rel="icon" type="image/svg+xml" href="/static/images/favicon.svg">
-<meta name="theme-color" content="#040810">
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<meta name="description" content="Create your ObserveX workspace — AI-native observability, log intelligence, masking, and traces for your engineering team."/>
+<meta name="description" content="Create your ObserveX workspace — log management, traces, alerts, and AI root cause analysis for your team."/>
 <meta property="og:title" content="Create Workspace — ObserveX"/>
+<meta property="og:type" content="website"/>
 <title>Create Workspace · ObserveX</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Outfit:wght@400;500;600;700;800;900&family=Fraunces:ital,wght@1,700;1,800&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Syne:wght@600;700;800&display=swap" rel="stylesheet"/>
 <style>
 :root{
-  --bg:#040810;--panel:rgba(6,12,24,.78);--panel-border:rgba(255,255,255,.09);
-  --text:#eef2ff;--muted:#8898b3;--muted2:#5c6f8a;
-  --input-bg:rgba(255,255,255,.055);--input-border:rgba(148,163,184,.2);
-  --cyan:#22d3ee;--cyan2:#67e8f9;--violet:#8b5cf6;--violet2:#a78bfa;
-  --emerald:#10b981;--rose:#f43f5e;--amber:#f59e0b;
-  --shadow:0 40px 100px rgba(0,0,0,.55);
-  --mono:'DM Mono',monospace;--sans:'Outfit',sans-serif;--serif:'Fraunces',serif;
+  --bg:#020617;
+  --panel:rgba(8,15,34,.72);
+  --panel-soft:rgba(255,255,255,.06);
+  --panel-border:rgba(255,255,255,.1);
+  --text:#e5eefc;
+  --muted:#9fb0ca;
+  --input-bg:rgba(255,255,255,.06);
+  --input-border:rgba(148,163,184,.22);
+  --accent:#22d3ee;
+  --accent-2:#8b5cf6;
+  --success:#22c55e;
+  --danger:#fb7185;
+  --shadow:0 30px 80px rgba(0,0,0,.42);
 }
-*{box-sizing:border-box;margin:0;padding:0}
-html{scroll-behavior:smooth}
+*{box-sizing:border-box}
 body{
-  font-family:var(--sans);color:var(--text);min-height:100vh;
+  margin:0;min-height:100vh;font-family:Inter,Arial,sans-serif;color:var(--text);
   background:
-    radial-gradient(ellipse 70% 50% at 20% 20%,rgba(139,92,246,.13),transparent 55%),
-    radial-gradient(ellipse 60% 50% at 80% 70%,rgba(34,211,238,.1),transparent 55%),
-    linear-gradient(180deg,#040810 0%,#080f1c 55%,#040810 100%);
-  display:flex;align-items:flex-start;justify-content:center;
-  padding:18px;overflow-x:hidden;overflow-y:auto;
+    radial-gradient(circle at top left, rgba(34,211,238,.16), transparent 22%),
+    radial-gradient(circle at top right, rgba(139,92,246,.18), transparent 26%),
+    radial-gradient(circle at bottom center, rgba(16,185,129,.09), transparent 22%),
+    linear-gradient(180deg,#020617 0%,#0b1120 52%,#020617 100%);
+  display:flex;align-items:center;justify-content:center;padding:18px;overflow-x:hidden;overflow-y:auto;
 }
-body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.06;background-image:linear-gradient(rgba(255,255,255,.1) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.1) 1px,transparent 1px);background-size:44px 44px}
-body::after{content:'';position:fixed;left:-100px;bottom:-100px;width:300px;height:300px;border-radius:50%;background:radial-gradient(circle,rgba(139,92,246,.18),transparent 60%);filter:blur(16px);pointer-events:none}
-.shell{position:relative;width:min(100%,1340px);display:grid;grid-template-columns:minmax(0,1.1fr) minmax(430px,1fr);gap:16px;z-index:1;align-items:stretch;margin:0 auto}
-.glass{background:var(--panel);border:1px solid var(--panel-border);backdrop-filter:blur(28px);-webkit-backdrop-filter:blur(28px);box-shadow:var(--shadow);border-radius:28px;overflow:hidden}
-/* HERO */
-.hero{position:relative;padding:clamp(26px,3vw,42px);min-height:min(920px,calc(100dvh - 36px));display:flex;flex-direction:column;justify-content:space-between;overflow:auto;
-  background:radial-gradient(ellipse at top right,rgba(139,92,246,.18),transparent 28%),radial-gradient(ellipse at top left,rgba(34,211,238,.14),transparent 26%),linear-gradient(148deg,rgba(3,9,22,.97) 0%,rgba(8,18,38,.94) 52%,rgba(14,30,60,.92) 100%)}
-.hero::before{content:'';position:absolute;inset:0;opacity:.18;background-image:linear-gradient(rgba(255,255,255,.08) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.08) 1px,transparent 1px);background-size:36px 36px}
-.hero::after{content:'';position:absolute;right:-80px;top:-80px;width:280px;height:280px;border-radius:50%;background:radial-gradient(circle,rgba(139,92,246,.2),transparent 62%);filter:blur(18px);pointer-events:none}
-.hero>*{position:relative;z-index:1}
+body:before{
+  content:"";position:fixed;inset:0;pointer-events:none;opacity:.08;
+  background-image:linear-gradient(rgba(255,255,255,.13) 1px, transparent 1px),linear-gradient(90deg, rgba(255,255,255,.13) 1px, transparent 1px);
+  background-size:36px 36px;
+}
+body:after{
+  content:"";position:fixed;left:-120px;bottom:-120px;width:320px;height:320px;border-radius:50%;
+  background:radial-gradient(circle, rgba(139,92,246,.2), transparent 60%);filter:blur(12px);pointer-events:none;
+}
+.shell{position:relative;width:100%;max-width:1260px;display:grid;grid-template-columns:1fr 1.04fr;gap:18px;z-index:1}
+.glass{background:var(--panel);border:1px solid var(--panel-border);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);box-shadow:var(--shadow);border-radius:32px;overflow:hidden}
+.hero{
+  position:relative;padding:clamp(24px,3vw,40px);min-height:min(820px,calc(100dvh - 36px));display:flex;flex-direction:column;justify-content:space-between;overflow:auto;
+  background:
+    radial-gradient(circle at top right, rgba(34,211,238,.18), transparent 26%),
+    radial-gradient(circle at top left, rgba(139,92,246,.18), transparent 24%),
+    linear-gradient(145deg, rgba(4,11,29,.95) 0%, rgba(9,20,41,.92) 52%, rgba(18,39,76,.92) 100%);
+}
+.hero:before{content:"";position:absolute;inset:0;opacity:.22;background-image:linear-gradient(rgba(255,255,255,.09) 1px, transparent 1px),linear-gradient(90deg, rgba(255,255,255,.09) 1px, transparent 1px);background-size:34px 34px}
+.hero:after{content:"";position:absolute;right:-100px;top:-100px;width:260px;height:260px;border-radius:50%;background:radial-gradient(circle, rgba(34,211,238,.24), transparent 64%);filter:blur(14px)}
+.hero > *{position:relative;z-index:1}
 .brand-row{display:flex;align-items:center;justify-content:space-between;gap:14px}
-.brand-row img{height:44px;width:auto;display:block}
-.live-chip{display:inline-flex;align-items:center;gap:8px;padding:9px 14px;border-radius:999px;background:rgba(139,92,246,.09);border:1px solid rgba(139,92,246,.2);font-size:11px;font-weight:700;color:var(--violet2);font-family:var(--mono)}
-.live-dot{width:7px;height:7px;border-radius:50%;background:var(--violet2);animation:vglow 2s infinite}
-@keyframes vglow{0%,100%{box-shadow:0 0 0 0 rgba(167,139,250,.5)}70%{box-shadow:0 0 0 8px rgba(167,139,250,0)}}
-.eyebrow{display:inline-flex;align-items:center;gap:8px;padding:7px 12px;border-radius:999px;border:1px solid rgba(255,255,255,.09);background:rgba(255,255,255,.04);font-size:10px;font-family:var(--mono);letter-spacing:.18em;text-transform:uppercase;color:var(--muted)}
-.hero-h1{margin:16px 0 14px;font-size:clamp(34px,3.8vw,52px);font-weight:900;line-height:.97;letter-spacing:-2px}
-.hero-h1 em{font-family:var(--serif);font-style:italic;font-weight:800;background:linear-gradient(130deg,var(--violet2),var(--cyan2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-.hero-p{margin:0;color:#b5c4dc;line-height:1.75;font-size:14px;max-width:480px}
-
-/* Capability grid */
-.cap-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:22px}
-.cap{padding:14px;border-radius:16px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);transition:.2s}
-.cap:hover{background:rgba(255,255,255,.07);border-color:rgba(139,92,246,.22)}
-.cap-kick{font-size:9px;text-transform:uppercase;letter-spacing:.16em;color:var(--violet2);font-weight:700;margin-bottom:6px;font-family:var(--mono)}
-.cap strong{display:block;font-size:12px;margin-bottom:4px}
-.cap span{display:block;font-size:11px;line-height:1.6;color:#8898b3}
-
-/* Masking matrix */
-.mask-panel{margin-top:18px;border-radius:16px;border:1px solid rgba(255,255,255,.07);background:rgba(255,255,255,.03);overflow:hidden}
-.mask-header{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.06);font-family:var(--mono);font-size:10px}
-.mask-title{color:var(--muted);text-transform:uppercase;letter-spacing:.12em}
-.mask-ok{padding:3px 8px;border-radius:999px;background:rgba(16,185,129,.12);border:1px solid rgba(16,185,129,.18);color:#6ee7b7;font-size:9px;font-weight:700}
-.mask-grid{display:grid;grid-template-columns:repeat(3,1fr)}
-.mf{padding:10px 12px;border-right:1px solid rgba(255,255,255,.05);border-bottom:1px solid rgba(255,255,255,.05)}
-.mf:nth-child(3n){border-right:none}.mf:nth-last-child(-n+3){border-bottom:none}
-.mf-cat{font-size:9px;color:var(--muted2);font-family:var(--mono);text-transform:uppercase;letter-spacing:.1em;margin-bottom:3px}
-.mf-val{font-size:11px;font-weight:700}
-.mv-masked{color:var(--cyan2)}.mv-tokenized{color:var(--violet2)}.mv-hidden{color:#a3e635}.mv-encrypted{color:#34d399}.mv-filtered{color:var(--amber)}.mv-review{color:#fda4af}
-
-/* Environment health */
-.env-health{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:16px}
-.eh{padding:12px 10px;border-radius:14px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);text-align:center}
-.eh-name{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:5px;font-family:var(--mono)}
-.eh-badge{display:inline-block;padding:3px 8px;border-radius:999px;font-size:9px;font-weight:700;margin-bottom:4px}
-.ehb-healthy{background:rgba(16,185,129,.12);border:1px solid rgba(16,185,129,.18);color:#6ee7b7}
-.ehb-watch{background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.18);color:#fcd34d}
-.ehb-standby{background:rgba(139,92,246,.12);border:1px solid rgba(139,92,246,.18);color:var(--violet2)}
-.eh-uptime{font-size:9px;color:var(--muted2);font-family:var(--mono)}
-
-/* Setup track */
-.setup-track{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:6px}
-.st{padding:14px;border-radius:16px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07)}
-.st-num{width:28px;height:28px;border-radius:8px;background:rgba(34,211,238,.1);color:var(--cyan2);display:grid;place-items:center;font-weight:900;font-size:12px;margin-bottom:8px;font-family:var(--mono)}
-.st strong{display:block;font-size:12px;margin-bottom:4px}
-.st span{font-size:11px;color:#8898b3;line-height:1.6}
-.hero-footer{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:14px;font-size:11px;color:#7a8fa8}
-.fbadges{display:flex;gap:7px;flex-wrap:wrap}
-.fbadge{padding:5px 9px;border-radius:999px;border:1px solid rgba(255,255,255,.07);background:rgba(255,255,255,.04);font-size:10px}
-
-/* FORM */
-.card{padding:clamp(22px,2.6vw,36px);display:flex;align-items:flex-start;justify-content:center;min-height:min(920px,calc(100dvh - 36px));overflow:auto}
-.card-inner{width:100%;max-width:min(530px,100%);animation:slideUp .65s ease;padding-top:4px}
+.brand-row img{height:46px;width:auto;display:block}
+.live-chip{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border-radius:999px;background:rgba(139,92,246,.1);border:1px solid rgba(139,92,246,.18);font-size:12px;color:#e8dcff;font-weight:700}
+.live-dot{width:8px;height:8px;border-radius:50%;background:#c4b5fd;box-shadow:0 0 0 0 rgba(196,181,253,.6);animation:pulse 2s infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(196,181,253,.6)}70%{box-shadow:0 0 0 10px rgba(196,181,253,0)}100%{box-shadow:0 0 0 0 rgba(196,181,253,0)}}
+.eyebrow{display:inline-flex;align-items:center;gap:10px;padding:8px 12px;border-radius:999px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.05);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:#c8d5ea;font-weight:700}
+.hero h1{margin:18px 0 16px;font:800 60px/.95 Syne,Inter,sans-serif;letter-spacing:-2px;max-width:580px}
+.hero p{margin:0;color:#b9c8df;line-height:1.75;font-size:16px;max-width:500px}
+.story-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:28px}
+.story-card{padding:18px;border-radius:24px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09);transition:transform .22s ease,background .22s ease,border-color .22s ease}
+.story-card:hover{transform:translateY(-3px);background:rgba(255,255,255,.08);border-color:rgba(139,92,246,.24)}
+.story-kicker{font-size:11px;text-transform:uppercase;letter-spacing:.16em;color:#d4b5ff;font-weight:700;margin-bottom:10px}
+.story-card strong{display:block;font-size:16px;margin-bottom:8px}
+.story-card span{display:block;font-size:13px;line-height:1.65;color:#afc0d8}
+.setup-track{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:24px}
+.setup-step{padding:18px;border-radius:24px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09)}
+.setup-step .num{width:32px;height:32px;border-radius:12px;display:grid;place-items:center;background:rgba(34,211,238,.12);color:#bff6ff;font-weight:800;margin-bottom:12px}
+.setup-step strong{display:block;margin-bottom:6px}
+.setup-step span{font-size:13px;color:#aebfd7;line-height:1.6}
+.hero-footer{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-top:28px;color:#97aac6;font-size:13px}
+.footer-badges{display:flex;gap:10px;flex-wrap:wrap}
+.footer-badges span{padding:8px 12px;border-radius:999px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.05)}
+.card{padding:34px;display:flex;align-items:center;justify-content:center;min-height:820px}
+.card-inner{width:100%;max-width:520px;animation:slideUp .7s ease}
+.card-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:28px}
+.card-logo{display:flex;align-items:center;gap:12px}.card-logo img{height:42px;width:auto}.card-logo span{font-weight:700;color:#dbeafe}
+.card-badge{padding:8px 12px;border-radius:999px;border:1px solid rgba(34,211,238,.2);background:rgba(34,211,238,.1);font-size:12px;color:#cffafe;font-weight:700}
+.card h2{margin:0;font:800 38px/1 Syne,Inter,sans-serif;letter-spacing:-1px}
+.sub{margin:12px 0 0;color:var(--muted);font-size:14px;line-height:1.7}
+.msg{display:none;padding:14px 16px;border-radius:16px;font-size:12px;font-weight:700;margin:22px 0 0}
+.msg.error{display:block;background:rgba(244,63,94,.12);border:1px solid rgba(251,113,133,.22);color:#fecdd3}
+.msg.success{display:block;background:rgba(34,197,94,.12);border:1px solid rgba(74,222,128,.22);color:#bbf7d0}
+.form-shell{margin-top:26px;padding:24px;border-radius:28px;background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.08)}
+.field{margin-bottom:18px}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+label{display:block;font-size:12px;font-weight:700;color:#d1def3;margin-bottom:8px;letter-spacing:.04em}
+.input-wrap{position:relative}
+input,select{
+  width:100%;padding:15px 16px;background:var(--input-bg);border:1px solid var(--input-border);border-radius:18px;
+  font:14px Inter,Arial,sans-serif;color:#f8fbff;outline:none;transition:border-color .18s,box-shadow .18s,background .18s,transform .18s;
+}
+input:focus,select:focus{border-color:rgba(34,211,238,.5);box-shadow:0 0 0 5px rgba(34,211,238,.11);background:rgba(255,255,255,.08);transform:translateY(-1px)}
+input::placeholder{color:#7e91ad}
+.pw-wrap{position:relative}.pw-wrap input{padding-right:54px}
+.pw-toggle{position:absolute;right:12px;top:50%;transform:translateY(-50%);width:34px;height:34px;border-radius:12px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.05);color:#9fb0ca;cursor:pointer;transition:.18s;display:grid;place-items:center;font-size:15px}
+.pw-toggle:hover{color:#fff;background:rgba(255,255,255,.08)}
+.strength-box{margin-top:10px;padding:12px 14px;border-radius:18px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08)}
+.strength-bar{height:6px;background:rgba(255,255,255,.08);border-radius:999px;overflow:hidden}.strength-fill{height:100%;width:0;transition:all .25s}
+.strength-meta{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:10px;font-size:11px;color:#8ea3c0}
+.checks{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;font-size:12px;color:#8ea3c0}
+.checks span{padding:8px 10px;border-radius:12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06)}
+.checks .ok{color:#b9fbc0;border-color:rgba(74,222,128,.18);background:rgba(34,197,94,.08)}
+.meta-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:4px}
+.note-box{margin-top:6px;padding:14px 16px;border-radius:18px;background:rgba(34,211,238,.08);border:1px solid rgba(34,211,238,.14);font-size:12px;line-height:1.75;color:#cceef7}
+.btn{width:100%;padding:15px 18px;margin-top:18px;border:0;border-radius:18px;background:linear-gradient(135deg,#22d3ee 0%,#38bdf8 32%,#6366f1 100%);color:#05111f;font:800 14px Inter,Arial,sans-serif;cursor:pointer;transition:transform .18s,box-shadow .18s,filter .18s;box-shadow:0 16px 34px rgba(34,211,238,.2)}
+.btn:hover{transform:translateY(-2px);filter:saturate(1.06);box-shadow:0 20px 40px rgba(34,211,238,.26)}
+.btn:disabled{opacity:.72;cursor:not-allowed;transform:none}
+.terms-row{display:flex;align-items:flex-start;gap:10px;margin-top:18px;font-size:12px;color:#9fb0ca;line-height:1.6}.terms-row input{width:auto;accent-color:#22d3ee;margin-top:3px}
+.terms-row a,.link-row a,.help-links a{color:#7dd3fc;text-decoration:none;font-weight:700}
+.terms-row a:hover,.link-row a:hover,.help-links a:hover{text-decoration:underline}
+.help-links{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:18px;font-size:12px;color:#8ea3c0}
+.link-row{margin-top:22px;text-align:center;font-size:13px;color:#8ea3c0}
 @keyframes slideUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
-.card-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:22px}
-.card-logo{display:flex;align-items:center;gap:10px}.card-logo img{height:38px;width:auto}.card-logo span{font-weight:800;font-size:15px;color:#dbeafe}
-.card-badge{padding:7px 12px;border-radius:999px;font-size:11px;font-weight:700;font-family:var(--mono);border:1px solid rgba(34,211,238,.2);background:rgba(34,211,238,.08);color:var(--cyan2)}
-.card-h2{font-size:clamp(26px,3vw,33px);font-weight:900;letter-spacing:-1.2px;line-height:1.05}
-.card-sub{margin:9px 0 0;color:var(--muted);font-size:13px;line-height:1.7}
-.msg{display:none;padding:12px 15px;border-radius:12px;font-size:11px;font-weight:700;margin:14px 0 0;font-family:var(--mono)}
-.msg.error{display:block;background:rgba(244,63,94,.1);border:1px solid rgba(244,63,94,.2);color:#fda4af}
-.msg.success{display:block;background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.2);color:#6ee7b7}
-.form-shell{margin-top:18px;padding:20px;border-radius:22px;background:rgba(255,255,255,.038);border:1px solid rgba(255,255,255,.07)}
-.field{margin-bottom:13px}
-label{display:block;font-size:10px;font-weight:700;color:#b8cae0;margin-bottom:6px;letter-spacing:.08em;text-transform:uppercase;font-family:var(--mono)}
-input,select{width:100%;padding:12px 15px;background:rgba(255,255,255,.055);border:1px solid rgba(148,163,184,.2);border-radius:12px;font:14px var(--sans);color:var(--text);outline:none;transition:border-color .18s,box-shadow .18s,background .18s,transform .15s}
-input:focus,select:focus{border-color:rgba(34,211,238,.45);box-shadow:0 0 0 4px rgba(34,211,238,.1);background:rgba(255,255,255,.07);transform:translateY(-1px)}
-input::placeholder{color:#3e5168}
-select option{background:#080f1c;color:var(--text)}
-.pw-wrap{position:relative}.pw-wrap input{padding-right:50px}
-.pw-toggle{position:absolute;right:11px;top:50%;transform:translateY(-50%);width:30px;height:30px;border-radius:9px;border:1px solid rgba(255,255,255,.07);background:rgba(255,255,255,.04);color:var(--muted);cursor:pointer;display:grid;place-items:center;font-size:13px;transition:.18s}
-.pw-toggle:hover{color:var(--text);background:rgba(255,255,255,.08)}
-.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.meta2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-
-/* Env selector buttons */
-.env-selector{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-top:7px}
-.env-btn{padding:9px 6px;border-radius:12px;border:1px solid rgba(255,255,255,.07);background:rgba(255,255,255,.04);color:var(--muted2);font-size:10px;font-weight:700;text-align:center;cursor:pointer;transition:.18s;font-family:var(--mono);text-transform:uppercase;letter-spacing:.08em}
-.env-btn:hover{background:rgba(255,255,255,.07)}
-.env-btn.sel{border-color:rgba(34,211,238,.4);background:rgba(34,211,238,.08);color:var(--cyan2)}
-.env-dot-btn{display:block;width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,.15);margin:0 auto 4px}
-.env-btn.sel .env-dot-btn{background:var(--cyan)}
-
-/* Masking note */
-.mask-note{margin-top:10px;padding:12px 14px;border-radius:14px;background:rgba(34,211,238,.06);border:1px solid rgba(34,211,238,.12);font-size:12px;line-height:1.75;color:#a8d8e8}
-.mask-note strong{color:var(--cyan2);display:block;margin-bottom:3px}
-
-/* Strength */
-.str-box{margin-top:8px;padding:10px 12px;border-radius:14px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07)}
-.str-bar{height:4px;background:rgba(255,255,255,.07);border-radius:2px;overflow:hidden}.str-fill{height:100%;width:0;transition:all .25s}
-.str-meta{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:7px;font-size:10px;color:var(--muted2);font-family:var(--mono)}
-.checks{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:7px;font-size:10px;color:var(--muted2)}
-.checks span{padding:5px 8px;border-radius:8px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);font-family:var(--mono)}
-.checks .ok{color:#b9fbc0;border-color:rgba(74,222,128,.18);background:rgba(16,185,129,.07)}
-
-.admin-note{margin-top:10px;padding:12px 14px;border-radius:14px;background:rgba(139,92,246,.06);border:1px solid rgba(139,92,246,.14);font-size:12px;line-height:1.75;color:#d4c8f0}
-.admin-note strong{color:var(--violet2);display:block;margin-bottom:3px}
-.terms-row{display:flex;align-items:flex-start;gap:9px;margin-top:14px;font-size:12px;color:var(--muted);line-height:1.6}
-.terms-row input{width:auto;accent-color:var(--cyan);flex-shrink:0;margin-top:2px}
-.terms-row a{color:#67c7f8;text-decoration:none;font-weight:700}
-.btn{width:100%;padding:14px 18px;margin-top:14px;border:0;border-radius:13px;background:linear-gradient(135deg,#22d3ee 0%,#38bdf8 40%,#6366f1 100%);color:#020d1a;font:800 14px var(--sans);cursor:pointer;transition:transform .18s,box-shadow .18s,filter .18s;box-shadow:0 12px 30px rgba(34,211,238,.2)}
-.btn:hover{transform:translateY(-2px);filter:saturate(1.08);box-shadow:0 18px 40px rgba(34,211,238,.28)}
-.btn:disabled{opacity:.65;cursor:not-allowed;transform:none}
-.help-bar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:14px;font-size:11px;color:var(--muted2)}
-.link{color:#67c7f8;text-decoration:none;font-weight:700}.link:hover{text-decoration:underline}
-.link-row{margin-top:18px;text-align:center;font-size:12px;color:var(--muted2)}
-@media(max-width:1140px){body{padding:14px}.shell{grid-template-columns:1fr}.hero,.card{min-height:auto}.hero{padding:28px}.card{padding:22px}}
-@media(max-width:760px){.hero{display:none}.card{padding:18px}.card-inner{max-width:none}.card-h2{font-size:26px}.form-shell{padding:16px}.grid2,.meta2,.checks,.env-selector,.mask-grid,.env-health,.setup-track,.cap-grid{grid-template-columns:1fr 1fr}}
-@media(max-width:480px){.grid2,.meta2,.checks,.env-health,.setup-track,.cap-grid{grid-template-columns:1fr}}
+@media(max-width:1120px){.shell{grid-template-columns:1fr}.hero,.card{min-height:auto}.hero{padding:34px}.card{padding:24px}}
+@media(max-width:760px){body{padding:16px}.hero{display:none}.card{padding:20px}.card-inner{max-width:none}.card h2{font-size:32px}.form-shell{padding:18px}.grid2,.meta-grid,.checks,.story-grid,.setup-track{grid-template-columns:1fr}.help-links{flex-direction:column;align-items:flex-start}}
 </style>
 </head>
 <body>
@@ -161,100 +132,64 @@ select option{background:#080f1c;color:var(--text)}
         <img src="/static/images/logo-dark.svg" alt="ObserveX">
         <div class="live-chip"><span class="live-dot"></span> Guided workspace setup</div>
       </div>
-      <div style="margin-top:26px">
+
+      <div class="hero-copy">
         <div class="eyebrow">launch your observability cockpit</div>
-        <h1 class="hero-h1">Create a workspace your whole team can <em>operate from.</em></h1>
-        <p class="hero-p">Bring together logs, traces, alerts, environment filters, sensitive-data masking, and AI investigation workflows in one premium control surface.</p>
-      </div>
+        <h1>Create a workspace your whole team can operate from.</h1>
+        <p>
+          Bring together logs, traces, alerts, environment filters, sensitive-data masking, and AI investigation
+          workflows in one premium control surface.
+        </p>
 
-      <div class="cap-grid">
-        <div class="cap">
-          <div class="cap-kick">Environment Lens</div>
-          <strong>PROD · UAT · DEV · DR</strong>
-          <span>Separate monitoring by environment. Isolate incidents faster without cross-environment noise.</span>
-        </div>
-        <div class="cap">
-          <div class="cap-kick">Alert Intelligence</div>
-          <strong>Rule-based + AI anomaly</strong>
-          <span>Reduce noise with thresholds, deduplication, and AI summaries focused on what matters.</span>
-        </div>
-        <div class="cap">
-          <div class="cap-kick">Data Shield</div>
-          <strong>Mask sensitive fields automatically</strong>
-          <span>PAN, Aadhaar, JWTs, phone, email — protected without breaking your debugging flow.</span>
-        </div>
-        <div class="cap">
-          <div class="cap-kick">AI RCA Co-Pilot</div>
-          <strong>Instant root-cause briefs</strong>
-          <span>AI summarizes probable causes, failure clusters, and retry storms in plain English.</span>
-        </div>
-      </div>
-
-      <!-- Masking matrix -->
-      <div class="mask-panel">
-        <div class="mask-header">
-          <span class="mask-title">Sensitive Data Policy · Default</span>
-          <span class="mask-ok">Compliant · 98.7%</span>
-        </div>
-        <div class="mask-grid">
-          <div class="mf"><div class="mf-cat">Financial</div><div class="mf-val mv-masked">PAN/Aadhaar · Masked</div></div>
-          <div class="mf"><div class="mf-cat">Banking</div><div class="mf-val mv-tokenized">Account No · Tokenized</div></div>
-          <div class="mf"><div class="mf-cat">Identity</div><div class="mf-val mv-hidden">Email · Partially Hidden</div></div>
-          <div class="mf"><div class="mf-cat">Contact</div><div class="mf-val mv-encrypted">Phone · Encrypted</div></div>
-          <div class="mf"><div class="mf-cat">Auth</div><div class="mf-val mv-filtered">JWT Claims · Filtered</div></div>
-          <div class="mf"><div class="mf-cat">Network</div><div class="mf-val mv-review">Headers · Review</div></div>
-        </div>
-      </div>
-
-      <!-- Environment health -->
-      <div class="env-health">
-        <div class="eh">
-          <div class="eh-name">PROD</div>
-          <div class="eh-badge ehb-healthy">Healthy</div>
-          <div class="eh-uptime">99.96%</div>
-        </div>
-        <div class="eh">
-          <div class="eh-name">UAT</div>
-          <div class="eh-badge ehb-watch">Watch</div>
-          <div class="eh-uptime">99.22%</div>
-        </div>
-        <div class="eh">
-          <div class="eh-name">DEV</div>
-          <div class="eh-badge ehb-healthy">Healthy</div>
-          <div class="eh-uptime">98.14%</div>
-        </div>
-        <div class="eh">
-          <div class="eh-name">DR</div>
-          <div class="eh-badge ehb-standby">Standby</div>
-          <div class="eh-uptime">Cold sync</div>
+        <div class="story-grid">
+          <div class="story-card">
+            <div class="story-kicker">Environment Ready</div>
+            <strong>Separate PROD, UAT, DEV, and DR views</strong>
+            <span>Organize monitoring by environment so operations teams can isolate issues faster and reduce confusion.</span>
+          </div>
+          <div class="story-card">
+            <div class="story-kicker">Alert Intelligence</div>
+            <strong>Reduce noise before incidents escalate</strong>
+            <span>Use thresholds, anomaly detection, and AI summaries to focus only on what needs action.</span>
+          </div>
+          <div class="story-card">
+            <div class="story-kicker">Secure by Design</div>
+            <strong>Protect sensitive fields automatically</strong>
+            <span>Mask tokens, account values, identities, and risky headers without breaking troubleshooting flow.</span>
+          </div>
+          <div class="story-card">
+            <div class="story-kicker">Trace-Aware UX</div>
+            <strong>Move from event to request path instantly</strong>
+            <span>Correlate logs to traces and follow service hops with clearer latency and failure attribution.</span>
+          </div>
         </div>
       </div>
     </div>
 
     <div>
       <div class="setup-track">
-        <div class="st">
-          <div class="st-num">1</div>
+        <div class="setup-step">
+          <div class="num">1</div>
           <strong>Create your org</strong>
-          <span>Set up the workspace and environment structure.</span>
+          <span>Set up the company workspace and prepare your environment structure.</span>
         </div>
-        <div class="st">
-          <div class="st-num">2</div>
+        <div class="setup-step">
+          <div class="num">2</div>
           <strong>Invite the team</strong>
-          <span>Add admins, devs, testers with role-based access.</span>
+          <span>Add admins, developers, testers, and managers with role-based access later.</span>
         </div>
-        <div class="st">
-          <div class="st-num">3</div>
-          <strong>Ingest logs</strong>
-          <span>Connect sources and begin observing traces and alerts.</span>
+        <div class="setup-step">
+          <div class="num">3</div>
+          <strong>Start ingesting logs</strong>
+          <span>Connect sources, route events, and begin observing traces, metrics, and alerts.</span>
         </div>
       </div>
       <div class="hero-footer">
-        <span>Designed for API teams, SREs, and platform ops.</span>
-        <div class="fbadges">
-          <span class="fbadge">Multi-Env</span>
-          <span class="fbadge">Masking First</span>
-          <span class="fbadge">Fast Onboard</span>
+        <span>Designed for modern API teams, platform engineering, and security-conscious operations.</span>
+        <div class="footer-badges">
+          <span>Multi Environment</span>
+          <span>Masking First</span>
+          <span>Fast Onboarding</span>
         </div>
       </div>
     </div>
@@ -270,157 +205,204 @@ select option{background:#080f1c;color:var(--text)}
         <div class="card-badge">Create workspace</div>
       </div>
 
-      <div class="card-h2">Launch your workspace</div>
-      <p class="card-sub">Set up your organization and start monitoring logs, traces, alerts, and environment health from one place.</p>
+      <h2>Launch your workspace</h2>
+      <p class="sub">Set up your organization and start monitoring logs, traces, alerts, and environment health from one place.</p>
 
       <div class="msg" id="msg"></div>
 
       <div class="form-shell">
         <div class="field">
-          <label for="org_name">Organization name</label>
-          <input type="text" id="org_name" placeholder="e.g. Five Star Business Finance" autocomplete="organization" required>
+          <label for="organization_name">Organization name</label>
+          <div class="input-wrap">
+            <input type="text" id="organization_name" name="organization_name" placeholder="e.g. Five Star Business Finance" autocomplete="organization" required>
+          </div>
         </div>
 
         <div class="grid2">
           <div class="field">
             <label for="name">Your name</label>
-            <input type="text" id="name" placeholder="Full name" autocomplete="name" required>
+            <div class="input-wrap">
+              <input type="text" id="name" name="name" placeholder="Full name" autocomplete="name" required>
+            </div>
           </div>
           <div class="field">
             <label for="email">Work email</label>
-            <input type="email" id="email" placeholder="you@company.com" autocomplete="email" required>
+            <div class="input-wrap">
+              <input type="email" id="email" name="email" placeholder="you@company.com" autocomplete="email" required>
+            </div>
           </div>
         </div>
 
-        <div class="meta2">
+        <div class="meta-grid">
           <div class="field">
-            <label for="ws_mode">Workspace mode</label>
-            <select id="ws_mode" onchange="updateMaskNote()">
-              <option value="enterprise">Enterprise Observability</option>
-              <option value="sandbox">Developer Sandbox</option>
-              <option value="security">Security Analytics</option>
-              <option value="fintech">FinTech Compliance</option>
+            <label for="workspaceType">Workspace mode</label>
+            <select id="workspaceType">
+              <option>Enterprise Observability</option>
+              <option>Developer Sandbox</option>
+              <option>Security Analytics</option>
             </select>
           </div>
           <div class="field">
-            <label for="team_size">Team size</label>
-            <select id="team_size">
-              <option>1–5 members</option>
-              <option>6–20 members</option>
-              <option>21–100 members</option>
-              <option>100+ members</option>
+            <label for="primaryEnv">Primary environment</label>
+            <select id="primaryEnv">
+              <option>Production</option>
+              <option>UAT</option>
+              <option>Development</option>
+              <option>DR</option>
             </select>
           </div>
         </div>
 
         <div class="field">
-          <label>Environments to monitor <span style="font-weight:400;color:var(--muted2)">(select all)</span></label>
-          <div class="env-selector" id="envSel">
-            <div class="env-btn sel" onclick="toggleEnv(this,'production')"><span class="env-dot-btn"></span>PROD</div>
-            <div class="env-btn" onclick="toggleEnv(this,'uat')"><span class="env-dot-btn"></span>UAT</div>
-            <div class="env-btn" onclick="toggleEnv(this,'development')"><span class="env-dot-btn"></span>DEV</div>
-            <div class="env-btn" onclick="toggleEnv(this,'dr')"><span class="env-dot-btn"></span>DR</div>
-          </div>
-        </div>
-
-        <div class="mask-note" id="maskNote">
-          <strong>🛡 Enterprise Observability — masking defaults</strong>
-          PAN/Aadhaar masked · Account numbers tokenized · JWTs filtered · Email partially hidden · Custom headers flagged for review. All policies configurable after workspace creation.
-        </div>
-
-        <div class="field" style="margin-top:13px">
           <label for="password">Password</label>
           <div class="pw-wrap">
-            <input type="password" id="password" placeholder="Minimum 8 characters" autocomplete="new-password" oninput="checkStr(this.value)">
-            <button class="pw-toggle" id="pwToggle" type="button" onclick="togglePw()">👁</button>
+            <input type="password" id="password" name="password" placeholder="At least 8 characters" autocomplete="new-password" oninput="checkStrength(this.value)">
+            <button class="pw-toggle" id="togglePwBtn" type="button" onclick="togglePw()" title="Show or hide password">👁</button>
           </div>
-          <div class="str-box">
-            <div class="str-bar"><div class="str-fill" id="strFill"></div></div>
-            <div class="str-meta"><span id="strLabel">Choose a strong password</span><span id="strScore">0/5</span></div>
-            <div class="checks">
-              <span id="c1">8+ chars</span>
-              <span id="c2">Uppercase</span>
+          <div class="strength-box">
+            <div class="strength-bar"><div class="strength-fill" id="strengthFill"></div></div>
+            <div class="strength-meta">
+              <span id="strengthLabel">Choose a strong password</span>
+              <span id="strengthScore">0 / 5 checks</span>
+            </div>
+            <div class="checks" id="pwChecks">
+              <span id="c1">8+ characters</span>
+              <span id="c2">Uppercase letter</span>
               <span id="c3">Number</span>
-              <span id="c4">Symbol</span>
+              <span id="c4">Special character</span>
             </div>
           </div>
         </div>
 
-        <div class="admin-note">
-          <strong>ℹ Workspace admin account</strong>
-          You'll be the admin. Invite members, define role-based masking visibility, set alert thresholds per environment, and configure retention after setup.
+        <div class="note-box">
+          Your first user will be created as the workspace admin. You can later add more members, split environments,
+          define alert policies, and configure masking rules per application or source.
         </div>
 
         <label class="terms-row">
-          <input type="checkbox" id="terms">
-          <span>I agree to the platform terms and understand this workspace starts with secure defaults for alerts, access, and sensitive data visibility. <a href="/documentation" class="link" target="_blank">Read docs →</a></span>
+          <input type="checkbox" id="agreeTerms">
+          <span>I agree to the platform terms and understand this workspace will start with secure defaults for alerts, access, and sensitive data visibility.</span>
         </label>
 
-        <button class="btn" id="submitBtn" onclick="createWs()">Create workspace and continue →</button>
+        <button class="btn" id="submitBtn" onclick="createWorkspace()">Create workspace and continue</button>
       </div>
 
-      <div class="help-bar">
-        <span>Need help? Review docs, onboarding guide, and status.</span>
-        <a href="/documentation" class="link" style="font-size:11px">Documentation</a>
+      <div class="help-links">
+        <span>Need help before setup? Review docs, onboarding guidance, and platform status.</span>
+        <a href="/documentation">Documentation</a>
       </div>
-      <div class="link-row">Already have a workspace? <a href="/login" class="link">Sign in →</a></div>
+      <div class="link-row">Already have a workspace? <a href="/login">Sign in</a></div>
     </div>
   </main>
 </div>
-
 <script>
-const selEnvs=new Set(['production']);
-function toggleEnv(el,env){
-  if(el.classList.contains('sel')){if(selEnvs.size===1)return;el.classList.remove('sel');selEnvs.delete(env);}
-  else{el.classList.add('sel');selEnvs.add(env);}
+function togglePw(){
+  const inp=document.getElementById('password');
+  const btn=document.getElementById('togglePwBtn');
+  if(inp.type==='password'){
+    inp.type='text';
+    btn.textContent='🙈';
+  }else{
+    inp.type='password';
+    btn.textContent='👁';
+  }
 }
-const maskNotes={
-  enterprise:'<strong>🛡 Enterprise Observability — masking defaults</strong>PAN/Aadhaar masked · Account numbers tokenized · JWTs filtered · Email partially hidden · Custom headers flagged for review.',
-  sandbox:'<strong>🔧 Developer Sandbox — relaxed masking</strong>Basic PII masking active. Sensitive fields visible to workspace admin. Ideal for non-production debugging without strict compliance rules.',
-  security:'<strong>🔒 Security Analytics — strict defaults</strong>All PII masked · Full JWT filtering · Suspicious IP flagging · SOC2-aligned defaults · Audit log for all access.',
-  fintech:'<strong>🏦 FinTech Compliance — maximum protection</strong>PAN/Aadhaar · Account · Phone · Email · IFSC — all masked or tokenized. RBI/DPDP-aligned defaults applied automatically.'
-};
-function updateMaskNote(){const v=document.getElementById('ws_mode').value;document.getElementById('maskNote').innerHTML=maskNotes[v]||maskNotes.enterprise;}
-function togglePw(){const i=document.getElementById('password'),b=document.getElementById('pwToggle');i.type=i.type==='password'?'text':'password';b.textContent=i.type==='password'?'👁':'🙈';}
-function setCheck(id,ok){const el=document.getElementById(id);if(el)el.className=ok?'ok':'';}
-function checkStr(v){
-  const fill=document.getElementById('strFill'),lbl=document.getElementById('strLabel'),score=document.getElementById('strScore');
-  const checks=[v.length>=8,/[A-Z]/.test(v),/[0-9]/.test(v),/[^A-Za-z0-9]/.test(v)];
-  setCheck('c1',checks[0]);setCheck('c2',checks[1]);setCheck('c3',checks[2]);setCheck('c4',checks[3]);
-  let s=0;if(v.length>=8)s++;if(v.length>=12)s++;if(/[A-Z]/.test(v))s++;if(/[0-9]/.test(v))s++;if(/[^A-Za-z0-9]/.test(v))s++;
-  const lvls=[{w:'10%',c:'#f43f5e',t:'Too weak'},{w:'28%',c:'#f97316',t:'Weak'},{w:'52%',c:'#facc15',t:'Fair'},{w:'78%',c:'#22c55e',t:'Strong'},{w:'100%',c:'#22d3ee',t:'Very strong'}];
-  if(!v){fill.style.width='0';lbl.textContent='Choose a strong password';score.textContent='0/5';return;}
-  const l=lvls[Math.min(Math.max(s-1,0),4)];
-  fill.style.width=l.w;fill.style.background=l.c;
-  lbl.textContent=l.t;lbl.style.color=l.c;score.textContent=s+'/5';
+
+function setCheck(id, ok){
+  const el=document.getElementById(id);
+  if(!el) return;
+  el.className=ok ? 'ok' : '';
 }
-function showMsg(t,c){const m=document.getElementById('msg');m.textContent=t;m.className='msg '+c;}
-async function createWs(){
+
+function checkStrength(pw){
+  const fill=document.getElementById('strengthFill');
+  const lbl=document.getElementById('strengthLabel');
+  const scoreText=document.getElementById('strengthScore');
+
+  const checks=[
+    pw.length>=8,
+    /[A-Z]/.test(pw),
+    /[0-9]/.test(pw),
+    /[^A-Za-z0-9]/.test(pw)
+  ];
+  setCheck('c1',checks[0]);
+  setCheck('c2',checks[1]);
+  setCheck('c3',checks[2]);
+  setCheck('c4',checks[3]);
+
+  let score=0;
+  if(pw.length>=8) score++;
+  if(pw.length>=12) score++;
+  if(/[A-Z]/.test(pw)) score++;
+  if(/[0-9]/.test(pw)) score++;
+  if(/[^A-Za-z0-9]/.test(pw)) score++;
+
+  const levels=[
+    {w:'10%',c:'#ef4444',t:'Too weak'},
+    {w:'28%',c:'#f97316',t:'Weak'},
+    {w:'52%',c:'#facc15',t:'Fair'},
+    {w:'78%',c:'#22c55e',t:'Strong'},
+    {w:'100%',c:'#06b6d4',t:'Very strong'}
+  ];
+
+  if(!pw){
+    fill.style.width='0';
+    lbl.textContent='Choose a strong password';
+    scoreText.textContent='0 / 5 checks';
+    return;
+  }
+
+  const level=levels[Math.min(Math.max(score-1,0),4)];
+  fill.style.width=level.w;
+  fill.style.background=level.c;
+  lbl.textContent=level.t;
+  lbl.style.color=level.c;
+  scoreText.textContent=score+' / 5 checks';
+}
+
+function showMsg(text,type){
+  const el=document.getElementById('msg');
+  el.textContent=text;
+  el.className='msg '+type;
+}
+
+async function createWorkspace(){
   const btn=document.getElementById('submitBtn');
-  const org=document.getElementById('org_name').value.trim();
+  const org_name=document.getElementById('organization_name').value.trim();
   const name=document.getElementById('name').value.trim();
   const email=document.getElementById('email').value.trim();
-  const pw=document.getElementById('password').value;
-  const terms=document.getElementById('terms').checked;
-  const ws_mode=document.getElementById('ws_mode').value;
-  const team=document.getElementById('team_size').value;
-  if(!org){showMsg('Organization name is required.','error');return;}
+  const password=document.getElementById('password').value;
+  const agreeTerms=document.getElementById('agreeTerms').checked;
+
+  if(!org_name){showMsg('Organization name is required.','error');return;}
   if(!name){showMsg('Your name is required.','error');return;}
-  if(!email||!email.includes('@')){showMsg('A valid work email is required.','error');return;}
-  if(!pw||pw.length<8){showMsg('Password must be at least 8 characters.','error');return;}
-  if(!terms){showMsg('Please accept the terms to continue.','error');return;}
+  if(!email||!email.includes('@')){showMsg('A valid email is required.','error');return;}
+  if(!password||password.length<8){showMsg('Password must be at least 8 characters.','error');return;}
+  if(!agreeTerms){showMsg('Please accept the terms to continue.','error');return;}
+
   btn.disabled=true;btn.textContent='Creating workspace…';
+
   try{
-    const res=await fetch('/register',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({organization_name:org,name,email,password:pw,role:'admin',workspace_type:ws_mode,team_size:team,environments:Array.from(selEnvs)})});
-    const d=await res.json();
-    if(!res.ok){showMsg(d.error||'Registration failed.','error');btn.disabled=false;btn.textContent='Create workspace and continue →';return;}
-    try{localStorage.setItem('ox_session',JSON.stringify({email,name,org}));}catch(e){}
-    showMsg('Workspace created! Redirecting to dashboard…','success');
-    setTimeout(()=>{window.location.href=d.workspace_url||('/workspace/'+d.slug);},800);
-  }catch(e){showMsg('Network error: '+e.message,'error');btn.disabled=false;btn.textContent='Create workspace and continue →';}
+    const res=await fetch('/register',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({organization_name:org_name,name,email,password,theme_mode:'dark',role:'admin'})
+    });
+    const data=await res.json();
+    if(!res.ok){
+      showMsg(data.error||'Registration failed. Please try again.','error');
+      btn.disabled=false;btn.textContent='Create workspace and continue';
+      return;
+    }
+    showMsg('Workspace created successfully. Redirecting to your dashboard…','success');
+    setTimeout(()=>{window.location.href=data.workspace_url||('/workspace/'+data.slug);},850);
+  }catch(e){
+    showMsg('Network error: '+e.message,'error');
+    btn.disabled=false;btn.textContent='Create workspace and continue';
+  }
 }
-document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.id!=='password')createWs();});
+
+document.addEventListener('keydown',e=>{if(e.key==='Enter')createWorkspace();});
 </script>
 </body>
 </html>
