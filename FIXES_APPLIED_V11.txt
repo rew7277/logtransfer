@@ -1,0 +1,113 @@
+ObserveX — v11 Fixes & Improvements
+=====================================
+Generated: 2026-04-22
+
+═══════════════════════════════════════
+🔴 CRITICAL BUG FIXES
+═══════════════════════════════════════
+
+1. FIXED: 500 Error on POST /login
+   File: app.py  (login route ~line 1978)
+   Root cause: The SQL query for login was:
+     SELECT u.id, u.name, u.email, u.role, u.org_id, u.password_hash,
+            u.email_verified, o.admin_only
+     FROM users u JOIN organizations o ON o.id = u.org_id ...
+   It did NOT include o.slug or o.public_id, but the login response
+   tries to access user["slug"] → IndexError: No item with that key → HTTP 500.
+   Fix: Added o.slug, o.public_id to the login SELECT.
+
+2. FIXED: withEnv() function was called but never defined
+   File: templates/index.html
+   withEnv() is called in 4 places (bootstrap, sources, errors, uploads)
+   but the function body was missing entirely → ReferenceError in browser.
+   Fix: Added full withEnv() implementation.
+
+3. FIXED: setEnvironment() function was called from the env select
+   but never defined — switching environments silently did nothing.
+   Fix: Full setEnvironment() implementation that refreshes all data panels.
+
+4. FIXED: togglePw() in login.html referenced getElementById('eyeIcon')
+   which does not exist → JS error on password show/hide toggle.
+   Fix: Rewrote togglePw() to use querySelector('.pw-toggle').
+
+5. FIXED: Overview h1 had broken HTML — closed with </div> not </h1>
+   causing malformed DOM and visual layout corruption.
+   Fix: Replaced with new overview-hero component.
+
+═══════════════════════════════════════
+✅ ENVIRONMENT-AWARE SYSTEM (NEW)
+═══════════════════════════════════════
+
+6. NEW: Color-coded environment pill switcher in topbar
+   Environments: DEV (gray) · SIT (blue) · UAT (amber) · PREPROD (orange)
+                 PROD (red) · DR (purple)
+   - Replaces plain <select> with a beautiful pill dropdown
+   - Active env shown in topbar at all times with color-coded dot
+   - Clicking opens a dropdown with all environments from DB
+   - PROD environments have ⚠ badge to warn users
+
+7. NEW: populateEnvMenu() — reads environments from /api/bootstrap
+   and builds the dropdown dynamically from your DB-configured envs,
+   merged with the default set (DEV, SIT, UAT, PREPROD, PROD, DR).
+
+8. NEW: Environment badges (env-badge CSS class) on:
+   - Upload history rows: every upload shows its env (PROD, UAT, etc.)
+   - Log table message column: when viewing "All envs", each row shows
+     a small colored badge indicating which environment the log came from.
+
+9. NEW: Environment-aware uploads
+   - Upload zone now shows an environment selector dropdown
+   - Browser uploads are tagged to the selected environment
+   - Syncs automatically when you switch the topbar env switcher
+
+10. NEW: loadLogs() now passes environment= query param so log
+    explorer respects the active environment filter.
+
+11. NEW: Hero env banner — when a non-ALL environment is active,
+    the overview hero shows a colored banner (e.g. "⚠ PROD environment").
+
+12. NEW: Dynamic health chip in overview hero reflects actual error rate
+    (healthy / elevated / high error rate) with correct colors.
+
+═══════════════════════════════════════
+✅ UI/UX IMPROVEMENTS
+═══════════════════════════════════════
+
+13. NEW: overview-hero component
+    - Replaces the old flat page-header
+    - Gradient surface, radial glow accent
+    - Dynamic feature chips (Live monitoring / AI diagnostics / Health status)
+    - Environment banner positioned top-right when env is selected
+
+14. NEW: CSS classes added
+    .env-pill-btn variants (dev/sit/uat/preprod/prod/dr) 
+    .env-dropdown-wrap / .env-dropdown-menu / .env-menu-item
+    .env-badge and its color variants
+    .overview-hero / .overview-hero-title / .overview-hero-sub
+    .hero-chip and color variants (blue/purple/green/teal/uat/prod)
+    .upload-env-chip
+
+15. IMPROVED: Workspace ID chip shows clean ID without "ID ·" prefix,
+    has hover title with full workspace ID.
+
+16. IMPROVED: Topbar shows "ObserveX · {OrgName}" instead of the longer
+    "ObserveX Workspace · {OrgName}".
+
+═══════════════════════════════════════
+URL ROUTING (unchanged, already correct)
+═══════════════════════════════════════
+URLs remain:
+  /workspace/{public_id}/{slug}/overview
+  /workspace/{public_id}/{slug}/explorer
+  e.g. /workspace/920723-98160102-67924/fsbl/overview ✓
+
+This was already working correctly in v10. No changes needed.
+
+═══════════════════════════════════════
+DEPLOYMENT CHECKLIST
+═══════════════════════════════════════
+1. Deploy this ZIP to Railway (replace all files)
+2. No DB migrations needed — environments table already exists
+3. Ensure SECRET_KEY env var is set
+4. Ensure DATABASE_URL is set (or SQLite fallback used)
+5. ANTHROPIC_API_KEY optional (AI features degrade gracefully)

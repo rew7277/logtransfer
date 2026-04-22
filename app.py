@@ -1977,7 +1977,8 @@ def login():
     password = payload.get("password") or ""
     db       = get_db()
     user     = db.execute(
-        """SELECT u.id, u.name, u.email, u.role, u.org_id, u.password_hash, u.email_verified, o.admin_only
+        """SELECT u.id, u.name, u.email, u.role, u.org_id, u.password_hash, u.email_verified,
+                  o.admin_only, o.slug, o.public_id
            FROM users u JOIN organizations o ON o.id = u.org_id WHERE lower(u.email) = ?""",
         (email,),
     ).fetchone()

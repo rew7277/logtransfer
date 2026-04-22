@@ -433,6 +433,133 @@ html:not(.dark) .api-code{background:#f6f8fa;color:#1a7f37}
 html:not(.dark) .stat-card:hover{box-shadow:0 8px 24px rgba(0,0,0,.1)}
 html:not(.dark) .toast{box-shadow:0 8px 24px rgba(0,0,0,.15)}
 
+/* ══════════════════════════════════════════════
+   ENVIRONMENT SWITCHER — color-coded pill system
+   ══════════════════════════════════════════════ */
+.env-switcher-wrap{display:flex;align-items:center;gap:6px;flex-shrink:0}
+.env-pill-btn{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:5px 10px;border-radius:20px;
+  font-size:11px;font-weight:700;letter-spacing:.3px;font-family:var(--mono);
+  border:1.5px solid transparent;cursor:pointer;transition:all .18s;
+  white-space:nowrap;
+}
+.env-pill-btn .env-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.env-pill-btn .env-caret{font-size:8px;opacity:.6;margin-left:1px}
+/* Default (ALL) */
+.env-pill-btn.env-all{background:var(--surface2);border-color:var(--border2);color:var(--text2)}
+.env-pill-btn.env-all:hover{border-color:var(--accent);color:var(--accent2)}
+.env-pill-btn.env-all .env-dot{background:var(--text3)}
+/* DEV */
+.env-pill-btn.env-dev{background:rgba(100,116,139,.12);border-color:rgba(100,116,139,.3);color:#64748b}
+.env-pill-btn.env-dev.env-active{background:rgba(100,116,139,.2);border-color:#64748b}
+.env-pill-btn.env-dev .env-dot{background:#64748b}
+/* SIT */
+.env-pill-btn.env-sit{background:rgba(14,165,233,.10);border-color:rgba(14,165,233,.3);color:#0ea5e9}
+.env-pill-btn.env-sit.env-active{background:rgba(14,165,233,.2);border-color:#0ea5e9}
+.env-pill-btn.env-sit .env-dot{background:#0ea5e9}
+/* UAT */
+.env-pill-btn.env-uat{background:rgba(245,158,11,.10);border-color:rgba(245,158,11,.3);color:#b45309}
+.env-pill-btn.env-uat.env-active{background:rgba(245,158,11,.18);border-color:#f59e0b}
+.env-pill-btn.env-uat .env-dot{background:#f59e0b}
+/* PREPROD */
+.env-pill-btn.env-preprod{background:rgba(234,88,12,.10);border-color:rgba(234,88,12,.3);color:#c2410c}
+.env-pill-btn.env-preprod.env-active{background:rgba(234,88,12,.18);border-color:#ea580c}
+.env-pill-btn.env-preprod .env-dot{background:#ea580c}
+/* PROD */
+.env-pill-btn.env-prod{background:rgba(239,68,68,.10);border-color:rgba(239,68,68,.3);color:#dc2626}
+.env-pill-btn.env-prod.env-active{background:rgba(239,68,68,.18);border-color:#ef4444;box-shadow:0 0 0 2px rgba(239,68,68,.12)}
+.env-pill-btn.env-prod .env-dot{background:#ef4444}
+/* DR */
+.env-pill-btn.env-dr{background:rgba(124,58,237,.10);border-color:rgba(124,58,237,.3);color:#7c3aed}
+.env-pill-btn.env-dr.env-active{background:rgba(124,58,237,.18);border-color:#7c3aed}
+.env-pill-btn.env-dr .env-dot{background:#7c3aed}
+
+/* dropdown env menu */
+.env-dropdown-wrap{position:relative}
+.env-dropdown-menu{
+  display:none;position:absolute;top:calc(100% + 6px);right:0;
+  background:var(--surface);border:1px solid var(--border2);
+  border-radius:10px;padding:6px;z-index:200;min-width:160px;
+  box-shadow:0 12px 32px rgba(0,0,0,.2);
+}
+.env-dropdown-menu.open{display:block;animation:fadeDown .12s ease}
+@keyframes fadeDown{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+.env-menu-item{
+  display:flex;align-items:center;gap:8px;padding:7px 10px;
+  border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;
+  color:var(--text2);transition:all .12s;font-family:var(--mono);
+}
+.env-menu-item:hover{background:var(--surface2);color:var(--text)}
+.env-menu-item.active{background:var(--surface2);color:var(--text)}
+.env-menu-item .env-menu-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.env-menu-divider{height:1px;background:var(--border);margin:4px 0}
+.env-menu-label{font-size:9px;font-weight:700;color:var(--text3);letter-spacing:1px;text-transform:uppercase;padding:4px 10px 2px}
+
+/* ── OVERVIEW HERO ── */
+.overview-hero{
+  background:linear-gradient(135deg,var(--surface) 0%,var(--surface2) 100%);
+  border:1px solid var(--border);border-radius:12px;
+  padding:24px 28px;margin-bottom:20px;
+  position:relative;overflow:hidden;
+}
+html.dark .overview-hero{background:linear-gradient(135deg,#0d1117 0%,#161b22 100%)}
+.overview-hero::before{
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse 60% 80% at 90% 50%,rgba(31,111,235,.06),transparent);
+  pointer-events:none;
+}
+.overview-hero-title{font-size:22px;font-weight:800;letter-spacing:-.5px;margin-bottom:6px;line-height:1.2}
+.overview-hero-sub{font-size:13px;color:var(--text2);margin-bottom:14px;line-height:1.6;max-width:560px}
+.hero-chips{display:flex;gap:8px;flex-wrap:wrap}
+.hero-chip{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:5px 12px;border-radius:20px;font-size:11px;font-weight:700;
+  transition:all .15s;border:1px solid transparent;
+}
+.hero-chip-blue{background:rgba(37,99,235,.1);color:#1d4ed8;border-color:rgba(37,99,235,.2)}
+.hero-chip-purple{background:rgba(124,58,237,.1);color:#6d28d9;border-color:rgba(124,58,237,.2)}
+.hero-chip-green{background:rgba(22,163,74,.1);color:#15803d;border-color:rgba(22,163,74,.2)}
+.hero-chip-teal{background:rgba(20,184,166,.1);color:#0f766e;border-color:rgba(20,184,166,.2)}
+.hero-chip-uat{background:rgba(245,158,11,.12);color:#b45309;border-color:rgba(245,158,11,.3)}
+.hero-chip-prod{background:rgba(239,68,68,.12);color:#dc2626;border-color:rgba(239,68,68,.3)}
+html.dark .hero-chip-blue{background:rgba(37,99,235,.15);color:#60a5fa;border-color:rgba(96,165,250,.25)}
+html.dark .hero-chip-purple{background:rgba(139,92,246,.15);color:#a78bfa;border-color:rgba(167,139,250,.25)}
+html.dark .hero-chip-green{background:rgba(63,185,80,.15);color:#3fb950;border-color:rgba(63,185,80,.25)}
+html.dark .hero-chip-teal{background:rgba(57,197,207,.15);color:#39c5cf;border-color:rgba(57,197,207,.25)}
+
+/* ── ENV BADGE (shown inline in tables/cards) ── */
+.env-badge{
+  display:inline-flex;align-items:center;gap:3px;
+  padding:2px 6px;border-radius:4px;font-size:9px;font-weight:800;
+  letter-spacing:.5px;text-transform:uppercase;font-family:var(--mono);
+}
+.env-badge-dev{background:rgba(100,116,139,.15);color:#64748b}
+.env-badge-sit{background:rgba(14,165,233,.12);color:#0ea5e9}
+.env-badge-uat{background:rgba(245,158,11,.15);color:#b45309}
+.env-badge-preprod{background:rgba(234,88,12,.15);color:#c2410c}
+.env-badge-prod{background:rgba(239,68,68,.15);color:#dc2626}
+.env-badge-dr{background:rgba(124,58,237,.15);color:#7c3aed}
+.env-badge-all{background:rgba(100,116,139,.12);color:var(--text3)}
+
+/* ── TOPBAR ENV INDICATOR ── */
+.topbar-env-active{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:4px 10px;border-radius:20px;
+  font-size:11px;font-weight:700;font-family:var(--mono);
+  cursor:pointer;transition:all .15s;border:1.5px solid transparent;
+}
+
+/* ── STAT CARD IMPROVEMENTS ── */
+.stat-card{position:relative}
+.stat-card-env{position:absolute;top:8px;right:8px;font-size:9px;font-weight:700;color:var(--text3);font-family:var(--mono)}
+
+/* ── UPLOAD ROW ENV BADGE ── */
+.upload-env-chip{
+  padding:2px 7px;border-radius:4px;font-size:9px;font-weight:800;
+  letter-spacing:.4px;text-transform:uppercase;font-family:var(--mono);flex-shrink:0;
+}
+
 /* ── INGEST API ── */
 .api-code{background:rgba(0,0,0,.5);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 14px;font-family:var(--mono);font-size:11px;color:#a5d6a7;white-space:pre-wrap;word-break:break-all;position:relative;margin-bottom:12px}
 .api-copy{position:absolute;top:8px;right:8px;background:var(--surface3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:3px 8px;font-size:10px;cursor:pointer;color:var(--text2);font-family:var(--sans);transition:all .15s}
@@ -717,10 +844,31 @@ html:not(.dark) .toast{box-shadow:0 8px 24px rgba(0,0,0,.15)}
         <path class="panel-toggle-arrow" d="M8 5.5L10 7.5L8 9.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
     </button>
-    <span class="topbar-title"><span>ObserveX</span> Workspace · {{ user.org_name }}</span>
-    <span class="workspace-id-chip" title="Unique workspace ID">ID · {{ workspace_public_id or user.public_id }}</span>
+    <span class="topbar-title"><span>ObserveX</span> · {{ user.org_name }}</span>
+    <span class="workspace-id-chip" title="Workspace ID: {{ workspace_public_id or user.public_id }}">{{ workspace_public_id or user.public_id }}</span>
+
+    <!-- ── Environment switcher ── -->
+    <div class="env-dropdown-wrap" id="envDropdownWrap">
+      <button class="topbar-env-active" id="envActivePill" onclick="toggleEnvDropdown(event)" title="Switch environment">
+        <span class="env-dot" id="envActiveDot" style="width:7px;height:7px;border-radius:50%;background:#64748b;flex-shrink:0"></span>
+        <span id="envActiveLabel">ALL</span>
+        <span style="font-size:9px;opacity:.5;margin-left:1px">▾</span>
+      </button>
+      <div class="env-dropdown-menu" id="envDropdownMenu">
+        <div class="env-menu-label">Switch environment</div>
+        <div class="env-menu-item active" data-env="ALL" onclick="setEnvironment('ALL')">
+          <span class="env-menu-dot" style="background:var(--text3)"></span> All environments
+        </div>
+        <div class="env-menu-divider"></div>
+        <div id="envMenuItems"><!-- populated by JS from bootstrap --></div>
+        <div class="env-menu-divider"></div>
+        <div class="env-menu-item" data-env="__manage" onclick="showPage('organization');closeEnvDropdown()" style="font-size:11px;color:var(--text3)">
+          ⚙ Manage environments
+        </div>
+      </div>
+    </div>
+
     <div class="topbar-right">
-      <div class="env-switcher"><label for="envSwitch">Env</label><select id="envSwitch" onchange="setEnvironment(this.value)"><option value="ALL">All</option></select></div>
       <button class="theme-toggle" id="themeToggleBtn" onclick="toggleTheme()" title="Toggle dark/light mode">🌙</button>
       <!-- Documentation Dropdown -->
       <div class="docs-dropdown" id="docsDropdown">
@@ -743,9 +891,19 @@ html:not(.dark) .toast{box-shadow:0 8px 24px rgba(0,0,0,.15)}
   <!-- ══ OVERVIEW PAGE ══ -->
   <div class="page{% if active_section=='overview' %} active{% endif %}" id="page-overview">
     <div style="padding:24px">
-      <div class="page-header">
-        <p style="font-size:11px;font-weight:600;color:var(--text3);letter-spacing:.8px;text-transform:uppercase;margin-bottom:4px">ObserveX Workspace</p>
-        <h1>Investigate logs, run connectors, and manage your organization.</div><div style='display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 18px'><span style='padding:6px 10px;border-radius:999px;background:rgba(37,99,235,.08);color:#1d4ed8;font-size:12px;font-weight:700'>Live observability</span><span style='padding:6px 10px;border-radius:999px;background:rgba(124,58,237,.08);color:#6d28d9;font-size:12px;font-weight:700'>AI diagnostics</span><span style='padding:6px 10px;border-radius:999px;background:rgba(34,211,238,.10);color:#0f766e;font-size:12px;font-weight:700'>Workspace healthy</span></h1>
+      <!-- ── Overview hero ── -->
+      <div class="overview-hero">
+        <div style="position:relative;z-index:1">
+          <p style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:1.2px;text-transform:uppercase;margin-bottom:6px">ObserveX · {{ user.org_name }}</p>
+          <h1 class="overview-hero-title">Observability, all in one place.</h1>
+          <p class="overview-hero-sub">Investigate logs, trace service failures, run AI diagnostics and manage your team — across every environment.</p>
+          <div class="hero-chips" id="heroChips">
+            <span class="hero-chip hero-chip-blue">📡 Live monitoring</span>
+            <span class="hero-chip hero-chip-purple">🤖 AI diagnostics</span>
+            <span class="hero-chip hero-chip-teal" id="heroHealthChip">● Workspace healthy</span>
+          </div>
+        </div>
+        <div id="heroEnvBanner" style="display:none;position:absolute;top:16px;right:20px;z-index:1"></div>
       </div>
 
       <!-- ── Onboarding checklist (hidden once complete or dismissed) ── -->
@@ -791,6 +949,18 @@ html:not(.dark) .toast{box-shadow:0 8px 24px rgba(0,0,0,.15)}
         <span class="upload-zone-icon">📂</span>
         <h3>Drop log files here to upload</h3>
         <p>Supports <code>.log</code> <code>.txt</code> <code>.json</code> <code>.ndjson</code> <code>.csv</code> · CloudWatch, MuleSoft, App logs</p>
+        <div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-top:10px;flex-wrap:wrap" onclick="event.stopPropagation()">
+          <span style="font-size:11px;color:var(--text3);font-weight:600">Upload to env:</span>
+          <select id="uploadEnvSelect" style="background:var(--surface2);border:1px solid var(--border2);border-radius:8px;color:var(--text);font-size:11px;font-weight:700;padding:4px 8px;cursor:pointer;font-family:var(--mono)" onclick="event.stopPropagation()">
+            <option value="DEV">DEV</option>
+            <option value="SIT">SIT</option>
+            <option value="UAT">UAT</option>
+            <option value="PREPROD">PREPROD</option>
+            <option value="PROD" selected>PROD</option>
+            <option value="DR">DR</option>
+          </select>
+          <button class="btn-primary" style="font-size:11px;padding:5px 14px" onclick="document.getElementById('fileInput').click()">Browse files</button>
+        </div>
         <div class="upload-progress" id="uploadProgress">
           <div class="progress-bar-wrap"><div class="progress-bar" id="progressBar"></div></div>
         </div>
@@ -1813,6 +1983,120 @@ const USER_ROLE = '{{ user.role }}';
 let activeEnvironment = 'ALL';
 let bsData = null;   // bootstrap data
 try{ activeEnvironment = localStorage.getItem('observex.activeEnvironment') || 'ALL'; }catch(e){}
+
+// ═══════════════════════════════════════════════════════
+// ENVIRONMENT SYSTEM — color-coded pill switcher
+// ═══════════════════════════════════════════════════════
+const ENV_CONFIG = {
+  ALL:     { color: '#8c959f', cls: 'env-all',     label: 'All envs' },
+  DEV:     { color: '#64748b', cls: 'env-dev',     label: 'DEV' },
+  SIT:     { color: '#0ea5e9', cls: 'env-sit',     label: 'SIT' },
+  UAT:     { color: '#f59e0b', cls: 'env-uat',     label: 'UAT' },
+  PREPROD: { color: '#ea580c', cls: 'env-preprod', label: 'PREPROD' },
+  PROD:    { color: '#ef4444', cls: 'env-prod',    label: 'PROD' },
+  DR:      { color: '#7c3aed', cls: 'env-dr',      label: 'DR' },
+};
+
+function getEnvConfig(env) {
+  const key = (env || 'ALL').toUpperCase();
+  return ENV_CONFIG[key] || { color: '#8c959f', cls: 'env-all', label: key };
+}
+
+function withEnv(url) {
+  if (!activeEnvironment || activeEnvironment === 'ALL') return url;
+  const sep = url.includes('?') ? '&' : '?';
+  return url + sep + 'environment=' + encodeURIComponent(activeEnvironment);
+}
+
+function setEnvironment(env) {
+  activeEnvironment = (env || 'ALL').toUpperCase();
+  try { localStorage.setItem('observex.activeEnvironment', activeEnvironment); } catch(e) {}
+  updateEnvPill();
+  closeEnvDropdown();
+  // Sync upload env dropdown if visible
+  const uploadSel = document.getElementById('uploadEnvSelect');
+  if (uploadSel && activeEnvironment !== 'ALL') uploadSel.value = activeEnvironment;
+  // Reload all environment-sensitive data
+  loadBootstrap();
+  loadErrorGroups();
+  loadUploadHistory();
+  loadObservability();
+  if (document.getElementById('page-explorer').classList.contains('active')) loadLogs();
+}
+
+function updateEnvPill() {
+  const cfg = getEnvConfig(activeEnvironment);
+  const dot  = document.getElementById('envActiveDot');
+  const lbl  = document.getElementById('envActiveLabel');
+  const pill = document.getElementById('envActivePill');
+  if (dot)  dot.style.background = cfg.color;
+  if (lbl)  lbl.textContent = activeEnvironment === 'ALL' ? 'All envs' : activeEnvironment;
+  if (pill) {
+    // Update pill style based on env
+    pill.style.background = activeEnvironment === 'ALL' ? 'var(--surface2)' : cfg.color + '18';
+    pill.style.borderColor = activeEnvironment === 'ALL' ? 'var(--border2)' : cfg.color + '60';
+    pill.style.color       = activeEnvironment === 'ALL' ? 'var(--text2)'   : cfg.color;
+  }
+  // Update hero banner
+  const banner = document.getElementById('heroEnvBanner');
+  if (banner) {
+    if (activeEnvironment !== 'ALL') {
+      const isBadEnv = activeEnvironment === 'PROD' || activeEnvironment === 'DR';
+      banner.style.display = 'block';
+      banner.innerHTML = `<span style="display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:20px;background:${cfg.color}18;border:1.5px solid ${cfg.color}50;color:${cfg.color};font-size:11px;font-weight:800;font-family:var(--mono)">${isBadEnv ? '⚠ ' : ''}${activeEnvironment} environment</span>`;
+    } else { banner.style.display = 'none'; }
+  }
+  // Mark active item in dropdown
+  document.querySelectorAll('#envDropdownMenu .env-menu-item').forEach(el => {
+    el.classList.toggle('active', el.dataset.env === activeEnvironment);
+  });
+  // Update health chip in hero
+  updateHeroHealthChip();
+}
+
+function toggleEnvDropdown(e) {
+  e && e.stopPropagation();
+  document.getElementById('envDropdownMenu').classList.toggle('open');
+}
+function closeEnvDropdown() {
+  document.getElementById('envDropdownMenu').classList.remove('open');
+}
+document.addEventListener('click', function(e) {
+  const wrap = document.getElementById('envDropdownWrap');
+  if (wrap && !wrap.contains(e.target)) closeEnvDropdown();
+});
+
+function populateEnvMenu(environments) {
+  const container = document.getElementById('envMenuItems');
+  if (!container || !environments || !environments.length) return;
+  const defaultEnvs = ['DEV', 'SIT', 'UAT', 'PREPROD', 'PROD', 'DR'];
+  // Merge DB environments with defaults
+  const envNames = [...new Set([
+    ...environments.map(e => (e.name || '').toUpperCase()),
+    ...defaultEnvs
+  ])].filter(Boolean);
+  container.innerHTML = envNames.map(name => {
+    const cfg = getEnvConfig(name);
+    const dbEnv = environments.find(e => e.name.toUpperCase() === name);
+    const color = (dbEnv && dbEnv.color) ? dbEnv.color : cfg.color;
+    const isProd = dbEnv ? dbEnv.is_production : (name === 'PROD');
+    return `<div class="env-menu-item${activeEnvironment === name ? ' active' : ''}" data-env="${name}" onclick="setEnvironment('${name}')">
+      <span class="env-menu-dot" style="background:${color}"></span>
+      <span style="flex:1">${name}</span>
+      ${isProd ? '<span style="font-size:9px;color:var(--red);font-weight:800">PROD</span>' : ''}
+    </div>`;
+  }).join('');
+}
+
+function updateHeroHealthChip() {
+  const chip = document.getElementById('heroHealthChip');
+  if (!chip || !bsData) return;
+  const errRate = parseFloat((bsData.summary || {}).error_rate || 0);
+  if (errRate === 0)     { chip.textContent = '● Workspace healthy'; chip.className = 'hero-chip hero-chip-green'; }
+  else if (errRate < 5)  { chip.textContent = '● Mostly healthy'; chip.className = 'hero-chip hero-chip-teal'; }
+  else if (errRate < 20) { chip.textContent = '⚠ Elevated errors'; chip.className = 'hero-chip hero-chip-uat'; }
+  else                   { chip.textContent = '✖ High error rate'; chip.className = 'hero-chip hero-chip-prod'; }
+}
 let logPage = 1, logPerPage = 50, logFilter = 'all', logSearch = '', logSort = 'timestamp', logSortDir = 'desc';
 let logTotal = 0, logPages = 1;
 let cachedLogs = [];
@@ -1824,6 +2108,7 @@ let _selectedIds = new Set();
 // ── INIT ──
 document.addEventListener('DOMContentLoaded', () => {
   applyThemeIcon();
+  updateEnvPill(); // ← apply stored env on load
   loadBootstrap();
   loadErrorGroups();
   loadUploadHistory();
@@ -2013,6 +2298,9 @@ function applyBootstrap(d) {
   renderAudit(d.audit);
   renderApiKeys(d.api_keys);
   renderOnboarding(d.onboarding, d.user);
+  // ── Environment menu ──
+  if (d.environments && d.environments.length) populateEnvMenu(d.environments);
+  updateHeroHealthChip();
 }
 
 // ── Onboarding checklist ──
@@ -2121,6 +2409,10 @@ async function uploadFiles(files) {
   if (prog) { prog.classList.add('active'); bar.style.width = '30%'; }
   const fd = new FormData();
   files.forEach(f => fd.append('files', f));
+  // Include the selected environment (from dropdown or active env)
+  const envSel = document.getElementById('uploadEnvSelect');
+  const uploadEnv = envSel ? envSel.value : (activeEnvironment !== 'ALL' ? activeEnvironment : 'PROD');
+  fd.append('environment', uploadEnv);
   try {
     if (bar) bar.style.width = '70%';
     const r = await fetch('/api/upload', { method: 'POST', body: fd });
@@ -2153,6 +2445,7 @@ async function loadLogs() {
   if (logFromTs) params.set('from_ts', logFromTs);
   if (logToTs)   params.set('to_ts',   logToTs);
   if (logSource) params.set('source',  logSource);
+  if (activeEnvironment && activeEnvironment !== 'ALL') params.set('environment', activeEnvironment);
   try {
     const r = await fetch('/api/logs?' + params);
     if (!r.ok) return;
@@ -2200,13 +2493,18 @@ function renderLogTable(logs) {
     const msg = esc(l.message || '');
     const msgShort = l.message.length > 80 ? esc(l.message.slice(0, 80)) + '…' : msg;
     const chkCell = _bulkMode ? `<td onclick="event.stopPropagation()"><input type="checkbox" class="log-row-chk" ${_selectedIds.has(l.id)?'checked':''} onchange="toggleRowSelect(${l.id},this.checked)" style="cursor:pointer;width:13px;height:13px"/></td>` : '';
+    const env = (l.environment_name || '').toUpperCase();
+    const envBadge = env && activeEnvironment === 'ALL' ? (() => {
+      const ec = env === 'PROD' ? 'env-badge-prod' : env === 'UAT' ? 'env-badge-uat' : env === 'DEV' ? 'env-badge-dev' : env === 'DR' ? 'env-badge-dr' : env === 'SIT' ? 'env-badge-sit' : 'env-badge-all';
+      return `<span class="env-badge ${ec}" style="margin-right:4px">${env}</span>`;
+    })() : '';
     return `<tr onclick="${_bulkMode ? `toggleRowSelect(${l.id},!this.querySelector('.log-row-chk').checked);this.querySelector('.log-row-chk').checked=!this.querySelector('.log-row-chk').checked` : `openDetail(${l.id})`}">
       ${chkCell}
       <td style="width:24px"><span class="level-dot dot-${l.level}"></span></td>
       <td><span class="lvl-badge lvl-${l.level}">${l.level.toUpperCase()}</span></td>
       <td class="evt-id">${esc(l.event_id||'—')}</td>
       <td class="ts-cell">${fmtTs(l.timestamp)}</td>
-      <td class="msg-cell" title="${msg}">${msgShort}<button class="copy-msg-btn" onclick="event.stopPropagation();copyText('${msg.replace(/'/g,"&#39;")}')">⎘</button></td>
+      <td class="msg-cell" title="${msg}">${envBadge}${msgShort}<button class="copy-msg-btn" onclick="event.stopPropagation();copyText('${msg.replace(/'/g,"&#39;")}')">⎘</button></td>
       <td><span class="src-tag">${esc(l.source||'—')}</span></td>
     </tr>`;
   }).join('');
@@ -2862,15 +3160,19 @@ async function loadUploadHistory() {
       el.innerHTML = '<div class="empty-state" style="padding:20px"><div class="empty-icon" style="font-size:24px">📂</div><h3 style="font-size:13px">No uploads yet</h3></div>';
       return;
     }
-    el.innerHTML = `<div>${d.uploads.map(u => `
+    el.innerHTML = `<div>${d.uploads.map(u => {
+      const env = (u.environment_name || 'PROD').toUpperCase();
+      const envCls = env === 'PROD' ? 'env-badge-prod' : env === 'UAT' ? 'env-badge-uat' : env === 'DEV' ? 'env-badge-dev' : env === 'DR' ? 'env-badge-dr' : env === 'SIT' ? 'env-badge-sit' : env === 'PREPROD' ? 'env-badge-preprod' : 'env-badge-all';
+      return `
       <div class="user-row" style="cursor:pointer" onclick="filterByUpload(${u.id})">
-        <div>
-          <div style="font-size:12px;font-weight:600">${esc(u.filename||'upload-'+u.id)}</div>
-          <div style="font-size:11px;color:var(--text2)">${fmtTs(u.created_at)} · ${esc(u.source_type||'file')}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:12px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(u.filename||'upload-'+u.id)}</div>
+          <div style="font-size:11px;color:var(--text2);margin-top:2px">${fmtTs(u.created_at)} · ${esc(u.source_type||'file')}</div>
         </div>
-        <span class="lvl-badge lvl-info" style="margin-left:auto;font-size:10px">${(u.record_count||0).toLocaleString()} logs</span>
-        <span style="font-size:11px;color:var(--text3);margin-left:8px">→</span>
-      </div>`).join('')}</div>`;
+        <span class="env-badge ${envCls}" style="margin-left:8px">${env}</span>
+        <span class="lvl-badge lvl-info" style="margin-left:6px;font-size:10px">${(u.record_count||0).toLocaleString()} logs</span>
+        <span style="font-size:11px;color:var(--text3);margin-left:6px">→</span>
+      </div>`}).join('')}</div>`;
   } catch(e) { el.innerHTML = '<p style="font-size:12px;color:var(--red)">Failed to load</p>'; }
 }
 
