@@ -1,0 +1,24 @@
+{% extends 'app_base.html' %}
+{% set page_title = 'Workspace Settings' %}
+{% block app_content %}
+<div class="content-grid">
+  <article class="panel">
+    <div class="panel-head"><h3>Workspace Identity</h3></div>
+    <div class="settings-list">
+      <div><label>Organization</label><strong>{{ workspace.org_name }}</strong></div>
+      <div><label>Workspace slug</label><strong>{{ workspace.workspace_slug }}</strong></div>
+      <div><label>Primary environment</label><strong>{{ workspace.primary_environment }}</strong></div>
+      <div><label>Theme mode</label><strong>{{ workspace.theme_mode }}</strong></div>
+    </div>
+  </article>
+  <article class="panel">
+    <div class="panel-head"><h3>Enterprise Roadmap</h3></div>
+    <div class="settings-list">
+      <div><label>RBAC</label><strong>Planned</strong></div>
+      <div><label>SSO / SAML</label><strong>Planned</strong></div>
+      <div><label>API keys</label><strong>Next phase</strong></div>
+      <div><label>Audit trail</label><strong>Next phase</strong></div>
+    </div>
+  </article>
+</div>
+{% endblock %}

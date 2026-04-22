@@ -1,0 +1,82 @@
+{% extends 'app_base.html' %}
+{% set page_title = 'Executive Overview' %}
+{% block app_content %}
+<section class="stats-grid">
+  <div class="metric-card"><label>Active incidents</label><strong>{{ stats.active_incidents }}</strong></div>
+  <div class="metric-card"><label>Logs ingested</label><strong>{{ stats.logs_ingested }}</strong></div>
+  <div class="metric-card"><label>Error rate</label><strong>{{ stats.error_rate }}</strong></div>
+  <div class="metric-card"><label>p95 latency</label><strong>{{ stats.p95_latency }}</strong></div>
+  <div class="metric-card"><label>Masking score</label><strong>{{ stats.masking_score }}</strong></div>
+</section>
+
+<section class="content-grid">
+  <article class="panel panel-wide">
+    <div class="panel-head">
+      <h3>Observability Pulse</h3>
+      <span class="pill">Last 24 hours</span>
+    </div>
+    <div class="chart-box">
+      <div class="graph-line graph-a"></div>
+      <div class="graph-line graph-b"></div>
+      <div class="graph-line graph-c"></div>
+      <div class="chart-legend">
+        <span>Latency</span><span>Error rate</span><span>Masking coverage</span>
+      </div>
+    </div>
+  </article>
+
+  <article class="panel">
+    <div class="panel-head">
+      <h3>AI Investigation Summary</h3>
+      <span class="pill accent">Gen AI</span>
+    </div>
+    <div class="stack-cards">
+      <div class="summary-card critical">Production payment traffic shows a localized validation failure burst.</div>
+      <div class="summary-card info">Sensitive data protection is healthy overall, with custom-header exposure still under review.</div>
+      <div class="summary-card neutral">Suggested action: reduce retry aggression and isolate slow downstream services.</div>
+    </div>
+  </article>
+</section>
+
+<section class="content-grid">
+  <article class="panel panel-wide">
+    <div class="panel-head">
+      <h3>Recent Logs</h3>
+      <a href="{{ url_for('logs_page') }}" class="link-inline">Open explorer</a>
+    </div>
+    <div class="table-list">
+      <div class="table-head">
+        <span>Time</span><span>Service</span><span>Env</span><span>Level</span><span>Trace</span><span>Message</span>
+      </div>
+      {% for row in logs %}
+      <div class="table-row">
+        <span>{{ row.timestamp }}</span>
+        <span>{{ row.service }}</span>
+        <span>{{ row.environment }}</span>
+        <span><span class="level {{ row.level|lower }}">{{ row.level }}</span></span>
+        <span>{{ row.trace_id }}</span>
+        <span>{{ row.message }}</span>
+      </div>
+      {% endfor %}
+    </div>
+  </article>
+
+  <article class="panel">
+    <div class="panel-head">
+      <h3>Latest Alerts</h3>
+      <a href="{{ url_for('alerts_page') }}" class="link-inline">View all</a>
+    </div>
+    <div class="alert-stack">
+      {% for alert in alerts %}
+      <div class="alert-card">
+        <div>
+          <strong>{{ alert.title }}</strong>
+          <span>{{ alert.source }} • {{ alert.created_at }}</span>
+        </div>
+        <div class="sev {{ alert.severity|lower }}">{{ alert.severity }}</div>
+      </div>
+      {% endfor %}
+    </div>
+  </article>
+</section>
+{% endblock %}

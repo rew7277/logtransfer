@@ -1,0 +1,25 @@
+{% extends 'app_base.html' %}
+{% set page_title = 'Sensitive Data Protection' %}
+{% block app_content %}
+<div class="content-grid">
+  <article class="panel">
+    <div class="panel-head"><h3>Protection Coverage</h3><span class="pill success">Compliant</span></div>
+    <div class="security-grid">
+      <div class="security-card"><label>PAN / Aadhaar</label><strong>Masked</strong></div>
+      <div class="security-card"><label>Account Number</label><strong>Tokenized</strong></div>
+      <div class="security-card"><label>Email</label><strong>Partially Hidden</strong></div>
+      <div class="security-card"><label>Phone</label><strong>Encrypted</strong></div>
+      <div class="security-card"><label>JWT Claims</label><strong>Filtered</strong></div>
+      <div class="security-card"><label>Custom Headers</label><strong>Under Review</strong></div>
+    </div>
+  </article>
+  <article class="panel">
+    <div class="panel-head"><h3>Security Notes</h3></div>
+    <div class="stack-cards">
+      <div class="summary-card info">Field-level masking is active for known financial identifiers.</div>
+      <div class="summary-card neutral">Raw sensitive data access should be gated by role-based controls in the next phase.</div>
+      <div class="summary-card critical">Custom free-text payload fragments still require stronger sanitization before export.</div>
+    </div>
+  </article>
+</div>
+{% endblock %}

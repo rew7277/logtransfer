@@ -1,0 +1,38 @@
+{% extends 'app_base.html' %}
+{% set page_title = 'Trace Explorer' %}
+{% block app_content %}
+<div class="content-grid">
+  <article class="panel panel-wide">
+    <div class="panel-head">
+      <h3>Waterfall View</h3>
+      <span class="pill accent">Trace aware</span>
+    </div>
+    <div class="trace-flow">
+      <div class="trace-node">Edge Gateway <small>43 ms</small></div>
+      <div class="trace-arrow">→</div>
+      <div class="trace-node">Auth Filter <small>29 ms</small></div>
+      <div class="trace-arrow">→</div>
+      <div class="trace-node">Experience API <small>88 ms</small></div>
+      <div class="trace-arrow">→</div>
+      <div class="trace-node">Process API <small>121 ms</small></div>
+      <div class="trace-arrow">→</div>
+      <div class="trace-node highlight">Core Banking <small>311 ms</small></div>
+    </div>
+  </article>
+
+  <article class="panel">
+    <div class="panel-head">
+      <h3>Recent Trace Signals</h3>
+    </div>
+    <div class="trace-list">
+      {% for row in trace_rows %}
+      <div class="trace-row">
+        <strong>{{ row.trace_id }}</strong>
+        <span>{{ row.service }} • {{ row.environment }} • {{ row.latency_ms }} ms • {{ row.level }}</span>
+        <p>{{ row.message }}</p>
+      </div>
+      {% endfor %}
+    </div>
+  </article>
+</div>
+{% endblock %}

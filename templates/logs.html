@@ -1,0 +1,34 @@
+{% extends 'app_base.html' %}
+{% set page_title = 'Log Explorer' %}
+{% block app_content %}
+<div class="panel">
+  <div class="panel-head">
+    <h3>Structured Log Stream</h3>
+    <span class="pill success">Masking aware</span>
+  </div>
+  <div class="toolbar-row">
+    <input class="search-input" placeholder="Search trace ID, event ID, service, masked value…">
+    <span class="toolbar-chip">Live Tail</span>
+    <span class="toolbar-chip">Production</span>
+    <span class="toolbar-chip">Severity filters</span>
+  </div>
+  <div class="table-list">
+    <div class="table-head logs-head">
+      <span>Time</span><span>App</span><span>Env</span><span>Level</span><span>Trace</span><span>Event</span><span>Masking</span><span>Latency</span><span>Message</span>
+    </div>
+    {% for row in logs %}
+    <div class="table-row logs-row">
+      <span>{{ row.timestamp }}</span>
+      <span>{{ row.service }}</span>
+      <span>{{ row.environment }}</span>
+      <span><span class="level {{ row.level|lower }}">{{ row.level }}</span></span>
+      <span>{{ row.trace_id }}</span>
+      <span>{{ row.event_id }}</span>
+      <span>{{ row.masking_state }}</span>
+      <span>{{ row.latency_ms }} ms</span>
+      <span>{{ row.message }}</span>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

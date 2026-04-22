@@ -1,0 +1,24 @@
+{% extends 'app_base.html' %}
+{% set page_title = 'Alerts Center' %}
+{% block app_content %}
+<div class="panel">
+  <div class="panel-head">
+    <h3>Correlated Incidents</h3>
+    <span class="pill critical">Ops cockpit</span>
+  </div>
+  <div class="alert-stack">
+    {% for alert in alerts %}
+    <div class="alert-card alert-card-full">
+      <div>
+        <strong>{{ alert.title }}</strong>
+        <span>{{ alert.source }} • {{ alert.created_at }}</span>
+      </div>
+      <div class="alert-meta">
+        <div class="sev {{ alert.severity|lower }}">{{ alert.severity }}</div>
+        <div class="status">{{ alert.status }}</div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="brand compact">
+      <div class="brand-mark">OX</div>
+      <div>
+        <strong>ObserveX</strong>
+        <span>{{ workspace.workspace_slug if workspace else 'workspace' }}</span>
+      </div>
+    </div>
+    <nav class="nav-stack">
+      <a href="{{ url_for('dashboard') }}" class="{% if request.endpoint == 'dashboard' %}active{% endif %}">Overview</a>
+      <a href="{{ url_for('logs_page') }}" class="{% if request.endpoint == 'logs_page' %}active{% endif %}">Log Explorer</a>
+      <a href="{{ url_for('traces_page') }}" class="{% if request.endpoint == 'traces_page' %}active{% endif %}">Trace Explorer</a>
+      <a href="{{ url_for('alerts_page') }}" class="{% if request.endpoint == 'alerts_page' %}active{% endif %}">Alerts Center</a>
+      <a href="{{ url_for('security_page') }}" class="{% if request.endpoint == 'security_page' %}active{% endif %}">Security</a>
+      <a href="{{ url_for('settings_page') }}" class="{% if request.endpoint == 'settings_page' %}active{% endif %}">Settings</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="workspace-chip">{{ workspace.org_name if workspace else '' }}</div>
+      <a href="{{ url_for('logout') }}" class="secondary-btn small">Logout</a>
+    </div>
+  </aside>
+
+  <main class="main-shell">
+    <header class="context-bar">
+      <div>
+        <div class="eyebrow">REAL-TIME OBSERVABILITY</div>
+        <h1>{{ page_title }}</h1>
+      </div>
+      <div class="toolbar">
+        <span class="toolbar-chip">{{ workspace.primary_environment if workspace else 'Production' }}</span>
+        <span class="toolbar-chip">Dark mode</span>
+      </div>
+    </header>
+    {% block app_content %}{% endblock %}
+  </main>
+</div>
+{% endblock %}

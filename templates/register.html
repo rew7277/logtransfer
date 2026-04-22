@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="auth-shell">
+  <div class="auth-side">
+    <div class="brand compact">
+      <div class="brand-mark">OX</div>
+      <div>
+        <strong>ObserveX</strong>
+        <span>Workspace Setup</span>
+      </div>
+    </div>
+    <div class="auth-copy">
+      <div class="eyebrow">CREATE WORKSPACE</div>
+      <h1>Launch a secure observability workspace.</h1>
+      <p>Create your organization, set the primary environment, and start with a premium dark control plane.</p>
+      <div class="bullet-stack">
+        <span>Multi-environment operations</span>
+        <span>Masking-first log intelligence</span>
+        <span>Ready for Railway deployment</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="auth-card large">
+    <h2>Create workspace</h2>
+    <p class="muted">Start with an admin account and a unique workspace slug.</p>
+    <form method="post" class="form-grid">
+      <label>Organization name
+        <input type="text" name="org_name" placeholder="Five Star Business Finance" required>
+      </label>
+      <label>Workspace slug
+        <input type="text" name="workspace_slug" placeholder="fsbl-observex" required>
+      </label>
+      <label>Admin name
+        <input type="text" name="admin_name" placeholder="Prasanna Krishna" required>
+      </label>
+      <label>Work email
+        <input type="email" name="email" placeholder="admin@company.com" required>
+      </label>
+      <label>Primary environment
+        <select name="primary_environment">
+          <option>Production</option>
+          <option>UAT</option>
+          <option>Development</option>
+          <option>DR</option>
+        </select>
+      </label>
+      <label>Password
+        <input type="password" name="password" placeholder="Choose a strong password" required>
+      </label>
+      <div class="grid-span">
+        <button class="primary-btn wide" type="submit">Create workspace</button>
+      </div>
+    </form>
+    <div class="foot-link">Already have a workspace? <a href="{{ url_for('login') }}">Sign in</a></div>
+  </div>
+</div>
+{% endblock %}
