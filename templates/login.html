@@ -2,225 +2,161 @@
 <html lang="en">
 <head>
 <link rel="icon" type="image/svg+xml" href="/static/images/favicon.svg">
+<meta name="theme-color" content="#040810">
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<meta name="description" content="Sign in to your ObserveX workspace — log management, traces, alerts, PII masking, and AI-powered observability."/>
+<meta name="description" content="Sign in to your ObserveX workspace — AI-native observability, log intelligence, traces, and alerts."/>
 <meta property="og:title" content="Sign in — ObserveX"/>
-<meta property="og:type" content="website"/>
 <title>Sign in · ObserveX</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Syne:wght@600;700;800&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Outfit:wght@400;500;600;700;800;900&family=Fraunces:ital,wght@1,700;1,800&display=swap" rel="stylesheet"/>
 <style>
 :root{
-  --bg:#020617;
-  --panel:rgba(8,15,34,.72);
-  --panel-soft:rgba(255,255,255,.06);
-  --panel-border:rgba(255,255,255,.1);
-  --text:#e5eefc;
-  --muted:#9fb0ca;
-  --input-bg:rgba(255,255,255,.06);
-  --input-border:rgba(148,163,184,.22);
-  --accent:#22d3ee;
-  --accent-2:#8b5cf6;
-  --success:#22c55e;
-  --danger:#fb7185;
-  --shadow:0 30px 80px rgba(0,0,0,.42);
+  --bg:#040810;--panel:rgba(6,12,24,.78);--panel-border:rgba(255,255,255,.09);
+  --text:#eef2ff;--muted:#8898b3;--muted2:#5c6f8a;
+  --input-bg:rgba(255,255,255,.055);--input-border:rgba(148,163,184,.2);
+  --cyan:#22d3ee;--cyan2:#67e8f9;--violet:#8b5cf6;--violet2:#a78bfa;
+  --emerald:#10b981;--rose:#f43f5e;--amber:#f59e0b;
+  --shadow:0 40px 100px rgba(0,0,0,.55);
+  --mono:'DM Mono',monospace;--sans:'Outfit',sans-serif;--serif:'Fraunces',serif;
 }
-*{box-sizing:border-box}
+*{box-sizing:border-box;margin:0;padding:0}
 html{scroll-behavior:smooth}
 body{
-  margin:0;min-height:100vh;font-family:Inter,Arial,sans-serif;color:var(--text);
+  font-family:var(--sans);color:var(--text);min-height:100vh;
   background:
-    radial-gradient(circle at top left, rgba(34,211,238,.16), transparent 22%),
-    radial-gradient(circle at top right, rgba(139,92,246,.18), transparent 26%),
-    radial-gradient(circle at bottom center, rgba(16,185,129,.09), transparent 22%),
-    linear-gradient(180deg,#020617 0%,#0b1120 52%,#020617 100%);
-  display:flex;align-items:center;justify-content:center;padding:18px;overflow-x:hidden;overflow-y:auto;
+    radial-gradient(ellipse 70% 50% at 20% 20%,rgba(34,211,238,.13),transparent 55%),
+    radial-gradient(ellipse 60% 50% at 80% 70%,rgba(139,92,246,.11),transparent 55%),
+    linear-gradient(180deg,#040810 0%,#080f1c 55%,#040810 100%);
+  display:flex;align-items:center;justify-content:center;
+  padding:18px;overflow-x:hidden;overflow-y:auto;
 }
-body:before{
-  content:"";position:fixed;inset:0;pointer-events:none;opacity:.08;
-  background-image:linear-gradient(rgba(255,255,255,.13) 1px, transparent 1px),linear-gradient(90deg, rgba(255,255,255,.13) 1px, transparent 1px);
-  background-size:36px 36px;
+body::before{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.06;
+  background-image:linear-gradient(rgba(255,255,255,.1) 1px,transparent 1px),
+                   linear-gradient(90deg,rgba(255,255,255,.1) 1px,transparent 1px);
+  background-size:44px 44px;
 }
-body:after{
-  content:"";position:fixed;inset:auto -140px -140px auto;width:320px;height:320px;border-radius:50%;
-  background:radial-gradient(circle, rgba(34,211,238,.18), transparent 60%);filter:blur(12px);pointer-events:none;
-}
-.shell{
-  position:relative;width:min(100%,1300px);display:grid;grid-template-columns:minmax(0,1.08fr) minmax(420px,.92fr);gap:18px;z-index:1;align-items:stretch;
-}
-.glass{
-  background:var(--panel);border:1px solid var(--panel-border);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);
-  box-shadow:var(--shadow);border-radius:32px;overflow:hidden;
-}
+.shell{position:relative;width:min(100%,1340px);display:grid;grid-template-columns:minmax(0,1.1fr) minmax(430px,1fr);gap:16px;z-index:1;align-items:stretch}
+.glass{background:var(--panel);border:1px solid var(--panel-border);backdrop-filter:blur(28px);-webkit-backdrop-filter:blur(28px);box-shadow:var(--shadow);border-radius:28px;overflow:hidden}
 .hero{
-  position:relative;padding:clamp(24px,3vw,40px);min-height:min(820px,calc(100dvh - 36px));display:flex;flex-direction:column;justify-content:space-between;overflow:auto;
-  background:
-    radial-gradient(circle at top right, rgba(34,211,238,.18), transparent 26%),
-    radial-gradient(circle at top left, rgba(139,92,246,.18), transparent 24%),
-    linear-gradient(145deg, rgba(4,11,29,.95) 0%, rgba(9,20,41,.92) 52%, rgba(18,39,76,.92) 100%);
+  position:relative;padding:clamp(26px,3vw,42px);
+  min-height:min(840px,calc(100dvh - 36px));
+  display:flex;flex-direction:column;justify-content:space-between;overflow:auto;
+  background:radial-gradient(ellipse at top right,rgba(34,211,238,.17),transparent 28%),radial-gradient(ellipse at top left,rgba(139,92,246,.16),transparent 26%),linear-gradient(148deg,rgba(3,9,22,.97) 0%,rgba(8,18,38,.94) 52%,rgba(14,30,60,.92) 100%);
 }
-.hero:before{
-  content:"";position:absolute;inset:0;opacity:.22;
-  background-image:linear-gradient(rgba(255,255,255,.09) 1px, transparent 1px),linear-gradient(90deg, rgba(255,255,255,.09) 1px, transparent 1px);
-  background-size:34px 34px;
-}
-.hero:after{
-  content:"";position:absolute;right:-100px;top:-100px;width:260px;height:260px;border-radius:50%;
-  background:radial-gradient(circle, rgba(34,211,238,.24), transparent 64%);filter:blur(14px);
-}
-.hero > *{position:relative;z-index:1}
+.hero::before{content:'';position:absolute;inset:0;opacity:.18;background-image:linear-gradient(rgba(255,255,255,.08) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.08) 1px,transparent 1px);background-size:36px 36px}
+.hero::after{content:'';position:absolute;right:-80px;top:-80px;width:280px;height:280px;border-radius:50%;background:radial-gradient(circle,rgba(34,211,238,.2),transparent 62%);filter:blur(18px);pointer-events:none}
+.hero>*{position:relative;z-index:1}
 .brand-row{display:flex;align-items:center;justify-content:space-between;gap:14px}
-.brand-row img{height:46px;width:auto;display:block}
-.live-chip{
-  display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border-radius:999px;
-  background:rgba(34,211,238,.1);border:1px solid rgba(34,211,238,.18);font-size:12px;color:#c7f5ff;font-weight:700;
-}
-.live-dot{width:8px;height:8px;border-radius:50%;background:#67e8f9;box-shadow:0 0 0 0 rgba(103,232,249,.6);animation:pulse 2s infinite}
-@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(103,232,249,.6)}70%{box-shadow:0 0 0 10px rgba(103,232,249,0)}100%{box-shadow:0 0 0 0 rgba(103,232,249,0)}}
-.eyebrow{display:inline-flex;align-items:center;gap:10px;padding:8px 12px;border-radius:999px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.05);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:#c8d5ea;font-weight:700}
-.hero h1{margin:18px 0 16px;font:800 clamp(38px,4.5vw,58px)/.95 Syne,Inter,sans-serif;letter-spacing:-2px;max-width:560px}
-.hero p{margin:0;color:#b9c8df;line-height:1.75;font-size:15px;max-width:470px}
+.brand-row img{height:44px;width:auto;display:block}
+.live-chip{display:inline-flex;align-items:center;gap:8px;padding:9px 14px;border-radius:999px;background:rgba(34,211,238,.09);border:1px solid rgba(34,211,238,.17);font-size:11px;font-weight:700;color:var(--cyan2);font-family:var(--mono)}
+.live-dot{width:7px;height:7px;border-radius:50%;background:var(--cyan);animation:glow-pulse 2s infinite}
+@keyframes glow-pulse{0%,100%{box-shadow:0 0 0 0 rgba(34,211,238,.5)}70%{box-shadow:0 0 0 8px rgba(34,211,238,0)}}
+.eyebrow{display:inline-flex;align-items:center;gap:8px;padding:7px 12px;border-radius:999px;border:1px solid rgba(255,255,255,.09);background:rgba(255,255,255,.04);font-size:10px;font-family:var(--mono);letter-spacing:.18em;text-transform:uppercase;color:var(--muted)}
+.hero-h1{margin:16px 0 14px;font-size:clamp(36px,4vw,56px);font-weight:900;line-height:.96;letter-spacing:-2px}
+.hero-h1 em{font-family:var(--serif);font-style:italic;font-weight:800;background:linear-gradient(130deg,var(--cyan2),var(--violet2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.hero-p{margin:0;color:#b5c4dc;line-height:1.75;font-size:14px;max-width:480px}
 
-/* Live Dashboard Preview Strip */
-.dashboard-strip{margin-top:24px;border-radius:24px;border:1px solid rgba(255,255,255,.09);background:rgba(255,255,255,.04);overflow:hidden}
-.strip-header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid rgba(255,255,255,.07);font-size:11px}
-.strip-title{font-weight:700;color:#c8d8f0;text-transform:uppercase;letter-spacing:.14em}
-.strip-env{display:flex;gap:6px}
-.env-pill{padding:4px 10px;border-radius:999px;font-size:10px;font-weight:700;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.04);color:#9fb0ca}
-.env-pill.active{background:rgba(34,197,94,.12);border-color:rgba(74,222,128,.2);color:#86efac}
-.strip-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:0}
-.sstat{padding:14px 16px;border-right:1px solid rgba(255,255,255,.06)}
-.sstat:last-child{border-right:none}
-.sstat-val{font-size:22px;font-weight:800;letter-spacing:-1px}
-.sstat-label{font-size:10px;color:#7e90ac;text-transform:uppercase;letter-spacing:.12em;margin-top:4px}
-.sstat-meta{font-size:10px;margin-top:3px}
-.sstat-meta.up{color:#67e8f9}
-.sstat-meta.warn{color:#fb923c}
-.sstat-meta.ok{color:#4ade80}
+/* Live telemetry strip */
+.telem-strip{margin-top:24px;border-radius:18px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.03);overflow:hidden}
+.telem-header{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.06);font-family:var(--mono);font-size:10px}
+.telem-title{color:var(--muted);text-transform:uppercase;letter-spacing:.14em}
+.telem-env{display:flex;gap:5px}
+.tenv{padding:3px 8px;border-radius:999px;font-size:9px;font-weight:700;border:1px solid rgba(255,255,255,.07);background:rgba(255,255,255,.03);color:var(--muted2)}
+.tenv.ok{background:rgba(16,185,129,.1);border-color:rgba(16,185,129,.18);color:#6ee7b7}
+.kpi-mini{display:grid;grid-template-columns:repeat(4,1fr);gap:0}
+.km{padding:12px 14px;border-right:1px solid rgba(255,255,255,.05)}
+.km:last-child{border-right:none}
+.km-val{font-size:18px;font-weight:900;letter-spacing:-1px}
+.km-label{font-size:9px;color:var(--muted2);text-transform:uppercase;letter-spacing:.1em;margin-top:2px}
+.km-delta{font-size:9px;margin-top:1px}
+.delta-up{color:var(--cyan)}.delta-warn{color:var(--amber)}.delta-down{color:var(--rose)}
 
-/* Alert preview bar */
-.alert-bar{padding:10px 16px;border-top:1px solid rgba(255,255,255,.07);display:flex;align-items:center;gap:10px;font-size:11px}
-.alert-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
-.alert-dot.critical{background:#fb7185}
-.alert-dot.high{background:#fb923c}
-.alert-text{color:#c0cedf;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.alert-badge-sm{padding:3px 8px;border-radius:999px;font-size:10px;font-weight:700;flex-shrink:0}
-.alert-badge-sm.critical{background:rgba(251,113,133,.18);color:#fda4af}
-.alert-badge-sm.high{background:rgba(251,146,60,.18);color:#fdba74}
+/* Alert preview */
+.alert-preview{padding:10px 14px;border-top:1px solid rgba(255,255,255,.06);display:flex;align-items:center;gap:9px;font-size:11px;cursor:pointer;transition:.15s}
+.alert-preview:hover{background:rgba(255,255,255,.03)}
+.ap-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.ap-critical{background:var(--rose);box-shadow:0 0 6px rgba(244,63,94,.4)}
+.ap-high{background:var(--amber)}
+.ap-text{flex:1;color:#bfcfe8;font-family:var(--mono);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ap-badge{padding:2px 7px;border-radius:999px;font-size:9px;font-weight:700;flex-shrink:0}
+.apb-crit{background:rgba(244,63,94,.15);color:#fda4af;border:1px solid rgba(244,63,94,.18)}
+.apb-high{background:rgba(245,158,11,.15);color:#fcd34d;border:1px solid rgba(245,158,11,.18)}
 
-/* Trace preview */
-.trace-bar{padding:12px 16px;border-top:1px solid rgba(255,255,255,.07)}
-.trace-label{font-size:10px;color:#7e90ac;text-transform:uppercase;letter-spacing:.12em;margin-bottom:8px;font-weight:700}
-.trace-nodes{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
-.tnode{padding:5px 10px;border-radius:10px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);font-size:10px;color:#bfd0e8}
-.tnode.slow{border-color:rgba(251,113,133,.3);color:#fda4af;background:rgba(244,63,94,.08)}
-.tarrow{color:#67e8f9;font-size:11px}
+/* Trace mini */
+.trace-mini{padding:12px 14px;border-top:1px solid rgba(255,255,255,.06)}
+.trace-mini-label{font-family:var(--mono);font-size:9px;color:var(--muted2);text-transform:uppercase;letter-spacing:.12em;margin-bottom:7px}
+.trace-hops{display:flex;align-items:center;gap:4px;flex-wrap:wrap}
+.th{padding:4px 8px;border-radius:7px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);font-family:var(--mono);font-size:9px;color:var(--muted)}
+.th.slow{border-color:rgba(244,63,94,.3);color:#fda4af;background:rgba(244,63,94,.07)}
+.th-arr{color:var(--cyan);font-size:10px}
 
-/* Feature grid */
-.feature-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:20px}
-.feature-card{padding:16px;border-radius:22px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09);transition:transform .22s ease,background .22s ease,border-color .22s ease}
-.feature-card:hover{transform:translateY(-3px);background:rgba(255,255,255,.08);border-color:rgba(34,211,238,.22)}
-.feature-kicker{font-size:11px;text-transform:uppercase;letter-spacing:.16em;color:#8fdfff;font-weight:700;margin-bottom:8px}
-.feature-card strong{display:block;font-size:14px;margin-bottom:6px}
-.feature-card span{display:block;font-size:12px;line-height:1.65;color:#afc0d8}
+/* Features grid */
+.feat-mini{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:20px}
+.fm{padding:14px;border-radius:16px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);transition:.2s}
+.fm:hover{background:rgba(255,255,255,.07);border-color:rgba(34,211,238,.18)}
+.fm-kick{font-size:9px;text-transform:uppercase;letter-spacing:.16em;color:#67e8f9;font-weight:700;margin-bottom:6px;font-family:var(--mono)}
+.fm strong{display:block;font-size:12px;margin-bottom:4px}
+.fm span{display:block;font-size:11px;line-height:1.6;color:#8898b3}
 
-/* Bottom section */
-.metric-row{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:20px}
-.metric-card{padding:16px;border-radius:22px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09)}
-.metric-card .value{font-size:26px;font-weight:800;letter-spacing:-1px}
-.metric-card .label{margin-top:6px;font-size:11px;color:#9fb0ca;text-transform:uppercase;letter-spacing:.14em}
-.hero-footer{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-top:20px;color:#97aac6;font-size:12px}
-.footer-badges{display:flex;gap:8px;flex-wrap:wrap}
-.footer-badges span{padding:7px 11px;border-radius:999px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.05);font-size:11px}
+/* Hero bottom */
+.metric-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:18px}
+.mc{padding:14px;border-radius:16px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07)}
+.mc-val{font-size:22px;font-weight:900;letter-spacing:-1px}
+.mc-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-top:4px}
+.hero-footer{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:16px;font-size:11px;color:#7a8fa8}
+.fbadges{display:flex;gap:7px;flex-wrap:wrap}
+.fbadge{padding:5px 9px;border-radius:999px;border:1px solid rgba(255,255,255,.07);background:rgba(255,255,255,.04);font-size:10px}
 
-/* Sign-in card */
-.card{padding:clamp(20px,2.6vw,34px);display:flex;align-items:center;justify-content:center;min-height:min(820px,calc(100dvh - 36px));overflow:auto}
-.card-inner{width:100%;max-width:min(470px,100%);animation:slideUp .7s ease}
-.card-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:28px}
-.card-logo{display:flex;align-items:center;gap:12px}
-.card-logo img{height:42px;width:auto}
-.card-logo span{font-weight:700;color:#dbeafe}
-.card-badge{padding:8px 12px;border-radius:999px;border:1px solid rgba(139,92,246,.2);background:rgba(139,92,246,.1);font-size:12px;color:#dfcbff;font-weight:700}
-.card h2{margin:0;font:800 38px/1 Syne,Inter,sans-serif;letter-spacing:-1px}
-.sub{margin:12px 0 0;color:var(--muted);font-size:14px;line-height:1.7}
-.msg{display:none;padding:14px 16px;border-radius:16px;font-size:12px;font-weight:700;margin:22px 0 0}
-.msg.error{display:block;background:rgba(244,63,94,.12);border:1px solid rgba(251,113,133,.22);color:#fecdd3}
-.msg.success{display:block;background:rgba(34,197,94,.12);border:1px solid rgba(74,222,128,.22);color:#bbf7d0}
-.form-shell{margin-top:26px;padding:24px;border-radius:28px;background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.08)}
-.field{margin-bottom:18px}
-label{display:block;font-size:12px;font-weight:700;color:#d1def3;margin-bottom:8px;letter-spacing:.04em}
-.input-wrap{position:relative}
-input{
-  width:100%;padding:15px 16px;background:var(--input-bg);border:1px solid var(--input-border);border-radius:18px;
-  font:14px Inter,Arial,sans-serif;color:#f8fbff;outline:none;transition:border-color .18s,box-shadow .18s,background .18s,transform .18s;
-}
-input:focus{border-color:rgba(34,211,238,.5);box-shadow:0 0 0 5px rgba(34,211,238,.11);background:rgba(255,255,255,.08);transform:translateY(-1px)}
-input::placeholder{color:#7e91ad}
-.pw-wrap{position:relative}
-.pw-wrap input{padding-right:54px}
-.pw-toggle{
-  position:absolute;right:12px;top:50%;transform:translateY(-50%);width:34px;height:34px;border-radius:12px;border:1px solid rgba(255,255,255,.08);
-  background:rgba(255,255,255,.05);color:#9fb0ca;cursor:pointer;transition:.18s;display:grid;place-items:center;font-size:15px
-}
-.pw-toggle:hover{color:#fff;background:rgba(255,255,255,.08)}
-.inline-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:-4px 0 18px}
-.checkbox-line{display:flex;align-items:center;gap:10px;font-size:13px;color:#9fb0ca}
-.checkbox-line input{width:auto;accent-color:#22d3ee}
-.inline-row a,.link-row a,.help-links a{color:#7dd3fc;text-decoration:none;font-weight:700}
-.inline-row a:hover,.link-row a:hover,.help-links a:hover{text-decoration:underline}
-.btn{
-  width:100%;padding:15px 18px;margin-top:8px;border:0;border-radius:18px;
-  background:linear-gradient(135deg,#22d3ee 0%,#38bdf8 32%,#6366f1 100%);color:#05111f;font:800 14px Inter,Arial,sans-serif;cursor:pointer;
-  transition:transform .18s,box-shadow .18s,filter .18s;box-shadow:0 16px 34px rgba(34,211,238,.2)
-}
-.btn:hover{transform:translateY(-2px);filter:saturate(1.06);box-shadow:0 20px 40px rgba(34,211,238,.26)}
-.btn:disabled{opacity:.72;cursor:not-allowed;transform:none}
-.divider{display:flex;align-items:center;gap:12px;margin:18px 0;color:#7890af;font-size:11px;text-transform:uppercase;letter-spacing:.16em}
-.divider:before,.divider:after{content:"";flex:1;height:1px;background:rgba(255,255,255,.08)}
-.alt-actions{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.alt-btn{padding:13px 14px;border-radius:16px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.04);color:#d7e3f7;font-weight:700;font-size:13px;text-align:center;text-decoration:none;transition:.18s}
-.alt-btn:hover{background:rgba(255,255,255,.08);transform:translateY(-1px)}
-.help-links{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:18px;font-size:12px;color:#8ea3c0}
-.link-row{margin-top:22px;text-align:center;font-size:13px;color:#8ea3c0}
-
-/* Session restore chip */
-.session-chip{display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:20px;background:rgba(34,211,238,.06);border:1px solid rgba(34,211,238,.14);margin-bottom:22px;cursor:pointer;transition:.18s}
-.session-chip:hover{background:rgba(34,211,238,.1)}
-.session-avatar{width:36px;height:36px;border-radius:12px;background:linear-gradient(135deg,rgba(34,211,238,.2),rgba(139,92,246,.2));display:grid;place-items:center;font-size:13px;font-weight:800;color:#a5f3fc;flex-shrink:0}
-.session-info{flex:1;min-width:0}
-.session-name{font-size:13px;font-weight:700;color:#e0eeff}
-.session-meta{font-size:11px;color:#8fb0d0;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.session-arrow{color:#67e8f9;font-size:16px;flex-shrink:0}
-
+/* Form card */
+.card{padding:clamp(22px,2.6vw,36px);display:flex;align-items:flex-start;justify-content:center;min-height:min(840px,calc(100dvh - 36px));overflow:auto}
+.card-inner{width:100%;max-width:min(490px,100%);animation:slideUp .65s ease;padding-top:6px}
 @keyframes slideUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
-@media(max-width:1140px){
-  body{padding:14px}
-  .shell{grid-template-columns:1fr}
-  .hero,.card{min-height:auto}
-  .hero{padding:28px}
-  .card{padding:22px}
-}
-@media(max-height:900px){
-  .feature-grid{gap:8px;margin-top:16px}
-  .feature-card{padding:12px}
-  .metric-row{margin-top:16px}
-  .metric-card{padding:12px}
-  .hero-footer{margin-top:14px}
-  .dashboard-strip{margin-top:16px}
-  .card{align-items:flex-start}
-}
-@media(max-width:760px){
-  body{padding:16px}
-  .hero{display:none}
-  .card{padding:20px}
-  .card-inner{max-width:none}
-  .card h2{font-size:32px}
-  .form-shell{padding:18px}
-  .alt-actions{grid-template-columns:1fr}
-  .help-links{flex-direction:column;align-items:flex-start}
-}
+.card-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:26px}
+.card-logo img{height:38px;width:auto}
+.card-badge{padding:7px 12px;border-radius:999px;font-size:11px;font-weight:700;font-family:var(--mono);border:1px solid rgba(139,92,246,.2);background:rgba(139,92,246,.09);color:var(--violet2)}
+.card-h2{font-size:clamp(28px,3vw,34px);font-weight:900;letter-spacing:-1.2px;line-height:1.05}
+.card-sub{margin:9px 0 0;color:var(--muted);font-size:13px;line-height:1.7}
+.msg{display:none;padding:12px 15px;border-radius:12px;font-size:11px;font-weight:700;margin:16px 0 0;font-family:var(--mono)}
+.msg.error{display:block;background:rgba(244,63,94,.1);border:1px solid rgba(244,63,94,.2);color:#fda4af}
+.msg.success{display:block;background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.2);color:#6ee7b7}
+.form-shell{margin-top:20px;padding:20px;border-radius:22px;background:rgba(255,255,255,.038);border:1px solid rgba(255,255,255,.07)}
+.field{margin-bottom:15px}
+label{display:block;font-size:10px;font-weight:700;color:#b8cae0;margin-bottom:6px;letter-spacing:.08em;text-transform:uppercase;font-family:var(--mono)}
+input,select{width:100%;padding:13px 16px;background:rgba(255,255,255,.055);border:1px solid rgba(148,163,184,.2);border-radius:13px;font:14px var(--sans);color:var(--text);outline:none;transition:border-color .18s,box-shadow .18s,background .18s,transform .15s}
+input:focus,select:focus{border-color:rgba(34,211,238,.45);box-shadow:0 0 0 4px rgba(34,211,238,.1);background:rgba(255,255,255,.07);transform:translateY(-1px)}
+input::placeholder{color:#3e5168}
+.pw-wrap{position:relative}.pw-wrap input{padding-right:52px}
+.pw-toggle{position:absolute;right:11px;top:50%;transform:translateY(-50%);width:32px;height:32px;border-radius:10px;border:1px solid rgba(255,255,255,.07);background:rgba(255,255,255,.04);color:var(--muted);cursor:pointer;display:grid;place-items:center;font-size:14px;transition:.18s}
+.pw-toggle:hover{color:var(--text);background:rgba(255,255,255,.08)}
+.row-2{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:13px}
+.check-row{display:flex;align-items:center;gap:9px;font-size:12px;color:var(--muted)}
+.check-row input[type=checkbox]{width:auto;accent-color:var(--cyan)}
+.link{color:#67c7f8;text-decoration:none;font-weight:700}.link:hover{text-decoration:underline}
+.btn{width:100%;padding:14px 18px;margin-top:12px;border:0;border-radius:13px;background:linear-gradient(135deg,#22d3ee 0%,#38bdf8 40%,#6366f1 100%);color:#020d1a;font:800 14px var(--sans);cursor:pointer;transition:transform .18s,box-shadow .18s,filter .18s;box-shadow:0 12px 30px rgba(34,211,238,.2)}
+.btn:hover{transform:translateY(-2px);filter:saturate(1.08);box-shadow:0 18px 40px rgba(34,211,238,.28)}
+.btn:disabled{opacity:.65;cursor:not-allowed;transform:none}
+.divider{display:flex;align-items:center;gap:12px;margin:14px 0;color:var(--muted2);font-size:10px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.16em}
+.divider::before,.divider::after{content:'';flex:1;height:1px;background:rgba(255,255,255,.07)}
+.alt-2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.alt-btn{padding:11px 14px;border-radius:12px;border:1px solid rgba(255,255,255,.07);background:rgba(255,255,255,.04);color:#cfe0f5;font-weight:700;font-size:12px;text-align:center;text-decoration:none;transition:.18s}
+.alt-btn:hover{background:rgba(255,255,255,.07);transform:translateY(-1px)}
+
+/* Session chip */
+.session-chip{display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:18px;background:rgba(34,211,238,.05);border:1px solid rgba(34,211,238,.12);margin-bottom:20px;cursor:pointer;transition:.18s}
+.session-chip:hover{background:rgba(34,211,238,.09)}
+.s-avatar{width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,rgba(34,211,238,.2),rgba(139,92,246,.2));display:grid;place-items:center;font-size:12px;font-weight:900;color:var(--cyan2);flex-shrink:0}
+.s-info{flex:1;min-width:0}
+.s-name{font-size:12px;font-weight:700}
+.s-meta{font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.s-arr{color:var(--cyan);font-size:14px}
+
+.help-bar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:14px;font-size:11px;color:var(--muted2)}
+.link-row{margin-top:18px;text-align:center;font-size:12px;color:var(--muted2)}
+@media(max-width:1140px){body{padding:14px}.shell{grid-template-columns:1fr}.hero,.card{min-height:auto}.hero{padding:28px}.card{padding:22px}}
+@media(max-width:760px){.hero{display:none}.card{padding:18px}.card-inner{max-width:none}.card-h2{font-size:28px}.form-shell{padding:16px}}
 </style>
 </head>
 <body>
@@ -231,122 +167,115 @@ input::placeholder{color:#7e91ad}
         <img src="/static/images/logo-dark.svg" alt="ObserveX">
         <div class="live-chip"><span class="live-dot"></span> Live incident intelligence</div>
       </div>
-
-      <div class="hero-copy">
+      <div style="margin-top:28px">
         <div class="eyebrow">advanced observability platform</div>
-        <h1>Welcome back to the control room.</h1>
-        <p>
-          Investigate traces, follow request hops, review masked logs, monitor environment health, and act on
-          AI-summarised root-cause findings — all from one premium operator surface.
-        </p>
+        <h1 class="hero-h1">Welcome back to the <em>control room.</em></h1>
+        <p class="hero-p">Investigate distributed traces, review masked logs, act on AI-correlated alerts, and monitor Production, UAT, DEV, and DR from one premium operator surface.</p>
       </div>
 
-      <!-- Live Dashboard Preview Strip -->
-      <div class="dashboard-strip">
-        <div class="strip-header">
-          <span class="strip-title">Platform Status · Live</span>
-          <div class="strip-env">
-            <span class="env-pill active">Production ✓</span>
-            <span class="env-pill">UAT</span>
-            <span class="env-pill">DEV</span>
-            <span class="env-pill">DR</span>
+      <!-- Live telemetry strip -->
+      <div class="telem-strip">
+        <div class="telem-header">
+          <span class="telem-title">Platform Status · Real-time</span>
+          <div class="telem-env">
+            <span class="tenv ok">PROD ✓</span>
+            <span class="tenv">UAT</span>
+            <span class="tenv">DEV</span>
+            <span class="tenv">DR</span>
           </div>
         </div>
-        <div class="strip-stats">
-          <div class="sstat">
-            <div class="sstat-val" style="background:linear-gradient(90deg,#22d3ee,#38bdf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent">48.2M</div>
-            <div class="sstat-label">Logs Ingested</div>
-            <div class="sstat-meta up">+12.4% today</div>
+        <div class="kpi-mini">
+          <div class="km">
+            <div class="km-val" style="background:linear-gradient(90deg,#22d3ee,#67e8f9);-webkit-background-clip:text;-webkit-text-fill-color:transparent">48.2M</div>
+            <div class="km-label">Logs Ingested</div>
+            <div class="km-delta delta-up">↑ 12.4% today</div>
           </div>
-          <div class="sstat">
-            <div class="sstat-val" style="background:linear-gradient(90deg,#34d399,#2dd4bf);-webkit-background-clip:text;-webkit-text-fill-color:transparent">1.28M</div>
-            <div class="sstat-label">Masked Fields</div>
-            <div class="sstat-meta ok">98.7% protected</div>
+          <div class="km">
+            <div class="km-val" style="background:linear-gradient(90deg,#a78bfa,#c4b5fd);-webkit-background-clip:text;-webkit-text-fill-color:transparent">1.28M</div>
+            <div class="km-label">Masked Fields</div>
+            <div class="km-delta delta-up">98.7% covered</div>
           </div>
-          <div class="sstat">
-            <div class="sstat-val" style="background:linear-gradient(90deg,#a78bfa,#c084fc);-webkit-background-clip:text;-webkit-text-fill-color:transparent">286ms</div>
-            <div class="sstat-label">Trace Latency</div>
-            <div class="sstat-meta up">−31ms improved</div>
+          <div class="km">
+            <div class="km-val" style="background:linear-gradient(90deg,#4ade80,#34d399);-webkit-background-clip:text;-webkit-text-fill-color:transparent">286ms</div>
+            <div class="km-label">Avg Latency</div>
+            <div class="km-delta delta-up">↓ 31ms better</div>
           </div>
-          <div class="sstat">
-            <div class="sstat-val" style="background:linear-gradient(90deg,#fb7185,#f97316);-webkit-background-clip:text;-webkit-text-fill-color:transparent">14</div>
-            <div class="sstat-label">Open Alerts</div>
-            <div class="sstat-meta warn">3 critical active</div>
+          <div class="km">
+            <div class="km-val" style="background:linear-gradient(90deg,#f87171,#fb923c);-webkit-background-clip:text;-webkit-text-fill-color:transparent">14</div>
+            <div class="km-label">Open Alerts</div>
+            <div class="km-delta delta-warn">3 critical</div>
           </div>
         </div>
-        <!-- Alert preview -->
-        <div class="alert-bar">
-          <span class="alert-dot critical"></span>
-          <span class="alert-text">PII leak risk in free-text payload · Masking Engine · 2 min ago</span>
-          <span class="alert-badge-sm critical">Critical</span>
+        <div class="alert-preview">
+          <span class="ap-dot ap-critical"></span>
+          <span class="ap-text">PII leak risk in free-text payload · Masking Engine · 2 min ago</span>
+          <span class="ap-badge apb-crit">Critical</span>
         </div>
-        <div class="alert-bar" style="border-top:1px solid rgba(255,255,255,.05)">
-          <span class="alert-dot high"></span>
-          <span class="alert-text">Latency spike above threshold · Trace Monitor · 5 min ago</span>
-          <span class="alert-badge-sm high">High</span>
+        <div class="alert-preview" style="border-top:1px solid rgba(255,255,255,.04)">
+          <span class="ap-dot ap-high"></span>
+          <span class="ap-text">Latency spike above threshold · Trace Monitor · 5 min ago</span>
+          <span class="ap-badge apb-high">High</span>
         </div>
-        <!-- Trace preview -->
-        <div class="trace-bar">
-          <div class="trace-label">Latest Trace · TRC-98A21F · payment-engine</div>
-          <div class="trace-nodes">
-            <span class="tnode">Edge Gateway <span style="color:#67e8f9">43ms</span></span>
-            <span class="tarrow">→</span>
-            <span class="tnode">Auth Filter <span style="color:#67e8f9">29ms</span></span>
-            <span class="tarrow">→</span>
-            <span class="tnode">Experience API <span style="color:#67e8f9">88ms</span></span>
-            <span class="tarrow">→</span>
-            <span class="tnode">Process API <span style="color:#67e8f9">121ms</span></span>
-            <span class="tarrow">→</span>
-            <span class="tnode slow">Core Banking <span>311ms ⚠</span></span>
+        <div class="trace-mini">
+          <div class="trace-mini-label">Latest Trace · TRC-98A21F · payment-engine · PROD</div>
+          <div class="trace-hops">
+            <span class="th">Edge GW <span style="color:#22d3ee">43ms</span></span>
+            <span class="th-arr">→</span>
+            <span class="th">Auth <span style="color:#22d3ee">29ms</span></span>
+            <span class="th-arr">→</span>
+            <span class="th">Exp API <span style="color:#a78bfa">88ms</span></span>
+            <span class="th-arr">→</span>
+            <span class="th">Process <span style="color:#fbbf24">121ms</span></span>
+            <span class="th-arr">→</span>
+            <span class="th slow">Core Banking <span>311ms ⚠</span></span>
           </div>
         </div>
       </div>
     </div>
 
     <div>
-      <div class="feature-grid">
-        <div class="feature-card">
-          <div class="feature-kicker">Trace Explorer</div>
-          <strong>Follow request paths instantly</strong>
-          <span>Jump from edge gateway to system APIs, cache layers, and downstream dependencies with full context.</span>
+      <div class="feat-mini">
+        <div class="fm">
+          <div class="fm-kick">Trace Explorer</div>
+          <strong>Follow every request hop</strong>
+          <span>Waterfall view from edge to core banking with latency attribution.</span>
         </div>
-        <div class="feature-card">
-          <div class="feature-kicker">Sensitive Data Shield</div>
-          <strong>Mask risky values automatically</strong>
-          <span>Keep account numbers, headers, tokens, and identifiers protected without losing debugging clarity.</span>
+        <div class="fm">
+          <div class="fm-kick">Data Shield</div>
+          <strong>Mask risky values</strong>
+          <span>PAN, account numbers, JWTs protected without losing debug clarity.</span>
         </div>
-        <div class="feature-card">
-          <div class="feature-kicker">Environment Lens</div>
-          <strong>Switch between PROD, UAT, DEV, and DR</strong>
-          <span>Compare health, alert volume, latency, and deployment behavior by environment from one surface.</span>
+        <div class="fm">
+          <div class="fm-kick">Environment Lens</div>
+          <strong>PROD · UAT · DEV · DR</strong>
+          <span>Compare health, alerts, and latency by environment from one surface.</span>
         </div>
-        <div class="feature-card">
-          <div class="feature-kicker">AI RCA Co-Pilot</div>
-          <strong>Turn noisy events into actions</strong>
-          <span>AI summarizes failure clusters, retry storms, and risky traffic patterns in plain English instantly.</span>
+        <div class="fm">
+          <div class="fm-kick">AI RCA Co-Pilot</div>
+          <strong>Instant root-cause</strong>
+          <span>AI correlates logs, traces, and alerts into a plain-English incident brief.</span>
         </div>
       </div>
-
       <div class="metric-row">
-        <div class="metric-card">
-          <div class="value">48.2M</div>
-          <div class="label">Logs Ingested</div>
+        <div class="mc">
+          <div class="mc-val" style="color:#22d3ee">48.2M</div>
+          <div class="mc-label">Logs / Day</div>
         </div>
-        <div class="metric-card">
-          <div class="value">98.7%</div>
-          <div class="label">Masking Coverage</div>
+        <div class="mc">
+          <div class="mc-val" style="color:#4ade80">98.7%</div>
+          <div class="mc-label">Masking</div>
         </div>
-        <div class="metric-card">
-          <div class="value">286ms</div>
-          <div class="label">Trace Latency</div>
+        <div class="mc">
+          <div class="mc-val" style="color:#a78bfa">286ms</div>
+          <div class="mc-label">P95 Latency</div>
         </div>
       </div>
       <div class="hero-footer">
-        <span>Built for API teams, observability engineers, and modern platform ops.</span>
-        <div class="footer-badges">
-          <span>AI Insights</span>
-          <span>Trace Linked</span>
-          <span>Enterprise Ready</span>
+        <span>Built for platform engineers, SREs, and API teams.</span>
+        <div class="fbadges">
+          <span class="fbadge">AI Insights</span>
+          <span class="fbadge">Trace Linked</span>
+          <span class="fbadge">Enterprise</span>
         </div>
       </div>
     </div>
@@ -355,130 +284,90 @@ input::placeholder{color:#7e91ad}
   <main class="card glass">
     <div class="card-inner">
       <div class="card-head">
-        <div class="card-logo">
-          <img src="/static/images/logo-primary.svg" alt="ObserveX">
-        </div>
+        <div class="card-logo"><img src="/static/images/logo-primary.svg" alt="ObserveX"></div>
         <div class="card-badge">Secure workspace</div>
       </div>
 
-      <h2>Welcome back</h2>
-      <p class="sub">Sign in to investigate logs, traces, alerts, and environment health across Production, UAT, Development, and DR.</p>
+      <div class="card-h2">Welcome back</div>
+      <p class="card-sub">Sign in to investigate logs, traces, alerts, and environment health across Production, UAT, Development, and DR.</p>
 
       <div class="msg" id="msg"></div>
 
-      <!-- Last session chip (shown if previous session found) -->
-      <div class="session-chip" id="sessionChip" style="display:none" onclick="fillLastSession()">
-        <div class="session-avatar" id="sessionInitial">?</div>
-        <div class="session-info">
-          <div class="session-name" id="sessionName">Continue session</div>
-          <div class="session-meta" id="sessionMeta">Last active · click to fill</div>
+      <!-- Session chip -->
+      <div class="session-chip" id="sessionChip" style="display:none" onclick="fillSession()">
+        <div class="s-avatar" id="sInitial">?</div>
+        <div class="s-info">
+          <div class="s-name" id="sName">Continue session</div>
+          <div class="s-meta" id="sMeta">Click to fill credentials</div>
         </div>
-        <span class="session-arrow">→</span>
+        <span class="s-arr">→</span>
       </div>
 
       <div class="form-shell">
         <div class="field">
           <label for="email">Work email</label>
-          <div class="input-wrap">
-            <input type="email" id="email" placeholder="you@company.com" autocomplete="email" required>
-          </div>
+          <input type="email" id="email" placeholder="you@company.com" autocomplete="email" required>
         </div>
-
         <div class="field">
           <label for="pw">Password</label>
           <div class="pw-wrap">
-            <input type="password" id="pw" placeholder="Enter your password" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
-            <button class="pw-toggle" id="togglePwBtn" type="button" onclick="togglePw()" title="Show or hide password">👁</button>
+            <input type="password" id="pw" placeholder="Your workspace password" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+            <button class="pw-toggle" id="togglePw" type="button" onclick="togglePwVis()" title="Toggle password">👁</button>
           </div>
         </div>
-
-        <div class="inline-row">
-          <label class="checkbox-line"><input type="checkbox" id="rememberMe"> Keep me signed in</label>
-          <a href="/forgot-password">Forgot password?</a>
+        <div class="row-2">
+          <label class="check-row"><input type="checkbox" id="rememberMe"> Keep me signed in</label>
+          <a href="/forgot-password" class="link" style="font-size:12px">Forgot password?</a>
         </div>
-
-        <button class="btn" id="submitBtn" onclick="doLogin()">Sign in to workspace</button>
-
-        <div class="divider">or continue with</div>
-        <div class="alt-actions">
-          <a class="alt-btn" href="/documentation">View docs</a>
-          <a class="alt-btn" href="/pricing">Explore plans</a>
+        <button class="btn" id="submitBtn" onclick="doLogin()">Sign in to workspace →</button>
+        <div class="divider">or</div>
+        <div class="alt-2">
+          <a href="/documentation" class="alt-btn">View docs</a>
+          <a href="/pricing" class="alt-btn">Explore plans</a>
         </div>
       </div>
 
-      <div class="help-links">
-        <span>Protected with masking-aware audit controls and environment-safe access.</span>
-        <a href="/status">System status</a>
+      <div class="help-bar">
+        <span>Masking-aware audit controls · environment-safe access.</span>
+        <a href="/status" class="link" style="font-size:11px">System status</a>
       </div>
-      <div class="link-row">Don&apos;t have a workspace? <a href="/create-account">Create one free</a></div>
+      <div class="link-row">No workspace? <a href="/create-account" class="link">Create one free →</a></div>
     </div>
   </main>
 </div>
+
 <script>
-// Restore last session chip
 (function(){
   try{
-    const saved=localStorage.getItem('ox_last_session');
-    if(saved){
-      const d=JSON.parse(saved);
+    const d=JSON.parse(localStorage.getItem('ox_session')||'{}');
+    if(d.email&&d.name){
       const chip=document.getElementById('sessionChip');
-      const initEl=document.getElementById('sessionInitial');
-      const nameEl=document.getElementById('sessionName');
-      const metaEl=document.getElementById('sessionMeta');
-      if(d.name&&d.email){
-        initEl.textContent=d.name.charAt(0).toUpperCase();
-        nameEl.textContent='Continue as '+d.name.split(' ')[0];
-        metaEl.textContent=d.email+' · Last active: '+d.org;
-        chip.style.display='flex';
-        window._lastEmail=d.email;
-      }
+      document.getElementById('sInitial').textContent=d.name.charAt(0).toUpperCase();
+      document.getElementById('sName').textContent='Continue as '+d.name.split(' ')[0];
+      document.getElementById('sMeta').textContent=d.email+' · '+d.org;
+      chip.style.display='flex';
+      window._ox_email=d.email;
     }
   }catch(e){}
 })();
-
-function fillLastSession(){
-  if(window._lastEmail){
-    document.getElementById('email').value=window._lastEmail;
-    document.getElementById('pw').focus();
-  }
-}
-
-function togglePw(){
-  const inp=document.getElementById('pw');
-  const btn=document.getElementById('togglePwBtn');
-  if(inp.type==='password'){
-    inp.type='text';
-    btn.textContent='🙈';
-  }else{
-    inp.type='password';
-    btn.textContent='👁';
-  }
-}
-function showMsg(text,type){
-  const el=document.getElementById('msg');
-  el.textContent=text;
-  el.className='msg '+type;
-}
+function fillSession(){if(window._ox_email){document.getElementById('email').value=window._ox_email;document.getElementById('pw').focus();}}
+function togglePwVis(){const i=document.getElementById('pw'),b=document.getElementById('togglePw');i.type=i.type==='password'?'text':'password';b.textContent=i.type==='password'?'👁':'🙈';}
+function showMsg(t,c){const m=document.getElementById('msg');m.textContent=t;m.className='msg '+c;}
 async function doLogin(){
   const email=document.getElementById('email').value.trim();
   const pw=document.getElementById('pw').value;
-  const btn=document.getElementById('submitBtn');
   const remember=document.getElementById('rememberMe').checked;
+  const btn=document.getElementById('submitBtn');
   if(!email||!pw){showMsg('Please enter your email and password.','error');return;}
   btn.disabled=true;btn.textContent='Signing in…';
   try{
     const res=await fetch('/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password:pw})});
     const d=await res.json();
-    if(!res.ok){showMsg(d.error||'Login failed. Please try again.','error');btn.disabled=false;btn.textContent='Sign in to workspace';return;}
-    if(remember&&d.name){
-      try{localStorage.setItem('ox_last_session',JSON.stringify({email,name:d.name||email,org:d.org_name||'ObserveX'}));}catch(e){}
-    }
-    showMsg('Signed in successfully. Redirecting to your workspace…','success');
-    setTimeout(()=>{location.href=d.workspace_url||'/workspace';},450);
-  }catch(e){
-    showMsg('Network error. Please try again.','error');
-    btn.disabled=false;btn.textContent='Sign in to workspace';
-  }
+    if(!res.ok){showMsg(d.error||'Login failed. Please try again.','error');btn.disabled=false;btn.textContent='Sign in to workspace →';return;}
+    if(remember&&d.name){try{localStorage.setItem('ox_session',JSON.stringify({email,name:d.name,org:d.org_name||'ObserveX'}));}catch(e){}}
+    showMsg('Signed in. Redirecting to workspace…','success');
+    setTimeout(()=>{location.href=d.workspace_url||'/workspace';},420);
+  }catch(e){showMsg('Network error. Please try again.','error');btn.disabled=false;btn.textContent='Sign in to workspace →';}
 }
 </script>
 </body>
